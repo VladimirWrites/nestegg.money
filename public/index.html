@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nestegg — private net worth tracker</title>
+<meta name="description" content="Track your net worth privately — log your assets each year and watch your wealth over time and by allocation. Encrypted in your browser; no email, no password, just an account number.">
+<link rel="canonical" href="https://nestegg.money/">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="robots" content="index, follow">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="apple-mobile-web-app-title" content="nestegg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="nestegg">
+<meta property="og:title" content="nestegg — private net worth tracker">
+<meta property="og:description" content="Log your assets each year and watch your wealth over time and by allocation. Encrypted in your browser; no email, no password.">
+<meta property="og:url" content="https://nestegg.money/">
+<meta property="og:image" content="https://nestegg.money/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="nestegg — a quiet accounting of what you hold">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="nestegg — private net worth tracker">
+<meta name="twitter:description" content="Log your assets each year and watch your wealth over time and by allocation. Encrypted in your browser; no email, no password.">
+<meta name="twitter:image" content="https://nestegg.money/assets/og.png">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div id="gate">
+  <div class="gatebox">
+    <div class="kick">Personal Ledger</div><h1>Net Worth</h1>
+    <div class="sub">No email. No password. Just an account number.</div>
+    <div class="panel" id="gateCreate">
+      <p>Your account number is your only key. It identifies you and unlocks your data, which is encrypted in your browser before it ever leaves. Write it down somewhere safe.</p>
+      <div class="acctnum num" id="newAcct">…</div>
+      <div class="gaterow"><button class="gatebtn ghost" id="copyAcct">Copy</button><button class="gatebtn ghost" id="regenAcct">Generate another</button><button class="gatebtn" id="confirmAcct">I've saved it — continue</button></div>
+      <div class="warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
+      <div class="switch">Already have one? <a id="toSignin">Sign in with an account number</a></div>
+    </div>
+    <div class="panel hide" id="gateSignin">
+      <p>Enter your account number to load and decrypt your ledger on this device.</p>
+      <input class="gatein" id="signinInput" placeholder="XXXX-XXXX-XXXX-…" autocomplete="off" spellcheck="false">
+      <div class="gaterow"><button class="gatebtn" id="signinBtn">Sign in</button></div>
+      <div class="switch">Need a new account? <a id="toCreate">Create one</a></div>
+    </div>
+    <div class="switch">By continuing you agree to the <a href="privacy.html">Privacy Policy</a> and <a href="terms.html">Terms &amp; Conditions</a>.</div>
+  </div>
+</div>
+
+<div id="app" class="hide">
+  <div class="acctbar">
+    <div class="who"><span class="syncdot" id="syncDot"></span><span id="syncTxt">Local</span></div>
+    <div><button id="showAcctBtn">Account number</button> · <button id="syncNowBtn">Sync now</button> · <button id="logoutBtn">Log out</button></div>
+  </div>
+  <header class="masthead">
+    <div class="kicker"><span>Personal Ledger</span><span id="dateline">—</span></div>
+    <div class="titlerow"><h1 class="title">Net Worth</h1><div class="ccypick">Display<select id="ccySel"></select></div></div>
+    <div class="subt">A quiet accounting of what you hold.</div>
+  </header>
+  <main>
+    <div class="hero">
+      <div class="label">Total Net Worth</div>
+      <div class="big num" id="nwTotal">—</div>
+      <div class="day num" id="nwDay"></div>
+      <div class="delta" id="nwNote"></div>
+    </div>
+
+    <div class="panels">
+      <section class="over">
+        <button class="chartdl" id="dlHist" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+        <div class="sectitle">Over time <span class="tin">— tap a year to edit its assets</span></div>
+        <div class="histscroll"><svg id="histChart"></svg></div>
+        <div class="chiplegend" id="histLegend"></div>
+        <div class="years" id="years"></div>
+        <div class="controls"><button class="act" id="addYear">+ Year</button></div>
+      </section>
+
+      <section class="alloc">
+        <button class="chartdl" id="dlDonut" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+        <div class="sectitle">Allocation <span class="tin" id="allocYear"></span></div>
+        <div class="charts"><div style="display:flex;justify-content:center"><svg id="donut" width="240" height="240" viewBox="0 0 240 240"></svg></div><div class="legend" id="legend"></div></div>
+      </section>
+    </div>
+
+    <section style="border-bottom:none;padding-top:8px">
+      <div class="controls" style="margin-top:0">
+        <button class="act ghost" id="exportBtn">Export JSON</button>
+        <button class="act ghost" id="importBtn">Import JSON</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+        <button class="act ghost" id="pricesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg>Prices</button>
+        <button class="act ghost" id="ratesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg>Rates</button>
+        <button class="act ghost" id="resetBtn">Reset</button>
+        <span class="updnote" id="updNote"></span>
+      </div>
+    </section>
+  </main>
+  <div class="foot">
+    Your data is encrypted in your browser with a key derived from your account number, and the server stores only ciphertext —
+    it never sees your figures. It can still see the size of your encrypted data, when you sync, and your IP address.
+    Each year holds its own asset rows, each in its own currency, shown in your chosen display currency at current ECB rates.
+    There is no recovery if you lose your account number — Export JSON is your backup.
+    <div class="footlinks"><a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms &amp; Conditions</a></div>
+  </div>
+</div>
+
+<div id="yearEditor" class="editor hide">
+  <div class="ed-bar">
+    <button id="edBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
+    <div class="ed-title">Year <input id="edYear" type="number" inputmode="numeric"></div>
+    <button id="edDelYear">Delete year</button>
+  </div>
+  <div class="ed-wrap">
+    <div class="ed-total"><span class="et-k">Year total</span><span class="et-v" id="edTotal">—</span></div>
+    <div class="cards" id="edEntries"></div>
+    <div class="controls"><button class="act" id="edAdd">+ Add asset</button><button class="act ghost" id="edAddGroup">+ Add group</button><button class="act ghost" id="edCopyPrev">Copy previous year</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

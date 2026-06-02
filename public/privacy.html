@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — nestegg</title>
+<meta name="description" content="How nestegg handles your data: zero-knowledge encryption, no email or password, no tracking. The server stores only ciphertext it cannot read.">
+<link rel="canonical" href="https://nestegg.money/privacy.html">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="legal">
+  <a class="back" href="index.html">← Back to app</a>
+  <h1>Privacy Policy</h1>
+  <div class="updated">Last updated: 2 June 2026</div>
+
+  <p>nestegg ("the app") is a personal net-worth tracker built to keep
+  your financial data private. This policy explains exactly what is and isn't
+  collected. The short version: we cannot read your data, and we don't want to.</p>
+
+  <h2>No account, no identity</h2>
+  <p>There is no email, name, phone number, or password. Your only credential is
+  a randomly generated <strong>account number</strong>, created in your browser.
+  We never ask for, and never receive, anything that identifies you personally.</p>
+
+  <h2>What the server stores</h2>
+  <ul>
+    <li>A one-way <strong>account hash</strong> derived from your account number
+      (used only as a storage label — it cannot be reversed into your number).</li>
+    <li>An <strong>encrypted blob</strong> of your ledger that the server has no
+      ability to decrypt.</li>
+    <li>A timestamp of your last sync.</li>
+  </ul>
+
+  <h2>How your data is encrypted</h2>
+  <p>Your ledger is encrypted in your browser with <strong>AES-256-GCM</strong>.
+  The key is derived from your account number using PBKDF2 and <strong>never
+  leaves your device</strong>. The server only ever holds ciphertext, so it
+  cannot see your assets, values, or totals.</p>
+
+  <h2>What the server can still see</h2>
+  <p>Zero-knowledge applies to the <em>contents</em> of your ledger, not to all
+  metadata. Like any web service, the server (and our host, Cloudflare) can
+  observe the <strong>size of your encrypted data</strong>, the <strong>time you
+  sync</strong>, and your <strong>IP address</strong> in standard request logs.
+  It cannot use any of this to read your figures.</p>
+
+  <h2>A note on trust</h2>
+  <p>Because the encryption runs in code your browser downloads from us, the
+  privacy guarantee depends on that code not being tampered with. We serve the
+  app as static files and keep it auditable. For maximum assurance you can review
+  the source and use <strong>Export JSON</strong> to keep an independent backup.</p>
+
+  <h2>Third-party data</h2>
+  <ul>
+    <li><strong>Exchange rates</strong> are fetched from the Frankfurter API
+      (European Central Bank reference rates). No personal data is sent.</li>
+    <li><strong>Security prices</strong> are looked up via a server-side proxy to
+      Yahoo Finance. Only the <em>public ticker symbol</em> is sent upstream —
+      never your identity, holdings, or account.</li>
+    <li><strong>Hosting</strong> is provided by Cloudflare Pages.</li>
+  </ul>
+
+  <h2>No tracking</h2>
+  <p>No cookies, no analytics, no advertising, no third-party trackers.</p>
+
+  <h2>Data stored on your device</h2>
+  <p>For convenience, your account number and a decrypted copy of your ledger are
+  kept in your browser's local storage so you stay signed in. Logging out, or
+  clearing your browser data, removes them from this device.</p>
+
+  <h2>No recovery</h2>
+  <p>If you lose your account number, your synced data <strong>cannot be
+  recovered</strong> by anyone, including us — that is a direct consequence of the
+  encryption design. Keep your number safe and export backups.</p>
+
+  <h2>Deleting your data</h2>
+  <p>You can clear everything on your device with "Reset" or "Log out". Your
+  encrypted blob can be removed from the server on request from your client.</p>
+
+  <h2>Changes &amp; contact</h2>
+  <p>We may update this policy; material changes will be reflected by the date
+  above. Questions: <a href="mailto:[your-contact-email]">[your-contact-email]</a>.</p>
+
+  <div class="note">This document is a plain-language template provided for
+  convenience and is not legal advice. Have it reviewed by a qualified lawyer
+  before relying on it for a public service.</div>
+</div>
+</body>
+</html>

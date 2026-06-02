@@ -1,0 +1,14 @@
+name = "nestegg-money"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Static site in ./public is served by the assets binding; the Worker (src/index.js)
+# runs only for paths with no matching asset, i.e. the /api/* routes.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "networth-db"
+database_id = "d62a7802-c6b1-4be9-a941-186ed158a2aa"

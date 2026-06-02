@@ -1,0 +1,198 @@
+:root{
+  --bg:#0a0a0b;--panel:#121214;--panel2:#17171a;--line:#26262a;--line2:#33333a;
+  --ink:#e8e4d8;--muted:#8a867c;--amber:#ffb000;--amber2:#ff8c1a;
+  --blue:#4aa3ff;--green:#3ad17a;--yellow:#ffd23a;--red:#ff4d6d;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;
+  --maxw:1100px;
+}
+/* widen the content envelope on large monitors so space isn't wasted.
+   Standard 16:9 desktops top out ~1920; true ultrawides are 21:9 (2560/3440)
+   and 32:9 (5120). Keep scaling up for those, but cap around 2040px — beyond
+   that, stretching financial rows hurts readability more than it helps. */
+@media(min-width:1500px){:root{--maxw:1340px}}
+@media(min-width:1920px){:root{--maxw:1560px}}
+@media(min-width:2560px){:root{--maxw:1800px}}
+@media(min-width:3440px){:root{--maxw:2040px}}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);line-height:1.5;padding:0 0 90px;min-height:100vh}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.hide{display:none!important}
+
+#gate{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+.gatebox{max-width:520px;width:100%}
+.gatebox .kick{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber)}
+.gatebox h1{font-size:clamp(34px,8vw,52px);line-height:.98;letter-spacing:-.01em;font-weight:700;margin:8px 0 4px;color:var(--amber)}
+.gatebox .sub{color:var(--muted);margin-bottom:26px;font-size:13px}
+.gatebox .panel{border-top:1px solid var(--line2);padding-top:20px}
+.gatebox p{font-size:13px;color:var(--muted);margin:10px 0}
+.acctnum{font-size:21px;letter-spacing:.06em;background:#000;border:1px solid var(--line2);border-radius:3px;padding:16px 14px;white-space:nowrap;overflow:hidden;text-align:center;margin:14px 0;line-height:1.5;color:var(--green)}
+.acctnum .tokline{display:inline-block;white-space:nowrap}
+.acctnum .d{color:var(--green)}   /* digits */
+.acctnum .a{color:var(--blue)}    /* letters */
+.acctnum .s{color:var(--muted)}   /* separators */
+.gatebtn{font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--amber);color:#000;border:none;padding:14px 20px;cursor:pointer;border-radius:3px;min-height:46px;font-weight:600;font-family:var(--mono)}
+.gatebtn.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
+.gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line2);border-radius:3px;background:#000;color:var(--ink);letter-spacing:.05em;font-family:var(--mono)}
+.gatein:focus{outline:none;border-color:var(--amber)}
+.gaterow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.warn{font-size:12px;color:var(--amber2);font-style:normal;margin-top:14px;border-left:2px solid var(--amber2);padding-left:12px}
+.switch{margin-top:24px;font-size:12px;color:var(--muted)}.switch a{color:var(--amber);cursor:pointer;text-decoration:underline}
+
+.acctbar{max-width:var(--maxw);margin:0 auto;padding:12px 18px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:10.5px;color:var(--muted);flex-wrap:wrap;letter-spacing:.04em}
+.acctbar .who{display:flex;align-items:center;gap:8px}
+.syncdot{width:7px;height:7px;border-radius:50%;background:var(--muted)}.syncdot.ok{background:var(--green)}.syncdot.off{background:var(--red)}
+.acctbar button{font:inherit;background:none;border:none;color:var(--muted);cursor:pointer;text-decoration:underline;padding:2px 0}.acctbar button:hover{color:var(--amber)}
+
+header.masthead{border-bottom:1px solid var(--line2);padding:14px 18px 16px;max-width:var(--maxw);margin:0 auto}
+.kicker{font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.titlerow{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:10px 0 6px}
+h1.title{font-size:clamp(30px,6.5vw,48px);line-height:1;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+.ccypick{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ccypick select{font:inherit;font-size:13px;letter-spacing:0;background:#000;border:1px solid var(--line2);border-radius:3px;padding:6px 8px;color:var(--ink)}
+.subt{color:var(--muted);font-size:13px}
+main{max-width:var(--maxw);margin:0 auto;padding:0 18px}
+
+.hero{padding:28px 0 24px;border-bottom:1px solid var(--line)}
+.hero .label{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.hero .big{font-size:clamp(40px,10vw,76px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:10px;color:var(--amber)}
+.hero .day{margin-top:8px;font-size:14px;font-weight:600}
+.hero .day.up{color:var(--green)} .hero .day.down{color:var(--red)} .hero .day.flat{color:var(--muted)}
+.hero .delta{margin-top:8px;font-size:12.5px;color:var(--muted)}
+
+section{padding:24px 0;border-bottom:1px solid var(--line)}
+.sectitle{font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.sectitle::after{content:"";flex:1;height:1px;background:var(--line)}
+.sectitle .tin{letter-spacing:.02em;text-transform:none;font-size:11.5px;color:var(--muted)}
+
+.histscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+#histChart{display:block}
+.chiplegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;margin-bottom:22px;font-size:11.5px;color:var(--muted)}
+.chiplegend span{display:flex;align-items:center;gap:6px}.chip{width:10px;height:10px;border-radius:1px}
+
+.charts{display:grid;grid-template-columns:240px 1fr;gap:32px;align-items:center}
+@media(max-width:680px){.charts{grid-template-columns:1fr;gap:22px}}
+.legend{display:flex;flex-direction:column;gap:1px}
+.legrow{display:grid;grid-template-columns:13px 1fr auto auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.legrow:last-child{border-bottom:none}.swatch{width:10px;height:10px;border-radius:1px}
+.legrow .pct{color:var(--muted);font-size:11.5px;min-width:38px;text-align:right}.legrow .amt{font-weight:600;min-width:92px;text-align:right}
+
+.years{display:flex;flex-direction:column;gap:6px}
+.ycard{border:1px solid var(--line);border-radius:3px;background:var(--panel)}
+.yhead{display:flex;align-items:center;gap:12px;padding:11px 13px;cursor:pointer;user-select:none}
+.yhead:hover{background:var(--panel2);border-color:var(--line2)}
+.yhead .yr{font-size:15px;font-weight:600;min-width:46px;color:var(--amber)}
+.ybar{flex:1;height:11px;border-radius:1px;background:#000;display:flex;overflow:hidden;min-width:60px}
+.ybar i{display:block;height:100%}
+.ytot{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;white-space:nowrap}
+.ychev{color:var(--muted);width:14px;height:14px;flex:none}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
+button.act{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:var(--amber);color:#000;border:none;padding:11px 15px;cursor:pointer;border-radius:3px;min-height:40px;font-weight:600;font-family:var(--mono);display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.act .ic{width:13px;height:13px;flex:none}
+button.act.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
+button.act.ghost:hover{border-color:var(--amber)}
+.updnote{margin-left:auto;font-size:10px;color:var(--muted)}
+
+/* download icon in the top-right corner of each chart */
+.over,.alloc{position:relative}
+.over>.sectitle,.alloc>.sectitle{padding-right:40px}
+.chartdl{position:absolute;top:14px;right:0;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line2);border-radius:5px;color:var(--muted);cursor:pointer;z-index:2}
+.chartdl:hover{color:var(--amber);border-color:var(--amber)}
+.chartdl svg{width:15px;height:15px}
+
+.editor{position:fixed;inset:0;background:var(--bg);z-index:45;overflow:auto;padding-bottom:110px}
+.ed-bar{position:sticky;top:0;background:rgba(10,10,11,.92);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:12px;padding:13px 18px;z-index:2}
+.ed-bar button{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:none;border:none;color:var(--amber);cursor:pointer;padding:6px 0;font-family:var(--mono)}
+#edDelYear{color:var(--red);margin-left:auto}
+.ed-title{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:9px}
+#edYear{width:88px;font:inherit;font-size:17px;border:1px solid var(--line2);border-radius:3px;padding:7px 8px;background:#000;color:var(--amber)}
+.ed-wrap{max-width:var(--maxw);margin:0 auto;padding:18px}
+.ed-total{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px}
+.ed-total .et-k{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.ed-total .et-v{font-variant-numeric:tabular-nums;font-size:28px;font-weight:600;color:var(--amber)}
+
+.cards{display:flex;flex-direction:column;gap:6px}
+.rcard{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:11px 13px;position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rcard:hover{border-color:var(--line2)}
+.rcard .dot{width:10px;height:10px;border-radius:1px;flex:none}
+.rcard .rname{flex:1;min-width:120px;font:inherit;font-size:15px;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--ink);padding:3px 0}
+.rcard .rname:focus{outline:none;border-bottom:1px solid var(--amber)}
+.rcard .rval{width:130px;font:inherit;font-size:15px;text-align:right;background:#000;border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--ink);min-height:40px}
+.rcard .rval:focus{outline:none;border-color:var(--amber)}
+.rcard select{font:inherit;font-size:13px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:8px;color:var(--ink);min-height:40px}
+.rcard .rkind{font:inherit;font-size:12px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:8px 6px;color:var(--amber);min-height:40px}
+.rcard .rsh{width:84px;font:inherit;font-size:15px;text-align:right;background:#000;border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--ink);min-height:40px}
+.rcard .rtk{width:120px;font:inherit;font-size:14px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--green);min-height:40px;text-transform:uppercase}
+.rcard .rsh:focus,.rcard .rtk:focus{outline:none;border-color:var(--amber)}
+.rcard .rconv{font-size:11px;color:var(--green);min-width:80px;text-align:right}
+.rcard .rdel{background:none;border:none;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 4px}
+.rcard .rdel:hover{color:var(--red)}
+
+/* asset groups in the year editor */
+.grp{border:1px solid var(--line2);border-radius:4px;margin-top:6px;background:var(--panel2)}
+.grphead{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--line)}
+.grphead .dot{width:10px;height:10px;border-radius:1px;flex:none}
+.grpname{flex:1;min-width:80px;font:inherit;font-size:14px;font-weight:600;letter-spacing:.04em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0}
+.grpname:focus{outline:none;border-bottom:1px solid var(--amber)}
+.grpsub{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:var(--ink);white-space:nowrap}
+.grpdel{background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
+.grpdel:hover{color:var(--red)}
+.grpcards{display:flex;flex-direction:column;gap:6px;padding:11px 13px}
+.grpcards .rcard{background:var(--panel)}
+.grpadd{margin:0 13px 13px;padding:8px 13px;min-height:34px;font-size:10px}
+
+.foot{max-width:var(--maxw);margin:22px auto 0;padding:0 18px;color:var(--muted);font-size:11.5px;line-height:1.6}
+.foot a{color:var(--amber);text-decoration:underline}
+.footlinks{margin-top:10px}
+/* standalone legal pages (privacy.html, terms.html) */
+.legal{max-width:760px;margin:0 auto;padding:48px 22px 90px}
+.legal .back{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);text-decoration:none;margin-bottom:26px}
+.legal h1{font-size:clamp(28px,6vw,40px);font-weight:700;color:var(--ink);letter-spacing:-.01em;margin-bottom:6px}
+.legal .updated{color:var(--muted);font-size:12px;margin-bottom:30px}
+.legal h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin:30px 0 10px}
+.legal p,.legal li{color:var(--ink);font-size:14px;line-height:1.65;margin-bottom:10px}
+.legal ul{padding-left:20px;margin-bottom:10px}
+.legal strong{color:var(--amber2)}
+.legal .note{border-left:2px solid var(--line2);padding-left:14px;color:var(--muted);font-size:12.5px;margin-top:30px}
+.legal a{color:var(--amber)}
+
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--amber);color:#000;font-size:12px;font-weight:600;padding:10px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:all .3s;z-index:60;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* On wide screens, sit Allocation beside Over time instead of stacking,
+   so the horizontal space is actually used. */
+.alloc{border-bottom:none}
+@media(min-width:1100px){
+  .panels{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:40px;align-items:start}
+  .panels>section{border-bottom:none;padding-top:24px}
+  .alloc{position:sticky;top:16px}
+  .alloc .charts{grid-template-columns:1fr;justify-items:center;gap:20px}
+  .alloc .legend{width:100%}
+}
+@media(min-width:1500px){
+  .panels{grid-template-columns:minmax(0,1fr) 420px}
+}
+@media(min-width:2560px){
+  .panels{grid-template-columns:minmax(0,1fr) 500px;gap:56px}
+}
+
+/* Phones: keep asset-editor rows readable — name on its own line,
+   value controls flow beneath it instead of cramming sideways. */
+@media(max-width:560px){
+  .rcard .rname{flex:1 1 100%}
+  .rcard .rval{flex:1;width:auto}
+  .rcard .rconv{flex:1 1 100%;text-align:left}
+}
+
+/* SVG back button (replaces the text "←") */
+#edBack{display:inline-flex;align-items:center;gap:7px}
+.ed-bar .ic{width:13px;height:13px;flex:none}
+
+/* Custom dropdown chevron — replaces the native arrow and its cramped padding */
+.ccypick select,#ccySel,.rcard select,.rcard .rkind{
+  -webkit-appearance:none;-moz-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238a867c' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:11px;
+  padding-right:28px;
+}
