@@ -733,6 +733,7 @@ document.getElementById("assetBack").onclick=()=>{scheduleSync();closeAssetEdito
 const salTotal=en=>(parseFloat(en.base)||0)+(parseFloat(en.extra)||0);
 const salMonths=p=>[...(p.entries||[])].sort((a,b)=>a.ym<b.ym?-1:(a.ym>b.ym?1:0));
 function nextYm(ym){if(!/^\d{4}-\d{2}$/.test(ym||""))return new Date().toISOString().slice(0,7);let[y,m]=ym.split("-").map(Number);m++;if(m>12){m=1;y++;}return y+"-"+String(m).padStart(2,"0");}
+function prevYm(ym){if(!/^\d{4}-\d{2}$/.test(ym||""))return new Date().toISOString().slice(0,7);let[y,m]=ym.split("-").map(Number);m--;if(m<1){m=12;y--;}return y+"-"+String(m).padStart(2,"0");}
 const ymLabel=ym=>{const[y,m]=String(ym).split("-").map(Number);return new Date(y,(m||1)-1,1).toLocaleDateString("en-GB",{month:"short",year:"numeric"});};
 function salAnnual(p){const a={};salMonths(p).forEach(en=>{const y=en.ym.slice(0,4);a[y]=(a[y]||0)+salTotal(en);});return a;}
 const salColor=i=>PALETTE[i%PALETTE.length];
@@ -791,12 +792,13 @@ function renderSalary(){
         <button class="rdel" data-perdel="${p.id}" title="Remove person">×</button></div>
       <div class="salgridhead"><span>Month</span><span>Base</span><span>Extra</span><span>Event</span><span class="r">Total</span><span></span></div>
       <div class="salgrid">${rows||'<div class="exhint">No months yet — add one below.</div>'}</div>
-      <div class="controls"><button class="act ghost mini" data-saladd="${p.id}">+ Month</button><button class="act ghost mini" data-salyear="${p.id}">+ 12 months</button></div>
+      <div class="controls"><button class="act ghost mini" data-salprev="${p.id}">+ Earlier month</button><button class="act ghost mini" data-saladd="${p.id}">+ Month</button><button class="act ghost mini" data-salyear="${p.id}">+ 12 months</button></div>
     </div>`;
   });
   host.innerHTML=html;
 }
 function salAddMonth(p){const ms=salMonths(p),last=ms[ms.length-1];p.entries.push({id:nid(),ym:last?nextYm(last.ym):new Date().toISOString().slice(0,7),base:last?last.base:0,extra:0,event:""});}
+function salAddEarlier(p){const ms=salMonths(p),first=ms[0];p.entries.push({id:nid(),ym:first?prevYm(first.ym):new Date().toISOString().slice(0,7),base:first?first.base:0,extra:0,event:""});}
 document.getElementById("salaryList").addEventListener("input",e=>{
   const t=e.target,sid=t.dataset.sid,f=t.dataset.f;if(!sid||!f)return;const p=state.salaries.find(x=>x.id===sid);if(!p)return;
   if(t.dataset.eid){const en=p.entries.find(z=>z.id===t.dataset.eid);if(!en)return;
@@ -809,6 +811,7 @@ document.getElementById("salaryList").addEventListener("change",e=>{const f=e.ta
 document.getElementById("salaryList").addEventListener("click",e=>{
   const sd=e.target.closest("[data-saldel]");if(sd){const p=state.salaries.find(x=>x.id===sd.dataset.sid);if(p){p.entries=p.entries.filter(z=>z.id!==sd.dataset.saldel);scheduleSync();renderSalary();}return;}
   const pd=e.target.closest("[data-perdel]");if(pd){const p=state.salaries.find(x=>x.id===pd.dataset.perdel);if(confirm("Remove "+(p?p.name:"this person")+" and their salary history?")){state.salaries=state.salaries.filter(x=>x.id!==pd.dataset.perdel);scheduleSync();renderSalary();}return;}
+  const pv=e.target.closest("[data-salprev]");if(pv){const p=state.salaries.find(x=>x.id===pv.dataset.salprev);if(p){salAddEarlier(p);scheduleSync();renderSalary();}return;}
   const am=e.target.closest("[data-saladd]");if(am){const p=state.salaries.find(x=>x.id===am.dataset.saladd);if(p){salAddMonth(p);scheduleSync();renderSalary();}return;}
   const ay=e.target.closest("[data-salyear]");if(ay){const p=state.salaries.find(x=>x.id===ay.dataset.salyear);if(p){for(let k=0;k<12;k++)salAddMonth(p);scheduleSync();renderSalary();}return;}
 });
