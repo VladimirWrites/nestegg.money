@@ -208,6 +208,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .tgl{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer}
 .tgl input{width:17px;height:17px;accent-color:var(--amber);cursor:pointer}
 .loanbox{border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:13px;display:flex;flex-direction:column;gap:12px}
+.loanwarn{font-size:12px;line-height:1.5;color:var(--red);border-left:2px solid var(--red);padding-left:11px}
 .frow{display:flex;flex-wrap:wrap;gap:12px}
 .fld{display:flex;flex-direction:column;gap:5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex:1;min-width:130px}
 .fin{font:inherit;font-size:15px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--ink);min-height:42px;width:100%}

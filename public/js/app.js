@@ -9,6 +9,7 @@ function emptyState(){
 function normLoan(L,fallbackDate){
   if(!L||typeof L!=="object")return null;
   if(L.amount==null)L.amount=0;if(L.rate==null)L.rate=0;if(L.termYears==null)L.termYears=30;if(!L.startDate)L.startDate=fallbackDate;
+  if(L.mode!=="payment")L.mode="term";if(L.payment==null)L.payment=0;
   if(!Array.isArray(L.extra))L.extra=[];L.extra.forEach(x=>{if(!x.id)x.id=nid();if(x.amount==null)x.amount=0;if(!x.date)x.date=L.startDate;});
   return L;
 }
@@ -93,14 +94,31 @@ function assetNetAt(a,date){return assetGrossAt(a,date)-(a.loan?outstandingAt(a.
 // When the asset starts counting: its acquired date, falling back to the loan start.
 function assetOwnedFrom(a){return parseDate(a.date)||(a.loan&&parseDate(a.loan.startDate))||null;}
 function addMonths(date,m){const d=new Date(date);const day=d.getDate();d.setMonth(d.getMonth()+m);if(d.getDate()<day)d.setDate(0);return d;}
+const fmtMonths=n=>{if(!isFinite(n)||n<=0)return"—";const y=Math.floor(n/12),mo=Math.round(n%12);return [y?y+" yr":"",mo?mo+" mo":""].filter(Boolean).join(" ")||"0 mo";};
+// Resolve a loan's monthly payment (M) and number of months (n) from whichever
+// the user fixed: the term (compute the payment) or the payment (compute the term).
+function loanTerms(loan){
+  const L=+loan.amount||0,i=(+loan.rate||0)/100/12;
+  if(loan.mode==="payment"){
+    const M=+loan.payment||0;let n;
+    if(M<=0)n=0;
+    else if(i<=0)n=Math.ceil(L/M-1e-7);
+    else if(M<=L*i)n=Infinity;                                  // payment can't cover interest
+    else n=Math.ceil(-Math.log(1-L*i/M)/Math.log(1+i)-1e-7);    // -eps avoids FP off-by-one
+    return {L,i,M,n};
+  }
+  const n=Math.round((+loan.termYears||0)*12);
+  const M=(L>0&&n>0)?(i>0?L*i/(1-Math.pow(1+i,-n)):L/n):0;
+  return {L,i,M,n};
+}
 // Full monthly amortization schedule, applying extra principal payments by date.
 function buildSchedule(loan){
-  const L=+loan.amount||0,i=(+loan.rate||0)/100/12,n=Math.round((+loan.termYears||0)*12),rows=[];
-  const start=parseDate(loan.startDate);if(L<=0||n<=0||!start)return rows;
-  const M=i>0?L*i/(1-Math.pow(1+i,-n)):L/n;
+  const {L,i,M,n}=loanTerms(loan),rows=[];
+  const start=parseDate(loan.startDate);if(L<=0||!start||!(M>0)||!isFinite(n)||n<=0)return rows;
+  const cap=Math.min(n,1200);
   const extras=(loan.extra||[]).map(e=>({d:parseDate(e.date),a:+e.amount||0})).filter(e=>e.d&&e.a>0).sort((a,b)=>a.d-b.d);
   let bal=L,ei=0;
-  for(let k=0;k<n&&bal>0.005;k++){
+  for(let k=0;k<cap&&bal>0.005;k++){
     const date=addMonths(start,k+1),interest=bal*i;
     let principal=M-interest;if(principal>bal)principal=bal;
     bal-=principal;let extraThis=0;
@@ -441,10 +459,16 @@ function assetCardHTML(a){
     </div>`;
   }
   if(a.loan){
-    const L=a.loan,sched=buildSchedule(L);
-    const i=(+L.rate||0)/100/12,n=Math.round((+L.termYears||0)*12);
-    const M=(+L.amount>0&&n>0)?(i>0?L.amount*i/(1-Math.pow(1+i,-n)):L.amount/n):0;
+    const L=a.loan,byPayment=L.mode==="payment",sched=buildSchedule(L);
+    const {M,n}=loanTerms(L);
+    const tooLow=byPayment&&(+L.payment>0)&&!isFinite(n);
     const payoff=sched.length?sched[sched.length-1].date:null,totInt=sched.reduce((s,r)=>s+r.interest,0);
+    const termField=byPayment
+      ?`<label class="fld">Monthly payment<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.payment}" data-aid="${a.id}" data-lf="payment"></label>`
+      :`<label class="fld">Term<span class="suffix"><input class="fin num" type="number" step="any" inputmode="numeric" value="${L.termYears}" data-aid="${a.id}" data-lf="termYears"><i>yr</i></span></label>`;
+    const calcStat=byPayment
+      ?`<div class="pstat"><span class="k">Term (calculated)</span><span class="v num">${fmtMonths(n)}</span></div>`
+      :`<div class="pstat"><span class="k">Monthly payment</span><span class="v num">${M?moneyIn(M,a.ccy):"—"}</span></div>`;
     const extras=(L.extra||[]).map(x=>`<div class="exrow">
         <input type="date" class="fin" value="${esc(x.date)}" data-aid="${a.id}" data-eid="${x.id}" data-ef="date">
         <span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${x.amount}" data-aid="${a.id}" data-eid="${x.id}" data-ef="amount" placeholder="amount"></span>
@@ -454,12 +478,14 @@ function assetCardHTML(a){
       <div class="frow">
         <label class="fld">Loan amount<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.amount}" data-aid="${a.id}" data-lf="amount"></label>
         <label class="fld">Interest / yr<span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${L.rate}" data-aid="${a.id}" data-lf="rate"><i>%</i></span></label>
-        <label class="fld">Term<span class="suffix"><input class="fin num" type="number" step="any" inputmode="numeric" value="${L.termYears}" data-aid="${a.id}" data-lf="termYears"><i>yr</i></span></label>
+        <label class="fld">Set by<select data-aid="${a.id}" data-lf="mode"><option value="term" ${byPayment?"":"selected"}>Term</option><option value="payment" ${byPayment?"selected":""}>Monthly payment</option></select></label>
+        ${termField}
         <label class="fld">Start<input class="fin" type="date" value="${esc(L.startDate)}" data-aid="${a.id}" data-lf="startDate"></label>
       </div>
+      ${tooLow?`<div class="loanwarn">That payment is below the monthly interest, so the loan never amortizes — raise it above ${moneyIn((+L.amount||0)*(+L.rate||0)/100/12,a.ccy)}.</div>`:""}
       <div class="exwrap"><div class="psub">Extra payments<button class="act ghost mini" data-extraadd="${a.id}">+ add</button></div>${extras||'<div class="exhint">None — add one-off lump sums to pay down principal faster.</div>'}</div>
       <div class="pstats">
-        <div class="pstat"><span class="k">Monthly payment</span><span class="v num">${M?moneyIn(M,a.ccy):"—"}</span></div>
+        ${calcStat}
         <div class="pstat"><span class="k">Balance today</span><span class="v num">${moneyIn(bal,a.ccy)}</span></div>
         <div class="pstat"><span class="k">Payoff</span><span class="v num">${payoff?ymd(payoff):"—"}</span></div>
         <div class="pstat"><span class="k">Total interest</span><span class="v num">${moneyIn(totInt,a.ccy)}</span></div>
@@ -493,7 +519,7 @@ function newAsset(){const a={id:nid(),name:"New asset",ccy:state.baseCcy,value:0
 document.getElementById("assetList").addEventListener("input",e=>{
   const t=e.target,id=t.dataset.aid;if(!id)return;const a=state.assets.find(x=>x.id===id);if(!a)return;
   if(t.dataset.eid){const x=(a.loan&&a.loan.extra||[]).find(z=>z.id===t.dataset.eid);if(x){if(t.dataset.ef==="amount")x.amount=parseFloat(t.value||0);else x.date=t.value;}}
-  else if(t.dataset.lf){const f=t.dataset.lf;if(a.loan)a.loan[f]=(f==="startDate")?t.value:parseFloat(t.value||0);}
+  else if(t.dataset.lf){const f=t.dataset.lf;if(a.loan)a.loan[f]=(f==="startDate"||f==="mode")?t.value:parseFloat(t.value||0);}
   else if(t.dataset.f){const f=t.dataset.f;
     if(f==="value")a.value=parseFloat(t.value||0);
     else if(f==="rate")a.rate=Math.min(Math.max(parseFloat(t.value||0)/100,0),0.99);
