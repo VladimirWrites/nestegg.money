@@ -44,6 +44,7 @@ function migrate(s){
   (s.snapshots||[]).forEach(sn=>(sn.entries||[]).forEach(e=>{if(e.group)cset.add(e.group);}));
   (s.assets||[]).forEach(a=>{if(a.group)cset.add(a.group);});
   s.categories=[...cset];
+  ensureDel(s);   // tombstone store for cross-device deletions
   delete s.items;s.v=6;return s;
 }
 let state=emptyState();
@@ -253,16 +254,73 @@ const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set
 // Keep a one-deep backup of the previous local state, so a bad save/clobber is recoverable.
 const saveLocal=()=>{try{const prev=LS.get("nw_state");if(prev)LS.set("nw_state_bak",prev);}catch(e){}LS.set("nw_state",JSON.stringify(state));};
 const loadLocal=()=>{const r=LS.get("nw_state");try{return r?JSON.parse(r):null;}catch(e){return null;}};
-let syncTimer;function scheduleSync(){state.updatedAt=Date.now();saveLocal();clearTimeout(syncTimer);syncTimer=setTimeout(pushServer,1200);}
+let syncTimer;function scheduleSync(){state.updatedAt=Date.now();stampMtimes();saveLocal();clearTimeout(syncTimer);syncTimer=setTimeout(pushServer,1200);}
+function flushSync(){clearTimeout(syncTimer);pushServer();}   // push the pending change immediately
 let syncWarned=false;
-async function pushServer(){if(!accountId||!cryptoKey)return;try{const blob=await encS();
+async function pushServer(){if(!accountId||!cryptoKey)return;try{stampMtimes();const blob=await encS();
   if(blob.length>1900000){setSync("off","Too big to sync");toast("Data too large to sync — Export JSON to back up");return;}
   const r=await fetch("/api/vault",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({id:accountId,blob})});
-  if(r.ok){setSync("ok","Synced");syncWarned=false;}
+  if(r.ok){setSync("ok","Synced");syncWarned=false;setBaseline();}
   else{setSync("off","Sync error");if(!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}
 }catch(e){setSync("off","Local only");if(!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}}
 async function loadServer(){if(!accountId)return null;try{const r=await fetch("/api/vault?id="+accountId);if(r.status===404){setSync("ok","Synced (new)");return null;}if(!r.ok){setSync("off","Local only");return null;}const{blob}=await r.json();const o=await decS(blob);setSync("ok","Synced");return o;}catch(e){setSync("off","Local only");return null;}}
 function setSync(c,t){const cls="syncdot "+(c==="ok"?"ok":c==="off"?"off":"");["syncDot","syncDot2"].forEach(id=>{const d=document.getElementById(id);if(d)d.className=cls;});["syncTxt","syncTxt2"].forEach(id=>{const x=document.getElementById(id);if(x)x.textContent=t;});}
+
+/* ───────── multi-device merge: per-record mtimes + tombstones ─────────
+   Edits aren't stamped in every handler; instead we diff against the last-synced
+   "baseline" to assign a modified-time (m) to each changed record and a tombstone
+   to each removed one. On load we merge local+remote per record (newest m wins,
+   deletions honoured) instead of letting one whole document overwrite the other. */
+let baseline=null;
+const cloneState=s=>JSON.parse(JSON.stringify(s));
+function setBaseline(){try{baseline=cloneState(state);}catch(e){baseline=null;}}
+const sigNoM=o=>{const c=Object.assign({},o);delete c.m;return JSON.stringify(c);};
+function ensureDel(s){s.del=s.del||{};["asset","snap","sper","sent"].forEach(k=>{if(!s.del[k])s.del[k]={};});return s.del;}
+function stampMtimes(){
+  const now=Date.now(),b=baseline||{},del=ensureDel(state);
+  const stamp=(cur,base,key,tomb)=>{
+    const bm=new Map((base||[]).map(r=>[key(r),r])),seen=new Set();
+    (cur||[]).forEach(r=>{const id=key(r);seen.add(id);const o=bm.get(id);
+      if(!o)r.m=r.m||now;else if(sigNoM(r)!==sigNoM(o))r.m=now;else r.m=r.m||o.m||0;});
+    bm.forEach((o,id)=>{if(!seen.has(id))tomb[id]=now;});
+  };
+  stamp(state.assets,b.assets,a=>a.id,del.asset);
+  stamp(state.snapshots,b.snapshots,s=>String(s.year),del.snap);
+  const bp=new Map((b.salaries||[]).map(p=>[p.id,p])),seenP=new Set();
+  (state.salaries||[]).forEach(p=>{seenP.add(p.id);const o=bp.get(p.id);
+    const meta=JSON.stringify([p.name,p.ccy,p.group]);
+    if(!o)p.m=p.m||now;else if(meta!==JSON.stringify([o.name,o.ccy,o.group]))p.m=now;else p.m=p.m||o.m||0;
+    const be=new Map(((o&&o.entries)||[]).map(e=>[e.ym,e])),seenE=new Set();
+    (p.entries||[]).forEach(e=>{seenE.add(e.ym);const oe=be.get(e.ym);
+      if(!oe)e.m=e.m||now;else if(sigNoM(e)!==sigNoM(oe))e.m=now;else e.m=e.m||oe.m||0;});
+    be.forEach((oe,ym)=>{if(!seenE.has(ym))del.sent[p.id+"|"+ym]=now;});
+  });
+  bp.forEach((o,id)=>{if(!seenP.has(id))del.sper[id]=now;});
+}
+function mergeDel(a,b){a=a||{};b=b||{};const out={};["asset","snap","sper","sent"].forEach(k=>{const o={};Object.entries(a[k]||{}).forEach(([i,t])=>o[i]=Math.max(o[i]||0,t));Object.entries(b[k]||{}).forEach(([i,t])=>o[i]=Math.max(o[i]||0,t));out[k]=o;});return out;}
+function mergeArr(la,ra,key,tomb){const m=new Map();const add=r=>{const id=key(r),mt=+r.m||0,t=tomb[id]||0;if(t>0&&t>=mt)return;const ex=m.get(id);if(!ex||(+ex.m||0)<mt)m.set(id,r);};(la||[]).forEach(add);(ra||[]).forEach(add);return [...m.values()];}
+function mergeSal(la,ra,del){
+  const A=new Map((la||[]).map(p=>[p.id,p])),B=new Map((ra||[]).map(p=>[p.id,p])),out=[];
+  new Set([...A.keys(),...B.keys()]).forEach(id=>{
+    const pa=A.get(id),pb=B.get(id),pm=Math.max(pa?+pa.m||0:0,pb?+pb.m||0:0),t=del.sper[id]||0;
+    if(t>0&&t>=pm)return;
+    const meta=((pa?+pa.m||0:0)>=(pb?+pb.m||0:0)?pa:pb)||pa||pb,em=new Map();
+    const addE=e=>{const tt=del.sent[id+"|"+e.ym]||0,mt=+e.m||0;if(tt>0&&tt>=mt)return;const ex=em.get(e.ym);if(!ex||(+ex.m||0)<mt)em.set(e.ym,e);};
+    ((pa&&pa.entries)||[]).forEach(addE);((pb&&pb.entries)||[]).forEach(addE);
+    out.push(Object.assign({},meta,{entries:[...em.values()]}));});
+  return out;
+}
+// Merge two states per record (newest m wins; tombstones win over older edits).
+function mergeStates(a,b){
+  const out=cloneState((+a.updatedAt||0)>=(+b.updatedAt||0)?a:b);
+  const del=mergeDel(a.del,b.del);out.del=del;
+  out.assets=mergeArr(a.assets,b.assets,x=>x.id,del.asset);
+  out.snapshots=mergeArr(a.snapshots,b.snapshots,x=>String(x.year),del.snap);
+  out.salaries=mergeSal(a.salaries,b.salaries,del);
+  out.categories=[...new Set([...(a.categories||[]),...(b.categories||[])])];
+  out.updatedAt=Math.max(+a.updatedAt||0,+b.updatedAt||0);
+  return out;
+}
 async function fetchFx(){try{const r=await fetch("/api/fx");if(!r.ok)return false;const d=await r.json();if(d.rates){state.fxRates=Object.assign({EUR:1},d.rates);state.fxDate=d.date;return true;}}catch(e){}return false;}
 // Year-end (Dec 31) ECB rates for a year — used to convert past-year holdings at the rate then.
 async function fetchFxYear(year){try{const r=await fetch("/api/fx?date="+year+"-12-31");if(!r.ok)return null;const d=await r.json();if(d.rates)return Object.assign({EUR:1},d.rates);}catch(e){}return null;}

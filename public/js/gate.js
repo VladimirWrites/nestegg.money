@@ -5,8 +5,8 @@ function showSignin(){document.getElementById("gateCreate").classList.add("hide"
 document.getElementById("toSignin").onclick=showSignin;document.getElementById("toCreate").onclick=showCreate;
 document.getElementById("regenAcct").onclick=()=>{pendingToken=generateToken();showToken(document.getElementById("newAcct"),pendingToken);};
 document.getElementById("copyAcct").onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(pendingToken);toast("Copied");};
-document.getElementById("confirmAcct").onclick=async()=>{LS.set("nw_token",pendingToken);try{await deriveKeys(pendingToken);}catch(e){}state=emptyState();saveLocal();enterApp();try{pushServer();}catch(e){}try{fetchFx().then(ok=>{if(ok){scheduleSync();renderAll();}}).catch(()=>{});}catch(e){}};
-document.getElementById("signinBtn").onclick=async()=>{const t=document.getElementById("signinInput").value.trim();if(!validToken(t)){toast("That's not a valid account number");return;}const canon=canonToken(t);LS.set("nw_token",canon);try{await deriveKeys(canon);}catch(e){}const rem=await loadServer();state=migrate(rem&&rem.snapshots?rem:(loadLocal()||emptyState()));enterApp();};
+document.getElementById("confirmAcct").onclick=async()=>{LS.set("nw_token",pendingToken);try{await deriveKeys(pendingToken);}catch(e){}state=emptyState();setBaseline();saveLocal();enterApp();try{pushServer();}catch(e){}try{fetchFx().then(ok=>{if(ok){scheduleSync();renderAll();}}).catch(()=>{});}catch(e){}};
+document.getElementById("signinBtn").onclick=async()=>{const t=document.getElementById("signinInput").value.trim();if(!validToken(t)){toast("That's not a valid account number");return;}const canon=canonToken(t);LS.set("nw_token",canon);try{await deriveKeys(canon);}catch(e){}const rem=await loadServer();const loc=loadLocal();state=migrate(rem&&rem.snapshots?(loc&&loc.snapshots?mergeStates(migrate(loc),migrate(rem)):rem):(loc||emptyState()));setBaseline();enterApp();try{pushServer();}catch(e){}};
 async function boot(){
   try{
     const tok=LS.get("nw_token");
@@ -17,16 +17,14 @@ async function boot(){
     try{
       const loc=loadLocal();
       const remOk=rem&&rem.snapshots, locOk=loc&&loc.snapshots;
-      let chosen;
       if(remOk&&locOk){
-        // Newer copy wins (never let an older server copy clobber newer local edits).
-        const rt=+rem.updatedAt||0,lt=+loc.updatedAt||0;
-        if(lt>rt){chosen=loc;repair=true;}else{chosen=rem;}
-      }else{chosen=remOk?rem:(locOk?loc:emptyState());}
-      state=migrate(chosen);
+        // Merge per record (newest m wins, deletions honoured) — never clobber whole-doc.
+        state=migrate(mergeStates(migrate(loc),migrate(rem)));repair=true;
+      }else{state=migrate(remOk?rem:(locOk?loc:emptyState()));}
     }catch(e){state=emptyState();}
+    setBaseline();
     enterApp();
-    // Local was ahead of the server (e.g. earlier pushes failed) — push it back up to repair.
+    // Push the reconciled/merged result so the server and this device converge.
     if(repair){try{pushServer();}catch(e){}}
   }catch(e){
     // absolute fallback: never leave a blank screen

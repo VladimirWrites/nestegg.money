@@ -11,4 +11,9 @@ document.getElementById("importFile").onchange=e=>{const f=e.target.files[0];if(
 document.getElementById("resetBtn").onclick=()=>{if(confirm("Clear all data and start fresh? Export JSON first if you want a backup.")){state=emptyState();document.getElementById("ccySel").value="EUR";scheduleSync();renderAll();toast("Cleared");}};
 
 let toastTimer;function toast(m){const el=document.getElementById("toast");el.textContent=m;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2300);}
+
+// Flush the pending change immediately when the tab is hidden/closed, so the last edit lands.
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")try{flushSync();}catch(e){}});
+window.addEventListener("pagehide",()=>{try{flushSync();}catch(e){}});
+
 try{boot();}catch(e){try{showCreate();}catch(_){}}
