@@ -9,18 +9,20 @@ function niceCeil(v){const p=Math.pow(10,Math.floor(Math.log10(v||1)));const f=(
 function drawHist(){
   const svg=document.getElementById("histChart");const snaps=sortedSnaps();const n=snaps.length;const names=allNames();
   const bw=40,gap=18,padL=58,padR=14,padT=24,padB=32,innerW=Math.max(n,1)*bw+(n-1)*gap,W=Math.max(innerW+padL+padR,320),H=300,plotH=H-padT-padB;
-  const maxV=Math.max(1,...snaps.map(s=>snapTotalBase(s))),nm=niceCeil(maxV);
+  const maxV=Math.max(1,...snaps.map(s=>snapGrossBase(s))),nm=niceCeil(maxV);
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
   let s="";const sym=ccySym();
   for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#26262a" stroke-width="1"/>`;s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
   snaps.forEach((sn,idx)=>{const x=padL+idx*(bw+gap);let yTop=padT+plotH;const ents=effEntries(sn);
     names.forEach(nm2=>{const tot=ents.filter(e=>seriesKey(e)===nm2).reduce((a,e)=>a+entryBase(e,sn.year),0);if(tot<=0)return;const h=(tot/nm)*plotH;yTop-=h;s+=`<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2,names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`;});
-    const t=snapTotalBase(sn);s+=`<text x="${x+bw/2}" y="${yTop-6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="#8a867c">${sym}${shortK(t)}</text>`;s+=`<text x="${x+bw/2}" y="${H-padB+16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#e8e4d8">${sn.year}</text>`;});
+    const net=snapTotalBase(sn),gross=snapGrossBase(sn);
+    if(gross-net>0.005){const ny=padT+plotH-(Math.max(0,net)/nm)*plotH;s+=`<line x1="${x-3}" y1="${ny}" x2="${x+bw+3}" y2="${ny}" stroke="#ff4d6d" stroke-width="2"><title>${sn.year} net worth ${money(net)} — after ${money(gross-net)} liabilities</title></line>`;}
+    s+=`<text x="${x+bw/2}" y="${yTop-6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="#8a867c">${sym}${shortK(net)}</text>`;s+=`<text x="${x+bw/2}" y="${H-padB+16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#e8e4d8">${sn.year}</text>`;});
   svg.innerHTML=s;
   // hero = latest
   const ls=latestSnap();const nw=ls?snapTotalBase(ls):0;
   document.getElementById("nwTotal").textContent=money(nw);
-  const nAssets=ls?effEntries(ls).length:0;
+  const nAssets=ls?effEntries(ls).filter(e=>!isLiability(e)).length:0;
   document.getElementById("nwNote").textContent=ls?("as of "+ls.year+" · "+nAssets+" asset"+(nAssets===1?"":"s")):"No data yet";
   const dEl=document.getElementById("nwDay");const dc=dayChangeBase(nw);
   if(dc){const flat=Math.abs(dc.abs)<0.005,up=dc.abs>=0;dEl.className="day "+(flat?"flat":(up?"up":"down"));const sign=up?"+":"−",arrow=flat?"":(up?"▲ ":"▼ ");dEl.textContent=arrow+sign+money(Math.abs(dc.abs))+" · "+sign+Math.abs(dc.pct).toFixed(2)+"% today";}
@@ -90,13 +92,14 @@ function downloadDonut(){
 function renderYears(){
   const host=document.getElementById("years");host.innerHTML="";const names=allNames();
   const snaps=[...state.snapshots].sort((a,b)=>b.year-a.year);
-  const maxV=Math.max(1,...state.snapshots.map(s=>snapTotalBase(s)));
-  snaps.forEach(sn=>{const ri=state.snapshots.indexOf(sn),tot=snapTotalBase(sn);
+  const maxV=Math.max(1,...state.snapshots.map(s=>snapGrossBase(s)));
+  snaps.forEach(sn=>{const ri=state.snapshots.indexOf(sn),tot=snapTotalBase(sn),gross=snapGrossBase(sn);
     const agg={};effEntries(sn).forEach(e=>{const v=entryBase(e,sn.year);if(v>0){const k=seriesKey(e);agg[k]=(agg[k]||0)+v;}});
     // Order segments by allNames() (same as the graph's stacking) so colours line up.
-    const segs=names.map(k=>agg[k]>0?`<i style="width:${agg[k]/(tot||1)*100}%;background:${colorOf(k,names)}"></i>`:"").join("");
+    const segs=names.map(k=>agg[k]>0?`<i style="width:${agg[k]/(gross||1)*100}%;background:${colorOf(k,names)}"></i>`:"").join("");
+    const liab=gross-tot,liabHtml=liab>0.005?`<span class="yliab num" title="liabilities">−${money(liab)}</span>`:"";
     const card=document.createElement("div");card.className="ycard";
-    card.innerHTML=`<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar" style="max-width:${Math.max(8,tot/maxV*100)}%">${segs}</span><span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
+    card.innerHTML=`<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar" style="max-width:${Math.max(8,gross/maxV*100)}%">${segs}</span>${liabHtml}<span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
     host.appendChild(card);});
 }
 

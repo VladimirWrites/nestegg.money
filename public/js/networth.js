@@ -3,7 +3,7 @@ let edIdx=-1,edYearPrev=null;
 function openYearEditor(ri){edIdx=ri;edYearPrev=state.snapshots[ri].year;document.getElementById("edYear").value=state.snapshots[ri].year;document.getElementById("yearEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderEntries();ensureHist();}
 function closeYearEditor(){document.getElementById("yearEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");edIdx=-1;renderAll();}
 function cardHTML(en,i,names,year){
-  const baseV=entryBase(en,year);
+  const baseV=entryBase(en,year),liab=en.kind==="liability";
   let valuePart;
   if(en.kind==="ticker"){
     const p=tickerPx(en);
@@ -12,18 +12,18 @@ function cardHTML(en,i,names,year){
     <input class="rtk" value="${esc(en.ticker||"")}" data-i="${i}" data-f="ticker" placeholder="AMS:VWRL" title="ticker">
     <span class="rconv">${p?money(baseV):pxtxt}</span>`;
   }else{
-    valuePart=`<input class="rval num" type="number" step="any" inputmode="decimal" value="${en.value!=null?en.value:0}" data-i="${i}" data-f="value">
+    valuePart=`<input class="rval num" type="number" step="any" inputmode="decimal" value="${en.value!=null?en.value:0}" data-i="${i}" data-f="value" placeholder="${liab?"amount owed":"0"}">
     <select data-i="${i}" data-f="ccy">${CCYS.map(x=>`<option ${x===en.ccy?"selected":""}>${x}</option>`).join("")}</select>
-    <span class="rconv">${en.ccy!==state.baseCcy?("= "+money(baseV)):""}</span>`;
+    <span class="rconv${liab?" liab":""}">${liab?("− "+money(Math.abs(baseV))):(en.ccy!==state.baseCcy?("= "+money(baseV)):"")}</span>`;
   }
   const cats=groupNames();
   const catSel=cats.length?`<select class="rcat" data-i="${i}" data-f="group" title="Category"><option value="" ${!en.group?"selected":""}>— no category —</option>${cats.map(g=>`<option ${g===en.group?"selected":""}>${esc(g)}</option>`).join("")}</select>`:"";
-  return `<div class="rcard"><span class="dot" style="background:${colorOf(seriesKey(en),names)}"></span>
-    <input class="rname" value="${esc(en.name)}" data-i="${i}" data-f="name" placeholder="Asset name">
-    <select class="rkind" data-i="${i}" data-f="kind"><option value="fixed" ${en.kind!=="ticker"?"selected":""}>Value</option><option value="ticker" ${en.kind==="ticker"?"selected":""}>Ticker</option></select>
+  return `<div class="rcard${liab?" liabcard":""}"><span class="dot" style="background:${liab?"var(--red)":colorOf(seriesKey(en),names)}"></span>
+    <input class="rname" value="${esc(en.name)}" data-i="${i}" data-f="name" placeholder="${liab?"Liability name":"Asset name"}">
+    <select class="rkind" data-i="${i}" data-f="kind"><option value="fixed" ${(en.kind!=="ticker"&&!liab)?"selected":""}>Value</option><option value="ticker" ${en.kind==="ticker"?"selected":""}>Ticker</option><option value="liability" ${liab?"selected":""}>Liability</option></select>
     ${valuePart}
     ${catSel}
-    <button class="rdel" data-del="${i}" title="Remove asset">×</button></div>`;
+    <button class="rdel" data-del="${i}" title="Remove">×</button></div>`;
 }
 // Read-only card for a long-term asset (tap to edit in the focused asset editor).
 function autoCardHTML(en,names,year){
@@ -89,7 +89,7 @@ document.getElementById("edEntries").addEventListener("input",e=>{
   scheduleSync();
   if(f==="kind"||f==="ccy"||f==="group"){renderEntries();return;}
   const card=t.closest(".rcard");const cv=card&&card.querySelector(".rconv");
-  if(cv){const bv=entryBase(en,sn.year);if(en.kind==="ticker"){const p=tickerPx(en);cv.textContent=p?money(bv):(en.ticker?"no price":"set ticker");}else{cv.textContent=en.ccy!==state.baseCcy?("= "+money(bv)):"";}}
+  if(cv){const bv=entryBase(en,sn.year);if(en.kind==="ticker"){const p=tickerPx(en);cv.textContent=p?money(bv):(en.ticker?"no price":"set ticker");}else if(en.kind==="liability"){cv.textContent="− "+money(Math.abs(bv));}else{cv.textContent=en.ccy!==state.baseCcy?("= "+money(bv)):"";}}
   if(en.group){const gb=t.closest(".grp"),gs=gb&&gb.querySelector(".grpsub");if(gs)gs.textContent=money(sn.entries.filter(x=>x.group===en.group).reduce((a,x)=>a+entryBase(x,sn.year),0));}
   document.getElementById("edTotal").textContent=money(snapTotalBase(sn));
 });

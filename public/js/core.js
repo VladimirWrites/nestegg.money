@@ -27,7 +27,7 @@ function migrate(s){
   delete s.cars;delete s.properties;
   // A long-term asset: a value that optionally depreciates and/or carries a loan.
   s.assets.forEach(a=>{if(!a.id)a.id=nid();if(!a.name)a.name="Asset";if(!a.ccy)a.ccy=s.baseCcy||"EUR";if(a.value==null)a.value=0;
-    a.depreciates=!!a.depreciates;if(!a.date)a.date=today;if(a.rate==null)a.rate=0.15;
+    a.depreciates=!!a.depreciates;a.up=!!a.up;if(!a.date)a.date=today;if(a.rate==null)a.rate=0.15;
     a.loan=a.loan?normLoan(a.loan,a.date):null;});
   // Salary history: one record per person, each a list of monthly net-pay entries.
   if(!Array.isArray(s.salaries))s.salaries=[];
@@ -69,7 +69,7 @@ const esc=s=>String(s).replace(/"/g,"&quot;").replace(/</g,"&lt;");
    entry's group if it has one, otherwise the asset's own name — so charts show
    one segment per group, summing its members. */
 const seriesKey=e=>e.group||e.name;
-function allNames(){return [...new Set(state.snapshots.flatMap(s=>effEntries(s).map(seriesKey)))].sort((a,b)=>a.localeCompare(b));}
+function allNames(){return [...new Set(state.snapshots.flatMap(s=>effEntries(s).filter(e=>!isLiability(e)).map(seriesKey)))].sort((a,b)=>a.localeCompare(b));}
 function colorOf(name,names){const i=(names||allNames()).indexOf(name);return PALETTE[(i<0?0:i)%PALETTE.length];}
 
 /* totals */
@@ -81,8 +81,11 @@ function tickerPx(en){
   if(p)return{price:p.price,currency:p.currency,prevClose:p.prevClose,frozen:false};
   return null;
 }
+const isLiability=en=>en.kind==="liability";
 function entryNative(en){
   if(en.kind==="ticker"){const p=tickerPx(en);if(!p)return{v:0,ccy:en.ccy||"EUR",miss:true};return{v:(parseFloat(en.shares)||0)*p.price,ccy:p.currency};}
+  // Liabilities are entered as a positive amount owed but count negative toward net worth.
+  if(isLiability(en))return {v:-(parseFloat(en.value)||0),ccy:en.ccy||"EUR"};
   return {v:parseFloat(en.value)||0,ccy:en.ccy||"EUR"};
 }
 const entryEUR=(en,year)=>{const n=entryNative(en);return convToY(n.v,n.ccy,"EUR",year);};
@@ -117,14 +120,15 @@ const round2=v=>Math.round((v+1e-9)*100)/100;
 // year-end for any other year (past values are locked, future ones projected).
 function refDateForYear(y){const cy=new Date().getFullYear();if(y===cy)return new Date();return new Date(y,11,31,23,59,59);}
 // Continuous declining-balance: value loses `rate` of itself per year, every day.
-function depreciatedValue(price,rate,fromDate,date){
+// Continuous compounding: value grows (up) or shrinks at `rate` per year, every day.
+function compoundedValue(price,rate,fromDate,date,up){
   const d0=parseDate(fromDate);if(!d0)return +price||0;
   const yrs=(date-d0)/YEAR_MS;if(yrs<=0)return +price||0;
-  const r=Math.min(Math.max(+rate||0,0),0.99);
-  return (+price||0)*Math.pow(1-r,yrs);
+  const r=Math.min(Math.max(+rate||0,0),up?5:0.99);
+  return (+price||0)*Math.pow(up?(1+r):(1-r),yrs);
 }
-// Gross (pre-loan) value of an asset on a date: depreciated price, or flat market value.
-function assetGrossAt(a,date){return a.depreciates?depreciatedValue(a.value,a.rate,a.date,date):(+a.value||0);}
+// Gross (pre-loan) value on a date: a value that compounds up/down over time, or flat market value.
+function assetGrossAt(a,date){return a.depreciates?compoundedValue(a.value,a.rate,a.date,date,a.up):(+a.value||0);}
 // Net contribution: gross value minus any outstanding loan balance.
 function assetNetAt(a,date){return assetGrossAt(a,date)-(a.loan?outstandingAt(a.loan,date):0);}
 // When the asset starts counting toward net worth: the earliest of its depreciation
@@ -203,6 +207,8 @@ function autoEntriesFor(year){
 const effEntries=sn=>(sn.entries||[]).concat(autoEntriesFor(sn.year));
 const snapTotalEUR=sn=>effEntries(sn).reduce((a,e)=>a+entryEUR(e,sn.year),0);
 const snapTotalBase=sn=>effEntries(sn).reduce((a,e)=>a+entryBase(e,sn.year),0);
+const snapGrossBase=sn=>effEntries(sn).reduce((a,e)=>{const v=entryBase(e,sn.year);return a+(v>0?v:0);},0);  // assets only (for bar stacks/axis)
+const snapLiabBase=sn=>effEntries(sn).filter(isLiability).reduce((a,e)=>a-entryBase(e,sn.year),0);            // total owed (positive)
 const sortedSnaps=()=>[...state.snapshots].sort((a,b)=>a.year-b.year);
 const latestSnap=()=>sortedSnaps().slice(-1)[0];
 

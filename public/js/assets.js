@@ -51,8 +51,9 @@ function assetCardHTML(a){
   let depBlock="",loanBlock="";
   if(a.depreciates){
     depBlock=`<div class="frow">
-      <label class="fld">Bought<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label>
-      <label class="fld">Depreciation / yr<span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${+(a.rate*100).toFixed(2)}" data-aid="${a.id}" data-f="rate"><i>%</i></span></label>
+      <label class="fld">Acquired<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label>
+      <label class="fld">Direction<select data-aid="${a.id}" data-f="up"><option value="down" ${a.up?"":"selected"}>Depreciates ↓</option><option value="up" ${a.up?"selected":""}>Appreciates ↑</option></select></label>
+      <label class="fld">Change / yr<span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${+(a.rate*100).toFixed(2)}" data-aid="${a.id}" data-f="rate"><i>%</i></span></label>
     </div>`;
   }
   if(a.loan){
@@ -81,12 +82,12 @@ function assetCardHTML(a){
     <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="Asset name">
       <button class="rdel" data-adel="${a.id}" title="Remove asset">×</button></div>
     <div class="frow">
-      <label class="fld">${a.depreciates?"Purchase price":"Value"}<input class="fin num" type="number" step="any" inputmode="decimal" value="${a.value}" data-aid="${a.id}" data-f="value"></label>
+      <label class="fld">${a.depreciates?"Starting value":"Value"}<input class="fin num" type="number" step="any" inputmode="decimal" value="${a.value}" data-aid="${a.id}" data-f="value"></label>
       <label class="fld">Currency<select data-aid="${a.id}" data-f="ccy">${CCYS.map(x=>`<option ${x===a.ccy?"selected":""}>${x}</option>`).join("")}</select></label>
       <label class="fld">Category<select data-aid="${a.id}" data-f="group"><option value="" ${!a.group?"selected":""}>— none —</option>${groupNames().map(g=>`<option ${g===a.group?"selected":""}>${esc(g)}</option>`).join("")}</select></label>
     </div>
     <div class="toggles">
-      <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="depreciates" ${a.depreciates?"checked":""}><span>Depreciates over time</span></label>
+      <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="depreciates" ${a.depreciates?"checked":""}><span>Value changes over time</span></label>
       <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="loan" ${a.loan?"checked":""}><span>Has a loan</span></label>
     </div>
     ${depBlock}${loanBlock}
@@ -100,14 +101,15 @@ function renderAssets(focusName){
   wrap.innerHTML=assetCardHTML(a);
   if(focusName){const nm=wrap.querySelector(".rname");if(nm){nm.focus();nm.select&&nm.select();}}
 }
-function newAsset(){const a={id:nid(),name:"New asset",ccy:state.baseCcy,value:0,depreciates:false,date:new Date().toISOString().slice(0,10),rate:0.15,loan:null};state.assets.push(a);scheduleSync();return a;}
+function newAsset(){const a={id:nid(),name:"New asset",ccy:state.baseCcy,value:0,depreciates:false,up:false,date:new Date().toISOString().slice(0,10),rate:0.15,loan:null};state.assets.push(a);scheduleSync();return a;}
 document.getElementById("assetList").addEventListener("input",e=>{
   const t=e.target,id=t.dataset.aid;if(!id)return;const a=state.assets.find(x=>x.id===id);if(!a)return;
   if(t.dataset.eid){const x=(a.loan&&a.loan.extra||[]).find(z=>z.id===t.dataset.eid);if(x){if(t.dataset.ef==="amount")x.amount=parseFloat(t.value||0);else x.date=t.value;}}
   else if(t.dataset.lf){const f=t.dataset.lf;if(a.loan)a.loan[f]=(f==="startDate"||f==="mode"||f==="fixedUntil")?t.value:parseFloat(t.value||0);}
   else if(t.dataset.f){const f=t.dataset.f;
     if(f==="value")a.value=parseFloat(t.value||0);
-    else if(f==="rate")a.rate=Math.min(Math.max(parseFloat(t.value||0)/100,0),0.99);
+    else if(f==="rate")a.rate=Math.min(Math.max(parseFloat(t.value||0)/100,0),5);
+    else if(f==="up")a.up=(t.value==="up");
     else if(f==="group")a.group=t.value||undefined;
     else a[f]=t.value;}
   scheduleSync();
