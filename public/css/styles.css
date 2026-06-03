@@ -187,7 +187,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 }
 
 /* SVG back button (replaces the text "←") */
-#edBack,#assetBack{display:inline-flex;align-items:center;gap:7px}
+#edBack,#assetBack,#salaryBack{display:inline-flex;align-items:center;gap:7px}
 .ed-bar .ic{width:13px;height:13px;flex:none}
 
 /* read-only computed (long-term asset) rows inside the year editor — tap to edit */
