@@ -792,13 +792,15 @@ function renderSalary(){
         <button class="rdel" data-perdel="${p.id}" title="Remove person">×</button></div>
       <div class="salgridhead"><span>Month</span><span>Base</span><span>Extra</span><span>Event</span><span class="r">Total</span><span></span></div>
       <div class="salgrid">${rows||'<div class="exhint">No months yet — add one below.</div>'}</div>
-      <div class="controls"><button class="act ghost mini" data-salprev="${p.id}">+ Earlier month</button><button class="act ghost mini" data-saladd="${p.id}">+ Month</button><button class="act ghost mini" data-salyear="${p.id}">+ 12 months</button></div>
+      <div class="controls"><button class="act ghost mini" data-salprev12="${p.id}">− 12 months</button><button class="act ghost mini" data-salprev="${p.id}">+ Earlier month</button><button class="act ghost mini" data-saladd="${p.id}">+ Month</button><button class="act ghost mini" data-salfill="${p.id}">Fill to now</button></div>
     </div>`;
   });
   host.innerHTML=html;
 }
 function salAddMonth(p){const ms=salMonths(p),last=ms[ms.length-1];p.entries.push({id:nid(),ym:last?nextYm(last.ym):new Date().toISOString().slice(0,7),base:last?last.base:0,extra:0,event:""});}
 function salAddEarlier(p){const ms=salMonths(p),first=ms[0];p.entries.push({id:nid(),ym:first?prevYm(first.ym):new Date().toISOString().slice(0,7),base:first?first.base:0,extra:0,event:""});}
+// Fill every month from the latest entry up to the current month, carrying base forward.
+function salFillToNow(p){const ms=salMonths(p);if(!ms.length)return 0;let last=ms[ms.length-1];const now=new Date().toISOString().slice(0,7);let n=0;while(last.ym<now&&n<600){const en={id:nid(),ym:nextYm(last.ym),base:last.base,extra:0,event:""};p.entries.push(en);last=en;n++;}return n;}
 document.getElementById("salaryList").addEventListener("input",e=>{
   const t=e.target,sid=t.dataset.sid,f=t.dataset.f;if(!sid||!f)return;const p=state.salaries.find(x=>x.id===sid);if(!p)return;
   if(t.dataset.eid){const en=p.entries.find(z=>z.id===t.dataset.eid);if(!en)return;
@@ -811,14 +813,22 @@ document.getElementById("salaryList").addEventListener("change",e=>{const f=e.ta
 document.getElementById("salaryList").addEventListener("click",e=>{
   const sd=e.target.closest("[data-saldel]");if(sd){const p=state.salaries.find(x=>x.id===sd.dataset.sid);if(p){p.entries=p.entries.filter(z=>z.id!==sd.dataset.saldel);scheduleSync();renderSalary();}return;}
   const pd=e.target.closest("[data-perdel]");if(pd){const p=state.salaries.find(x=>x.id===pd.dataset.perdel);if(confirm("Remove "+(p?p.name:"this person")+" and their salary history?")){state.salaries=state.salaries.filter(x=>x.id!==pd.dataset.perdel);scheduleSync();renderSalary();}return;}
+  const pv12=e.target.closest("[data-salprev12]");if(pv12){const p=state.salaries.find(x=>x.id===pv12.dataset.salprev12);if(p){for(let k=0;k<12;k++)salAddEarlier(p);scheduleSync();renderSalary();}return;}
   const pv=e.target.closest("[data-salprev]");if(pv){const p=state.salaries.find(x=>x.id===pv.dataset.salprev);if(p){salAddEarlier(p);scheduleSync();renderSalary();}return;}
   const am=e.target.closest("[data-saladd]");if(am){const p=state.salaries.find(x=>x.id===am.dataset.saladd);if(p){salAddMonth(p);scheduleSync();renderSalary();}return;}
-  const ay=e.target.closest("[data-salyear]");if(ay){const p=state.salaries.find(x=>x.id===ay.dataset.salyear);if(p){for(let k=0;k<12;k++)salAddMonth(p);scheduleSync();renderSalary();}return;}
+  const fl=e.target.closest("[data-salfill]");if(fl){const p=state.salaries.find(x=>x.id===fl.dataset.salfill);if(p){const n=salFillToNow(p);scheduleSync();renderSalary();toast(n?("Added "+n+" month"+(n===1?"":"s")):"Already up to date");}return;}
 });
 document.getElementById("addPerson").onclick=()=>{state.salaries.push({id:nid(),name:state.salaries.length?"Partner":"Me",ccy:state.baseCcy,entries:[]});scheduleSync();renderSalary();};
 document.getElementById("salaryBack").onclick=()=>{scheduleSync();closeSalary();};
 document.getElementById("dlSalary").onclick=downloadSalary;
 document.getElementById("salaryBtn").onclick=openSalary;
+
+/* Select a field's contents on focus, so you can type straight over a value (e.g. "0")
+   without deleting it first. Prevent the click's mouse-up from clearing that selection. */
+const selField=t=>t&&t.tagName==="INPUT"&&(t.type==="number"||t.type==="text");
+let _selJustFocused=false;
+document.addEventListener("focusin",e=>{if(selField(e.target)){try{e.target.select();}catch(_){}_selJustFocused=true;}});
+document.addEventListener("mouseup",e=>{if(_selJustFocused&&selField(e.target)){e.preventDefault();}_selJustFocused=false;});
 
 document.getElementById("exportBtn").onclick=()=>{const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="networth-"+new Date().toISOString().slice(0,10)+".json";a.click();};
 document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
