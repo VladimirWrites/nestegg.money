@@ -775,6 +775,41 @@ function salEnsure(p,ym){let e=salEntry(p,ym);if(!e){e={id:nid(),ym,amount:0,eve
 // Add a month row for every person at ym; carry each person's most recent salary when carry=true.
 function salAddRowAt(ym,carry){(state.salaries||[]).forEach(p=>{if(salEntry(p,ym))return;let amt=0;if(carry){const before=salMonths(p).filter(e=>e.ym<ym);if(before.length)amt=before[before.length-1].amount;}p.entries.push({id:nid(),ym,amount:amt,event:""});});}
 const salThisMonth=()=>new Date().toISOString().slice(0,7);
+// Parse a pasted month cell into YYYY-MM: "May 2013", "2013-05", "5/2013", "2013/05/01"…
+const SAL_MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function parseMonthCell(s){
+  s=(s||"").trim();if(!s)return null;let m;
+  if(m=/^(\d{4})[-/.](\d{1,2})/.exec(s))return m[1]+"-"+String(+m[2]).padStart(2,"0");
+  if(m=/^([A-Za-z]{3,})[\s\-/.]+(\d{4})$/.exec(s)){const mo=SAL_MON[m[1].slice(0,3).toLowerCase()];if(mo)return m[2]+"-"+String(mo).padStart(2,"0");}
+  if(m=/^(\d{1,2})[\/.](\d{4})$/.exec(s))return m[2]+"-"+String(+m[1]).padStart(2,"0");
+  const d=new Date(s);if(!isNaN(+d))return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  return null;
+}
+// Parse a money cell, tolerating currency symbols and either thousands convention.
+function parseAmt(s){
+  if(s==null)return null;s=String(s).replace(/[^\d.,-]/g,"");if(!s||s==="-")return null;
+  const dec=Math.max(s.lastIndexOf(","),s.lastIndexOf("."));
+  if(dec>-1&&s.length-dec-1<=2&&s.length-dec-1>=1)s=s.slice(0,dec).replace(/[.,]/g,"")+"."+s.slice(dec+1);
+  else s=s.replace(/[.,]/g,"");
+  const n=parseFloat(s);return isNaN(n)?null:n;
+}
+function importSalary(){
+  const who=document.getElementById("salImportWho").value,p=(state.salaries||[]).find(x=>x.id===who);
+  if(!p){toast("Add a person first");return;}
+  const txt=document.getElementById("salImportText").value||"";let n=0,bad=0;
+  txt.split(/\r?\n/).forEach(line=>{
+    if(!line.trim())return;
+    let cells=line.split("\t");if(cells.length<2)cells=line.trim().split(/\s{2,}|;|,(?=\s)/);
+    const ym=parseMonthCell(cells[0]),amt=parseAmt(cells[1]);
+    if(!ym||amt==null){bad++;return;}
+    const e=salEnsure(p,ym);e.amount=amt;
+    if(cells[2]&&cells[2].trim()&&parseAmt(cells[2])==null)e.event=cells[2].trim();
+    n++;
+  });
+  scheduleSync();renderSalary();
+  document.getElementById("salImportText").value="";
+  toast(n?("Imported "+n+" month"+(n===1?"":"s")+(bad?(" · "+bad+" skipped"):"")):"Nothing parsed — paste Month + amount columns");
+}
 function renderSalary(){
   drawSalaryChart();
   const host=document.getElementById("salaryList");
@@ -801,7 +836,8 @@ function renderSalary(){
   });
   const dFrom=yms.length?yms[0]:(new Date().getFullYear()+"-01"),dTo=salThisMonth();
   host.innerHTML=`<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body||`<tr><td colspan="${2+people.length*2}" class="exhint">No months yet — add a range below.</td></tr>`}</tbody></table></div>
-    <div class="controls salctrls"><span class="salrlbl">Add months</span><input type="month" class="salpick salfrom" value="${dFrom}" title="From"><span class="salrlbl">→</span><input type="month" class="salpick salto" value="${dTo}" title="To"><button class="act ghost mini" data-salgen>Add</button></div>`;
+    <div class="controls salctrls"><span class="salrlbl">Add months from</span><input type="month" class="salpick salfrom" value="${dFrom}" title="From"><span class="salrlbl">to</span><input type="month" class="salpick salto" value="${dTo}" title="To"><button class="act ghost mini" data-salgen>Add range</button></div>`;
+  const who=document.getElementById("salImportWho");if(who){const prev=who.value;who.innerHTML=people.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");if(prev)who.value=prev;}
 }
 document.getElementById("salaryList").addEventListener("input",e=>{
   const t=e.target,sid=t.dataset.sid,f=t.dataset.f;if(!sid||!f)return;const p=state.salaries.find(x=>x.id===sid);if(!p)return;
@@ -822,6 +858,7 @@ document.getElementById("salaryList").addEventListener("click",e=>{
     scheduleSync();renderSalary();toast("Added "+n+" month"+(n===1?"":"s"));return;}
 });
 document.getElementById("addPerson").onclick=()=>{state.salaries.push({id:nid(),name:state.salaries.length?"Partner":"Me",ccy:state.baseCcy,entries:[]});scheduleSync();renderSalary();};
+document.getElementById("salImportBtn").onclick=importSalary;
 document.getElementById("salaryBack").onclick=()=>{scheduleSync();closeSalary();};
 document.getElementById("dlSalary").onclick=downloadSalary;
 document.getElementById("salaryBtn").onclick=openSalary;

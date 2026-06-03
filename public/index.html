@@ -147,6 +147,13 @@
     <p class="edlede">Log each month's <strong>net</strong> pay per person — base plus any extra (bonus, overtime). The event field notes a raise or job change. Yearly totals are summed automatically.</p>
     <div id="salaryList"></div>
     <div class="controls"><button class="act" id="addPerson">+ Add person</button></div>
+    <details class="salimport">
+      <summary>Import from a spreadsheet</summary>
+      <p class="edlede" style="margin:10px 0">In Google Sheets, select the <strong>Month</strong> column and the <strong>net amount</strong> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</p>
+      <div class="controls" style="margin:0 0 8px"><span class="salrlbl">Import for</span><select id="salImportWho" class="salccy"></select></div>
+      <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
+      <div class="controls"><button class="act" id="salImportBtn">Import pasted rows</button></div>
+    </details>
   </div>
 </div>
 

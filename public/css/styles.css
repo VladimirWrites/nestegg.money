@@ -276,6 +276,11 @@ button.act.ghost:hover{border-color:var(--amber)}
 .salpick:focus{outline:none;border-color:var(--amber)}
 .salctrls{align-items:center}
 .salrlbl{font-size:11px;letter-spacing:.04em;color:var(--muted)}
+.salimport{margin-top:16px;border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:0 13px}
+.salimport summary{cursor:pointer;padding:12px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
+.salimport[open]{padding-bottom:13px}
+#salImportText{width:100%;min-height:120px;font-family:var(--mono);font-size:13px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:10px;color:var(--ink);white-space:pre;overflow:auto}
+#salImportText:focus{outline:none;border-color:var(--amber)}
 
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
 .ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select,.salccy{
