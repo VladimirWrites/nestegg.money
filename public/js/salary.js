@@ -1,10 +1,13 @@
 /* ───────── salary history (per person, monthly net pay) ───────── */
-const salTotal=en=>parseFloat(en.amount)||0;
+const salTotal=en=>parseFloat(en.amount)||0;                       // raw amount, in the entry's own currency
+const salEccy=(p,e)=>e.ccy||p.ccy||state.baseCcy;                  // a month's currency (per-entry, defaults to person)
+const salBase=(p,e)=>convToY(salTotal(e),salEccy(p,e),state.baseCcy,+e.ym.slice(0,4));  // value in the display currency
 const salMonths=p=>[...(p.entries||[])].sort((a,b)=>a.ym<b.ym?-1:(a.ym>b.ym?1:0));
 function nextYm(ym){if(!/^\d{4}-\d{2}$/.test(ym||""))return new Date().toISOString().slice(0,7);let[y,m]=ym.split("-").map(Number);m++;if(m>12){m=1;y++;}return y+"-"+String(m).padStart(2,"0");}
 function prevYm(ym){if(!/^\d{4}-\d{2}$/.test(ym||""))return new Date().toISOString().slice(0,7);let[y,m]=ym.split("-").map(Number);m--;if(m<1){m=12;y--;}return y+"-"+String(m).padStart(2,"0");}
 const ymLabel=ym=>{const[y,m]=String(ym).split("-").map(Number);return new Date(y,(m||1)-1,1).toLocaleDateString("en-GB",{month:"short",year:"numeric"});};
-function salAnnual(p){const a={};salMonths(p).forEach(en=>{const y=en.ym.slice(0,4);a[y]=(a[y]||0)+salTotal(en);});return a;}
+// Per-year totals, converted to the display currency (handles mixed currencies across months).
+function salAnnual(p){const a={};salMonths(p).forEach(en=>{const y=en.ym.slice(0,4);a[y]=(a[y]||0)+salBase(p,en);});return a;}
 const salColor=i=>PALETTE[i%PALETTE.length];
 // Tight ~5-tick axis maximum (little empty headroom).
 function axisMax(v){if(!(v>0))return 1;const raw=v/5,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p;
@@ -19,7 +22,7 @@ function drawSalaryChart(){
   if(!all.length){svg.innerHTML="";svg.removeAttribute("width");leg.innerHTML="";return;}
   const idxM=ym=>{const[y,m]=ym.split("-").map(Number);return y*12+(m-1);};
   const minI=Math.min(...all.map(e=>idxM(e.ym))),maxI=Math.max(...all.map(e=>idxM(e.ym))),span=Math.max(1,maxI-minI);
-  const nmL=axisMax(Math.max(1,...all.map(salTotal)));
+  const nmL=axisMax(Math.max(1,...people.flatMap(p=>(p.entries||[]).map(e=>salBase(p,e)))));
   const nowY=new Date().getFullYear();   // the current year isn't finalized — exclude from the yearly total
   const years=[...new Set(all.map(e=>+e.ym.slice(0,4)))].sort((a,b)=>a-b);
   const combY=years.filter(y=>y<nowY).map(y=>({y,v:people.reduce((s,p)=>s+(salAnnual(p)[y]||0),0)}));
@@ -36,9 +39,9 @@ function drawSalaryChart(){
   for(let yr=minYr;yr<=maxYr;yr+=stepYr){const xc=X(yr*12);if(xc>=padL-1&&xc<=W-padR+1)s+=`<text x="${xc}" y="${H-9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${yr}</text>`;}
   // monthly per-person lines (left axis) + event dots
   people.forEach((p,pi)=>{const ms=salMonths(p);if(!ms.length)return;const col=salColor(pi);
-    s+=`<polyline points="${ms.map(e=>X(idxM(e.ym)).toFixed(1)+","+YL(salTotal(e)).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
-    ms.forEach(e=>{if(!e.event)return;const lab=esc(ymLabel(e.ym)+" · "+p.name+" · "+sym+Math.round(salTotal(e)).toLocaleString()+" · "+e.event);
-      s+=`<circle class="saldot" cx="${X(idxM(e.ym)).toFixed(1)}" cy="${YL(salTotal(e)).toFixed(1)}" r="4" fill="${col}" stroke="#0a0a0b" stroke-width="1.5" data-lbl="${lab}"></circle>`;});
+    s+=`<polyline points="${ms.map(e=>X(idxM(e.ym)).toFixed(1)+","+YL(salBase(p,e)).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
+    ms.forEach(e=>{if(!e.event)return;const lab=esc(ymLabel(e.ym)+" · "+p.name+" · "+moneyIn(salTotal(e),salEccy(p,e))+" · "+e.event);
+      s+=`<circle class="saldot" cx="${X(idxM(e.ym)).toFixed(1)}" cy="${YL(salBase(p,e)).toFixed(1)}" r="4" fill="${col}" stroke="#0a0a0b" stroke-width="1.5" data-lbl="${lab}"></circle>`;});
   });
   // combined yearly line (right axis), one point per finalized year, with year labels
   const cpts=combY.map(c=>({x:X(idxM(c.y+"-07")),yy:YR(c.v),y0:c.y,v:c.v}));
@@ -58,9 +61,9 @@ function downloadSalary(){
 // Shared month axis across all people, and per-(person,month) lookup/creation.
 function salGlobalYms(){const s=new Set();(state.salaries||[]).forEach(p=>(p.entries||[]).forEach(e=>s.add(e.ym)));return [...s].sort();}
 function salEntry(p,ym){return (p.entries||[]).find(e=>e.ym===ym);}
-function salEnsure(p,ym){let e=salEntry(p,ym);if(!e){e={id:nid(),ym,amount:0,event:""};p.entries.push(e);}return e;}
-// Add a month row for every person at ym; carry each person's most recent salary when carry=true.
-function salAddRowAt(ym,carry){(state.salaries||[]).forEach(p=>{if(salEntry(p,ym))return;let amt=0;if(carry){const before=salMonths(p).filter(e=>e.ym<ym);if(before.length)amt=before[before.length-1].amount;}p.entries.push({id:nid(),ym,amount:amt,event:""});});}
+function salEnsure(p,ym){let e=salEntry(p,ym);if(!e){const prev=salMonths(p).filter(x=>x.ym<ym).pop();e={id:nid(),ym,amount:0,event:"",ccy:(prev&&prev.ccy)||p.ccy||state.baseCcy};p.entries.push(e);}return e;}
+// Add a month row for every person at ym; carry each person's most recent salary + currency when carry=true.
+function salAddRowAt(ym,carry){(state.salaries||[]).forEach(p=>{if(salEntry(p,ym))return;const before=salMonths(p).filter(e=>e.ym<ym),prev=before[before.length-1];const amt=carry&&prev?prev.amount:0;p.entries.push({id:nid(),ym,amount:amt,event:"",ccy:(prev&&prev.ccy)||p.ccy||state.baseCcy});});}
 const salThisMonth=()=>new Date().toISOString().slice(0,7);
 // Parse a pasted month cell into YYYY-MM: "May 2013", "2013-05", "5/2013", "2013/05/01"…
 const SAL_MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
@@ -111,12 +114,12 @@ function renderSalary(){
   yms.forEach(ym=>{
     const y=ym.slice(0,4);
     if(y!==curY){curY=y;let yr=`<tr class="saly"><td>${y}</td>`,ht=0;
-      people.forEach(p=>{const t=(p.entries||[]).filter(e=>e.ym.slice(0,4)===y).reduce((a,e)=>a+salTotal(e),0);ht+=t;yr+=`<td class="num salgsep">${t?moneyIn(t,p.ccy):"—"}</td>`;});
+      people.forEach(p=>{const t=(p.entries||[]).filter(e=>e.ym.slice(0,4)===y).reduce((a,e)=>a+salBase(p,e),0);ht+=t;yr+=`<td class="num salgsep">${t?money(t):"—"}</td>`;});
       if(multi)yr+=`<td class="num salgsep">${ht?money(ht):"—"}</td>`;
       body+=yr+`</tr>`;}
     let row=`<tr><td class="salm">${ymLabel(ym)}</td>`,hh=0;
-    people.forEach(p=>{const e=salEntry(p,ym);if(e)hh+=salTotal(e);
-      row+=`<td class="num salgsep">${e&&e.event?`<span class="evtag">${esc(e.event)}</span>`:""}${e&&e.amount?moneyIn(salTotal(e),p.ccy):"—"}</td>`;});
+    people.forEach(p=>{const e=salEntry(p,ym);if(e)hh+=salBase(p,e);
+      row+=`<td class="num salgsep">${e&&e.event?`<span class="evtag">${esc(e.event)}</span>`:""}${e&&e.amount?moneyIn(salTotal(e),salEccy(p,e)):"—"}</td>`;});
     if(multi)row+=`<td class="num salgsep">${hh?money(hh):"—"}</td>`;
     body+=row+`</tr>`;
   });
@@ -131,23 +134,24 @@ function renderSalaryEdit(){
   const ccyOpts=p=>CCYS.map(x=>`<option ${x===p.ccy?"selected":""}>${x}</option>`).join("");
   let h1=`<th class="salm-h"></th>`,h2=`<th class="salm-h">Month</th>`;
   people.forEach(p=>{
-    h1+=`<th colspan="2" class="salp-h salgsep"><span class="salp-hin"><input class="rname salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="Name"><select class="salccy" data-sid="${p.id}" data-f="ccy">${ccyOpts(p)}</select><button class="rdel" data-perdel="${p.id}" title="Remove person">×</button></span></th>`;
-    h2+=`<th class="salgsep">Net salary</th><th>Event</th>`;
+    h1+=`<th colspan="3" class="salp-h salgsep"><span class="salp-hin"><input class="rname salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="Name"><select class="salccy" data-sid="${p.id}" data-f="ccy" title="Default currency for new months">${ccyOpts(p)}</select><button class="delbtn" data-perdel="${p.id}" title="Remove person" aria-label="Remove person"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></span></th>`;
+    h2+=`<th class="salgsep">Net</th><th>Ccy</th><th>Event</th>`;
   });
   h1+=`<th class="salx-h"></th>`;h2+=`<th class="salx-h"></th>`;
   let body="",curY=null;
   yms.forEach(ym=>{
     const y=ym.slice(0,4);
-    if(y!==curY){curY=y;let yr=`<tr class="saly"><td>${y}</td>`;people.forEach(p=>{const tot=(p.entries||[]).filter(e=>e.ym.slice(0,4)===y).reduce((a,e)=>a+salTotal(e),0);yr+=`<td colspan="2" class="num salgsep" data-ytot="${p.id}:${y}">${tot?moneyIn(tot,p.ccy):"—"}</td>`;});body+=yr+`<td></td></tr>`;}
+    if(y!==curY){curY=y;let yr=`<tr class="saly"><td>${y}</td>`;people.forEach(p=>{const tot=(p.entries||[]).filter(e=>e.ym.slice(0,4)===y).reduce((a,e)=>a+salBase(p,e),0);yr+=`<td colspan="3" class="num salgsep" data-ytot="${p.id}:${y}">${tot?money(tot):"—"}</td>`;});body+=yr+`<td></td></tr>`;}
     let row=`<tr><td class="salm">${ymLabel(ym)}</td>`;
-    people.forEach(p=>{const e=salEntry(p,ym);const amt=e?e.amount:"",ev=e?(e.event||""):"";
+    people.forEach(p=>{const e=salEntry(p,ym);const amt=e?e.amount:"",ev=e?(e.event||""):"",ec=salEccy(p,e||{});
       row+=`<td class="salgsep"><input class="salf num" type="number" step="any" inputmode="decimal" value="${amt}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0"></td>`+
+           `<td><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map(x=>`<option ${x===ec?"selected":""}>${x}</option>`).join("")}</select></td>`+
            `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="—" title="Raise, job change…"></td>`;});
     row+=`<td class="salxc"><button class="rdel" data-salrowdel="${ym}" title="Remove this month">×</button></td>`;
     body+=row+`</tr>`;
   });
   const dFrom=yms.length?yms[0]:(new Date().getFullYear()+"-01"),dTo=salThisMonth();
-  host.innerHTML=`<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body||`<tr><td colspan="${2+people.length*2}" class="exhint">No months yet — add a range below.</td></tr>`}</tbody></table></div>
+  host.innerHTML=`<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body||`<tr><td colspan="${2+people.length*3}" class="exhint">No months yet — add a range below.</td></tr>`}</tbody></table></div>
     <div class="controls salctrls"><span class="salrlbl">Add months from</span><input type="month" class="salpick salfrom" value="${dFrom}" title="From"><span class="salrlbl">to</span><input type="month" class="salpick salto" value="${dTo}" title="To"><button class="act ghost mini" data-salgen>Add range</button><button class="act ghost mini" data-salnext>+ Next month</button></div>`;
   const who=document.getElementById("salImportWho");if(who){const prev=who.value;who.innerHTML=people.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");if(prev)who.value=prev;}
 }
@@ -156,7 +160,7 @@ document.getElementById("salaryList").addEventListener("input",e=>{
   if(t.dataset.ym){const en=salEnsure(p,t.dataset.ym);
     if(f==="amount")en.amount=parseFloat(t.value||0);else en[f]=t.value;
     scheduleSync();
-    if(f==="amount"){const yr=t.dataset.ym.slice(0,4),yt=document.querySelector('[data-ytot="'+sid+':'+yr+'"]');if(yt){const tot=p.entries.filter(x=>x.ym.slice(0,4)===yr).reduce((a,x)=>a+salTotal(x),0);yt.textContent=tot?moneyIn(tot,p.ccy):"—";}drawSalaryChart();}
+    if(f==="amount"){const yr=t.dataset.ym.slice(0,4),yt=document.querySelector('[data-ytot="'+sid+':'+yr+'"]');if(yt){const tot=p.entries.filter(x=>x.ym.slice(0,4)===yr).reduce((a,x)=>a+salBase(p,x),0);yt.textContent=tot?money(tot):"—";}drawSalaryChart();}
   }else{ if(f==="name")p.name=t.value; else if(f==="ccy")p.ccy=t.value; scheduleSync(); if(f==="name")drawSalaryChart(); }
 });
 document.getElementById("salaryList").addEventListener("change",e=>{if(e.target.dataset.f==="ccy")renderSalaryEdit();});

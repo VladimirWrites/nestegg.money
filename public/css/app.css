@@ -277,6 +277,12 @@ button.act.ghost:hover{border-color:var(--amber)}
 .salpick:focus{outline:none;border-color:var(--amber)}
 .salctrls{align-items:center}
 .salrlbl{font-size:11px;letter-spacing:.04em;color:var(--muted)}
+.salmccy{width:100%;min-width:72px;font:inherit;font-size:12px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:8px 24px 8px 8px;color:var(--muted);min-height:38px}
+.salmccy:focus{outline:none;border-color:var(--amber)}
+/* trash-style delete button (replaces the bare ×) */
+.delbtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:5px}
+.delbtn:hover{color:var(--red);background:rgba(255,77,109,.12)}
+.delbtn svg{width:15px;height:15px}
 /* read-only salary table (Salary tab) */
 .saltab.rotab th,.saltab.rotab td{text-align:right;padding:8px 14px;white-space:nowrap}
 .saltab.rotab th.salm-h,.saltab.rotab td.salm{text-align:left}
@@ -290,7 +296,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 #salImportText:focus{outline:none;border-color:var(--amber)}
 
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
-.ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select,.salccy{
+.ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select,.salccy,.salmccy{
   -webkit-appearance:none;-moz-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238a867c' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 9px center;background-size:11px;

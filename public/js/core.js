@@ -32,7 +32,7 @@ function migrate(s){
   // Salary history: one record per person, each a list of monthly net-pay entries.
   if(!Array.isArray(s.salaries))s.salaries=[];
   s.salaries.forEach(p=>{if(!p.id)p.id=nid();if(!p.name)p.name="Person";if(!p.ccy)p.ccy=s.baseCcy||"EUR";if(!Array.isArray(p.entries))p.entries=[];
-    p.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.ym)en.ym=new Date().toISOString().slice(0,7);if(en.amount==null)en.amount=(parseFloat(en.base)||0)+(parseFloat(en.extra)||0);if(en.event==null)en.event="";delete en.base;delete en.extra;});});
+    p.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.ym)en.ym=new Date().toISOString().slice(0,7);if(en.amount==null)en.amount=(parseFloat(en.base)||0)+(parseFloat(en.extra)||0);if(en.event==null)en.event="";if(!en.ccy)en.ccy=p.ccy||s.baseCcy||"EUR";delete en.base;delete en.extra;});});
   (s.snapshots||[]).forEach(sn=>{
     if(!sn.entries){const c=sn.cats||{};sn.entries=Object.keys(c).filter(k=>c[k]).map(k=>({id:nid(),name:k,ccy:"EUR",value:c[k]}));}
     sn.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.name)en.name=en.cat||"Asset";if(!en.ccy)en.ccy="EUR";if(en.value==null)en.value=0;if(!en.kind)en.kind="fixed";if(en.kind==="ticker"){if(en.shares==null)en.shares=0;if(en.ticker==null)en.ticker="";}delete en.cat;delete en.qty;});
