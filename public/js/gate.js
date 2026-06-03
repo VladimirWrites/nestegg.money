@@ -58,7 +58,19 @@ document.getElementById("profEye").onclick=()=>{profShown=!profShown;renderProfA
 document.getElementById("profCopyAcct").onclick=()=>{const t=LS.get("nw_token")||"";if(navigator.clipboard)navigator.clipboard.writeText(t);toast("Account number copied");};
 document.getElementById("profSyncNow").onclick=pushServer;
 document.getElementById("syncNowHome").onclick=pushServer;
-document.getElementById("navNet").onclick=()=>closeSalary();
+// Net worth / Salary are tabs within the home page — switch the visible view in place.
+function showView(name){
+  const net=name!=="salary";
+  document.getElementById("viewNet").classList.toggle("hide",!net);
+  document.getElementById("viewSalary").classList.toggle("hide",net);
+  document.getElementById("navNet").classList.toggle("on",net);
+  document.getElementById("salaryBtn").classList.toggle("on",!net);
+  document.getElementById("mastTitle").textContent=net?"Net Worth":"Salary";
+  document.getElementById("mastSub").textContent=net?"A quiet accounting of what you hold.":"What you and yours bring home, month by month.";
+  if(net)renderAll();else renderSalary();
+  window.scrollTo(0,0);
+}
+document.getElementById("navNet").onclick=()=>showView("net");
 document.getElementById("profLogout").onclick=()=>{if(confirm("Log out on this device? Make sure your account number is saved — it's the only way back in.")){LS.rem("nw_token");LS.rem("nw_state");location.reload();}};
 document.getElementById("ccySel").onchange=e=>{state.baseCcy=e.target.value;scheduleSync();renderAll();};
 document.getElementById("pricesBtn").onclick=refreshPrices;

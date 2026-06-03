@@ -55,8 +55,6 @@ function downloadSalary(){
   const f=frameSVG("Our Net Salary History",src.innerHTML,cW,cH,leg,pad,titleH);
   svgToPng(f.svg,f.W,f.H,2,"nestegg-salary.png");
 }
-function openSalary(){document.getElementById("salaryEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderSalary();}
-function closeSalary(){document.getElementById("salaryEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");renderAll();}
 // Shared month axis across all people, and per-(person,month) lookup/creation.
 function salGlobalYms(){const s=new Set();(state.salaries||[]).forEach(p=>(p.entries||[]).forEach(e=>s.add(e.ym)));return [...s].sort();}
 function salEntry(p,ym){return (p.entries||[]).find(e=>e.ym===ym);}
@@ -164,7 +162,6 @@ function salHideTip(){const t=document.getElementById("salTip");if(t)t.classList
   chart.addEventListener("mouseout",e=>{if(e.target.closest(".saldot"))salHideTip();});
   chart.addEventListener("click",e=>{const c=e.target.closest(".saldot");if(c)salShowTip(c);else salHideTip();});
 })();
-document.getElementById("salaryBack").onclick=()=>{scheduleSync();closeSalary();};
 document.getElementById("dlSalary").onclick=downloadSalary;
-document.getElementById("salaryBtn").onclick=openSalary;
+document.getElementById("salaryBtn").onclick=()=>showView("salary");
 

@@ -59,11 +59,12 @@
   </div>
   <header class="masthead">
     <div class="kicker"><span>Personal Ledger</span><span id="dateline">—</span></div>
-    <div class="titlerow"><h1 class="title">Net Worth</h1><div class="ccypick">Display<select id="ccySel"></select></div></div>
-    <div class="subt">A quiet accounting of what you hold.</div>
+    <div class="titlerow"><h1 class="title" id="mastTitle">Net Worth</h1><div class="ccypick">Display<select id="ccySel"></select></div></div>
+    <div class="subt" id="mastSub">A quiet accounting of what you hold.</div>
     <nav class="mainnav"><button class="navtab on" id="navNet">Net worth</button><button class="navtab" id="salaryBtn">Salary</button></nav>
   </header>
   <main>
+    <div id="viewNet">
     <div class="hero">
       <div class="label">Total Net Worth</div>
       <div class="big num" id="nwTotal">—</div>
@@ -99,6 +100,26 @@
         <span class="updnote" id="updNote"></span>
       </div>
     </section>
+    </div><!-- /viewNet -->
+
+    <div id="viewSalary" class="hide">
+      <section class="over" style="border:none;padding:8px 0">
+        <button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+        <div class="sectitle">Our net salary history</div>
+        <div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div>
+        <div class="chiplegend" id="salaryLegend"></div>
+      </section>
+      <p class="edlede">Log each month's <strong>net</strong> pay per person. The event field notes a raise or job change; yearly totals are summed automatically.</p>
+      <div id="salaryList"></div>
+      <div class="controls"><button class="act" id="addPerson">+ Add person</button></div>
+      <details class="salimport">
+        <summary>Import from a spreadsheet</summary>
+        <p class="edlede" style="margin:10px 0">In Google Sheets, select the <strong>Month</strong> column and the <strong>net amount</strong> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</p>
+        <div class="controls" style="margin:0 0 8px"><span class="salrlbl">Import for</span><select id="salImportWho" class="salccy"></select></div>
+        <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
+        <div class="controls"><button class="act" id="salImportBtn">Import pasted rows</button></div>
+      </details>
+    </div>
   </main>
   <div class="foot">
     Your data is encrypted in your browser with a key derived from your account number, and the server stores only ciphertext —
@@ -130,31 +151,6 @@
   <div class="ed-wrap">
     <p class="edlede">A car, a house, anything that depreciates or carries a loan. Toggle <strong>Depreciates</strong> to have its value fall a little every day (current year live, past years locked to year-end); toggle <strong>Has a loan</strong> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it. Assign a <strong>Category</strong> to group it on the home screen.</p>
     <div class="cards" id="assetList"></div>
-  </div>
-</div>
-
-<div id="salaryEditor" class="editor hide">
-  <div class="ed-bar">
-    <button id="salaryBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
-    <div class="ed-title">Salary history</div>
-  </div>
-  <div class="ed-wrap">
-    <section class="over" style="border:none;padding:0 0 8px">
-      <button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-      <div class="sectitle">Our net salary history</div>
-      <div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div>
-      <div class="chiplegend" id="salaryLegend"></div>
-    </section>
-    <p class="edlede">Log each month's <strong>net</strong> pay per person — base plus any extra (bonus, overtime). The event field notes a raise or job change. Yearly totals are summed automatically.</p>
-    <div id="salaryList"></div>
-    <div class="controls"><button class="act" id="addPerson">+ Add person</button></div>
-    <details class="salimport">
-      <summary>Import from a spreadsheet</summary>
-      <p class="edlede" style="margin:10px 0">In Google Sheets, select the <strong>Month</strong> column and the <strong>net amount</strong> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</p>
-      <div class="controls" style="margin:0 0 8px"><span class="salrlbl">Import for</span><select id="salImportWho" class="salccy"></select></div>
-      <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
-      <div class="controls"><button class="act" id="salImportBtn">Import pasted rows</button></div>
-    </details>
   </div>
 </div>
 
