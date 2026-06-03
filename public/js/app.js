@@ -447,6 +447,27 @@ function closeAssetEditor(){
   document.getElementById("assetEditor").classList.add("hide");
   if(!document.getElementById("yearEditor").classList.contains("hide"))renderEntries();else renderAll();
 }
+// The computed (read-only) outputs for a loan — refreshed in place as inputs change,
+// so the editable fields (and the caret) are never destroyed by a re-render.
+function loanComputedHTML(a){
+  const L=a.loan,byPayment=L.mode==="payment",sched=buildSchedule(L),{M,n}=loanTerms(L);
+  const bal=outstandingAt(L,new Date());
+  const tooLow=byPayment&&(+L.payment>0)&&!isFinite(n);
+  const payoff=sched.length?sched[sched.length-1].date:null,totInt=sched.reduce((s,r)=>s+r.interest,0);
+  const calcStat=byPayment
+    ?`<div class="pstat"><span class="k">Term (calculated)</span><span class="v num">${fmtMonths(n)}</span></div>`
+    :`<div class="pstat"><span class="k">Monthly payment</span><span class="v num">${M?moneyIn(M,a.ccy):"—"}</span></div>`;
+  const rows=sched.map(r=>`<tr><td>${ymd(r.date)}</td><td class="num">${moneyIn(r.payment,a.ccy)}</td><td class="num">${moneyIn(r.interest,a.ccy)}</td><td class="num">${moneyIn(r.principal,a.ccy)}</td><td class="num">${r.extra?moneyIn(r.extra,a.ccy):"—"}</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`).join("");
+  return `${tooLow?`<div class="loanwarn">That payment is below the monthly interest, so the loan never amortizes — raise it above ${moneyIn((+L.amount||0)*(+L.rate||0)/100/12,a.ccy)}.</div>`:""}
+    <div class="pstats">
+      ${calcStat}
+      <div class="pstat"><span class="k">Balance today</span><span class="v num">${moneyIn(bal,a.ccy)}</span></div>
+      <div class="pstat"><span class="k">Payoff</span><span class="v num">${payoff?ymd(payoff):"—"}</span></div>
+      <div class="pstat"><span class="k">Total interest</span><span class="v num">${moneyIn(totInt,a.ccy)}</span></div>
+    </div>
+    ${sched.length?`<details class="psched"><summary>Payment schedule · ${sched.length} months</summary>
+      <div class="schscroll"><table class="schtab"><thead><tr><th>When</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Extra</th><th>Balance</th></tr></thead><tbody>${rows}</tbody></table></div></details>`:""}`;
+}
 function assetCardHTML(a){
   const today=new Date();
   const gross=assetGrossAt(a,today),bal=a.loan?outstandingAt(a.loan,today):0,net=gross-bal;
@@ -459,21 +480,14 @@ function assetCardHTML(a){
     </div>`;
   }
   if(a.loan){
-    const L=a.loan,byPayment=L.mode==="payment",sched=buildSchedule(L);
-    const {M,n}=loanTerms(L);
-    const tooLow=byPayment&&(+L.payment>0)&&!isFinite(n);
-    const payoff=sched.length?sched[sched.length-1].date:null,totInt=sched.reduce((s,r)=>s+r.interest,0);
+    const L=a.loan,byPayment=L.mode==="payment";
     const termField=byPayment
       ?`<label class="fld">Monthly payment<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.payment}" data-aid="${a.id}" data-lf="payment"></label>`
       :`<label class="fld">Term<span class="suffix"><input class="fin num" type="number" step="any" inputmode="numeric" value="${L.termYears}" data-aid="${a.id}" data-lf="termYears"><i>yr</i></span></label>`;
-    const calcStat=byPayment
-      ?`<div class="pstat"><span class="k">Term (calculated)</span><span class="v num">${fmtMonths(n)}</span></div>`
-      :`<div class="pstat"><span class="k">Monthly payment</span><span class="v num">${M?moneyIn(M,a.ccy):"—"}</span></div>`;
     const extras=(L.extra||[]).map(x=>`<div class="exrow">
         <input type="date" class="fin" value="${esc(x.date)}" data-aid="${a.id}" data-eid="${x.id}" data-ef="date">
         <span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${x.amount}" data-aid="${a.id}" data-eid="${x.id}" data-ef="amount" placeholder="amount"></span>
         <button class="rdel" data-extradel="${x.id}" data-aid="${a.id}" title="Remove payment">×</button></div>`).join("");
-    const rows=sched.map(r=>`<tr><td>${ymd(r.date)}</td><td class="num">${moneyIn(r.payment,a.ccy)}</td><td class="num">${moneyIn(r.interest,a.ccy)}</td><td class="num">${moneyIn(r.principal,a.ccy)}</td><td class="num">${r.extra?moneyIn(r.extra,a.ccy):"—"}</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`).join("");
     loanBlock=`<div class="loanbox">
       <div class="frow">
         <label class="fld">Loan amount<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.amount}" data-aid="${a.id}" data-lf="amount"></label>
@@ -482,16 +496,8 @@ function assetCardHTML(a){
         ${termField}
         <label class="fld">Start<input class="fin" type="date" value="${esc(L.startDate)}" data-aid="${a.id}" data-lf="startDate"></label>
       </div>
-      ${tooLow?`<div class="loanwarn">That payment is below the monthly interest, so the loan never amortizes — raise it above ${moneyIn((+L.amount||0)*(+L.rate||0)/100/12,a.ccy)}.</div>`:""}
       <div class="exwrap"><div class="psub">Extra payments<button class="act ghost mini" data-extraadd="${a.id}">+ add</button></div>${extras||'<div class="exhint">None — add one-off lump sums to pay down principal faster.</div>'}</div>
-      <div class="pstats">
-        ${calcStat}
-        <div class="pstat"><span class="k">Balance today</span><span class="v num">${moneyIn(bal,a.ccy)}</span></div>
-        <div class="pstat"><span class="k">Payoff</span><span class="v num">${payoff?ymd(payoff):"—"}</span></div>
-        <div class="pstat"><span class="k">Total interest</span><span class="v num">${moneyIn(totInt,a.ccy)}</span></div>
-      </div>
-      ${sched.length?`<details class="psched"><summary>Payment schedule · ${sched.length} months</summary>
-        <div class="schscroll"><table class="schtab"><thead><tr><th>When</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Extra</th><th>Balance</th></tr></thead><tbody>${rows}</tbody></table></div></details>`:""}
+      <div class="lcomp">${loanComputedHTML(a)}</div>
     </div>`;
   }
   return `<div class="rcard acard" id="acard-${a.id}" data-aid="${a.id}">
@@ -525,8 +531,12 @@ document.getElementById("assetList").addEventListener("input",e=>{
     else if(f==="rate")a.rate=Math.min(Math.max(parseFloat(t.value||0)/100,0),0.99);
     else a[f]=t.value;}
   scheduleSync();
-  const card=t.closest(".acard"),vv=card&&card.querySelector(".vval");
+  // Refresh only the computed outputs in place — never the inputs — so the caret survives.
+  const card=t.closest(".acard");if(!card)return;
+  const vv=card.querySelector(".vval");
   if(vv){const net=assetNetAt(a,new Date());vv.textContent=moneyIn(net,a.ccy)+(a.ccy!==state.baseCcy?(" · "+money(convTo(net,a.ccy,state.baseCcy))):"");}
+  const lc=card.querySelector(".lcomp");
+  if(lc&&a.loan)lc.innerHTML=loanComputedHTML(a);
 });
 document.getElementById("assetList").addEventListener("change",e=>{
   const t=e.target,id=t.dataset.aid;if(!id)return;const a=state.assets.find(x=>x.id===id);if(!a)return;
@@ -535,8 +545,9 @@ document.getElementById("assetList").addEventListener("change",e=>{
     else a.loan=t.checked?normLoan(a.loan||{startDate:a.date},a.date):null;
     scheduleSync();renderAssets();return;
   }
-  // ccy / dates / loan fields changing → re-render to refresh schedule & conversions
-  renderAssets();
+  // Only the Term/Payment mode swap changes structure — rebuild for that; everything
+  // else (amount, rate, dates, currency, extras) is updated live by the input handler.
+  if(t.dataset.lf==="mode"){renderAssets();return;}
 });
 document.getElementById("assetList").addEventListener("click",e=>{
   const ad=e.target.closest("[data-adel]");if(ad){const a=state.assets.find(x=>x.id===ad.dataset.adel);if(confirm("Remove "+(a?a.name:"this asset")+"?")){state.assets=state.assets.filter(x=>x.id!==ad.dataset.adel);scheduleSync();renderAssets();}return;}
