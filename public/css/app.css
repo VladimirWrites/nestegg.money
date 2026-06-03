@@ -254,11 +254,12 @@ button.act.ghost:hover{border-color:var(--amber)}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
 .saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel2);z-index:2}
 .saltab .salh1 th{top:0}
-.saltab .salh2 th{top:34px;color:var(--muted);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;text-align:right;border-bottom:1px solid var(--line2)}
+.saltab .salh2 th{top:41px;color:var(--muted);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;text-align:right;border-bottom:1px solid var(--line2)}
 .saltab .salh2 th:first-child{text-align:left}
-.salp-h{text-align:left;border-left:2px solid var(--line2)!important;border-bottom:none!important}
-.salp-hin{display:flex;align-items:center;gap:6px}
-.salname{width:108px;font:inherit;font-size:14px;font-weight:600;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:2px 0;font-family:var(--mono)}
+.salp-h{text-align:left;border-left:2px solid var(--line2)!important;border-bottom:1px solid var(--line2)!important;background:var(--panel2);padding:9px 12px}
+.salp-hin{display:flex;align-items:center;gap:8px}
+.salname{flex:1;min-width:90px;font:inherit;font-size:15px;font-weight:700;letter-spacing:.01em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0;font-family:var(--mono)}
+.salname::placeholder{color:var(--muted);font-weight:400}
 .salname:focus{outline:none;border-bottom:1px solid var(--amber)}
 .salccy{font:inherit;font-size:11px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:4px 6px;color:var(--ink)}
 .saltab th.salm-h,.saltab td.salm{position:sticky;left:0;background:var(--panel);z-index:1;border-right:1px solid var(--line2)}

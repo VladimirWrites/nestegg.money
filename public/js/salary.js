@@ -134,7 +134,7 @@ function renderSalaryEdit(){
   const ccyOpts=p=>CCYS.map(x=>`<option ${x===p.ccy?"selected":""}>${x}</option>`).join("");
   let h1=`<th class="salm-h"></th>`,h2=`<th class="salm-h">Month</th>`;
   people.forEach(p=>{
-    h1+=`<th colspan="3" class="salp-h salgsep"><span class="salp-hin"><input class="rname salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="Name"><select class="salccy" data-sid="${p.id}" data-f="ccy" title="Default currency for new months">${ccyOpts(p)}</select><button class="delbtn" data-perdel="${p.id}" title="Remove person" aria-label="Remove person"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></span></th>`;
+    h1+=`<th colspan="3" class="salp-h salgsep"><span class="salp-hin"><input class="salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="Name"><button class="delbtn" data-perdel="${p.id}" title="Remove ${esc(p.name)}" aria-label="Remove person"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></span></th>`;
     h2+=`<th class="salgsep">Net</th><th>Ccy</th><th>Event</th>`;
   });
   h1+=`<th class="salx-h"></th>`;h2+=`<th class="salx-h"></th>`;
@@ -147,7 +147,7 @@ function renderSalaryEdit(){
       row+=`<td class="salgsep"><input class="salf num" type="number" step="any" inputmode="decimal" value="${amt}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0"></td>`+
            `<td><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map(x=>`<option ${x===ec?"selected":""}>${x}</option>`).join("")}</select></td>`+
            `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="—" title="Raise, job change…"></td>`;});
-    row+=`<td class="salxc"><button class="rdel" data-salrowdel="${ym}" title="Remove this month">×</button></td>`;
+    row+=`<td class="salxc"><button class="delbtn" data-salrowdel="${ym}" title="Remove ${ymLabel(ym)}" aria-label="Remove month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button></td>`;
     body+=row+`</tr>`;
   });
   const dFrom=yms.length?yms[0]:(new Date().getFullYear()+"-01"),dTo=salThisMonth();
