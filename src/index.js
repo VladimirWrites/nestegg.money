@@ -19,15 +19,17 @@ function json(obj, status = 200, ttl = 0) {
 // /api/fx — EUR-anchored exchange rates (ECB data via Frankfurter, free, no key)
 // rates[CCY] = units of CCY per 1 EUR.
 // ---------------------------------------------------------------------------
-async function fxGet() {
+async function fxGet(request) {
+  const date = new URL(request.url).searchParams.get("date");   // YYYY-MM-DD → that day's ECB rates
+  const hist = date && /^\d{4}-\d{2}-\d{2}$/.test(date);
   try {
-    const r = await fetch("https://api.frankfurter.app/latest?from=EUR", {
-      cf: { cacheTtl: 3600, cacheEverything: true },
-    });
+    // Frankfurter returns the most recent rates on/before a given date (handles weekends/holidays).
+    const url = `https://api.frankfurter.app/${hist ? encodeURIComponent(date) : "latest"}?from=EUR`;
+    const r = await fetch(url, { cf: { cacheTtl: hist ? 86400 : 3600, cacheEverything: true } });
     if (!r.ok) return json({ error: "upstream " + r.status }, 502);
     const d = await r.json();
     const rates = Object.assign({ EUR: 1 }, d.rates || {});
-    return json({ base: "EUR", rates, date: d.date }, 200, 3600);
+    return json({ base: "EUR", rates, date: d.date }, 200, hist ? 86400 : 3600);
   } catch (e) {
     return json({ error: "fetch failed" }, 502);
   }
@@ -149,7 +151,7 @@ export default {
     const method = request.method;
 
     if (pathname === "/api/fx") {
-      if (method === "GET") return fxGet();
+      if (method === "GET") return fxGet(request);
       return json({ error: "method not allowed" }, 405);
     }
 

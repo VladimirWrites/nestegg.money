@@ -4,7 +4,7 @@ const PALETTE=["#4aa3ff","#ff8c1a","#3ad17a","#ffd23a","#ff4d6d","#9b8cff","#2fd
 let uid=1;const nid=()=>"i"+(uid++)+Date.now().toString(36);
 
 function emptyState(){
-  return {v:6,baseCcy:"EUR",fxRates:Object.assign({},FALLBACK_FX),fxDate:null,prices:{},assets:[],categories:[],snapshots:[{year:new Date().getFullYear(),entries:[]}]};
+  return {v:6,baseCcy:"EUR",fxRates:Object.assign({},FALLBACK_FX),fxDate:null,fxHist:{},prices:{},assets:[],categories:[],snapshots:[{year:new Date().getFullYear(),entries:[]}]};
 }
 function normLoan(L,fallbackDate){
   if(!L||typeof L!=="object")return null;
@@ -18,6 +18,7 @@ function migrate(s){
   if(!s.baseCcy)s.baseCcy="EUR";
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
   if(!s.prices)s.prices={};
+  if(!s.fxHist||typeof s.fxHist!=="object")s.fxHist={};
   const today=new Date().toISOString().slice(0,10);
   if(!Array.isArray(s.assets))s.assets=[];
   // Fold any earlier-format cars/properties into the unified asset list.
@@ -45,7 +46,15 @@ let state=emptyState();
 
 /* fx + format */
 function rate(c){if(c==="EUR")return 1;const r=state.fxRates&&state.fxRates[c];return (r&&r>0)?r:(FALLBACK_FX[c]||1);}
+// Rate as of a snapshot year: that year's ECB year-end rate for past years (once fetched),
+// otherwise the current/live rate. EUR is always the 1.0 base.
+function rateAt(c,year){
+  const cy=new Date().getFullYear();
+  if(year!=null&&year<cy){const h=state.fxHist&&state.fxHist[year];if(h){if(c==="EUR")return 1;const r=h[c];if(r&&r>0)return r;}}
+  return rate(c);
+}
 const convTo=(a,from,to)=>a*rate(to)/rate(from);
+const convToY=(a,from,to,year)=>a*rateAt(to,year)/rateAt(from,year);
 function money(v){try{return new Intl.NumberFormat("en-IE",{style:"currency",currency:state.baseCcy,maximumFractionDigits:0}).format(v);}catch(e){return state.baseCcy+" "+Math.round(v).toLocaleString();}}
 function moneyIn(v,ccy){try{return new Intl.NumberFormat("en-IE",{style:"currency",currency:ccy,maximumFractionDigits:2}).format(v);}catch(e){return ccy+" "+(+v).toFixed(2);}}
 function ccySym(){try{const p=new Intl.NumberFormat("en-IE",{style:"currency",currency:state.baseCcy}).formatToParts(0);const s=p.find(x=>x.type==="currency");return s?s.value:state.baseCcy;}catch(e){return state.baseCcy;}}
@@ -71,8 +80,8 @@ function entryNative(en){
   if(en.kind==="ticker"){const p=tickerPx(en);if(!p)return{v:0,ccy:en.ccy||"EUR",miss:true};return{v:(parseFloat(en.shares)||0)*p.price,ccy:p.currency};}
   return {v:parseFloat(en.value)||0,ccy:en.ccy||"EUR"};
 }
-const entryEUR=en=>{const n=entryNative(en);return convTo(n.v,n.ccy,"EUR");};
-const entryBase=en=>{const n=entryNative(en);return convTo(n.v,n.ccy,state.baseCcy);};
+const entryEUR=(en,year)=>{const n=entryNative(en);return convToY(n.v,n.ccy,"EUR",year);};
+const entryBase=(en,year)=>{const n=entryNative(en);return convToY(n.v,n.ccy,state.baseCcy,year);};
 function dayChangeBase(nw){
   const ls=latestSnap();if(!ls)return null;
   let abs=0,any=false;
@@ -187,7 +196,8 @@ function autoEntriesFor(year){
   return out;
 }
 const effEntries=sn=>(sn.entries||[]).concat(autoEntriesFor(sn.year));
-const snapTotalEUR=sn=>effEntries(sn).reduce((a,e)=>a+entryEUR(e),0);
+const snapTotalEUR=sn=>effEntries(sn).reduce((a,e)=>a+entryEUR(e,sn.year),0);
+const snapTotalBase=sn=>effEntries(sn).reduce((a,e)=>a+entryBase(e,sn.year),0);
 const sortedSnaps=()=>[...state.snapshots].sort((a,b)=>a.year-b.year);
 const latestSnap=()=>sortedSnaps().slice(-1)[0];
 
@@ -243,6 +253,16 @@ async function pushServer(){if(!accountId||!cryptoKey)return;try{const blob=awai
 async function loadServer(){if(!accountId)return null;try{const r=await fetch("/api/vault?id="+accountId);if(r.status===404){setSync("ok","Synced (new)");return null;}if(!r.ok){setSync("off","Local only");return null;}const{blob}=await r.json();const o=await decS(blob);setSync("ok","Synced");return o;}catch(e){setSync("off","Local only");return null;}}
 function setSync(c,t){const d=document.getElementById("syncDot"),x=document.getElementById("syncTxt");d.className="syncdot "+(c==="ok"?"ok":c==="off"?"off":"");x.textContent=t;}
 async function fetchFx(){try{const r=await fetch("/api/fx");if(!r.ok)return false;const d=await r.json();if(d.rates){state.fxRates=Object.assign({EUR:1},d.rates);state.fxDate=d.date;return true;}}catch(e){}return false;}
+// Year-end (Dec 31) ECB rates for a year — used to convert past-year holdings at the rate then.
+async function fetchFxYear(year){try{const r=await fetch("/api/fx?date="+year+"-12-31");if(!r.ok)return null;const d=await r.json();if(d.rates)return Object.assign({EUR:1},d.rates);}catch(e){}return null;}
+async function refreshHistFx(){
+  const cy=new Date().getFullYear();state.fxHist=state.fxHist||{};let changed=false;
+  for(const y of [...new Set(state.snapshots.map(s=>s.year))]){
+    if(y>=cy||state.fxHist[y])continue;
+    const h=await fetchFxYear(y);if(h){state.fxHist[y]=h;changed=true;}
+  }
+  return changed;
+}
 async function fetchPrice(t){try{const r=await fetch("/api/price?ticker="+encodeURIComponent(t));if(!r.ok)return false;const d=await r.json();if(d.price!=null){state.prices[t]={price:d.price,prevClose:(d.prevClose!=null?d.prevClose:d.price),currency:d.currency||"USD",t:Date.now()};return true;}}catch(e){}return false;}
 function tickersInUse(){return [...new Set(state.snapshots.flatMap(s=>s.entries).filter(e=>e.kind==="ticker"&&e.ticker).map(e=>e.ticker))];}
 // Year-end close for a ticker, used to value holdings held in a past year.
@@ -300,8 +320,9 @@ function enterApp(){
     document.getElementById("dateline").textContent=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
     document.getElementById("ccySel").innerHTML=CCYS.map(c=>`<option ${c===state.baseCcy?"selected":""}>${c}</option>`).join("");
     renderAll();
-    // Value any past-year stock holdings at that year's close (one-time fetch, then cached on the entry).
-    try{refreshHistPrices().then(ch=>{if(ch){scheduleSync();renderAll();}}).catch(()=>{});}catch(e){}
+    // Value past-year holdings at that year's stock close and that year's ECB FX rate
+    // (one-time fetch, then cached). Re-render once the historical data lands.
+    try{Promise.all([refreshHistPrices(),refreshHistFx()]).then(([a,b])=>{if(a||b){scheduleSync();renderAll();}}).catch(()=>{});}catch(e){}
   }catch(e){console&&console.error&&console.error("enterApp:",e);}
 }
 document.getElementById("showAcctBtn").onclick=()=>{const t=LS.get("nw_token")||"(none)";navigator.clipboard&&navigator.clipboard.writeText(t);toast("Account number copied: "+t);};
@@ -311,7 +332,7 @@ document.getElementById("ccySel").onchange=e=>{state.baseCcy=e.target.value;sche
 document.getElementById("pricesBtn").onclick=refreshPrices;
 document.getElementById("dlHist").onclick=downloadHist;
 document.getElementById("dlDonut").onclick=downloadDonut;
-document.getElementById("ratesBtn").onclick=async()=>{toast("Updating rates…");const ok=await fetchFx();scheduleSync();renderAll();toast(ok?("Rates updated · "+(state.fxDate||"")):"Rates unavailable (offline)");};
+document.getElementById("ratesBtn").onclick=async()=>{toast("Updating rates…");const ok=await fetchFx();await refreshHistFx();scheduleSync();renderAll();toast(ok?("Rates updated · "+(state.fxDate||"")):"Rates unavailable (offline)");};
 
 /* render */
 function getCss(v){return v;}
@@ -323,18 +344,17 @@ function niceCeil(v){const p=Math.pow(10,Math.floor(Math.log10(v||1)));const f=(
 
 function drawHist(){
   const svg=document.getElementById("histChart");const snaps=sortedSnaps();const n=snaps.length;const names=allNames();
-  const toBase=eur=>convTo(eur,"EUR",state.baseCcy);
   const bw=40,gap=18,padL=58,padR=14,padT=24,padB=32,innerW=Math.max(n,1)*bw+(n-1)*gap,W=Math.max(innerW+padL+padR,320),H=300,plotH=H-padT-padB;
-  const maxV=Math.max(1,...snaps.map(s=>toBase(snapTotalEUR(s)))),nm=niceCeil(maxV);
+  const maxV=Math.max(1,...snaps.map(s=>snapTotalBase(s))),nm=niceCeil(maxV);
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
   let s="";const sym=ccySym();
   for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#26262a" stroke-width="1"/>`;s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
   snaps.forEach((sn,idx)=>{const x=padL+idx*(bw+gap);let yTop=padT+plotH;const ents=effEntries(sn);
-    names.forEach(nm2=>{const tot=ents.filter(e=>seriesKey(e)===nm2).reduce((a,e)=>a+toBase(entryEUR(e)),0);if(tot<=0)return;const h=(tot/nm)*plotH;yTop-=h;s+=`<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2,names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`;});
-    const t=toBase(snapTotalEUR(sn));s+=`<text x="${x+bw/2}" y="${yTop-6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="#8a867c">${sym}${shortK(t)}</text>`;s+=`<text x="${x+bw/2}" y="${H-padB+16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#e8e4d8">${sn.year}</text>`;});
+    names.forEach(nm2=>{const tot=ents.filter(e=>seriesKey(e)===nm2).reduce((a,e)=>a+entryBase(e,sn.year),0);if(tot<=0)return;const h=(tot/nm)*plotH;yTop-=h;s+=`<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2,names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`;});
+    const t=snapTotalBase(sn);s+=`<text x="${x+bw/2}" y="${yTop-6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="#8a867c">${sym}${shortK(t)}</text>`;s+=`<text x="${x+bw/2}" y="${H-padB+16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#e8e4d8">${sn.year}</text>`;});
   svg.innerHTML=s;
   // hero = latest
-  const ls=latestSnap();const nw=ls?convTo(snapTotalEUR(ls),"EUR",state.baseCcy):0;
+  const ls=latestSnap();const nw=ls?snapTotalBase(ls):0;
   document.getElementById("nwTotal").textContent=money(nw);
   const nAssets=ls?effEntries(ls).length:0;
   document.getElementById("nwNote").textContent=ls?("as of "+ls.year+" · "+nAssets+" asset"+(nAssets===1?"":"s")):"No data yet";
@@ -348,7 +368,7 @@ function drawDonut(){
   const ls=latestSnap();const svg=document.getElementById("donut");svg.innerHTML="";
   document.getElementById("allocYear").textContent=ls?("— "+ls.year):"";
   const names=allNames();
-  const agg={};(ls?effEntries(ls):[]).forEach(e=>{const k=seriesKey(e);agg[k]=(agg[k]||0)+entryBase(e);});
+  const agg={};(ls?effEntries(ls):[]).forEach(e=>{const k=seriesKey(e);agg[k]=(agg[k]||0)+entryBase(e,ls&&ls.year);});
   const rows=Object.keys(agg).map(k=>({name:k,v:agg[k]})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
   const total=rows.reduce((a,r)=>a+r.v,0);
   if(total>0){const cx=120,cy=120,r=82,sw=30;let a=-Math.PI/2;
@@ -392,7 +412,7 @@ function downloadHist(){
 }
 function downloadDonut(){
   const ls=latestSnap(),src=document.getElementById("donut"),names=allNames();
-  const agg={};(ls?effEntries(ls):[]).forEach(e=>{const k=seriesKey(e);agg[k]=(agg[k]||0)+entryBase(e);});
+  const agg={};(ls?effEntries(ls):[]).forEach(e=>{const k=seriesKey(e);agg[k]=(agg[k]||0)+entryBase(e,ls&&ls.year);});
   const rows=Object.keys(agg).map(k=>({name:k,v:agg[k]})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
   if(!rows.length){toast("No allocation to save");return;}
   const total=rows.reduce((a,r)=>a+r.v,0);
@@ -405,13 +425,13 @@ function downloadDonut(){
 
 function renderYears(){
   const host=document.getElementById("years");host.innerHTML="";const names=allNames();
-  const snaps=[...state.snapshots].sort((a,b)=>b.year-a.year);const toBase=eur=>convTo(eur,"EUR",state.baseCcy);
-  const maxV=Math.max(1,...state.snapshots.map(s=>snapTotalEUR(s)));
-  snaps.forEach(sn=>{const ri=state.snapshots.indexOf(sn),totEUR=snapTotalEUR(sn);
-    const agg={};effEntries(sn).forEach(e=>{const v=entryEUR(e);if(v>0){const k=seriesKey(e);agg[k]=(agg[k]||0)+v;}});
-    const segs=Object.keys(agg).map(k=>`<i style="width:${agg[k]/(totEUR||1)*100}%;background:${colorOf(k,names)}"></i>`).join("");
+  const snaps=[...state.snapshots].sort((a,b)=>b.year-a.year);
+  const maxV=Math.max(1,...state.snapshots.map(s=>snapTotalBase(s)));
+  snaps.forEach(sn=>{const ri=state.snapshots.indexOf(sn),tot=snapTotalBase(sn);
+    const agg={};effEntries(sn).forEach(e=>{const v=entryBase(e,sn.year);if(v>0){const k=seriesKey(e);agg[k]=(agg[k]||0)+v;}});
+    const segs=Object.keys(agg).map(k=>`<i style="width:${agg[k]/(tot||1)*100}%;background:${colorOf(k,names)}"></i>`).join("");
     const card=document.createElement("div");card.className="ycard";
-    card.innerHTML=`<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar" style="max-width:${Math.max(8,totEUR/maxV*100)}%">${segs}</span><span class="ytot">${money(toBase(totEUR))}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
+    card.innerHTML=`<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar" style="max-width:${Math.max(8,tot/maxV*100)}%">${segs}</span><span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
     host.appendChild(card);});
 }
 
@@ -419,8 +439,8 @@ function renderYears(){
 let edIdx=-1,edYearPrev=null;
 function openYearEditor(ri){edIdx=ri;edYearPrev=state.snapshots[ri].year;document.getElementById("edYear").value=state.snapshots[ri].year;document.getElementById("yearEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderEntries();}
 function closeYearEditor(){document.getElementById("yearEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");edIdx=-1;renderAll();}
-function cardHTML(en,i,names){
-  const baseV=entryBase(en);
+function cardHTML(en,i,names,year){
+  const baseV=entryBase(en,year);
   let valuePart;
   if(en.kind==="ticker"){
     const p=tickerPx(en);
@@ -443,13 +463,13 @@ function cardHTML(en,i,names){
     <button class="rdel" data-del="${i}" title="Remove asset">×</button></div>`;
 }
 // Read-only card for a long-term asset (tap to edit in the focused asset editor).
-function autoCardHTML(en,names){
+function autoCardHTML(en,names,year){
   const a=(state.assets||[]).find(x=>x.id===en.assetId)||{};
   const tags=[a.depreciates?"depreciating":"",a.loan?"loan":""].filter(Boolean).join(" · ")||"asset";
   return `<div class="rcard auto" data-editasset="${en.assetId}" title="Edit long-term asset"><span class="dot" style="background:${colorOf(seriesKey(en),names)}"></span>`+
     `<span class="rname ro">${esc(en.name)}</span>`+
     `<span class="autotag">${tags}</span>`+
-    `<span class="rconv">${money(entryBase(en))}</span>`+
+    `<span class="rconv">${money(entryBase(en,year))}</span>`+
     `<svg class="autoedit" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2.5l2.5 2.5L6 12.5 3 13l.5-3z"/></svg></div>`;
 }
 function renderEntries(){
@@ -457,16 +477,16 @@ function renderEntries(){
   const autos=autoEntriesFor(sn.year);
   let html="";
   // ungrouped: per-year entries, then long-term assets that aren't in a category
-  sn.entries.forEach((en,i)=>{if(!en.group)html+=cardHTML(en,i,names);});
-  autos.forEach(en=>{if(!en.group)html+=autoCardHTML(en,names);});
+  sn.entries.forEach((en,i)=>{if(!en.group)html+=cardHTML(en,i,names,sn.year);});
+  autos.forEach(en=>{if(!en.group)html+=autoCardHTML(en,names,sn.year);});
   // category sections: the global category list, plus any stray groups still in use
   const order=[...(state.categories||[])];
   sn.entries.forEach(en=>{if(en.group&&order.indexOf(en.group)<0)order.push(en.group);});
   autos.forEach(en=>{if(en.group&&order.indexOf(en.group)<0)order.push(en.group);});
   order.forEach(g=>{
     let sub=0,cards="";
-    sn.entries.forEach((en,i)=>{if(en.group===g){sub+=entryBase(en);cards+=cardHTML(en,i,names);}});
-    autos.forEach(en=>{if(en.group===g){sub+=entryBase(en);cards+=autoCardHTML(en,names);}});
+    sn.entries.forEach((en,i)=>{if(en.group===g){sub+=entryBase(en,sn.year);cards+=cardHTML(en,i,names,sn.year);}});
+    autos.forEach(en=>{if(en.group===g){sub+=entryBase(en,sn.year);cards+=autoCardHTML(en,names,sn.year);}});
     html+=`<div class="grp"><div class="grphead"><span class="dot" style="background:${colorOf(g,names)}"></span>`+
       `<input class="grpname" data-grp="${esc(g)}" value="${esc(g)}" title="Category name" placeholder="Category name">`+
       `<span class="grpsub num">${money(sub)}</span>`+
@@ -474,7 +494,7 @@ function renderEntries(){
       `<div class="grpcards">${cards||'<div class="exhint">Empty — set an item\'s Category to this to file it here.</div>'}</div></div>`;
   });
   wrap.innerHTML=html;
-  document.getElementById("edTotal").textContent=money(convTo(snapTotalEUR(sn),"EUR",state.baseCcy));
+  document.getElementById("edTotal").textContent=money(snapTotalBase(sn));
 }
 document.getElementById("years").addEventListener("click",e=>{const h=e.target.closest("[data-open]");if(h)openYearEditor(+h.dataset.open);});
 document.getElementById("edBack").onclick=()=>{scheduleSync();closeYearEditor();};
@@ -506,9 +526,9 @@ document.getElementById("edEntries").addEventListener("input",e=>{
   scheduleSync();
   if(f==="kind"||f==="ccy"||f==="group"){renderEntries();return;}
   const card=t.closest(".rcard");const cv=card&&card.querySelector(".rconv");
-  if(cv){const bv=entryBase(en);if(en.kind==="ticker"){const p=state.prices[en.ticker];cv.textContent=p?money(bv):(en.ticker?"no price":"set ticker");}else{cv.textContent=en.ccy!==state.baseCcy?("= "+money(bv)):"";}}
-  if(en.group){const gb=t.closest(".grp"),gs=gb&&gb.querySelector(".grpsub");if(gs)gs.textContent=money(sn.entries.filter(x=>x.group===en.group).reduce((a,x)=>a+entryBase(x),0));}
-  document.getElementById("edTotal").textContent=money(convTo(snapTotalEUR(sn),"EUR",state.baseCcy));
+  if(cv){const bv=entryBase(en,sn.year);if(en.kind==="ticker"){const p=tickerPx(en);cv.textContent=p?money(bv):(en.ticker?"no price":"set ticker");}else{cv.textContent=en.ccy!==state.baseCcy?("= "+money(bv)):"";}}
+  if(en.group){const gb=t.closest(".grp"),gs=gb&&gb.querySelector(".grpsub");if(gs)gs.textContent=money(sn.entries.filter(x=>x.group===en.group).reduce((a,x)=>a+entryBase(x,sn.year),0));}
+  document.getElementById("edTotal").textContent=money(snapTotalBase(sn));
 });
 document.getElementById("edEntries").addEventListener("change",async e=>{
   const t=e.target,f=t.dataset.f;
