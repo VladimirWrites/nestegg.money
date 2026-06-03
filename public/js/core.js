@@ -27,7 +27,7 @@ function migrate(s){
   delete s.cars;delete s.properties;
   // A long-term asset: a value that optionally depreciates and/or carries a loan.
   s.assets.forEach(a=>{if(!a.id)a.id=nid();if(!a.name)a.name="Asset";if(!a.ccy)a.ccy=s.baseCcy||"EUR";if(a.value==null)a.value=0;
-    a.depreciates=!!a.depreciates;a.up=!!a.up;if(!a.date)a.date=today;if(a.rate==null)a.rate=0.15;
+    a.depreciates=!!a.depreciates;a.up=!!a.up;a.liability=!!a.liability;if(!a.date)a.date=today;if(a.rate==null)a.rate=0.15;
     a.loan=a.loan?normLoan(a.loan,a.date):null;});
   // Salary history: one record per person, each a list of monthly net-pay entries.
   if(!Array.isArray(s.salaries))s.salaries=[];
@@ -201,7 +201,9 @@ function outstandingAt(loan,asOf){
 function autoEntriesFor(year){
   const ref=refDateForYear(year),out=[];
   (state.assets||[]).forEach(a=>{const from=assetOwnedFrom(a);if(from&&from>ref)return;
-    out.push({id:"asset:"+a.id,auto:true,assetId:a.id,kind:"fixed",name:a.name||"Asset",ccy:a.ccy||state.baseCcy,value:assetNetAt(a,ref),group:a.group});});
+    if(a.liability){const bal=a.loan?outstandingAt(a.loan,ref):0;if(bal<=0.005&&from&&from<ref)return;  // paid off — drop once cleared
+      out.push({id:"asset:"+a.id,auto:true,assetId:a.id,kind:"liability",name:a.name||"Liability",ccy:a.ccy||state.baseCcy,value:bal,group:a.group});}
+    else out.push({id:"asset:"+a.id,auto:true,assetId:a.id,kind:"fixed",name:a.name||"Asset",ccy:a.ccy||state.baseCcy,value:assetNetAt(a,ref),group:a.group});});
   return out;
 }
 const effEntries=sn=>(sn.entries||[]).concat(autoEntriesFor(sn.year));

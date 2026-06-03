@@ -78,13 +78,24 @@ function assetCardHTML(a){
       <div class="lcomp">${loanComputedHTML(a)}</div>
     </div>`;
   }
+  const ccySel=`<select data-aid="${a.id}" data-f="ccy">${CCYS.map(x=>`<option ${x===a.ccy?"selected":""}>${x}</option>`).join("")}</select>`;
+  const catSel=`<select data-aid="${a.id}" data-f="group"><option value="" ${!a.group?"selected":""}>— none —</option>${groupNames().map(g=>`<option ${g===a.group?"selected":""}>${esc(g)}</option>`).join("")}</select>`;
+  if(a.liability){
+    return `<div class="rcard acard liabcard" id="acard-${a.id}" data-aid="${a.id}">
+      <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="Liability name">
+        <button class="rdel" data-adel="${a.id}" title="Remove">×</button></div>
+      <div class="frow"><label class="fld">Currency${ccySel}</label><label class="fld">Category${catSel}</label></div>
+      ${loanBlock}
+      <div class="vsum"><span class="k">Owed today</span><span class="vval num liab">${bal>0.005?("− "+moneyIn(bal,a.ccy)):moneyIn(0,a.ccy)}${inBase(-bal)}</span></div>
+    </div>`;
+  }
   return `<div class="rcard acard" id="acard-${a.id}" data-aid="${a.id}">
     <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="Asset name">
       <button class="rdel" data-adel="${a.id}" title="Remove asset">×</button></div>
     <div class="frow">
       <label class="fld">${a.depreciates?"Starting value":"Value"}<input class="fin num" type="number" step="any" inputmode="decimal" value="${a.value}" data-aid="${a.id}" data-f="value"></label>
-      <label class="fld">Currency<select data-aid="${a.id}" data-f="ccy">${CCYS.map(x=>`<option ${x===a.ccy?"selected":""}>${x}</option>`).join("")}</select></label>
-      <label class="fld">Category<select data-aid="${a.id}" data-f="group"><option value="" ${!a.group?"selected":""}>— none —</option>${groupNames().map(g=>`<option ${g===a.group?"selected":""}>${esc(g)}</option>`).join("")}</select></label>
+      <label class="fld">Currency${ccySel}</label>
+      <label class="fld">Category${catSel}</label>
     </div>
     <div class="toggles">
       <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="depreciates" ${a.depreciates?"checked":""}><span>Value changes over time</span></label>
@@ -102,6 +113,7 @@ function renderAssets(focusName){
   if(focusName){const nm=wrap.querySelector(".rname");if(nm){nm.focus();nm.select&&nm.select();}}
 }
 function newAsset(){const a={id:nid(),name:"New asset",ccy:state.baseCcy,value:0,depreciates:false,up:false,date:new Date().toISOString().slice(0,10),rate:0.15,loan:null};state.assets.push(a);scheduleSync();return a;}
+function newLiability(){const t=new Date().toISOString().slice(0,10);const a={id:nid(),name:"New liability",ccy:state.baseCcy,value:0,depreciates:false,up:false,liability:true,date:t,rate:0.15,loan:normLoan({startDate:t},t)};state.assets.push(a);scheduleSync();return a;}
 document.getElementById("assetList").addEventListener("input",e=>{
   const t=e.target,id=t.dataset.aid;if(!id)return;const a=state.assets.find(x=>x.id===id);if(!a)return;
   if(t.dataset.eid){const x=(a.loan&&a.loan.extra||[]).find(z=>z.id===t.dataset.eid);if(x){if(t.dataset.ef==="amount")x.amount=parseFloat(t.value||0);else x.date=t.value;}}
@@ -116,7 +128,7 @@ document.getElementById("assetList").addEventListener("input",e=>{
   // Refresh only the computed outputs in place — never the inputs — so the caret survives.
   const card=t.closest(".acard");if(!card)return;
   const vv=card.querySelector(".vval");
-  if(vv){const net=assetNetAt(a,new Date());vv.textContent=moneyIn(net,a.ccy)+(a.ccy!==state.baseCcy?(" · "+money(convTo(net,a.ccy,state.baseCcy))):"");}
+  if(vv){if(a.liability){const bal=a.loan?outstandingAt(a.loan,new Date()):0;vv.textContent=(bal>0.005?"− "+moneyIn(bal,a.ccy):moneyIn(0,a.ccy))+(a.ccy!==state.baseCcy?(" · "+money(convTo(-bal,a.ccy,state.baseCcy))):"");}else{const net=assetNetAt(a,new Date());vv.textContent=moneyIn(net,a.ccy)+(a.ccy!==state.baseCcy?(" · "+money(convTo(net,a.ccy,state.baseCcy))):"");}}
   const lc=card.querySelector(".lcomp");
   if(lc&&a.loan)lc.innerHTML=loanComputedHTML(a);
 });

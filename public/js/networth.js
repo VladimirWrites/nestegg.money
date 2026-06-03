@@ -27,12 +27,13 @@ function cardHTML(en,i,names,year){
 }
 // Read-only card for a long-term asset (tap to edit in the focused asset editor).
 function autoCardHTML(en,names,year){
-  const a=(state.assets||[]).find(x=>x.id===en.assetId)||{};
-  const tags=[a.depreciates?"depreciating":"",a.loan?"loan":""].filter(Boolean).join(" · ")||"asset";
-  return `<div class="rcard auto" data-editasset="${en.assetId}" title="Edit long-term asset"><span class="dot" style="background:${colorOf(seriesKey(en),names)}"></span>`+
+  const a=(state.assets||[]).find(x=>x.id===en.assetId)||{},liab=en.kind==="liability";
+  const tags=liab?"liability":([a.depreciates?(a.up?"appreciating":"depreciating"):"",a.loan?"loan":""].filter(Boolean).join(" · ")||"asset");
+  const v=entryBase(en,year);
+  return `<div class="rcard auto${liab?" liabcard":""}" data-editasset="${en.assetId}" title="Edit"><span class="dot" style="background:${liab?"var(--red)":colorOf(seriesKey(en),names)}"></span>`+
     `<span class="rname ro">${esc(en.name)}</span>`+
     `<span class="autotag">${tags}</span>`+
-    `<span class="rconv">${money(entryBase(en,year))}</span>`+
+    `<span class="rconv${liab?" liab":""}">${liab?("− "+money(Math.abs(v))):money(v)}</span>`+
     `<svg class="autoedit" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2.5l2.5 2.5L6 12.5 3 13l.5-3z"/></svg></div>`;
 }
 function renderEntries(){
@@ -71,6 +72,7 @@ document.getElementById("edYear").addEventListener("change",e=>{const sn=state.s
 document.getElementById("edDelYear").onclick=()=>{if(edIdx<0)return;if(confirm("Delete year "+state.snapshots[edIdx].year+"?")){state.snapshots.splice(edIdx,1);scheduleSync();closeYearEditor();}};
 document.getElementById("edAdd").onclick=()=>{state.snapshots[edIdx].entries.push({id:nid(),name:"New asset",kind:"fixed",ccy:state.baseCcy,value:0});scheduleSync();renderEntries();};
 document.getElementById("edAddLongterm").onclick=()=>{const a=newAsset();openAssetEditor(a.id,true);};
+document.getElementById("edAddLiability").onclick=()=>{const a=newLiability();openAssetEditor(a.id,true);};
 document.getElementById("edAddGroup").onclick=()=>{const ex=new Set(state.categories||(state.categories=[]));let base="New category",nm=base,k=2;while(ex.has(nm))nm=base+" "+(k++);state.categories.push(nm);scheduleSync();renderEntries();};
 document.getElementById("edCopyPrev").onclick=()=>{const cur=state.snapshots[edIdx];const prev=state.snapshots.filter(s=>s.year<cur.year).sort((a,b)=>b.year-a.year)[0];if(!prev){toast("No earlier year to copy from");return;}if(cur.entries.length&&!confirm("Replace this year's entries with a copy of "+prev.year+"?"))return;cur.entries=prev.entries.map(e=>({id:nid(),name:e.name,kind:e.kind||"fixed",ccy:e.ccy,value:e.value,shares:e.shares,ticker:e.ticker,group:e.group}));scheduleSync();renderEntries();ensureHist();toast("Copied "+prev.year);};
 document.getElementById("edEntries").addEventListener("input",e=>{
