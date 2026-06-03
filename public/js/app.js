@@ -456,7 +456,8 @@ function renderYears(){
   const maxV=Math.max(1,...state.snapshots.map(s=>snapTotalBase(s)));
   snaps.forEach(sn=>{const ri=state.snapshots.indexOf(sn),tot=snapTotalBase(sn);
     const agg={};effEntries(sn).forEach(e=>{const v=entryBase(e,sn.year);if(v>0){const k=seriesKey(e);agg[k]=(agg[k]||0)+v;}});
-    const segs=Object.keys(agg).map(k=>`<i style="width:${agg[k]/(tot||1)*100}%;background:${colorOf(k,names)}"></i>`).join("");
+    // Order segments by allNames() (same as the graph's stacking) so colours line up.
+    const segs=names.map(k=>agg[k]>0?`<i style="width:${agg[k]/(tot||1)*100}%;background:${colorOf(k,names)}"></i>`:"").join("");
     const card=document.createElement("div");card.className="ycard";
     card.innerHTML=`<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar" style="max-width:${Math.max(8,tot/maxV*100)}%">${segs}</span><span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
     host.appendChild(card);});
