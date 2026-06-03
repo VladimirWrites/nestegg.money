@@ -88,6 +88,7 @@
 
     <section style="border-bottom:none;padding-top:8px">
       <div class="controls" style="margin-top:0">
+        <button class="act" id="salaryBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9v0M18 15v0"/></svg>Salary</button>
         <button class="act ghost" id="exportBtn">Export JSON</button>
         <button class="act ghost" id="importBtn">Import JSON</button>
         <input type="file" id="importFile" accept="application/json" style="display:none">
@@ -128,6 +129,24 @@
   <div class="ed-wrap">
     <p class="edlede">A car, a house, anything that depreciates or carries a loan. Toggle <strong>Depreciates</strong> to have its value fall a little every day (current year live, past years locked to year-end); toggle <strong>Has a loan</strong> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it. Assign a <strong>Category</strong> to group it on the home screen.</p>
     <div class="cards" id="assetList"></div>
+  </div>
+</div>
+
+<div id="salaryEditor" class="editor hide">
+  <div class="ed-bar">
+    <button id="salaryBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
+    <div class="ed-title">Salary history</div>
+  </div>
+  <div class="ed-wrap">
+    <section class="over" style="border:none;padding:0 0 8px">
+      <button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+      <div class="sectitle">Our net salary history</div>
+      <div class="histscroll"><svg id="salaryChart"></svg></div>
+      <div class="chiplegend" id="salaryLegend"></div>
+    </section>
+    <p class="edlede">Log each month's <strong>net</strong> pay per person — base plus any extra (bonus, overtime). The event field notes a raise or job change. Yearly totals are summed automatically.</p>
+    <div id="salaryList"></div>
+    <div class="controls"><button class="act" id="addPerson">+ Add person</button></div>
   </div>
 </div>
 

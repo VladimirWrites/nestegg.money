@@ -246,8 +246,28 @@ button.act.ghost:hover{border-color:var(--amber)}
 .schtab tr.fxdiv td{background:var(--panel);color:var(--amber2);font-size:10px;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:9px;border-top:1px solid var(--line2)}
 .pstat .v.hilite{color:var(--amber2)}
 
+/* salary history page */
+.salperson{border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:13px;margin-bottom:14px}
+.salhead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.salname{flex:1;min-width:80px;font:inherit;font-size:15px;font-weight:600;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0;font-family:var(--mono)}
+.salname:focus{outline:none;border-bottom:1px solid var(--amber)}
+.salccy{font:inherit;font-size:12px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:6px 8px;color:var(--ink);min-height:34px}
+.salgridhead{display:none}
+.salgrid{display:flex;flex-direction:column;gap:5px}
+.salyear{display:flex;justify-content:space-between;align-items:baseline;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-top:10px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.salysub{font-variant-numeric:tabular-nums;font-weight:600;font-size:12px;color:var(--ink);letter-spacing:0}
+.salrow{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.salmo{width:118px;font:inherit;font-size:13px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:7px 8px;color:var(--ink);min-height:38px}
+.salfld{flex:1;min-width:78px}
+.salf{width:100%;font:inherit;font-size:14px;text-align:right;background:#000;border:1px solid var(--line2);border-radius:3px;padding:7px 8px;color:var(--ink);min-height:38px}
+.salev{flex:1.4;min-width:90px;font:inherit;font-size:13px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:7px 8px;color:var(--muted);min-height:38px}
+.salmo:focus,.salf:focus,.salev:focus{outline:none;border-color:var(--amber)}
+.saltot{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;text-align:right;white-space:nowrap;color:var(--green);min-width:78px}
+#salaryChart{display:block}
+@media(max-width:560px){.salev{flex:1 1 100%}}
+
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
-.ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select{
+.ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select,.salccy{
   -webkit-appearance:none;-moz-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238a867c' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 9px center;background-size:11px;

@@ -4,7 +4,7 @@ const PALETTE=["#4aa3ff","#ff8c1a","#3ad17a","#ffd23a","#ff4d6d","#9b8cff","#2fd
 let uid=1;const nid=()=>"i"+(uid++)+Date.now().toString(36);
 
 function emptyState(){
-  return {v:6,baseCcy:"EUR",fxRates:Object.assign({},FALLBACK_FX),fxDate:null,fxHist:{},prices:{},assets:[],categories:[],snapshots:[{year:new Date().getFullYear(),entries:[]}]};
+  return {v:6,baseCcy:"EUR",fxRates:Object.assign({},FALLBACK_FX),fxDate:null,fxHist:{},prices:{},assets:[],categories:[],salaries:[],snapshots:[{year:new Date().getFullYear(),entries:[]}]};
 }
 function normLoan(L,fallbackDate){
   if(!L||typeof L!=="object")return null;
@@ -29,6 +29,10 @@ function migrate(s){
   s.assets.forEach(a=>{if(!a.id)a.id=nid();if(!a.name)a.name="Asset";if(!a.ccy)a.ccy=s.baseCcy||"EUR";if(a.value==null)a.value=0;
     a.depreciates=!!a.depreciates;if(!a.date)a.date=today;if(a.rate==null)a.rate=0.15;
     a.loan=a.loan?normLoan(a.loan,a.date):null;});
+  // Salary history: one record per person, each a list of monthly net-pay entries.
+  if(!Array.isArray(s.salaries))s.salaries=[];
+  s.salaries.forEach(p=>{if(!p.id)p.id=nid();if(!p.name)p.name="Person";if(!p.ccy)p.ccy=s.baseCcy||"EUR";if(!Array.isArray(p.entries))p.entries=[];
+    p.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.ym)en.ym=new Date().toISOString().slice(0,7);if(en.base==null)en.base=0;if(en.extra==null)en.extra=0;if(en.event==null)en.event="";});});
   (s.snapshots||[]).forEach(sn=>{
     if(!sn.entries){const c=sn.cats||{};sn.entries=Object.keys(c).filter(k=>c[k]).map(k=>({id:nid(),name:k,ccy:"EUR",value:c[k]}));}
     sn.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.name)en.name=en.cat||"Asset";if(!en.ccy)en.ccy="EUR";if(en.value==null)en.value=0;if(!en.kind)en.kind="fixed";if(en.kind==="ticker"){if(en.shares==null)en.shares=0;if(en.ticker==null)en.ticker="";}delete en.cat;delete en.qty;});
@@ -724,6 +728,94 @@ document.getElementById("assetList").addEventListener("click",e=>{
   const ed=e.target.closest("[data-extradel]");if(ed){const a=state.assets.find(x=>x.id===ed.dataset.aid);if(a&&a.loan){a.loan.extra=(a.loan.extra||[]).filter(z=>z.id!==ed.dataset.extradel);scheduleSync();renderAssets();}return;}
 });
 document.getElementById("assetBack").onclick=()=>{scheduleSync();closeAssetEditor();};
+
+/* ───────── salary history (per person, monthly net pay) ───────── */
+const salTotal=en=>(parseFloat(en.base)||0)+(parseFloat(en.extra)||0);
+const salMonths=p=>[...(p.entries||[])].sort((a,b)=>a.ym<b.ym?-1:(a.ym>b.ym?1:0));
+function nextYm(ym){if(!/^\d{4}-\d{2}$/.test(ym||""))return new Date().toISOString().slice(0,7);let[y,m]=ym.split("-").map(Number);m++;if(m>12){m=1;y++;}return y+"-"+String(m).padStart(2,"0");}
+const ymLabel=ym=>{const[y,m]=String(ym).split("-").map(Number);return new Date(y,(m||1)-1,1).toLocaleDateString("en-GB",{month:"short",year:"numeric"});};
+function salAnnual(p){const a={};salMonths(p).forEach(en=>{const y=en.ym.slice(0,4);a[y]=(a[y]||0)+salTotal(en);});return a;}
+const salColor=i=>PALETTE[i%PALETTE.length];
+function drawSalaryChart(){
+  const svg=document.getElementById("salaryChart"),people=state.salaries||[];
+  const all=people.flatMap(p=>p.entries||[]);
+  const leg=document.getElementById("salaryLegend");
+  if(!all.length){svg.innerHTML="";svg.removeAttribute("width");leg.innerHTML="";return;}
+  const idx=ym=>{const[y,m]=ym.split("-").map(Number);return y*12+(m-1);};
+  const minI=Math.min(...all.map(e=>idx(e.ym))),maxI=Math.max(...all.map(e=>idx(e.ym))),span=Math.max(1,maxI-minI);
+  const maxV=Math.max(1,...all.map(salTotal)),nm=niceCeil(maxV);
+  const padL=58,padR=16,padT=18,padB=28,innerW=Math.max(span*9,260),W=innerW+padL+padR,H=280,plotH=H-padT-padB,plotW=W-padL-padR;
+  const x=i=>padL+((i-minI)/span)*plotW,y=v=>padT+plotH-(v/nm)*plotH,sym=ccySym();
+  let s="";
+  for(let g=0;g<=4;g++){const val=nm*g/4,yy=y(val);s+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#26262a"/>`;s+=`<text x="${padL-8}" y="${yy+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
+  const minY=Math.floor(minI/12),maxY=Math.floor(maxI/12),stepY=Math.ceil((maxY-minY+1)/12)||1;
+  for(let yr=minY;yr<=maxY;yr+=stepY){const xi=x(yr*12);if(xi>=padL-1&&xi<=W-padR+1)s+=`<text x="${xi}" y="${H-8}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${yr}</text>`;}
+  people.forEach((p,pi)=>{const ms=salMonths(p);if(!ms.length)return;const col=salColor(pi);
+    const pts=ms.map(e=>x(idx(e.ym)).toFixed(1)+","+y(salTotal(e)).toFixed(1)).join(" ");
+    s+=`<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2"/>`;
+    ms.forEach(e=>{s+=`<circle cx="${x(idx(e.ym)).toFixed(1)}" cy="${y(salTotal(e)).toFixed(1)}" r="${e.event?3:2}" fill="${col}"${e.event?' stroke="#0a0a0b" stroke-width="1"':''}><title>${ymLabel(e.ym)} · ${esc(p.name)}: ${moneyIn(salTotal(e),p.ccy)}${e.event?" · "+esc(e.event):""}</title></circle>`;});
+  });
+  svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.innerHTML=s;
+  leg.innerHTML=people.map((p,pi)=>`<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("");
+}
+function downloadSalary(){
+  const src=document.getElementById("salaryChart");if(!src.innerHTML){toast("Nothing to save");return;}
+  const cW=+src.getAttribute("width"),cH=+src.getAttribute("height"),pad=24,titleH=52;
+  const leg=legendSVG(state.salaries.map((p,pi)=>({color:salColor(pi),label:p.name})),pad,titleH+cH+16,13);
+  const f=frameSVG("Our Net Salary History",src.innerHTML,cW,cH,leg,pad,titleH);
+  svgToPng(f.svg,f.W,f.H,2,"nestegg-salary.png");
+}
+function openSalary(){document.getElementById("salaryEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderSalary();}
+function closeSalary(){document.getElementById("salaryEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");renderAll();}
+function salRowHTML(p,en){
+  return `<div class="salrow" data-sid="${p.id}" data-eid="${en.id}">
+    <input class="fin salmo" type="month" value="${esc(en.ym)}" data-f="ym" title="Month">
+    <span class="suffix salfld"><input class="fin num salf" type="number" step="any" inputmode="decimal" value="${en.base}" data-f="base" title="Base net pay"></span>
+    <span class="suffix salfld"><input class="fin num salf" type="number" step="any" inputmode="decimal" value="${en.extra}" data-f="extra" title="Extra (bonus, overtime…)"></span>
+    <input class="fin salev" value="${esc(en.event||"")}" data-f="event" placeholder="event (raise…)" title="Event">
+    <span class="saltot num">${moneyIn(salTotal(en),p.ccy)}</span>
+    <button class="rdel" data-saldel="${en.id}" data-sid="${p.id}" title="Remove month">×</button>
+  </div>`;
+}
+function renderSalary(){
+  drawSalaryChart();
+  const host=document.getElementById("salaryList");
+  if(!state.salaries.length){host.innerHTML=`<div class="emptyhint">No one yet. Add yourself (and your partner), then log each month's net pay — base plus any extra. Use the event field to note a raise or job change.</div>`;return;}
+  let html="";
+  state.salaries.forEach(p=>{
+    const ms=salMonths(p),annual=salAnnual(p);let rows="",curY=null;
+    ms.forEach(en=>{const y=en.ym.slice(0,4);if(y!==curY){curY=y;rows+=`<div class="salyear">${y}<span class="salysub num">${moneyIn(annual[y],p.ccy)}</span></div>`;}rows+=salRowHTML(p,en);});
+    html+=`<div class="salperson" data-sid="${p.id}">
+      <div class="salhead"><input class="rname salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="Name">
+        <select class="salccy" data-sid="${p.id}" data-f="ccy">${CCYS.map(x=>`<option ${x===p.ccy?"selected":""}>${x}</option>`).join("")}</select>
+        <button class="rdel" data-perdel="${p.id}" title="Remove person">×</button></div>
+      <div class="salgridhead"><span>Month</span><span>Base</span><span>Extra</span><span>Event</span><span class="r">Total</span><span></span></div>
+      <div class="salgrid">${rows||'<div class="exhint">No months yet — add one below.</div>'}</div>
+      <div class="controls"><button class="act ghost mini" data-saladd="${p.id}">+ Month</button><button class="act ghost mini" data-salyear="${p.id}">+ 12 months</button></div>
+    </div>`;
+  });
+  host.innerHTML=html;
+}
+function salAddMonth(p){const ms=salMonths(p),last=ms[ms.length-1];p.entries.push({id:nid(),ym:last?nextYm(last.ym):new Date().toISOString().slice(0,7),base:last?last.base:0,extra:0,event:""});}
+document.getElementById("salaryList").addEventListener("input",e=>{
+  const t=e.target,sid=t.dataset.sid,f=t.dataset.f;if(!sid||!f)return;const p=state.salaries.find(x=>x.id===sid);if(!p)return;
+  if(t.dataset.eid){const en=p.entries.find(z=>z.id===t.dataset.eid);if(!en)return;
+    if(f==="base"||f==="extra")en[f]=parseFloat(t.value||0);else en[f]=t.value;
+    scheduleSync();
+    if(f==="base"||f==="extra"){const row=t.closest(".salrow"),tt=row&&row.querySelector(".saltot");if(tt)tt.textContent=moneyIn(salTotal(en),p.ccy);drawSalaryChart();}
+  }else{ if(f==="name")p.name=t.value; else if(f==="ccy")p.ccy=t.value; scheduleSync(); if(f==="name")drawSalaryChart(); }
+});
+document.getElementById("salaryList").addEventListener("change",e=>{const f=e.target.dataset.f;if(f==="ym"||f==="ccy")renderSalary();});
+document.getElementById("salaryList").addEventListener("click",e=>{
+  const sd=e.target.closest("[data-saldel]");if(sd){const p=state.salaries.find(x=>x.id===sd.dataset.sid);if(p){p.entries=p.entries.filter(z=>z.id!==sd.dataset.saldel);scheduleSync();renderSalary();}return;}
+  const pd=e.target.closest("[data-perdel]");if(pd){const p=state.salaries.find(x=>x.id===pd.dataset.perdel);if(confirm("Remove "+(p?p.name:"this person")+" and their salary history?")){state.salaries=state.salaries.filter(x=>x.id!==pd.dataset.perdel);scheduleSync();renderSalary();}return;}
+  const am=e.target.closest("[data-saladd]");if(am){const p=state.salaries.find(x=>x.id===am.dataset.saladd);if(p){salAddMonth(p);scheduleSync();renderSalary();}return;}
+  const ay=e.target.closest("[data-salyear]");if(ay){const p=state.salaries.find(x=>x.id===ay.dataset.salyear);if(p){for(let k=0;k<12;k++)salAddMonth(p);scheduleSync();renderSalary();}return;}
+});
+document.getElementById("addPerson").onclick=()=>{state.salaries.push({id:nid(),name:state.salaries.length?"Partner":"Me",ccy:state.baseCcy,entries:[]});scheduleSync();renderSalary();};
+document.getElementById("salaryBack").onclick=()=>{scheduleSync();closeSalary();};
+document.getElementById("dlSalary").onclick=downloadSalary;
+document.getElementById("salaryBtn").onclick=openSalary;
 
 document.getElementById("exportBtn").onclick=()=>{const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="networth-"+new Date().toISOString().slice(0,10)+".json";a.click();};
 document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
