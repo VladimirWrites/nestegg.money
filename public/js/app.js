@@ -737,48 +737,51 @@ function prevYm(ym){if(!/^\d{4}-\d{2}$/.test(ym||""))return new Date().toISOStri
 const ymLabel=ym=>{const[y,m]=String(ym).split("-").map(Number);return new Date(y,(m||1)-1,1).toLocaleDateString("en-GB",{month:"short",year:"numeric"});};
 function salAnnual(p){const a={};salMonths(p).forEach(en=>{const y=en.ym.slice(0,4);a[y]=(a[y]||0)+salTotal(en);});return a;}
 const salColor=i=>PALETTE[i%PALETTE.length];
-let salView="monthly";   // "monthly" | "yearly"
+// Tight ~5-tick axis maximum (little empty headroom).
+function axisMax(v){if(!(v>0))return 1;const raw=v/5,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p;
+  const step=(f<=1?1:f<=1.5?1.5:f<=2?2:f<=2.5?2.5:f<=3?3:f<=4?4:f<=5?5:f<=6?6:f<=8?8:10)*p;
+  return Math.ceil(v/step)*step;}
+const SAL_COMB="#c9a227";   // gold, matching the reference's combined-yearly line
+// Dual-axis: each person's MONTHLY net pay on the left axis, plus the COMBINED YEARLY
+// total (one point per year) on the right axis. Event points get a dot (hover/tap to read).
 function drawSalaryChart(){
   const svg=document.getElementById("salaryChart"),people=state.salaries||[],leg=document.getElementById("salaryLegend");
   const all=people.flatMap(p=>p.entries||[]);
   if(!all.length){svg.innerHTML="";svg.removeAttribute("width");leg.innerHTML="";return;}
-  const yearly=salView==="yearly";
   const idxM=ym=>{const[y,m]=ym.split("-").map(Number);return y*12+(m-1);};
-  // Build a line series per person (monthly points, or one annual-total point per year).
-  const series=[];
-  people.forEach((p,pi)=>{let pts;
-    if(yearly){const a=salAnnual(p);pts=Object.keys(a).map(y=>({x:+y,v:a[y],lbl:y})).sort((u,w)=>u.x-w.x);}
-    else{pts=salMonths(p).map(e=>({x:idxM(e.ym),v:salTotal(e),lbl:ymLabel(e.ym),ev:e.event}));}
-    series.push({name:p.name,color:salColor(pi),pts});
-  });
-  // Combined household line (sum across everyone at each point).
-  if(people.length>1){const map={};
-    if(yearly)people.forEach(p=>{const a=salAnnual(p);Object.keys(a).forEach(y=>map[y]=(map[y]||0)+a[y]);});
-    else people.forEach(p=>(p.entries||[]).forEach(e=>{const k=idxM(e.ym);map[k]=(map[k]||0)+salTotal(e);}));
-    const pts=Object.keys(map).map(k=>({x:+k,v:map[k],lbl:yearly?k:null})).sort((u,w)=>u.x-w.x);
-    series.push({name:"Combined",color:"#e8e4d8",pts,thick:true});
-  }
-  const allX=series.flatMap(se=>se.pts.map(p=>p.x)),allV=series.flatMap(se=>se.pts.map(p=>p.v));
-  const minX=Math.min(...allX),maxX=Math.max(...allX),spanX=Math.max(1,maxX-minX);
-  const nm=niceCeil(Math.max(1,...allV));
-  const padL=62,padR=16,padT=18,padB=30,H=400,plotH=H-padT-padB;
-  const innerW=Math.max(spanX*(yearly?46:9),280),W=innerW+padL+padR,plotW=W-padL-padR;
-  const X=x=>padL+((x-minX)/spanX)*plotW,Y=v=>padT+plotH-(v/nm)*plotH,sym=ccySym();
+  const minI=Math.min(...all.map(e=>idxM(e.ym))),maxI=Math.max(...all.map(e=>idxM(e.ym))),span=Math.max(1,maxI-minI);
+  const nmL=axisMax(Math.max(1,...all.map(salTotal)));
+  const years=[...new Set(all.map(e=>+e.ym.slice(0,4)))].sort((a,b)=>a-b);
+  const combY=years.map(y=>({y,v:people.reduce((s,p)=>s+(salAnnual(p)[y]||0),0)}));
+  const nmR=axisMax(Math.max(1,...combY.map(c=>c.v)));
+  const padL=56,padR=56,padT=22,padB=30,H=400,plotH=H-padT-padB;
+  const innerW=Math.max(span*9,360),W=innerW+padL+padR,plotW=W-padL-padR;
+  const X=i=>padL+((i-minI)/span)*plotW,YL=v=>padT+plotH-(v/nmL)*plotH,YR=v=>padT+plotH-(v/nmR)*plotH,sym=ccySym();
   let s="";
-  for(let g=0;g<=4;g++){const val=nm*g/4,yy=Y(val);s+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#26262a"/>`;s+=`<text x="${padL-8}" y="${yy+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
-  const minYr=yearly?minX:Math.floor(minX/12),maxYr=yearly?maxX:Math.floor(maxX/12),stepYr=Math.max(1,Math.ceil((maxYr-minYr+1)/14));
-  for(let yr=minYr;yr<=maxYr;yr+=stepYr){const xc=X(yearly?yr:yr*12);if(xc>=padL-1&&xc<=W-padR+1)s+=`<text x="${xc}" y="${H-9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${yr}</text>`;}
-  series.forEach(se=>{if(!se.pts.length)return;
-    s+=`<polyline points="${se.pts.map(p=>X(p.x).toFixed(1)+","+Y(p.v).toFixed(1)).join(" ")}" fill="none" stroke="${se.color}" stroke-width="${se.thick?2.6:1.8}"${se.thick?' stroke-dasharray="5 3"':''}/>`;
-    se.pts.forEach(p=>{s+=`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="${se.thick?3:(p.ev?3:2.2)}" fill="${se.color}"${p.ev?' stroke="#0a0a0b" stroke-width="1"':''}><title>${esc(p.lbl||"")} · ${esc(se.name)}: ${sym}${Math.round(p.v).toLocaleString()}${p.ev?" · "+esc(p.ev):""}</title></circle>`;});
+  for(let g=0;g<=5;g++){const yy=padT+plotH-(g/5)*plotH;
+    s+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#26262a"/>`;
+    s+=`<text x="${padL-8}" y="${yy+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(nmL*g/5)}</text>`;
+    s+=`<text x="${W-padR+8}" y="${yy+3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${shortK(nmR*g/5)}</text>`;}
+  const minYr=Math.floor(minI/12),maxYr=Math.floor(maxI/12),stepYr=Math.max(1,Math.ceil((maxYr-minYr+1)/14));
+  for(let yr=minYr;yr<=maxYr;yr+=stepYr){const xc=X(yr*12);if(xc>=padL-1&&xc<=W-padR+1)s+=`<text x="${xc}" y="${H-9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${yr}</text>`;}
+  // monthly per-person lines (left axis) + event dots
+  people.forEach((p,pi)=>{const ms=salMonths(p);if(!ms.length)return;const col=salColor(pi);
+    s+=`<polyline points="${ms.map(e=>X(idxM(e.ym)).toFixed(1)+","+YL(salTotal(e)).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
+    ms.forEach(e=>{if(!e.event)return;const lab=esc(ymLabel(e.ym)+" · "+p.name+": "+sym+Math.round(salTotal(e)).toLocaleString()+" · "+e.event);
+      s+=`<circle class="saldot" cx="${X(idxM(e.ym)).toFixed(1)}" cy="${YL(salTotal(e)).toFixed(1)}" r="4" fill="${col}" stroke="#0a0a0b" stroke-width="1.5" data-lbl="${lab}"><title>${lab}</title></circle>`;});
   });
+  // combined yearly line (right axis), one point per year at mid-year, with year labels
+  const cpts=combY.map(c=>({x:X(idxM(c.y+"-07")),yy:YR(c.v),y0:c.y,v:c.v}));
+  s+=`<polyline points="${cpts.map(p=>p.x.toFixed(1)+","+p.yy.toFixed(1)).join(" ")}" fill="none" stroke="${SAL_COMB}" stroke-width="2.4"/>`;
+  cpts.forEach(p=>{s+=`<circle cx="${p.x.toFixed(1)}" cy="${p.yy.toFixed(1)}" r="3" fill="${SAL_COMB}"><title>${p.y0} combined: ${sym}${Math.round(p.v).toLocaleString()}</title></circle>`;
+    s+=`<text x="${p.x.toFixed(1)}" y="${(p.yy-8).toFixed(1)}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${p.y0}</text>`;});
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.innerHTML=s;
-  leg.innerHTML=series.map(se=>`<span><span class="chip" style="background:${se.color}"></span>${esc(se.name)}</span>`).join("");
+  leg.innerHTML=people.map((p,pi)=>`<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("")+`<span><span class="chip" style="background:${SAL_COMB}"></span>Combined yearly net salary</span>`;
 }
 function downloadSalary(){
   const src=document.getElementById("salaryChart");if(!src.innerHTML){toast("Nothing to save");return;}
   const cW=+src.getAttribute("width"),cH=+src.getAttribute("height"),pad=24,titleH=52;
-  const leg=legendSVG(state.salaries.map((p,pi)=>({color:salColor(pi),label:p.name})),pad,titleH+cH+16,13);
+  const leg=legendSVG(state.salaries.map((p,pi)=>({color:salColor(pi),label:p.name})).concat([{color:SAL_COMB,label:"Combined yearly net salary"}]),pad,titleH+cH+16,13);
   const f=frameSVG("Our Net Salary History",src.innerHTML,cW,cH,leg,pad,titleH);
   svgToPng(f.svg,f.W,f.H,2,"nestegg-salary.png");
 }
@@ -876,9 +879,7 @@ document.getElementById("salaryList").addEventListener("click",e=>{
 });
 document.getElementById("addPerson").onclick=()=>{state.salaries.push({id:nid(),name:state.salaries.length?"Partner":"Me",ccy:state.baseCcy,entries:[]});scheduleSync();renderSalary();};
 document.getElementById("salImportBtn").onclick=importSalary;
-function setSalView(v){salView=v;document.getElementById("salViewM").classList.toggle("on",v==="monthly");document.getElementById("salViewY").classList.toggle("on",v==="yearly");drawSalaryChart();}
-document.getElementById("salViewM").onclick=()=>setSalView("monthly");
-document.getElementById("salViewY").onclick=()=>setSalView("yearly");
+document.getElementById("salaryChart").addEventListener("click",e=>{const c=e.target.closest(".saldot");if(c)toast(c.getAttribute("data-lbl"));});
 document.getElementById("salaryBack").onclick=()=>{scheduleSync();closeSalary();};
 document.getElementById("dlSalary").onclick=downloadSalary;
 document.getElementById("salaryBtn").onclick=openSalary;
