@@ -238,6 +238,9 @@ button.act.ghost:hover{border-color:var(--amber)}
 .schtab td{padding:7px 10px;text-align:right;border-top:1px solid var(--line);color:var(--ink);white-space:nowrap}
 .schtab td:first-child{text-align:left;color:var(--muted)}
 .schtab tbody tr:hover{background:var(--panel2)}
+.schtab tr.exline td{background:rgba(255,176,0,.08);color:var(--amber);border-top:1px solid var(--line2)}
+.schtab tr.exline td:nth-child(2){color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-size:10px}
+.schtab tr.exline:hover td{background:rgba(255,176,0,.12)}
 
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
 .ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select{

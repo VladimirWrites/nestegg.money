@@ -130,10 +130,13 @@ function buildSchedule(loan){
     // Extra payments billed by this (in-arrears) payment: an extra paid on day D of
     // its month stops interest on that sum for the remaining (30−D) days (30/360),
     // so this month's interest is credited accordingly before deriving principal.
-    let extraThis=0,credit=0;
+    let extraThis=0,credit=0,running=bal;
     while(ei<extras.length&&extras[ei].d<date){
       const x=extras[ei],day=Math.min(30,Math.max(1,x.d.getDate()));
-      credit+=x.a*(30-day)/30; extraThis=round2(extraThis+x.a); ei++;
+      credit+=x.a*(30-day)/30; extraThis=round2(extraThis+x.a);
+      running=round2(running-x.a);
+      rows.push({type:"extra",date:x.d,extra:x.a,balance:running});   // standalone dated overpayment
+      ei++;
     }
     // Round each month's interest to whole cents, like a bank statement, then carry forward.
     const interest=round2((bal-credit)*i);
@@ -141,7 +144,7 @@ function buildSchedule(loan){
     if(principal>bal){principal=bal;rowPay=round2(interest+principal);}   // final (partial) payment
     bal=round2(bal-principal-extraThis);
     if(bal<0)bal=0;
-    rows.push({date,payment:rowPay,interest,principal,extra:extraThis,balance:bal});
+    rows.push({type:"payment",date,payment:rowPay,interest,principal,balance:bal});
   }
   return rows;
 }
@@ -459,6 +462,7 @@ document.getElementById("addYear").onclick=()=>{const ys=state.snapshots.map(s=>
    One asset with optional toggles: it depreciates and/or carries a loan.
    Net contribution = (depreciated price or market value) − outstanding loan. */
 const ymd=d=>d.toLocaleDateString("en-GB",{month:"short",year:"numeric"});
+const ymdDay=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
 function openAssetEditor(focusId){document.getElementById("assetEditor").classList.remove("hide");window.scrollTo(0,0);renderAssets(focusId);}
 function closeAssetEditor(){
   document.getElementById("assetEditor").classList.add("hide");
@@ -470,11 +474,14 @@ function loanComputedHTML(a){
   const L=a.loan,byPayment=L.mode==="payment",sched=buildSchedule(L),{M,n}=loanTerms(L);
   const bal=outstandingAt(L,new Date());
   const tooLow=byPayment&&(+L.payment>0)&&!isFinite(n);
-  const payoff=sched.length?sched[sched.length-1].date:null,totInt=sched.reduce((s,r)=>s+r.interest,0);
+  const payRows=sched.filter(r=>r.type!=="extra");
+  const payoff=payRows.length?payRows[payRows.length-1].date:null,totInt=sched.reduce((s,r)=>s+(r.interest||0),0);
   const calcStat=byPayment
     ?`<div class="pstat"><span class="k">Term (calculated)</span><span class="v num">${fmtMonths(n)}</span></div>`
     :`<div class="pstat"><span class="k">Monthly payment</span><span class="v num">${M?moneyIn(M,a.ccy):"—"}</span></div>`;
-  const rows=sched.map(r=>`<tr><td>${ymd(r.date)}</td><td class="num">${moneyIn(r.payment,a.ccy)}</td><td class="num">${moneyIn(r.interest,a.ccy)}</td><td class="num">${moneyIn(r.principal,a.ccy)}</td><td class="num">${r.extra?moneyIn(r.extra,a.ccy):"—"}</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`).join("");
+  const rows=sched.map(r=>r.type==="extra"
+    ?`<tr class="exline"><td>${ymdDay(r.date)}</td><td colspan="3">Additional payment</td><td class="num">${moneyIn(r.extra,a.ccy)}</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`
+    :`<tr><td>${ymd(r.date)}</td><td class="num">${moneyIn(r.payment,a.ccy)}</td><td class="num">${moneyIn(r.interest,a.ccy)}</td><td class="num">${moneyIn(r.principal,a.ccy)}</td><td class="num">—</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`).join("");
   return `${tooLow?`<div class="loanwarn">That payment is below the monthly interest, so the loan never amortizes — raise it above ${moneyIn((+L.amount||0)*(+L.rate||0)/100/12,a.ccy)}.</div>`:""}
     <div class="pstats">
       ${calcStat}
@@ -482,7 +489,7 @@ function loanComputedHTML(a){
       <div class="pstat"><span class="k">Payoff</span><span class="v num">${payoff?ymd(payoff):"—"}</span></div>
       <div class="pstat"><span class="k">Total interest</span><span class="v num">${moneyIn(totInt,a.ccy)}</span></div>
     </div>
-    ${sched.length?`<details class="psched"><summary>Payment schedule · ${sched.length} months</summary>
+    ${payRows.length?`<details class="psched"><summary>Payment schedule · ${payRows.length} payments</summary>
       <div class="schscroll"><table class="schtab"><thead><tr><th>When</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Extra</th><th>Balance</th></tr></thead><tbody>${rows}</tbody></table></div></details>`:""}`;
 }
 function assetCardHTML(a){
