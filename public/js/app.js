@@ -76,7 +76,11 @@ function dayChangeBase(nw){
    These live at the top level of state and are injected into every relevant
    year's snapshot as read-only "auto" entries, so net worth always reflects them. */
 const DAY_MS=86400000, YEAR_MS=365.25*DAY_MS;
-const parseDate=s=>{const d=new Date(s);return isNaN(+d)?null:d;};
+// Parse YYYY-MM-DD as a LOCAL date (not UTC) so day-of-month never shifts by timezone.
+const parseDate=s=>{
+  if(typeof s==="string"){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);if(m)return new Date(+m[1],+m[2]-1,+m[3]);}
+  const d=new Date(s);return isNaN(+d)?null:d;
+};
 // Round to whole cents, half-up, with a tiny epsilon so exact half-cents (e.g. 1484.375)
 // don't fall the wrong way through floating-point error — matches how banks amortize.
 const round2=v=>Math.round((v+1e-9)*100)/100;
@@ -123,13 +127,19 @@ function buildSchedule(loan){
   let bal=round2(L),ei=0;
   for(let k=0;k<cap&&bal>0.005;k++){
     const date=addMonths(start,k+1);
-    // Round each month's interest to whole cents first, like a bank statement,
-    // then derive principal and carry the rounded balance forward.
-    const interest=round2(bal*i);
+    // Extra payments billed by this (in-arrears) payment: an extra paid on day D of
+    // its month stops interest on that sum for the remaining (30−D) days (30/360),
+    // so this month's interest is credited accordingly before deriving principal.
+    let extraThis=0,credit=0;
+    while(ei<extras.length&&extras[ei].d<date){
+      const x=extras[ei],day=Math.min(30,Math.max(1,x.d.getDate()));
+      credit+=x.a*(30-day)/30; extraThis=round2(extraThis+x.a); ei++;
+    }
+    // Round each month's interest to whole cents, like a bank statement, then carry forward.
+    const interest=round2((bal-credit)*i);
     let principal=round2(pay-interest),rowPay=pay;
     if(principal>bal){principal=bal;rowPay=round2(interest+principal);}   // final (partial) payment
-    bal=round2(bal-principal);let extraThis=0;
-    while(ei<extras.length&&extras[ei].d<=date){extraThis=round2(extraThis+extras[ei].a);bal=round2(bal-extras[ei].a);ei++;}
+    bal=round2(bal-principal-extraThis);
     if(bal<0)bal=0;
     rows.push({date,payment:rowPay,interest,principal,extra:extraThis,balance:bal});
   }
