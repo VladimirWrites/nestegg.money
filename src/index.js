@@ -167,7 +167,17 @@ export default {
       return json({ error: "method not allowed" }, 405);
     }
 
-    // Non-API path that didn't match a static asset.
-    return new Response("Not found", { status: 404 });
+    // Host/path routing: marketing landing at the root domain, app at the dashboard
+    // subdomain. Until the custom domain is wired, *.workers.dev serves the app so
+    // existing access keeps working. /dashboard and /landing are universal bridges.
+    const url = new URL(request.url);
+    const host = url.hostname;
+    const appHost = host.startsWith("dashboard.") || host.endsWith(".workers.dev") || host === "localhost" || host === "127.0.0.1";
+    const serve = (file) => env.ASSETS.fetch(new Request(new URL(file, url.origin), request));
+    if (pathname === "/dashboard" || pathname === "/dashboard/") return serve("/dashboard.html");
+    if (pathname === "/landing") return serve("/index.html");
+    if (pathname === "/" || pathname === "") return serve(appHost ? "/dashboard.html" : "/index.html");
+    // Everything else: serve the static asset by path (404 if missing).
+    return env.ASSETS.fetch(request);
   },
 };

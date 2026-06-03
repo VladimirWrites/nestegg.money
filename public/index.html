@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>nestegg — private net worth tracker</title>
-<meta name="description" content="Track your net worth privately — log your assets each year and watch your wealth over time and by allocation. Encrypted in your browser; no email, no password, just an account number.">
+<title>nestegg — private net worth & salary tracker</title>
+<meta name="description" content="Track your net worth and salary history privately. Encrypted in your browser before it ever leaves — no email, no password, just an account number.">
 <link rel="canonical" href="https://nestegg.money/">
 <meta name="theme-color" content="#0a0a0b">
 <meta name="robots" content="index, follow">
@@ -15,165 +15,97 @@
 <meta name="apple-mobile-web-app-title" content="nestegg">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="nestegg">
-<meta property="og:title" content="nestegg — private net worth tracker">
-<meta property="og:description" content="Log your assets each year and watch your wealth over time and by allocation. Encrypted in your browser; no email, no password.">
+<meta property="og:title" content="nestegg — private net worth & salary tracker">
+<meta property="og:description" content="Track your net worth and salary history privately. Encrypted in your browser; no email, no password.">
 <meta property="og:url" content="https://nestegg.money/">
 <meta property="og:image" content="https://nestegg.money/assets/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="nestegg — a quiet accounting of what you hold">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="nestegg — private net worth tracker">
-<meta name="twitter:description" content="Log your assets each year and watch your wealth over time and by allocation. Encrypted in your browser; no email, no password.">
+<meta name="twitter:title" content="nestegg — private net worth & salary tracker">
+<meta name="twitter:description" content="Track your net worth and salary history privately. Encrypted in your browser; no email, no password.">
 <meta name="twitter:image" content="https://nestegg.money/assets/og.png">
 <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
+<body class="lp">
 
-<div id="gate">
-  <div class="gatebox">
-    <div class="kick">Personal Ledger</div><h1>Net Worth</h1>
-    <div class="sub">No email. No password. Just an account number.</div>
-    <div class="panel" id="gateCreate">
-      <p>Your account number is your only key. It identifies you and unlocks your data, which is encrypted in your browser before it ever leaves. Write it down somewhere safe.</p>
-      <div class="acctnum num" id="newAcct">…</div>
-      <div class="gaterow"><button class="gatebtn ghost" id="copyAcct">Copy</button><button class="gatebtn ghost" id="regenAcct">Generate another</button><button class="gatebtn" id="confirmAcct">I've saved it — continue</button></div>
-      <div class="warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
-      <div class="switch">Already have one? <a id="toSignin">Sign in with an account number</a></div>
+<header class="lp-nav">
+  <a class="lp-brand" href="/">nestegg</a>
+  <nav class="lp-navlinks">
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a class="lp-btn lp-btn-ghost" href="/dashboard">Sign in</a>
+  </nav>
+</header>
+
+<main class="lp-main">
+  <section class="lp-hero">
+    <div class="lp-kick">Personal ledger</div>
+    <h1>Your net worth and salary,<br><span>privately.</span></h1>
+    <p class="lp-sub">A quiet accounting of what you hold and what you earn — encrypted in your browser before it ever leaves. No email, no password. Just an account number only you know.</p>
+    <div class="lp-cta">
+      <a class="lp-btn lp-btn-primary" href="/dashboard">Create your account</a>
+      <a class="lp-btn lp-btn-ghost" href="/dashboard">I already have one</a>
     </div>
-    <div class="panel hide" id="gateSignin">
-      <p>Enter your account number to load and decrypt your ledger on this device.</p>
-      <input class="gatein" id="signinInput" placeholder="XXXX-XXXX-XXXX-…" autocomplete="off" spellcheck="false">
-      <div class="gaterow"><button class="gatebtn" id="signinBtn">Sign in</button></div>
-      <div class="switch">Need a new account? <a id="toCreate">Create one</a></div>
-    </div>
-    <div class="switch">By continuing you agree to the <a href="privacy.html">Privacy Policy</a> and <a href="terms.html">Terms &amp; Conditions</a>.</div>
-  </div>
-</div>
+    <div class="lp-note">Free · no sign-up form · works on every device</div>
+  </section>
 
-<div id="app" class="hide">
-  <div class="acctbar">
-    <button class="who syncbtn" id="syncNowHome" title="Sync now"><span class="syncdot" id="syncDot"></span><span id="syncTxt">Local</span></button>
-    <div><button id="profileBtn">Profile</button></div>
-  </div>
-  <header class="masthead">
-    <div class="kicker"><span>Personal Ledger</span><span id="dateline">—</span></div>
-    <div class="titlerow"><h1 class="title">Net Worth</h1><div class="ccypick">Display<select id="ccySel"></select></div></div>
-    <div class="subt">A quiet accounting of what you hold.</div>
-    <nav class="mainnav"><button class="navtab on" id="navNet">Net worth</button><button class="navtab" id="salaryBtn">Salary</button></nav>
-  </header>
-  <main>
-    <div class="hero">
-      <div class="label">Total Net Worth</div>
-      <div class="big num" id="nwTotal">—</div>
-      <div class="day num" id="nwDay"></div>
-      <div class="delta" id="nwNote"></div>
-    </div>
-
-    <div class="panels">
-      <section class="over">
-        <button class="chartdl" id="dlHist" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle">Over time <span class="tin">— tap a year to edit its assets</span></div>
-        <div class="histscroll"><svg id="histChart"></svg></div>
-        <div class="chiplegend" id="histLegend"></div>
-        <div class="years" id="years"></div>
-        <div class="controls"><button class="act" id="addYear">+ Year</button></div>
-      </section>
-
-      <section class="alloc">
-        <button class="chartdl" id="dlDonut" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle">Allocation <span class="tin" id="allocYear"></span></div>
-        <div class="charts"><div style="display:flex;justify-content:center"><svg id="donut" width="240" height="240" viewBox="0 0 240 240"></svg></div><div class="legend" id="legend"></div></div>
-      </section>
-    </div>
-
-    <section style="border-bottom:none;padding-top:8px">
-      <div class="controls" style="margin-top:0">
-        <button class="act ghost" id="exportBtn">Export JSON</button>
-        <button class="act ghost" id="importBtn">Import JSON</button>
-        <input type="file" id="importFile" accept="application/json" style="display:none">
-        <button class="act ghost" id="pricesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg>Prices</button>
-        <button class="act ghost" id="ratesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg>Rates</button>
-        <button class="act ghost" id="resetBtn">Reset</button>
-        <span class="updnote" id="updNote"></span>
+  <section class="lp-features">
+    <div class="lp-feat">
+      <div class="lp-ficon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
       </div>
-    </section>
-  </main>
-  <div class="foot">
-    Your data is encrypted in your browser with a key derived from your account number, and the server stores only ciphertext —
-    it never sees your figures. It can still see the size of your encrypted data, when you sync, and your IP address.
-    Each year holds its own asset rows, each in its own currency, shown in your chosen display currency at current ECB rates.
-    There is no recovery if you lose your account number — Export JSON is your backup.
-    <div class="footlinks"><a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms &amp; Conditions</a></div>
-  </div>
-</div>
+      <h3>Encrypted in your browser</h3>
+      <p>Your figures are encrypted on your device with a key derived from your account number. The server only ever stores ciphertext — it can't read a thing.</p>
+    </div>
+    <div class="lp-feat">
+      <div class="lp-ficon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v16a2 2 0 0 0 2 2h14"/><path d="M19 7l-5 5-3-3-4 4"/></svg>
+      </div>
+      <h3>Net worth over time</h3>
+      <p>Log your assets each year and watch your wealth grow, broken down by allocation. Stocks priced live, foreign currencies converted at the right historical rate.</p>
+    </div>
+    <div class="lp-feat">
+      <div class="lp-ficon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-5 3 3 4-6"/></svg>
+      </div>
+      <h3>Salary history</h3>
+      <p>Track every month's net pay for you and your partner side by side, with raises and job changes marked, and a combined yearly trend.</p>
+    </div>
+    <div class="lp-feat">
+      <div class="lp-ficon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+      </div>
+      <h3>Property & loans, done right</h3>
+      <p>Mortgages and car loans with real amortization — extra payments, rate-fixed periods, depreciation — so the equity in your net worth is always accurate.</p>
+    </div>
+    <div class="lp-feat">
+      <div class="lp-ficon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M21 3v6h-6"/></svg>
+      </div>
+      <h3>Synced, but yours</h3>
+      <p>Pick up where you left off on any device. Everything syncs end-to-end encrypted — and Export JSON gives you a backup that's truly your own.</p>
+    </div>
+    <div class="lp-feat">
+      <div class="lp-ficon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h3>No account, no tracking</h3>
+      <p>No email, no password, no profile. We never see who you are — just an opaque hash and an encrypted blob. Nothing to harvest, nothing to sell.</p>
+    </div>
+  </section>
 
-<div id="yearEditor" class="editor hide">
-  <div class="ed-bar">
-    <button id="edBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
-    <div class="ed-title">Year <input id="edYear" type="number" inputmode="numeric"></div>
-    <button id="edDelYear">Delete year</button>
-  </div>
-  <div class="ed-wrap">
-    <div class="ed-total"><span class="et-k">Year total</span><span class="et-v" id="edTotal">—</span></div>
-    <div class="cards" id="edEntries"></div>
-    <div class="controls"><button class="act" id="edAdd">+ Add asset</button><button class="act ghost" id="edAddLongterm">+ Property / vehicle</button><button class="act ghost" id="edAddGroup">+ Add group</button><button class="act ghost" id="edCopyPrev">Copy previous year</button></div>
-  </div>
-</div>
+  <section class="lp-final">
+    <h2>Start your ledger in seconds.</h2>
+    <p>You'll get an account number — write it down, it's the only way back in. Then watch your wealth take shape.</p>
+    <a class="lp-btn lp-btn-primary" href="/dashboard">Open nestegg</a>
+  </section>
+</main>
 
-<div id="assetEditor" class="editor hide">
-  <div class="ed-bar">
-    <button id="assetBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
-    <div class="ed-title">Asset</div>
-  </div>
-  <div class="ed-wrap">
-    <p class="edlede">A car, a house, anything that depreciates or carries a loan. Toggle <strong>Depreciates</strong> to have its value fall a little every day (current year live, past years locked to year-end); toggle <strong>Has a loan</strong> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it. Assign a <strong>Category</strong> to group it on the home screen.</p>
-    <div class="cards" id="assetList"></div>
-  </div>
-</div>
+<footer class="lp-foot">
+  <div>© nestegg · your wealth, privately</div>
+  <div class="lp-footlinks"><a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms &amp; Conditions</a></div>
+</footer>
 
-<div id="salaryEditor" class="editor hide">
-  <div class="ed-bar">
-    <button id="salaryBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
-    <div class="ed-title">Salary history</div>
-  </div>
-  <div class="ed-wrap">
-    <section class="over" style="border:none;padding:0 0 8px">
-      <button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-      <div class="sectitle">Our net salary history</div>
-      <div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div>
-      <div class="chiplegend" id="salaryLegend"></div>
-    </section>
-    <p class="edlede">Log each month's <strong>net</strong> pay per person — base plus any extra (bonus, overtime). The event field notes a raise or job change. Yearly totals are summed automatically.</p>
-    <div id="salaryList"></div>
-    <div class="controls"><button class="act" id="addPerson">+ Add person</button></div>
-    <details class="salimport">
-      <summary>Import from a spreadsheet</summary>
-      <p class="edlede" style="margin:10px 0">In Google Sheets, select the <strong>Month</strong> column and the <strong>net amount</strong> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</p>
-      <div class="controls" style="margin:0 0 8px"><span class="salrlbl">Import for</span><select id="salImportWho" class="salccy"></select></div>
-      <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
-      <div class="controls"><button class="act" id="salImportBtn">Import pasted rows</button></div>
-    </details>
-  </div>
-</div>
-
-<div id="profileEditor" class="editor hide">
-  <div class="ed-bar">
-    <button id="profileBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
-    <div class="ed-title">Profile</div>
-  </div>
-  <div class="ed-wrap">
-    <div class="prof-sync"><span class="syncdot" id="syncDot2"></span><span id="syncTxt2">Local</span></div>
-    <div class="sectitle">Your account number</div>
-    <div class="acctrow"><div class="acctnum num" id="profAcct">…</div><button class="eyebtn" id="profEye" title="Show / hide" aria-label="Show or hide account number"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-    <div class="controls"><button class="act ghost" id="profCopyAcct">Copy</button><button class="act ghost" id="profSyncNow">Sync now</button></div>
-    <div class="warn">This number is your only key — it identifies you and decrypts your data. There is no recovery if you lose it. Keep it somewhere safe, and use Export JSON for a real backup.</div>
-    <div class="controls" style="margin-top:28px"><button class="act ghost danger" id="profLogout">Log out on this device</button></div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script src="js/app.js"></script>
 </body>
 </html>
