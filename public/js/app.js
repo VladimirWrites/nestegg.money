@@ -263,6 +263,13 @@ async function refreshHistFx(){
   }
   return changed;
 }
+// Make sure past-year holdings are valued at that year's price + FX. Re-renders the
+// open editor (or home) only if something was actually fetched, so it won't disrupt typing.
+function ensureHist(){
+  try{Promise.all([refreshHistPrices(),refreshHistFx()]).then(([a,b])=>{
+    if(a||b){scheduleSync();if(!document.getElementById("yearEditor").classList.contains("hide"))renderEntries();else renderAll();}
+  }).catch(()=>{});}catch(e){}
+}
 async function fetchPrice(t){try{const r=await fetch("/api/price?ticker="+encodeURIComponent(t));if(!r.ok)return false;const d=await r.json();if(d.price!=null){state.prices[t]={price:d.price,prevClose:(d.prevClose!=null?d.prevClose:d.price),currency:d.currency||"USD",t:Date.now()};return true;}}catch(e){}return false;}
 function tickersInUse(){return [...new Set(state.snapshots.flatMap(s=>s.entries).filter(e=>e.kind==="ticker"&&e.ticker).map(e=>e.ticker))];}
 // Year-end close for a ticker, used to value holdings held in a past year.
@@ -437,7 +444,7 @@ function renderYears(){
 
 /* year editor */
 let edIdx=-1,edYearPrev=null;
-function openYearEditor(ri){edIdx=ri;edYearPrev=state.snapshots[ri].year;document.getElementById("edYear").value=state.snapshots[ri].year;document.getElementById("yearEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderEntries();}
+function openYearEditor(ri){edIdx=ri;edYearPrev=state.snapshots[ri].year;document.getElementById("edYear").value=state.snapshots[ri].year;document.getElementById("yearEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderEntries();ensureHist();}
 function closeYearEditor(){document.getElementById("yearEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");edIdx=-1;renderAll();}
 function cardHTML(en,i,names,year){
   const baseV=entryBase(en,year);
@@ -509,7 +516,7 @@ document.getElementById("edDelYear").onclick=()=>{if(edIdx<0)return;if(confirm("
 document.getElementById("edAdd").onclick=()=>{state.snapshots[edIdx].entries.push({id:nid(),name:"New asset",kind:"fixed",ccy:state.baseCcy,value:0});scheduleSync();renderEntries();};
 document.getElementById("edAddLongterm").onclick=()=>{const a=newAsset();openAssetEditor(a.id,true);};
 document.getElementById("edAddGroup").onclick=()=>{const ex=new Set(state.categories||(state.categories=[]));let base="New category",nm=base,k=2;while(ex.has(nm))nm=base+" "+(k++);state.categories.push(nm);scheduleSync();renderEntries();};
-document.getElementById("edCopyPrev").onclick=()=>{const cur=state.snapshots[edIdx];const prev=state.snapshots.filter(s=>s.year<cur.year).sort((a,b)=>b.year-a.year)[0];if(!prev){toast("No earlier year to copy from");return;}if(cur.entries.length&&!confirm("Replace this year's entries with a copy of "+prev.year+"?"))return;cur.entries=prev.entries.map(e=>({id:nid(),name:e.name,kind:e.kind||"fixed",ccy:e.ccy,value:e.value,shares:e.shares,ticker:e.ticker,group:e.group}));scheduleSync();renderEntries();toast("Copied "+prev.year);};
+document.getElementById("edCopyPrev").onclick=()=>{const cur=state.snapshots[edIdx];const prev=state.snapshots.filter(s=>s.year<cur.year).sort((a,b)=>b.year-a.year)[0];if(!prev){toast("No earlier year to copy from");return;}if(cur.entries.length&&!confirm("Replace this year's entries with a copy of "+prev.year+"?"))return;cur.entries=prev.entries.map(e=>({id:nid(),name:e.name,kind:e.kind||"fixed",ccy:e.ccy,value:e.value,shares:e.shares,ticker:e.ticker,group:e.group}));scheduleSync();renderEntries();ensureHist();toast("Copied "+prev.year);};
 document.getElementById("edEntries").addEventListener("input",e=>{
   const t=e.target,sn=state.snapshots[edIdx];
   if(t.dataset.grp!=null){const old=t.dataset.grp,nw=t.value;
