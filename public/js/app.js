@@ -99,8 +99,16 @@ function depreciatedValue(price,rate,fromDate,date){
 function assetGrossAt(a,date){return a.depreciates?depreciatedValue(a.value,a.rate,a.date,date):(+a.value||0);}
 // Net contribution: gross value minus any outstanding loan balance.
 function assetNetAt(a,date){return assetGrossAt(a,date)-(a.loan?outstandingAt(a.loan,date):0);}
-// When the asset starts counting: its acquired date, falling back to the loan start.
-function assetOwnedFrom(a){return parseDate(a.date)||(a.loan&&parseDate(a.loan.startDate))||null;}
+// When the asset starts counting toward net worth: the earliest of its depreciation
+// (purchase) date and its loan start date — so a mortgage shows from the loan's start,
+// not from the unused "bought" date. Plain value assets use their own date.
+function assetOwnedFrom(a){
+  const c=[];
+  if(a.depreciates){const d=parseDate(a.date);if(d)c.push(+d);}
+  if(a.loan){const d=parseDate(a.loan.startDate);if(d)c.push(+d);}
+  if(!c.length){const d=parseDate(a.date);if(d)c.push(+d);}
+  return c.length?new Date(Math.min(...c)):null;
+}
 function addMonths(date,m){const d=new Date(date);const day=d.getDate();d.setMonth(d.getMonth()+m);if(d.getDate()<day)d.setDate(0);return d;}
 const fmtMonths=n=>{if(!isFinite(n)||n<=0)return"—";const y=Math.floor(n/12),mo=Math.round(n%12);return [y?y+" yr":"",mo?mo+" mo":""].filter(Boolean).join(" ")||"0 mo";};
 // Resolve a loan's monthly payment (M) and number of months (n) from whichever
@@ -391,31 +399,36 @@ function cardHTML(en,i,names){
     ${valuePart}
     <button class="rdel" data-del="${i}" title="Remove asset">×</button></div>`;
 }
+// Read-only card for a long-term asset (tap to edit in the focused asset editor).
+function autoCardHTML(en,names){
+  const a=(state.assets||[]).find(x=>x.id===en.assetId)||{};
+  const tags=[a.depreciates?"depreciating":"",a.loan?"loan":""].filter(Boolean).join(" · ")||"asset";
+  return `<div class="rcard auto" data-editasset="${en.assetId}" title="Edit long-term asset"><span class="dot" style="background:${colorOf(seriesKey(en),names)}"></span>`+
+    `<span class="rname ro">${esc(en.name)}</span>`+
+    `<span class="autotag">${tags}</span>`+
+    `<span class="rconv">${money(entryBase(en))}</span>`+
+    `<svg class="autoedit" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2.5l2.5 2.5L6 12.5 3 13l.5-3z"/></svg></div>`;
+}
 function renderEntries(){
   const sn=state.snapshots[edIdx];if(!sn)return;const wrap=document.getElementById("edEntries");const names=allNames();
-  let html="";
-  // long-term assets (depreciating / financed) shown read-only here; tap to edit
   const autos=autoEntriesFor(sn.year);
-  autos.forEach(en=>{const a=(state.assets||[]).find(x=>x.id===en.assetId)||{};
-    const tags=[a.depreciates?"depreciating":"",a.loan?"loan":""].filter(Boolean).join(" · ")||"asset";
-    html+=`<div class="rcard auto" data-editasset="${en.assetId}" title="Edit long-term asset"><span class="dot" style="background:${colorOf(seriesKey(en),names)}"></span>`+
-      `<span class="rname ro">${esc(en.name)}</span>`+
-      `<span class="autotag">${tags}</span>`+
-      `<span class="rconv">${money(entryBase(en))}</span>`+
-      `<svg class="autoedit" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2.5l2.5 2.5L6 12.5 3 13l.5-3z"/></svg></div>`;});
-  // standalone assets (no group) first, in array order
+  let html="";
+  // ungrouped: per-year entries, then long-term assets that aren't in a category
   sn.entries.forEach((en,i)=>{if(!en.group)html+=cardHTML(en,i,names);});
-  // then one section per group, in order of first appearance
-  const order=[];sn.entries.forEach(en=>{if(en.group&&order.indexOf(en.group)<0)order.push(en.group);});
+  autos.forEach(en=>{if(!en.group)html+=autoCardHTML(en,names);});
+  // category sections, in order of first appearance (entries first, then any asset-only groups)
+  const order=[];
+  sn.entries.forEach(en=>{if(en.group&&order.indexOf(en.group)<0)order.push(en.group);});
+  autos.forEach(en=>{if(en.group&&order.indexOf(en.group)<0)order.push(en.group);});
   order.forEach(g=>{
     let sub=0,cards="";
     sn.entries.forEach((en,i)=>{if(en.group===g){sub+=entryBase(en);cards+=cardHTML(en,i,names);}});
+    autos.forEach(en=>{if(en.group===g){sub+=entryBase(en);cards+=autoCardHTML(en,names);}});
     html+=`<div class="grp"><div class="grphead"><span class="dot" style="background:${colorOf(g,names)}"></span>`+
-      `<input class="grpname" data-grp="${esc(g)}" value="${esc(g)}" title="Group name" placeholder="Group name">`+
+      `<input class="grpname" data-grp="${esc(g)}" value="${esc(g)}" title="Category name" placeholder="Category name">`+
       `<span class="grpsub num">${money(sub)}</span>`+
-      `<button class="grpdel" data-grpdel="${esc(g)}" title="Delete group">×</button></div>`+
-      `<div class="grpcards">${cards}</div>`+
-      `<button class="act ghost grpadd" data-grpadd="${esc(g)}">+ asset</button></div>`;
+      `<button class="grpdel" data-grpdel="${esc(g)}" title="Delete category">×</button></div>`+
+      `<div class="grpcards">${cards}</div></div>`;
   });
   wrap.innerHTML=html;
   document.getElementById("edTotal").textContent=money(convTo(snapTotalEUR(sn),"EUR",state.baseCcy));
@@ -425,12 +438,12 @@ document.getElementById("edBack").onclick=()=>{scheduleSync();closeYearEditor();
 document.getElementById("edYear").addEventListener("input",e=>{const sn=state.snapshots[edIdx];if(!sn)return;const y=parseInt(e.target.value);if(!isNaN(y))sn.year=y;scheduleSync();});
 document.getElementById("edDelYear").onclick=()=>{if(edIdx<0)return;if(confirm("Delete year "+state.snapshots[edIdx].year+"?")){state.snapshots.splice(edIdx,1);scheduleSync();closeYearEditor();}};
 document.getElementById("edAdd").onclick=()=>{state.snapshots[edIdx].entries.push({id:nid(),name:"New asset",kind:"fixed",ccy:state.baseCcy,value:0});scheduleSync();renderEntries();};
-document.getElementById("edAddLongterm").onclick=()=>{const a=newAsset();openAssetEditor(a.id);};
+document.getElementById("edAddLongterm").onclick=()=>{const a=newAsset();openAssetEditor(a.id,true);};
 document.getElementById("edAddGroup").onclick=()=>{const sn=state.snapshots[edIdx];const ex=new Set(sn.entries.map(e=>e.group).filter(Boolean));let base="New group",nm=base,k=2;while(ex.has(nm))nm=base+" "+(k++);sn.entries.push({id:nid(),name:"New asset",kind:"fixed",ccy:state.baseCcy,value:0,group:nm});scheduleSync();renderEntries();};
 document.getElementById("edCopyPrev").onclick=()=>{const cur=state.snapshots[edIdx];const prev=state.snapshots.filter(s=>s.year<cur.year).sort((a,b)=>b.year-a.year)[0];if(!prev){toast("No earlier year to copy from");return;}if(cur.entries.length&&!confirm("Replace this year's entries with a copy of "+prev.year+"?"))return;cur.entries=prev.entries.map(e=>({id:nid(),name:e.name,kind:e.kind||"fixed",ccy:e.ccy,value:e.value,shares:e.shares,ticker:e.ticker,group:e.group}));scheduleSync();renderEntries();toast("Copied "+prev.year);};
 document.getElementById("edEntries").addEventListener("input",e=>{
   const t=e.target,sn=state.snapshots[edIdx];
-  if(t.dataset.grp!=null){const old=t.dataset.grp,nw=t.value;sn.entries.forEach(en=>{if(en.group===old)en.group=nw;});t.dataset.grp=nw;scheduleSync();return;}
+  if(t.dataset.grp!=null){const old=t.dataset.grp,nw=t.value;sn.entries.forEach(en=>{if(en.group===old)en.group=nw;});(state.assets||[]).forEach(a=>{if(a.group===old)a.group=nw;});t.dataset.grp=nw;scheduleSync();return;}
   const i=+t.dataset.i,f=t.dataset.f;if(t.dataset.i==null||!f)return;
   const en=sn.entries[i];
   if(f==="value"||f==="shares")en[f]=parseFloat(t.value||0);
@@ -453,10 +466,10 @@ document.getElementById("edEntries").addEventListener("click",e=>{
   const ae=e.target.closest("[data-editasset]");
   if(ae){openAssetEditor(ae.dataset.editasset);return;}
   if(e.target.dataset.del!=null){sn.entries.splice(+e.target.dataset.del,1);scheduleSync();renderEntries();return;}
-  const ga=e.target.closest("[data-grpadd]");
-  if(ga){sn.entries.push({id:nid(),name:"New asset",kind:"fixed",ccy:state.baseCcy,value:0,group:ga.dataset.grpadd});scheduleSync();renderEntries();return;}
   const gd=e.target.closest("[data-grpdel]");
-  if(gd){const g=gd.dataset.grpdel,n=sn.entries.filter(x=>x.group===g).length;if(confirm('Delete the "'+g+'" group and its '+n+' asset'+(n===1?"":"s")+'?')){sn.entries=sn.entries.filter(x=>x.group!==g);scheduleSync();renderEntries();}return;}
+  if(gd){const g=gd.dataset.grpdel,n=sn.entries.filter(x=>x.group===g).length+(state.assets||[]).filter(x=>x.group===g).length;
+    if(confirm('Remove the "'+g+'" category? Its '+n+' item'+(n===1?"":"s")+' move out of the category — nothing is deleted.')){
+      sn.entries.forEach(x=>{if(x.group===g)x.group=undefined;});(state.assets||[]).forEach(x=>{if(x.group===g)x.group=undefined;});scheduleSync();renderEntries();}return;}
 });
 
 document.getElementById("addYear").onclick=()=>{const ys=state.snapshots.map(s=>s.year);const ny=ys.length?Math.max(...ys)+1:new Date().getFullYear();state.snapshots.push({year:ny,entries:[]});scheduleSync();openYearEditor(state.snapshots.length-1);};
@@ -466,11 +479,14 @@ document.getElementById("addYear").onclick=()=>{const ys=state.snapshots.map(s=>
    Net contribution = (depreciated price or market value) − outstanding loan. */
 const ymd=d=>d.toLocaleDateString("en-GB",{month:"short",year:"numeric"});
 const ymdDay=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
-function openAssetEditor(focusId){document.getElementById("assetEditor").classList.remove("hide");window.scrollTo(0,0);renderAssets(focusId);}
+let curAssetId=null;   // the single long-term asset the editor is focused on
+function openAssetEditor(id,focusName){curAssetId=id;document.getElementById("assetEditor").classList.remove("hide");window.scrollTo(0,0);renderAssets(focusName);}
 function closeAssetEditor(){
   document.getElementById("assetEditor").classList.add("hide");
   if(!document.getElementById("yearEditor").classList.contains("hide"))renderEntries();else renderAll();
 }
+// Existing category names, drawn from per-year entries and long-term assets alike.
+function groupNames(){const s=new Set();state.snapshots.forEach(sn=>(sn.entries||[]).forEach(e=>{if(e.group)s.add(e.group);}));(state.assets||[]).forEach(a=>{if(a.group)s.add(a.group);});return [...s].sort((a,b)=>a.localeCompare(b));}
 // The computed (read-only) outputs for a loan — refreshed in place as inputs change,
 // so the editable fields (and the caret) are never destroyed by a re-render.
 function loanComputedHTML(a){
@@ -543,6 +559,7 @@ function assetCardHTML(a){
     <div class="frow">
       <label class="fld">${a.depreciates?"Purchase price":"Value"}<input class="fin num" type="number" step="any" inputmode="decimal" value="${a.value}" data-aid="${a.id}" data-f="value"></label>
       <label class="fld">Currency<select data-aid="${a.id}" data-f="ccy">${CCYS.map(x=>`<option ${x===a.ccy?"selected":""}>${x}</option>`).join("")}</select></label>
+      <label class="fld">Category<select data-aid="${a.id}" data-f="group"><option value="" ${!a.group?"selected":""}>— none —</option>${groupNames().map(g=>`<option ${g===a.group?"selected":""}>${esc(g)}</option>`).join("")}</select></label>
     </div>
     <div class="toggles">
       <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="depreciates" ${a.depreciates?"checked":""}><span>Depreciates over time</span></label>
@@ -552,11 +569,12 @@ function assetCardHTML(a){
     <div class="vsum"><span class="k">Net value today</span><span class="vval num">${moneyIn(net,a.ccy)}${inBase(net)}</span></div>
   </div>`;
 }
-function renderAssets(focusId){
+function renderAssets(focusName){
   const wrap=document.getElementById("assetList");
-  if(!state.assets.length)wrap.innerHTML=`<div class="emptyhint">No long-term assets yet. Add one — a car, a house, anything that depreciates or carries a loan. Toggle "Depreciates" to have its value fall daily, and "Has a loan" to subtract the outstanding balance. The net value flows into your net worth for every year you own it.</div>`;
-  else wrap.innerHTML=state.assets.map(assetCardHTML).join("");
-  if(focusId){const el=document.getElementById("acard-"+focusId);if(el){el.scrollIntoView({block:"center"});const nm=el.querySelector(".rname");if(nm)nm.focus();}}
+  const a=state.assets.find(x=>x.id===curAssetId);
+  if(!a){closeAssetEditor();return;}
+  wrap.innerHTML=assetCardHTML(a);
+  if(focusName){const nm=wrap.querySelector(".rname");if(nm){nm.focus();nm.select&&nm.select();}}
 }
 function newAsset(){const a={id:nid(),name:"New asset",ccy:state.baseCcy,value:0,depreciates:false,date:new Date().toISOString().slice(0,10),rate:0.15,loan:null};state.assets.push(a);scheduleSync();return a;}
 document.getElementById("assetList").addEventListener("input",e=>{
@@ -566,6 +584,7 @@ document.getElementById("assetList").addEventListener("input",e=>{
   else if(t.dataset.f){const f=t.dataset.f;
     if(f==="value")a.value=parseFloat(t.value||0);
     else if(f==="rate")a.rate=Math.min(Math.max(parseFloat(t.value||0)/100,0),0.99);
+    else if(f==="group")a.group=t.value||undefined;
     else a[f]=t.value;}
   scheduleSync();
   // Refresh only the computed outputs in place — never the inputs — so the caret survives.
@@ -587,11 +606,10 @@ document.getElementById("assetList").addEventListener("change",e=>{
   if(t.dataset.lf==="mode"){renderAssets();return;}
 });
 document.getElementById("assetList").addEventListener("click",e=>{
-  const ad=e.target.closest("[data-adel]");if(ad){const a=state.assets.find(x=>x.id===ad.dataset.adel);if(confirm("Remove "+(a?a.name:"this asset")+"?")){state.assets=state.assets.filter(x=>x.id!==ad.dataset.adel);scheduleSync();renderAssets();}return;}
+  const ad=e.target.closest("[data-adel]");if(ad){const a=state.assets.find(x=>x.id===ad.dataset.adel);if(confirm("Remove "+(a?a.name:"this asset")+"?")){state.assets=state.assets.filter(x=>x.id!==ad.dataset.adel);scheduleSync();closeAssetEditor();}return;}
   const ea=e.target.closest("[data-extraadd]");if(ea){const a=state.assets.find(x=>x.id===ea.dataset.extraadd);if(a&&a.loan){a.loan.extra=a.loan.extra||[];a.loan.extra.push({id:nid(),date:a.loan.startDate,amount:0});scheduleSync();renderAssets();}return;}
   const ed=e.target.closest("[data-extradel]");if(ed){const a=state.assets.find(x=>x.id===ed.dataset.aid);if(a&&a.loan){a.loan.extra=(a.loan.extra||[]).filter(z=>z.id!==ed.dataset.extradel);scheduleSync();renderAssets();}return;}
 });
-document.getElementById("addAsset").onclick=()=>{const a=newAsset();renderAssets(a.id);};
 document.getElementById("assetBack").onclick=()=>{scheduleSync();closeAssetEditor();};
 
 document.getElementById("exportBtn").onclick=()=>{const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="networth-"+new Date().toISOString().slice(0,10)+".json";a.click();};
