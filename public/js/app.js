@@ -262,7 +262,7 @@ async function pushServer(){if(!accountId||!cryptoKey)return;try{const blob=awai
   else{setSync("off","Sync error");if(!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}
 }catch(e){setSync("off","Local only");if(!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}}
 async function loadServer(){if(!accountId)return null;try{const r=await fetch("/api/vault?id="+accountId);if(r.status===404){setSync("ok","Synced (new)");return null;}if(!r.ok){setSync("off","Local only");return null;}const{blob}=await r.json();const o=await decS(blob);setSync("ok","Synced");return o;}catch(e){setSync("off","Local only");return null;}}
-function setSync(c,t){const d=document.getElementById("syncDot"),x=document.getElementById("syncTxt");d.className="syncdot "+(c==="ok"?"ok":c==="off"?"off":"");x.textContent=t;}
+function setSync(c,t){const cls="syncdot "+(c==="ok"?"ok":c==="off"?"off":"");["syncDot","syncDot2"].forEach(id=>{const d=document.getElementById(id);if(d)d.className=cls;});["syncTxt","syncTxt2"].forEach(id=>{const x=document.getElementById(id);if(x)x.textContent=t;});}
 async function fetchFx(){try{const r=await fetch("/api/fx");if(!r.ok)return false;const d=await r.json();if(d.rates){state.fxRates=Object.assign({EUR:1},d.rates);state.fxDate=d.date;return true;}}catch(e){}return false;}
 // Year-end (Dec 31) ECB rates for a year — used to convert past-year holdings at the rate then.
 async function fetchFxYear(year){try{const r=await fetch("/api/fx?date="+year+"-12-31");if(!r.ok)return null;const d=await r.json();if(d.rates)return Object.assign({EUR:1},d.rates);}catch(e){}return null;}
@@ -356,9 +356,13 @@ function enterApp(){
     try{Promise.all([refreshHistPrices(),refreshHistFx()]).then(([a,b])=>{if(a||b){scheduleSync();renderAll();}}).catch(()=>{});}catch(e){}
   }catch(e){console&&console.error&&console.error("enterApp:",e);}
 }
-document.getElementById("showAcctBtn").onclick=()=>{const t=LS.get("nw_token")||"(none)";navigator.clipboard&&navigator.clipboard.writeText(t);toast("Account number copied: "+t);};
-document.getElementById("syncNowBtn").onclick=pushServer;
-document.getElementById("logoutBtn").onclick=()=>{if(confirm("Log out on this device? Make sure your account number is saved — it's the only way back in.")){LS.rem("nw_token");LS.rem("nw_state");location.reload();}};
+function openProfile(){document.getElementById("profileEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);showToken(document.getElementById("profAcct"),LS.get("nw_token")||"");}
+function closeProfile(){document.getElementById("profileEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");}
+document.getElementById("profileBtn").onclick=openProfile;
+document.getElementById("profileBack").onclick=closeProfile;
+document.getElementById("profCopyAcct").onclick=()=>{const t=LS.get("nw_token")||"";if(navigator.clipboard)navigator.clipboard.writeText(t);toast("Account number copied");};
+document.getElementById("profSyncNow").onclick=pushServer;
+document.getElementById("profLogout").onclick=()=>{if(confirm("Log out on this device? Make sure your account number is saved — it's the only way back in.")){LS.rem("nw_token");LS.rem("nw_state");location.reload();}};
 document.getElementById("ccySel").onchange=e=>{state.baseCcy=e.target.value;scheduleSync();renderAll();};
 document.getElementById("pricesBtn").onclick=refreshPrices;
 document.getElementById("dlHist").onclick=downloadHist;

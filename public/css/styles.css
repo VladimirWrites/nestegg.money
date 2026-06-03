@@ -187,7 +187,11 @@ button.act.ghost:hover{border-color:var(--amber)}
 }
 
 /* SVG back button (replaces the text "←") */
-#edBack,#assetBack,#salaryBack{display:inline-flex;align-items:center;gap:7px}
+#edBack,#assetBack,#salaryBack,#profileBack{display:inline-flex;align-items:center;gap:7px}
+.prof-sync{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.04em;color:var(--muted);margin-bottom:20px}
+#profAcct{max-width:520px}
+.act.ghost.danger{color:var(--red);border-color:var(--line2)}
+.act.ghost.danger:hover{border-color:var(--red)}
 .ed-bar .ic{width:13px;height:13px;flex:none}
 
 /* read-only computed (long-term asset) rows inside the year editor — tap to edit */
