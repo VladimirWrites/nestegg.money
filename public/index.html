@@ -53,13 +53,14 @@
 
 <div id="app" class="hide">
   <div class="acctbar">
-    <div class="who"><span class="syncdot" id="syncDot"></span><span id="syncTxt">Local</span></div>
-    <div><button id="salaryBtn">Salary</button> · <button id="profileBtn">Profile</button></div>
+    <button class="who syncbtn" id="syncNowHome" title="Sync now"><span class="syncdot" id="syncDot"></span><span id="syncTxt">Local</span></button>
+    <div><button id="profileBtn">Profile</button></div>
   </div>
   <header class="masthead">
     <div class="kicker"><span>Personal Ledger</span><span id="dateline">—</span></div>
     <div class="titlerow"><h1 class="title">Net Worth</h1><div class="ccypick">Display<select id="ccySel"></select></div></div>
     <div class="subt">A quiet accounting of what you hold.</div>
+    <nav class="mainnav"><button class="navtab on" id="navNet">Net worth</button><button class="navtab" id="salaryBtn">Salary</button></nav>
   </header>
   <main>
     <div class="hero">
@@ -164,7 +165,7 @@
   <div class="ed-wrap">
     <div class="prof-sync"><span class="syncdot" id="syncDot2"></span><span id="syncTxt2">Local</span></div>
     <div class="sectitle">Your account number</div>
-    <div class="acctnum num" id="profAcct">…</div>
+    <div class="acctrow"><div class="acctnum num" id="profAcct">…</div><button class="eyebtn" id="profEye" title="Show / hide" aria-label="Show or hide account number"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
     <div class="controls"><button class="act ghost" id="profCopyAcct">Copy</button><button class="act ghost" id="profSyncNow">Sync now</button></div>
     <div class="warn">This number is your only key — it identifies you and decrypts your data. There is no recovery if you lose it. Keep it somewhere safe, and use Export JSON for a real backup.</div>
     <div class="controls" style="margin-top:28px"><button class="act ghost danger" id="profLogout">Log out on this device</button></div>

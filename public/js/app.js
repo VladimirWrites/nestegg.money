@@ -356,12 +356,19 @@ function enterApp(){
     try{Promise.all([refreshHistPrices(),refreshHistFx()]).then(([a,b])=>{if(a||b){scheduleSync();renderAll();}}).catch(()=>{});}catch(e){}
   }catch(e){console&&console.error&&console.error("enterApp:",e);}
 }
-function openProfile(){document.getElementById("profileEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);showToken(document.getElementById("profAcct"),LS.get("nw_token")||"");}
+let profShown=false;
+function renderProfAcct(){const el=document.getElementById("profAcct"),tok=LS.get("nw_token")||"";
+  if(profShown)showToken(el,tok);else el.textContent=(tok.replace(/[0-9A-Za-z]/g,"•")||"…");
+  document.getElementById("profEye").classList.toggle("on",profShown);}
+function openProfile(){profShown=false;document.getElementById("profileEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderProfAcct();}
 function closeProfile(){document.getElementById("profileEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");}
 document.getElementById("profileBtn").onclick=openProfile;
 document.getElementById("profileBack").onclick=closeProfile;
+document.getElementById("profEye").onclick=()=>{profShown=!profShown;renderProfAcct();};
 document.getElementById("profCopyAcct").onclick=()=>{const t=LS.get("nw_token")||"";if(navigator.clipboard)navigator.clipboard.writeText(t);toast("Account number copied");};
 document.getElementById("profSyncNow").onclick=pushServer;
+document.getElementById("syncNowHome").onclick=pushServer;
+document.getElementById("navNet").onclick=closeSalary;
 document.getElementById("profLogout").onclick=()=>{if(confirm("Log out on this device? Make sure your account number is saved — it's the only way back in.")){LS.rem("nw_token");LS.rem("nw_state");location.reload();}};
 document.getElementById("ccySel").onchange=e=>{state.baseCcy=e.target.value;scheduleSync();renderAll();};
 document.getElementById("pricesBtn").onclick=refreshPrices;
