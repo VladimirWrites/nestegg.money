@@ -248,6 +248,9 @@ button.act.ghost:hover{border-color:var(--amber)}
 
 /* salary history page — one side-by-side table (months as rows, people as column groups) */
 #salaryChart{display:block}
+.chartwrap{position:relative;display:inline-block}
+.saldot{cursor:pointer}
+.salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--amber);border-radius:4px;padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
 .salviewtog{display:inline-flex;gap:0;border:1px solid var(--line2);border-radius:4px;overflow:hidden;order:3}
 .over>.sectitle:has(.salviewtog)::after{order:2}
 .salvb{font:inherit;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:transparent;color:var(--muted);border:none;padding:6px 11px;cursor:pointer}

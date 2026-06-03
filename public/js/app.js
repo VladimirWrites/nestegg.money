@@ -751,8 +751,9 @@ function drawSalaryChart(){
   const idxM=ym=>{const[y,m]=ym.split("-").map(Number);return y*12+(m-1);};
   const minI=Math.min(...all.map(e=>idxM(e.ym))),maxI=Math.max(...all.map(e=>idxM(e.ym))),span=Math.max(1,maxI-minI);
   const nmL=axisMax(Math.max(1,...all.map(salTotal)));
+  const nowY=new Date().getFullYear();   // the current year isn't finalized — exclude from the yearly total
   const years=[...new Set(all.map(e=>+e.ym.slice(0,4)))].sort((a,b)=>a-b);
-  const combY=years.map(y=>({y,v:people.reduce((s,p)=>s+(salAnnual(p)[y]||0),0)}));
+  const combY=years.filter(y=>y<nowY).map(y=>({y,v:people.reduce((s,p)=>s+(salAnnual(p)[y]||0),0)}));
   const nmR=axisMax(Math.max(1,...combY.map(c=>c.v)));
   const padL=56,padR=56,padT=22,padB=30,H=400,plotH=H-padT-padB;
   const innerW=Math.max(span*9,360),W=innerW+padL+padR,plotW=W-padL-padR;
@@ -767,13 +768,13 @@ function drawSalaryChart(){
   // monthly per-person lines (left axis) + event dots
   people.forEach((p,pi)=>{const ms=salMonths(p);if(!ms.length)return;const col=salColor(pi);
     s+=`<polyline points="${ms.map(e=>X(idxM(e.ym)).toFixed(1)+","+YL(salTotal(e)).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
-    ms.forEach(e=>{if(!e.event)return;const lab=esc(ymLabel(e.ym)+" · "+p.name+": "+sym+Math.round(salTotal(e)).toLocaleString()+" · "+e.event);
-      s+=`<circle class="saldot" cx="${X(idxM(e.ym)).toFixed(1)}" cy="${YL(salTotal(e)).toFixed(1)}" r="4" fill="${col}" stroke="#0a0a0b" stroke-width="1.5" data-lbl="${lab}"><title>${lab}</title></circle>`;});
+    ms.forEach(e=>{if(!e.event)return;const lab=esc(ymLabel(e.ym)+" · "+p.name+" · "+sym+Math.round(salTotal(e)).toLocaleString()+" · "+e.event);
+      s+=`<circle class="saldot" cx="${X(idxM(e.ym)).toFixed(1)}" cy="${YL(salTotal(e)).toFixed(1)}" r="4" fill="${col}" stroke="#0a0a0b" stroke-width="1.5" data-lbl="${lab}"></circle>`;});
   });
-  // combined yearly line (right axis), one point per year at mid-year, with year labels
+  // combined yearly line (right axis), one point per finalized year, with year labels
   const cpts=combY.map(c=>({x:X(idxM(c.y+"-07")),yy:YR(c.v),y0:c.y,v:c.v}));
   s+=`<polyline points="${cpts.map(p=>p.x.toFixed(1)+","+p.yy.toFixed(1)).join(" ")}" fill="none" stroke="${SAL_COMB}" stroke-width="2.4"/>`;
-  cpts.forEach(p=>{s+=`<circle cx="${p.x.toFixed(1)}" cy="${p.yy.toFixed(1)}" r="3" fill="${SAL_COMB}"><title>${p.y0} combined: ${sym}${Math.round(p.v).toLocaleString()}</title></circle>`;
+  cpts.forEach(p=>{s+=`<circle class="saldot" cx="${p.x.toFixed(1)}" cy="${p.yy.toFixed(1)}" r="3.5" fill="${SAL_COMB}" data-lbl="${esc(p.y0+" · combined · "+sym+Math.round(p.v).toLocaleString())}"></circle>`;
     s+=`<text x="${p.x.toFixed(1)}" y="${(p.yy-8).toFixed(1)}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${p.y0}</text>`;});
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.innerHTML=s;
   leg.innerHTML=people.map((p,pi)=>`<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("")+`<span><span class="chip" style="background:${SAL_COMB}"></span>Combined yearly net salary</span>`;
@@ -879,7 +880,21 @@ document.getElementById("salaryList").addEventListener("click",e=>{
 });
 document.getElementById("addPerson").onclick=()=>{state.salaries.push({id:nid(),name:state.salaries.length?"Partner":"Me",ccy:state.baseCcy,entries:[]});scheduleSync();renderSalary();};
 document.getElementById("salImportBtn").onclick=importSalary;
-document.getElementById("salaryChart").addEventListener("click",e=>{const c=e.target.closest(".saldot");if(c)toast(c.getAttribute("data-lbl"));});
+// In-chart tooltip flag: shown next to the hovered/tapped point, not as a bottom toast.
+function salShowTip(c){
+  const tip=document.getElementById("salTip"),chart=document.getElementById("salaryChart");
+  tip.textContent=c.getAttribute("data-lbl");tip.classList.remove("hide");
+  const cx=+c.getAttribute("cx"),cy=+c.getAttribute("cy"),W=+chart.getAttribute("width")||tip.offsetWidth;
+  const tw=tip.offsetWidth,th=tip.offsetHeight;
+  let left=Math.max(2,Math.min(cx-tw/2,W-tw-2)),top=cy-th-12;if(top<2)top=cy+14;
+  tip.style.left=left+"px";tip.style.top=top+"px";
+}
+function salHideTip(){const t=document.getElementById("salTip");if(t)t.classList.add("hide");}
+(function(){const chart=document.getElementById("salaryChart");if(!chart)return;
+  chart.addEventListener("mouseover",e=>{const c=e.target.closest(".saldot");if(c)salShowTip(c);});
+  chart.addEventListener("mouseout",e=>{if(e.target.closest(".saldot"))salHideTip();});
+  chart.addEventListener("click",e=>{const c=e.target.closest(".saldot");if(c)salShowTip(c);else salHideTip();});
+})();
 document.getElementById("salaryBack").onclick=()=>{scheduleSync();closeSalary();};
 document.getElementById("dlSalary").onclick=downloadSalary;
 document.getElementById("salaryBtn").onclick=openSalary;
