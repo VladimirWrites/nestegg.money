@@ -249,7 +249,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 /* salary history page — one side-by-side table (months as rows, people as column groups) */
 #salaryChart{display:block}
 .saltable-scroll{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:4px;margin-bottom:10px}
-.saltab{border-collapse:separate;border-spacing:0;font-size:13px}
+.saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
 .saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel2);z-index:2}
 .saltab .salh1 th{top:0}
@@ -266,13 +266,16 @@ button.act.ghost:hover{border-color:var(--amber)}
 .saltab tr.saly td{background:#141416;color:var(--amber);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;text-align:right;font-variant-numeric:tabular-nums}
 .saltab tr.saly td:first-child{text-align:left}
 .saltab .salgsep{border-left:2px solid var(--line2)}
-.saltab td .salf{width:74px;font:inherit;font-size:13px;text-align:right;background:#000;border:1px solid var(--line2);border-radius:3px;padding:6px 7px;color:var(--ink)}
-.saltab td .salev{width:96px;font:inherit;font-size:12px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:6px 7px;color:var(--muted)}
+.saltab td.salm{min-width:90px}
+.saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:#000;border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--ink)}
+.saltab td .salev{width:100%;min-width:90px;font:inherit;font-size:13px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--muted)}
 .saltab td .salf:focus,.saltab td .salev:focus{outline:none;border-color:var(--amber)}
-.saltab td.saltot{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:12px;color:var(--green)}
+.salx-h{width:34px}
+.saltab td.salxc{text-align:center}
 .salpick{font:inherit;font-size:13px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:7px 9px;color:var(--ink);min-height:38px}
 .salpick:focus{outline:none;border-color:var(--amber)}
 .salctrls{align-items:center}
+.salrlbl{font-size:11px;letter-spacing:.04em;color:var(--muted)}
 
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
 .ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select,.salccy{

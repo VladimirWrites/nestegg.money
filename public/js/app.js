@@ -32,7 +32,7 @@ function migrate(s){
   // Salary history: one record per person, each a list of monthly net-pay entries.
   if(!Array.isArray(s.salaries))s.salaries=[];
   s.salaries.forEach(p=>{if(!p.id)p.id=nid();if(!p.name)p.name="Person";if(!p.ccy)p.ccy=s.baseCcy||"EUR";if(!Array.isArray(p.entries))p.entries=[];
-    p.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.ym)en.ym=new Date().toISOString().slice(0,7);if(en.base==null)en.base=0;if(en.extra==null)en.extra=0;if(en.event==null)en.event="";});});
+    p.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.ym)en.ym=new Date().toISOString().slice(0,7);if(en.amount==null)en.amount=(parseFloat(en.base)||0)+(parseFloat(en.extra)||0);if(en.event==null)en.event="";delete en.base;delete en.extra;});});
   (s.snapshots||[]).forEach(sn=>{
     if(!sn.entries){const c=sn.cats||{};sn.entries=Object.keys(c).filter(k=>c[k]).map(k=>({id:nid(),name:k,ccy:"EUR",value:c[k]}));}
     sn.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.name)en.name=en.cat||"Asset";if(!en.ccy)en.ccy="EUR";if(en.value==null)en.value=0;if(!en.kind)en.kind="fixed";if(en.kind==="ticker"){if(en.shares==null)en.shares=0;if(en.ticker==null)en.ticker="";}delete en.cat;delete en.qty;});
@@ -730,7 +730,7 @@ document.getElementById("assetList").addEventListener("click",e=>{
 document.getElementById("assetBack").onclick=()=>{scheduleSync();closeAssetEditor();};
 
 /* ───────── salary history (per person, monthly net pay) ───────── */
-const salTotal=en=>(parseFloat(en.base)||0)+(parseFloat(en.extra)||0);
+const salTotal=en=>parseFloat(en.amount)||0;
 const salMonths=p=>[...(p.entries||[])].sort((a,b)=>a.ym<b.ym?-1:(a.ym>b.ym?1:0));
 function nextYm(ym){if(!/^\d{4}-\d{2}$/.test(ym||""))return new Date().toISOString().slice(0,7);let[y,m]=ym.split("-").map(Number);m++;if(m>12){m=1;y++;}return y+"-"+String(m).padStart(2,"0");}
 function prevYm(ym){if(!/^\d{4}-\d{2}$/.test(ym||""))return new Date().toISOString().slice(0,7);let[y,m]=ym.split("-").map(Number);m--;if(m<1){m=12;y--;}return y+"-"+String(m).padStart(2,"0");}
@@ -771,55 +771,55 @@ function closeSalary(){document.getElementById("salaryEditor").classList.add("hi
 // Shared month axis across all people, and per-(person,month) lookup/creation.
 function salGlobalYms(){const s=new Set();(state.salaries||[]).forEach(p=>(p.entries||[]).forEach(e=>s.add(e.ym)));return [...s].sort();}
 function salEntry(p,ym){return (p.entries||[]).find(e=>e.ym===ym);}
-function salEnsure(p,ym){let e=salEntry(p,ym);if(!e){e={id:nid(),ym,base:0,extra:0,event:""};p.entries.push(e);}return e;}
-// Add a month row for every person at ym; carry each person's most recent base when carry=true.
-function salAddRowAt(ym,carry){(state.salaries||[]).forEach(p=>{if(salEntry(p,ym))return;let base=0;if(carry){const before=salMonths(p).filter(e=>e.ym<ym);if(before.length)base=before[before.length-1].base;}p.entries.push({id:nid(),ym,base,extra:0,event:""});});}
+function salEnsure(p,ym){let e=salEntry(p,ym);if(!e){e={id:nid(),ym,amount:0,event:""};p.entries.push(e);}return e;}
+// Add a month row for every person at ym; carry each person's most recent salary when carry=true.
+function salAddRowAt(ym,carry){(state.salaries||[]).forEach(p=>{if(salEntry(p,ym))return;let amt=0;if(carry){const before=salMonths(p).filter(e=>e.ym<ym);if(before.length)amt=before[before.length-1].amount;}p.entries.push({id:nid(),ym,amount:amt,event:""});});}
 const salThisMonth=()=>new Date().toISOString().slice(0,7);
 function renderSalary(){
   drawSalaryChart();
   const host=document.getElementById("salaryList");
   const people=state.salaries||[];
-  if(!people.length){host.innerHTML=`<div class="emptyhint">No one yet. Add yourself (and your partner) below, then add months and log each one's net pay — base plus any extra — side by side.</div>`;return;}
+  if(!people.length){host.innerHTML=`<div class="emptyhint">No one yet. Add yourself (and your partner) below, then add a range of months and type each one's net salary side by side.</div>`;return;}
   const yms=salGlobalYms();
   const ccyOpts=p=>CCYS.map(x=>`<option ${x===p.ccy?"selected":""}>${x}</option>`).join("");
   let h1=`<th class="salm-h"></th>`,h2=`<th class="salm-h">Month</th>`;
   people.forEach(p=>{
-    h1+=`<th colspan="4" class="salp-h"><span class="salp-hin"><input class="rname salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="Name"><select class="salccy" data-sid="${p.id}" data-f="ccy">${ccyOpts(p)}</select><button class="rdel" data-perdel="${p.id}" title="Remove person">×</button></span></th>`;
-    h2+=`<th class="salgsep">Base</th><th>Extra</th><th class="r">Total</th><th>Event</th>`;
+    h1+=`<th colspan="2" class="salp-h salgsep"><span class="salp-hin"><input class="rname salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="Name"><select class="salccy" data-sid="${p.id}" data-f="ccy">${ccyOpts(p)}</select><button class="rdel" data-perdel="${p.id}" title="Remove person">×</button></span></th>`;
+    h2+=`<th class="salgsep">Net salary</th><th>Event</th>`;
   });
+  h1+=`<th class="salx-h"></th>`;h2+=`<th class="salx-h"></th>`;
   let body="",curY=null;
   yms.forEach(ym=>{
     const y=ym.slice(0,4);
-    if(y!==curY){curY=y;let yr=`<tr class="saly"><td>${y}</td>`;people.forEach(p=>{const tot=(p.entries||[]).filter(e=>e.ym.slice(0,4)===y).reduce((a,e)=>a+salTotal(e),0);yr+=`<td colspan="4" class="num">${tot?moneyIn(tot,p.ccy):"—"}</td>`;});body+=yr+`</tr>`;}
+    if(y!==curY){curY=y;let yr=`<tr class="saly"><td>${y}</td>`;people.forEach(p=>{const tot=(p.entries||[]).filter(e=>e.ym.slice(0,4)===y).reduce((a,e)=>a+salTotal(e),0);yr+=`<td colspan="2" class="num salgsep" data-ytot="${p.id}:${y}">${tot?moneyIn(tot,p.ccy):"—"}</td>`;});body+=yr+`<td></td></tr>`;}
     let row=`<tr><td class="salm">${ymLabel(ym)}</td>`;
-    people.forEach(p=>{const e=salEntry(p,ym);const b=e?e.base:"",x=e?e.extra:"",ev=e?(e.event||""):"",tt=e?moneyIn(salTotal(e),p.ccy):"";
-      row+=`<td><input class="fin num salf" type="number" step="any" inputmode="decimal" value="${b}" data-sid="${p.id}" data-ym="${ym}" data-f="base"></td>`+
-           `<td><input class="fin num salf" type="number" step="any" inputmode="decimal" value="${x}" data-sid="${p.id}" data-ym="${ym}" data-f="extra"></td>`+
-           `<td class="saltot num" data-tot="${p.id}:${ym}">${tt}</td>`+
-           `<td><input class="fin salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="—" title="Raise, job change…"></td>`;});
+    people.forEach(p=>{const e=salEntry(p,ym);const amt=e?e.amount:"",ev=e?(e.event||""):"";
+      row+=`<td class="salgsep"><input class="salf num" type="number" step="any" inputmode="decimal" value="${amt}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0"></td>`+
+           `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="—" title="Raise, job change…"></td>`;});
+    row+=`<td class="salxc"><button class="rdel" data-salrowdel="${ym}" title="Remove this month">×</button></td>`;
     body+=row+`</tr>`;
   });
-  host.innerHTML=`<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body||`<tr><td colspan="${1+people.length*4}" class="exhint">No months yet — add one below.</td></tr>`}</tbody></table></div>
-    <div class="controls salctrls"><input type="month" class="salpick" value="${yms.length?prevYm(yms[0]):salThisMonth()}" title="Month to add"><button class="act ghost mini" data-saladdpick>+ Add month</button><button class="act ghost mini" data-saladdrow="fill">Fill to now ▸</button><button class="act ghost mini" data-saladdrow="prev12">− 12 months</button></div>`;
+  const dFrom=yms.length?yms[0]:(new Date().getFullYear()+"-01"),dTo=salThisMonth();
+  host.innerHTML=`<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body||`<tr><td colspan="${2+people.length*2}" class="exhint">No months yet — add a range below.</td></tr>`}</tbody></table></div>
+    <div class="controls salctrls"><span class="salrlbl">Add months</span><input type="month" class="salpick salfrom" value="${dFrom}" title="From"><span class="salrlbl">→</span><input type="month" class="salpick salto" value="${dTo}" title="To"><button class="act ghost mini" data-salgen>Add</button></div>`;
 }
 document.getElementById("salaryList").addEventListener("input",e=>{
   const t=e.target,sid=t.dataset.sid,f=t.dataset.f;if(!sid||!f)return;const p=state.salaries.find(x=>x.id===sid);if(!p)return;
   if(t.dataset.ym){const en=salEnsure(p,t.dataset.ym);
-    if(f==="base"||f==="extra")en[f]=parseFloat(t.value||0);else en[f]=t.value;
+    if(f==="amount")en.amount=parseFloat(t.value||0);else en[f]=t.value;
     scheduleSync();
-    if(f==="base"||f==="extra"){const tt=document.querySelector('[data-tot="'+sid+':'+t.dataset.ym+'"]');if(tt)tt.textContent=moneyIn(salTotal(en),p.ccy);drawSalaryChart();}
+    if(f==="amount"){const yr=t.dataset.ym.slice(0,4),yt=document.querySelector('[data-ytot="'+sid+':'+yr+'"]');if(yt){const tot=p.entries.filter(x=>x.ym.slice(0,4)===yr).reduce((a,x)=>a+salTotal(x),0);yt.textContent=tot?moneyIn(tot,p.ccy):"—";}drawSalaryChart();}
   }else{ if(f==="name")p.name=t.value; else if(f==="ccy")p.ccy=t.value; scheduleSync(); if(f==="name")drawSalaryChart(); }
 });
 document.getElementById("salaryList").addEventListener("change",e=>{if(e.target.dataset.f==="ccy")renderSalary();});
 document.getElementById("salaryList").addEventListener("click",e=>{
   const pd=e.target.closest("[data-perdel]");if(pd){const p=state.salaries.find(x=>x.id===pd.dataset.perdel);if(confirm("Remove "+(p?p.name:"this person")+" and their salary history?")){state.salaries=state.salaries.filter(x=>x.id!==pd.dataset.perdel);scheduleSync();renderSalary();}return;}
-  const ap=e.target.closest("[data-saladdpick]");if(ap){const inp=e.target.closest(".controls").querySelector(".salpick"),ym=inp&&inp.value;if(/^\d{4}-\d{2}$/.test(ym||"")){salAddRowAt(ym,true);scheduleSync();renderSalary();}else toast("Pick a month first");return;}
-  const ar=e.target.closest("[data-saladdrow]");if(ar){const mode=ar.dataset.saladdrow,ys=salGlobalYms();
-    if(mode==="next"){salAddRowAt(ys.length?nextYm(ys[ys.length-1]):salThisMonth(),true);}
-    else if(mode==="prev"){salAddRowAt(ys.length?prevYm(ys[0]):salThisMonth(),false);}
-    else if(mode==="prev12"){let first=ys.length?ys[0]:salThisMonth();for(let k=0;k<12;k++){first=prevYm(first);salAddRowAt(first,false);}}
-    else if(mode==="fill"){let last=ys.length?ys[ys.length-1]:null;if(!last){salAddRowAt(salThisMonth(),true);}else{const now=salThisMonth();let n=0;while(last<now&&n<600){last=nextYm(last);salAddRowAt(last,true);n++;}}}
-    scheduleSync();renderSalary();return;}
+  const rd=e.target.closest("[data-salrowdel]");if(rd){const ym=rd.dataset.salrowdel;state.salaries.forEach(p=>{p.entries=(p.entries||[]).filter(en=>en.ym!==ym);});scheduleSync();renderSalary();return;}
+  const gn=e.target.closest("[data-salgen]");if(gn){const c=e.target.closest(".controls");let from=c.querySelector(".salfrom").value,to=c.querySelector(".salto").value;
+    if(!/^\d{4}-\d{2}$/.test(from)||!/^\d{4}-\d{2}$/.test(to)){toast("Pick both months");return;}
+    if(from>to){const t2=from;from=to;to=t2;}
+    let cur=from,n=0;while(cur<=to&&n<600){salAddRowAt(cur,true);cur=nextYm(cur);n++;}
+    scheduleSync();renderSalary();toast("Added "+n+" month"+(n===1?"":"s"));return;}
 });
 document.getElementById("addPerson").onclick=()=>{state.salaries.push({id:nid(),name:state.salaries.length?"Partner":"Me",ccy:state.baseCcy,entries:[]});scheduleSync();renderSalary();};
 document.getElementById("salaryBack").onclick=()=>{scheduleSync();closeSalary();};
