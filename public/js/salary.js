@@ -116,7 +116,7 @@ function renderSalary(){
       body+=yr+`</tr>`;}
     let row=`<tr><td class="salm">${ymLabel(ym)}</td>`,hh=0;
     people.forEach(p=>{const e=salEntry(p,ym);if(e)hh+=salTotal(e);
-      row+=`<td class="num salgsep">${e&&e.amount?moneyIn(salTotal(e),p.ccy):"—"}${e&&e.event?`<span class="evtag">${esc(e.event)}</span>`:""}</td>`;});
+      row+=`<td class="num salgsep">${e&&e.event?`<span class="evtag">${esc(e.event)}</span>`:""}${e&&e.amount?moneyIn(salTotal(e),p.ccy):"—"}</td>`;});
     if(multi)row+=`<td class="num salgsep">${hh?money(hh):"—"}</td>`;
     body+=row+`</tr>`;
   });
