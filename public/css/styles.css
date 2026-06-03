@@ -241,6 +241,9 @@ button.act.ghost:hover{border-color:var(--amber)}
 .schtab tr.exline td{background:rgba(255,176,0,.08);color:var(--amber);border-top:1px solid var(--line2)}
 .schtab tr.exline td:nth-child(2){color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-size:10px}
 .schtab tr.exline:hover td{background:rgba(255,176,0,.12)}
+.schtab tr.est td{color:var(--muted);font-style:italic}
+.schtab tr.fxdiv td{background:var(--panel);color:var(--amber2);font-size:10px;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:9px;border-top:1px solid var(--line2)}
+.pstat .v.hilite{color:var(--amber2)}
 
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
 .ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select{

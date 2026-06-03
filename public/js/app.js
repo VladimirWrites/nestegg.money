@@ -10,6 +10,7 @@ function normLoan(L,fallbackDate){
   if(!L||typeof L!=="object")return null;
   if(L.amount==null)L.amount=0;if(L.rate==null)L.rate=0;if(L.termYears==null)L.termYears=30;if(!L.startDate)L.startDate=fallbackDate;
   if(L.mode!=="payment")L.mode="term";if(L.payment==null)L.payment=0;
+  if(L.fixedUntil===undefined)L.fixedUntil=null;   // rate certain until this date; beyond = estimated
   if(!Array.isArray(L.extra))L.extra=[];L.extra.forEach(x=>{if(!x.id)x.id=nid();if(x.amount==null)x.amount=0;if(!x.date)x.date=L.startDate;});
   return L;
 }
@@ -123,6 +124,8 @@ function buildSchedule(loan){
   const {L,i,M,n}=loanTerms(loan),rows=[];
   const start=parseDate(loan.startDate);if(L<=0||!start||!(M>0)||!isFinite(n)||n<=0)return rows;
   const cap=Math.min(n,1200),pay=round2(M);
+  const fixedUntil=loan.fixedUntil?parseDate(loan.fixedUntil):null;   // rate certain until here
+  const est=d=>!!(fixedUntil&&d>=fixedUntil);                          // beyond = estimated projection
   const extras=(loan.extra||[]).map(e=>({d:parseDate(e.date),a:round2(+e.amount||0)})).filter(e=>e.d&&e.a>0).sort((a,b)=>a.d-b.d);
   let bal=round2(L),ei=0;
   for(let k=0;k<cap&&bal>0.005;k++){
@@ -135,7 +138,7 @@ function buildSchedule(loan){
       const x=extras[ei],day=Math.min(30,Math.max(1,x.d.getDate()));
       credit+=x.a*(30-day)/30; extraThis=round2(extraThis+x.a);
       running=round2(running-x.a);
-      rows.push({type:"extra",date:x.d,extra:x.a,balance:running});   // standalone dated overpayment
+      rows.push({type:"extra",date:x.d,extra:x.a,balance:running,estimated:est(x.d)});   // standalone dated overpayment
       ei++;
     }
     // Round each month's interest to whole cents, like a bank statement, then carry forward.
@@ -144,7 +147,7 @@ function buildSchedule(loan){
     if(principal>bal){principal=bal;rowPay=round2(interest+principal);}   // final (partial) payment
     bal=round2(bal-principal-extraThis);
     if(bal<0)bal=0;
-    rows.push({type:"payment",date,payment:rowPay,interest,principal,balance:bal});
+    rows.push({type:"payment",date,payment:rowPay,interest,principal,balance:bal,estimated:est(date)});
   }
   return rows;
 }
@@ -476,16 +479,25 @@ function loanComputedHTML(a){
   const tooLow=byPayment&&(+L.payment>0)&&!isFinite(n);
   const payRows=sched.filter(r=>r.type!=="extra");
   const payoff=payRows.length?payRows[payRows.length-1].date:null,totInt=sched.reduce((s,r)=>s+(r.interest||0),0);
+  const fixedUntil=L.fixedUntil?parseDate(L.fixedUntil):null;
+  const balAtChange=fixedUntil?outstandingAt(L,fixedUntil):null;       // amount left when the rate resets
   const calcStat=byPayment
     ?`<div class="pstat"><span class="k">Term (calculated)</span><span class="v num">${fmtMonths(n)}</span></div>`
     :`<div class="pstat"><span class="k">Monthly payment</span><span class="v num">${M?moneyIn(M,a.ccy):"—"}</span></div>`;
-  const rows=sched.map(r=>r.type==="extra"
-    ?`<tr class="exline"><td>${ymdDay(r.date)}</td><td colspan="3">Additional payment</td><td class="num">${moneyIn(r.extra,a.ccy)}</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`
-    :`<tr><td>${ymd(r.date)}</td><td class="num">${moneyIn(r.payment,a.ccy)}</td><td class="num">${moneyIn(r.interest,a.ccy)}</td><td class="num">${moneyIn(r.principal,a.ccy)}</td><td class="num">—</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`).join("");
+  let divDone=false;
+  const rows=sched.map(r=>{
+    let pre="";
+    if(!divDone&&r.estimated){divDone=true;pre=`<tr class="fxdiv"><td colspan="6">Fixed rate ends ${ymd(fixedUntil)} · ${moneyIn(balAtChange,a.ccy)} left · estimated at ${L.rate}% beyond</td></tr>`;}
+    const cls=r.estimated?" est":"";
+    return pre+(r.type==="extra"
+      ?`<tr class="exline${cls}"><td>${ymdDay(r.date)}</td><td colspan="3">Additional payment</td><td class="num">${moneyIn(r.extra,a.ccy)}</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`
+      :`<tr class="${cls.trim()}"><td>${ymd(r.date)}</td><td class="num">${moneyIn(r.payment,a.ccy)}</td><td class="num">${moneyIn(r.interest,a.ccy)}</td><td class="num">${moneyIn(r.principal,a.ccy)}</td><td class="num">—</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`);
+  }).join("");
   return `${tooLow?`<div class="loanwarn">That payment is below the monthly interest, so the loan never amortizes — raise it above ${moneyIn((+L.amount||0)*(+L.rate||0)/100/12,a.ccy)}.</div>`:""}
     <div class="pstats">
       ${calcStat}
       <div class="pstat"><span class="k">Balance today</span><span class="v num">${moneyIn(bal,a.ccy)}</span></div>
+      ${balAtChange!=null?`<div class="pstat"><span class="k">Left at rate change</span><span class="v num hilite">${moneyIn(balAtChange,a.ccy)}</span></div>`:""}
       <div class="pstat"><span class="k">Payoff</span><span class="v num">${payoff?ymd(payoff):"—"}</span></div>
       <div class="pstat"><span class="k">Total interest</span><span class="v num">${moneyIn(totInt,a.ccy)}</span></div>
     </div>
@@ -519,6 +531,7 @@ function assetCardHTML(a){
         <label class="fld">Set by<select data-aid="${a.id}" data-lf="mode"><option value="term" ${byPayment?"":"selected"}>Term</option><option value="payment" ${byPayment?"selected":""}>Monthly payment</option></select></label>
         ${termField}
         <label class="fld">Start<input class="fin" type="date" value="${esc(L.startDate)}" data-aid="${a.id}" data-lf="startDate"></label>
+        <label class="fld">Rate fixed until<input class="fin" type="date" value="${esc(L.fixedUntil||"")}" data-aid="${a.id}" data-lf="fixedUntil"></label>
       </div>
       <div class="exwrap"><div class="psub">Extra payments<button class="act ghost mini" data-extraadd="${a.id}">+ add</button></div>${extras||'<div class="exhint">None — add one-off lump sums to pay down principal faster.</div>'}</div>
       <div class="lcomp">${loanComputedHTML(a)}</div>
@@ -549,7 +562,7 @@ function newAsset(){const a={id:nid(),name:"New asset",ccy:state.baseCcy,value:0
 document.getElementById("assetList").addEventListener("input",e=>{
   const t=e.target,id=t.dataset.aid;if(!id)return;const a=state.assets.find(x=>x.id===id);if(!a)return;
   if(t.dataset.eid){const x=(a.loan&&a.loan.extra||[]).find(z=>z.id===t.dataset.eid);if(x){if(t.dataset.ef==="amount")x.amount=parseFloat(t.value||0);else x.date=t.value;}}
-  else if(t.dataset.lf){const f=t.dataset.lf;if(a.loan)a.loan[f]=(f==="startDate"||f==="mode")?t.value:parseFloat(t.value||0);}
+  else if(t.dataset.lf){const f=t.dataset.lf;if(a.loan)a.loan[f]=(f==="startDate"||f==="mode"||f==="fixedUntil")?t.value:parseFloat(t.value||0);}
   else if(t.dataset.f){const f=t.dataset.f;
     if(f==="value")a.value=parseFloat(t.value||0);
     else if(f==="rate")a.rate=Math.min(Math.max(parseFloat(t.value||0)/100,0),0.99);
