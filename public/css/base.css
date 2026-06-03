@@ -1,0 +1,20 @@
+:root{
+  --bg:#0a0a0b;--panel:#121214;--panel2:#17171a;--line:#26262a;--line2:#33333a;
+  --ink:#e8e4d8;--muted:#8a867c;--amber:#ffb000;--amber2:#ff8c1a;
+  --blue:#4aa3ff;--green:#3ad17a;--yellow:#ffd23a;--red:#ff4d6d;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;
+  --maxw:1100px;
+}
+/* widen the content envelope on large monitors so space isn't wasted.
+   Standard 16:9 desktops top out ~1920; true ultrawides are 21:9 (2560/3440)
+   and 32:9 (5120). Keep scaling up for those, but cap around 2040px — beyond
+   that, stretching financial rows hurts readability more than it helps. */
+@media(min-width:1500px){:root{--maxw:1340px}}
+@media(min-width:1920px){:root{--maxw:1560px}}
+@media(min-width:2560px){:root{--maxw:1800px}}
+@media(min-width:3440px){:root{--maxw:2040px}}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);line-height:1.5;padding:0 0 90px;min-height:100vh}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.hide{display:none!important}
