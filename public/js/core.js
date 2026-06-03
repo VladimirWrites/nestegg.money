@@ -16,6 +16,8 @@ function normLoan(L,fallbackDate){
 }
 function migrate(s){
   if(!s.baseCcy)s.baseCcy="EUR";
+  if(!s.forecast||typeof s.forecast!=="object")s.forecast={monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0};
+  else{const f=s.forecast;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;}
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
   if(!s.prices)s.prices={};
   if(!s.fxHist||typeof s.fxHist!=="object")s.fxHist={};
@@ -213,6 +215,29 @@ const snapGrossBase=sn=>effEntries(sn).reduce((a,e)=>{const v=entryBase(e,sn.yea
 const snapLiabBase=sn=>effEntries(sn).filter(isLiability).reduce((a,e)=>a-entryBase(e,sn.year),0);            // total owed (positive)
 const sortedSnaps=()=>[...state.snapshots].sort((a,b)=>a.year-b.year);
 const latestSnap=()=>sortedSnaps().slice(-1)[0];
+
+/* ---- Forecast: project net worth forward ----
+   Long-term assets compound (up/down) and loans amortise via their own engines, so they
+   project exactly for any future date. The "liquid" portion (the latest year's manually
+   entered values) is grown at an assumed annual return, and a planned monthly contribution
+   is added with monthly compounding. Future FX is unknown, so current rates are used. */
+function fcCfg(){if(!state.forecast||typeof state.forecast!=="object")state.forecast={monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0};return state.forecast;}
+// Net of all long-term assets/liabilities (in base ccy) on an arbitrary date.
+function ltNetBaseAt(date){return (state.assets||[]).reduce((s,a)=>{const from=assetOwnedFrom(a);if(from&&from>date)return s;const nat=a.liability?-(a.loan?outstandingAt(a.loan,date):0):assetNetAt(a,date);return s+convTo(nat,a.ccy||state.baseCcy,state.baseCcy);},0);}
+// The manually-entered ("liquid") portion of the latest snapshot, in base ccy.
+function manualNetBase(){const ls=latestSnap();if(!ls)return 0;return (ls.entries||[]).reduce((s,e)=>s+entryBase(e,ls.year),0);}
+function forecastNetAt(date){const fc=fcCfg(),g=+fc.growth||0;let t=(date-new Date())/YEAR_MS;if(t<0)t=0;
+  const grown=manualNetBase()*Math.pow(1+g,t);
+  const i=g/12,n=Math.round(t*12),fv=(+fc.monthly||0)*(i>0?(Math.pow(1+i,n)-1)/i:n);
+  return grown+fv+ltNetBaseAt(date);}
+// Goal target: an explicit amount, or annual spending × 25 (the 4% rule).
+function fcTarget(){const fc=fcCfg();return fc.goalMode==="spend"?(+fc.annualSpending||0)*25:(+fc.goalAmount||0);}
+// Across every loan (asset-backed or standalone), the last payment date and remaining interest.
+function debtSummary(){const now=new Date();let payoff=null,rem=0,has=false;
+  (state.assets||[]).forEach(a=>{if(!a.loan)return;const rows=buildSchedule(a.loan),pays=rows.filter(r=>r.type!=="extra");if(!pays.length)return;has=true;
+    const last=pays[pays.length-1].date;if(!payoff||last>payoff)payoff=last;
+    pays.forEach(r=>{if(r.date>now)rem+=convTo(r.interest||0,a.ccy||state.baseCcy,state.baseCcy);});});
+  return {has,payoff,rem};}
 
 /* crypto/auth */
 let accountId=null,cryptoKey=null;const B32="0123456789ABCDEFGHJKMNPQRSTVWXYZ";

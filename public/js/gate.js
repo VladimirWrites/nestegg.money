@@ -72,6 +72,14 @@ document.getElementById("navNet").onclick=()=>showView("net");
 document.getElementById("profLogout").onclick=()=>{if(confirm("Log out on this device? Make sure your account number is saved — it's the only way back in.")){LS.rem("nw_token");LS.rem("nw_state");location.reload();}};
 document.getElementById("ccySel").onchange=e=>{state.baseCcy=e.target.value;scheduleSync();renderAll();};
 document.getElementById("pricesBtn").onclick=refreshPrices;
+// Forecast inputs
+(()=>{const fcU=()=>{scheduleSync();renderForecast();};
+  const m=document.getElementById("fcMonthly");if(m)m.oninput=e=>{fcCfg().monthly=parseFloat(e.target.value)||0;fcU();};
+  const g=document.getElementById("fcGrowth");if(g)g.oninput=e=>{fcCfg().growth=Math.min(Math.max((parseFloat(e.target.value)||0)/100,-0.5),1);fcU();};
+  const gm=document.getElementById("fcGoalMode");if(gm)gm.onchange=e=>{fcCfg().goalMode=e.target.value==="spend"?"spend":"amount";fcSyncInputs();fcU();};
+  const gv=document.getElementById("fcGoalVal");if(gv)gv.oninput=e=>{const fc=fcCfg(),v=parseFloat(e.target.value)||0;if(fc.goalMode==="spend")fc.annualSpending=v;else fc.goalAmount=v;fcU();};
+})();
+document.getElementById("dlFc")&&(document.getElementById("dlFc").onclick=()=>downloadForecast());
 document.getElementById("dlHist").onclick=()=>downloadHist();
 document.getElementById("dlDonut").onclick=()=>downloadDonut();
 document.getElementById("ratesBtn").onclick=async()=>{toast("Updating rates…");const ok=await fetchFx();await refreshHistFx();scheduleSync();renderAll();toast(ok?("Rates updated · "+(state.fxDate||"")):"Rates unavailable (offline)");};

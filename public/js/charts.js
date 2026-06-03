@@ -1,6 +1,64 @@
 /* render */
 function getCss(v){return v;}
-function renderAll(){drawHist();drawHistLegend();renderYears();drawDonut();updNote();}
+function renderAll(){drawHist();drawHistLegend();renderYears();drawDonut();updNote();renderForecast();}
+
+const FC_AMBER="#ffb000",FC_GREEN="#3ad17a";
+function fcSyncInputs(){const fc=fcCfg();
+  const m=document.getElementById("fcMonthly");if(m&&document.activeElement!==m)m.value=fc.monthly||"";
+  const g=document.getElementById("fcGrowth");if(g&&document.activeElement!==g)g.value=fc.growth?+(fc.growth*100).toFixed(2):"";
+  const gm=document.getElementById("fcGoalMode");if(gm)gm.value=fc.goalMode;
+  const lbl=document.getElementById("fcGoalLbl");if(lbl)lbl.textContent=fc.goalMode==="spend"?"Annual spending":"Target amount";
+  const gv=document.getElementById("fcGoalVal");if(gv&&document.activeElement!==gv)gv.value=(fc.goalMode==="spend"?fc.annualSpending:fc.goalAmount)||"";}
+function moY(d){return d?d.toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";}
+function renderForecast(){
+  const svg=document.getElementById("fcChart");if(!svg)return;fcSyncInputs();
+  const stEl=document.getElementById("fcStats"),fc=fcCfg(),now=new Date(),cy=now.getFullYear();
+  const actual=sortedSnaps().map(s=>({y:s.year,v:snapTotalBase(s)}));
+  if(!actual.length){svg.innerHTML="";svg.removeAttribute("width");if(stEl)stEl.innerHTML='<div class="fchint">Add a year of net worth to see your trajectory.</div>';return;}
+  const lastA=actual[actual.length-1],target=fcTarget();
+  // FIRE crossing
+  let fireY=null;if(target>0){if(forecastNetAt(now)>=target)fireY=cy;else for(let Y=cy+1;Y<=cy+50;Y++){if(forecastNetAt(new Date(Y,11,31))>=target){fireY=Y;break;}}}
+  // horizon
+  let horizon=cy+25;if(target>0)horizon=fireY?Math.min(fireY+3,cy+45):cy+45;horizon=Math.max(horizon,lastA.y+1);
+  // projection from the last actual point forward (dashed, connects to the solid line)
+  const proj=[];for(let Y=lastA.y;Y<=horizon;Y++)proj.push({y:Y,v:Y<=lastA.y?lastA.v:forecastNetAt(new Date(Y,11,31))});
+  const projEnd=proj[proj.length-1];
+  const minY=actual[0].y,maxY=horizon,span=Math.max(1,maxY-minY);
+  const allV=actual.map(p=>Math.max(0,p.v)).concat(proj.map(p=>Math.max(0,p.v)));if(target>0)allV.push(target);
+  const nm=niceCeil(Math.max(1,...allV));
+  const padL=58,padR=16,padT=22,padB=30,perY=Math.max(20,Math.min(46,Math.round(720/span))),innerW=span*perY,W=Math.max(innerW+padL+padR,320),H=280,plotH=H-padT-padB;
+  const X=y=>padL+(y-minY)/span*innerW,Y=v=>padT+plotH-(Math.max(0,v)/nm)*plotH;
+  svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  let s="";const sym=ccySym();
+  for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#26262a" stroke-width="1"/>`;s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
+  // x labels — first, last, and a sparse set between
+  const step=Math.max(1,Math.ceil(span/8));for(let y=minY;y<=maxY;y+=step){s+=`<text x="${X(y)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="#8a867c">${y}</text>`;}
+  if((maxY-minY)%step!==0)s+=`<text x="${X(maxY)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="#8a867c">${maxY}</text>`;
+  // goal line
+  if(target>0&&target<=nm){const gy=Y(target);s+=`<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="${FC_GREEN}" stroke-width="1.4" stroke-dasharray="2 4"/>`;s+=`<text x="${W-padR}" y="${gy-5}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="${FC_GREEN}">goal ${sym}${shortK(target)}</text>`;}
+  // projection (dashed)
+  s+=`<polyline points="${proj.map(p=>X(p.y)+","+Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`;
+  // actual (solid) + dots
+  s+=`<polyline points="${actual.map(p=>X(p.y)+","+Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
+  actual.forEach(p=>{s+=`<circle cx="${X(p.y)}" cy="${Y(p.v)}" r="3" fill="${FC_AMBER}"><title>${p.y}: ${money(p.v)}</title></circle>`;});
+  // fire crossing marker
+  if(fireY&&forecastNetAt(new Date(fireY,11,31))>=target){const fx=X(fireY),fyv=Y(Math.min(target,nm));s+=`<line x1="${fx}" y1="${padT}" x2="${fx}" y2="${padT+plotH}" stroke="${FC_GREEN}" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>`;s+=`<circle cx="${fx}" cy="${fyv}" r="4" fill="${FC_GREEN}"><title>Goal reached ${fireY}</title></circle>`;}
+  // projection endpoint
+  s+=`<circle cx="${X(projEnd.y)}" cy="${Y(projEnd.v)}" r="3" fill="${FC_AMBER}" opacity="0.85"><title>${projEnd.y}: ${money(projEnd.v)}</title></circle>`;
+  svg.innerHTML=s;
+  // stats
+  const d=debtSummary();
+  const goalStat=target>0?(fireY?`<div class="fcstat"><span class="k">${fc.goalMode==="spend"?"FIRE goal ("+money(target)+")":"Goal "+money(target)}</span><span class="v ok">${fireY<=cy?"reached 🎉":("~"+fireY+" · in "+(fireY-cy)+" yr"+(fireY-cy===1?"":"s"))}</span></div>`:`<div class="fcstat"><span class="k">Goal ${money(target)}</span><span class="v">not within 45 yrs</span></div>`):`<div class="fcstat"><span class="k">Goal</span><span class="v dim">set a target above</span></div>`;
+  const debtStat=d.has?`<div class="fcstat"><span class="k">Debt-free by</span><span class="v ok">${moY(d.payoff)}</span><span class="sub">${money(d.rem)} interest remaining</span></div>`:`<div class="fcstat"><span class="k">Debt</span><span class="v ok">none 🎉</span></div>`;
+  if(stEl)stEl.innerHTML=`<div class="fcstat"><span class="k">Projected ${projEnd.y}</span><span class="v">${money(projEnd.v)}</span></div>`+goalStat+debtStat;
+}
+function downloadForecast(){
+  const src=document.getElementById("fcChart");if(!src||!src.innerHTML){toast("Nothing to save");return;}
+  const cW=+src.getAttribute("width"),cH=+src.getAttribute("height"),pad=24,titleH=52;
+  const leg=legendSVG([{color:FC_AMBER,label:"Actual / Projected"},{color:FC_GREEN,label:"Goal"}],pad,titleH+cH+16,13);
+  const f=frameSVG("Net Worth · forecast",src.innerHTML,cW,cH,leg,pad,titleH);
+  svgToPng(f.svg,f.W,f.H,2,"nestegg-forecast.png");
+}
 function updNote(){const px=state.lastPx?("prices "+new Date(state.lastPx).toLocaleString("en-GB",{hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})):"";const fxd=state.fxDate?("FX "+state.fxDate):"";document.getElementById("updNote").textContent=[px,fxd].filter(Boolean).join(" · ");}
 
 function shortK(v){const a=Math.abs(v);if(a>=1000)return (v/1000).toFixed(a>=10000?0:1)+"k";return Math.round(v);}

@@ -89,6 +89,20 @@
       </section>
     </div>
 
+    <section class="forecast">
+      <button class="chartdl" id="dlFc" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+      <div class="sectitle">Forecast <span class="tin">— where you're headed</span></div>
+      <div class="fcrow">
+        <label class="fld">Monthly contribution<input id="fcMonthly" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
+        <label class="fld">Expected return / yr<span class="pct"><input id="fcGrowth" class="fin num" type="number" step="any" inputmode="decimal" placeholder="5"><i>%</i></span></label>
+        <label class="fld">Goal<select id="fcGoalMode"><option value="amount">Target amount</option><option value="spend">Annual spending ×25</option></select></label>
+        <label class="fld"><span id="fcGoalLbl">Target amount</span><input id="fcGoalVal" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
+      </div>
+      <div class="fcstats" id="fcStats"></div>
+      <div class="histscroll"><svg id="fcChart"></svg></div>
+      <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span>Actual</span><span><span class="chip fcdash"></span>Projected</span><span><span class="chip" style="background:var(--green)"></span>Goal</span></div>
+    </section>
+
     <section style="border-bottom:none;padding-top:8px">
       <div class="controls" style="margin-top:0">
         <button class="act ghost" id="exportBtn">Export JSON</button>
