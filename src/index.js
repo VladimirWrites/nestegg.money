@@ -54,10 +54,33 @@ function toYahoo(t) {
   return t.toUpperCase();
 }
 async function priceGet(request) {
-  const t = new URL(request.url).searchParams.get("ticker");
+  const u = new URL(request.url);
+  const t = u.searchParams.get("ticker");
   if (!t) return json({ error: "no ticker" }, 400);
   const symbol = toYahoo(t);
+  const yearStr = u.searchParams.get("year");
   try {
+    // Historical: the closing price for a given calendar year (last trading day of it).
+    if (yearStr) {
+      const y = parseInt(yearStr);
+      if (!(y >= 1970 && y <= 3000)) return json({ error: "bad year" }, 400);
+      const p1 = Math.floor(Date.UTC(y, 0, 1) / 1000);
+      const p2 = Math.floor(Date.UTC(y, 11, 31, 23, 59, 59) / 1000);
+      const hurl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${p1}&period2=${p2}&interval=1d`;
+      const hr = await fetch(hurl, {
+        headers: { "user-agent": "Mozilla/5.0", "accept": "application/json" },
+        cf: { cacheTtl: 86400, cacheEverything: true },
+      });
+      if (!hr.ok) return json({ error: "upstream " + hr.status, symbol }, 502);
+      const hd = await hr.json();
+      const res = hd && hd.chart && hd.chart.result && hd.chart.result[0];
+      const closes = res && res.indicators && res.indicators.quote && res.indicators.quote[0] && res.indicators.quote[0].close;
+      if (!res || !closes) return json({ error: "no price", symbol }, 404);
+      let px = null;
+      for (let i = closes.length - 1; i >= 0; i--) { if (closes[i] != null) { px = closes[i]; break; } }
+      if (px == null) return json({ error: "no price", symbol }, 404);
+      return json({ ticker: t, symbol, price: px, currency: (res.meta && res.meta.currency) || "USD", year: y }, 200, 86400);
+    }
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
     const r = await fetch(url, {
       headers: { "user-agent": "Mozilla/5.0", "accept": "application/json" },

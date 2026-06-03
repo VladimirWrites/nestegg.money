@@ -59,8 +59,16 @@ function allNames(){return [...new Set(state.snapshots.flatMap(s=>effEntries(s).
 function colorOf(name,names){const i=(names||allNames()).indexOf(name);return PALETTE[(i<0?0:i)%PALETTE.length];}
 
 /* totals */
+// Effective price for a ticker entry: a frozen historical close (past years) if one
+// is stored on the entry, otherwise the live fetched price.
+function tickerPx(en){
+  if(en.px!=null)return{price:en.px,currency:en.pxCcy||en.ccy||"EUR",frozen:true};
+  const p=state.prices[en.ticker];
+  if(p)return{price:p.price,currency:p.currency,prevClose:p.prevClose,frozen:false};
+  return null;
+}
 function entryNative(en){
-  if(en.kind==="ticker"){const p=state.prices[en.ticker];if(!p)return{v:0,ccy:en.ccy||"EUR",miss:true};return{v:(parseFloat(en.shares)||0)*p.price,ccy:p.currency};}
+  if(en.kind==="ticker"){const p=tickerPx(en);if(!p)return{v:0,ccy:en.ccy||"EUR",miss:true};return{v:(parseFloat(en.shares)||0)*p.price,ccy:p.currency};}
   return {v:parseFloat(en.value)||0,ccy:en.ccy||"EUR"};
 }
 const entryEUR=en=>{const n=entryNative(en);return convTo(n.v,n.ccy,"EUR");};
@@ -69,7 +77,7 @@ function dayChangeBase(nw){
   const ls=latestSnap();if(!ls)return null;
   let abs=0,any=false;
   ls.entries.forEach(en=>{
-    if(en.kind!=="ticker")return;
+    if(en.kind!=="ticker"||en.px!=null)return;   // frozen historical holdings have no daily change
     const p=state.prices[en.ticker];if(!p||p.prevClose==null)return;
     const sh=parseFloat(en.shares)||0;
     abs+=convTo(sh*(p.price-p.prevClose),p.currency,state.baseCcy);
@@ -237,7 +245,30 @@ function setSync(c,t){const d=document.getElementById("syncDot"),x=document.getE
 async function fetchFx(){try{const r=await fetch("/api/fx");if(!r.ok)return false;const d=await r.json();if(d.rates){state.fxRates=Object.assign({EUR:1},d.rates);state.fxDate=d.date;return true;}}catch(e){}return false;}
 async function fetchPrice(t){try{const r=await fetch("/api/price?ticker="+encodeURIComponent(t));if(!r.ok)return false;const d=await r.json();if(d.price!=null){state.prices[t]={price:d.price,prevClose:(d.prevClose!=null?d.prevClose:d.price),currency:d.currency||"USD",t:Date.now()};return true;}}catch(e){}return false;}
 function tickersInUse(){return [...new Set(state.snapshots.flatMap(s=>s.entries).filter(e=>e.kind==="ticker"&&e.ticker).map(e=>e.ticker))];}
-async function refreshPrices(){const ts=tickersInUse();if(!ts.length){toast("No ticker holdings to refresh");return;}toast("Fetching prices…");let n=0;for(const t of ts){if(await fetchPrice(t))n++;}state.lastPx=Date.now();scheduleSync();renderAll();toast(n+"/"+ts.length+" prices updated");}
+// Year-end close for a ticker, used to value holdings held in a past year.
+async function fetchPriceYear(t,year){try{const r=await fetch("/api/price?ticker="+encodeURIComponent(t)+"&year="+year);if(!r.ok)return null;const d=await r.json();if(d.price!=null)return{price:d.price,currency:d.currency||"USD"};}catch(e){}return null;}
+// Freeze each past-year ticker holding to that year's close (stored on the entry);
+// current/future-year holdings stay on the live price. Returns true if anything changed.
+async function refreshHistPrices(){
+  const cy=new Date().getFullYear();let changed=false;
+  for(const sn of state.snapshots){const past=sn.year<cy;
+    for(const en of (sn.entries||[])){
+      if(en.kind!=="ticker"||!en.ticker)continue;
+      if(past){const key=en.ticker+"@"+sn.year;
+        if(en.px!=null&&en.pxKey===key)continue;
+        const r=await fetchPriceYear(en.ticker,sn.year);
+        if(r){en.px=r.price;en.pxCcy=r.currency;en.pxKey=key;changed=true;}
+      }else if(en.px!=null){delete en.px;delete en.pxCcy;delete en.pxKey;changed=true;}
+    }
+  }
+  return changed;
+}
+async function refreshPrices(){
+  const ts=tickersInUse();if(!ts.length){toast("No ticker holdings to refresh");return;}
+  toast("Fetching prices…");let n=0;for(const t of ts){if(await fetchPrice(t))n++;}
+  await refreshHistPrices();
+  state.lastPx=Date.now();scheduleSync();renderAll();toast(n+"/"+ts.length+" prices updated");
+}
 
 /* gate */
 let pendingToken=null;
@@ -269,6 +300,8 @@ function enterApp(){
     document.getElementById("dateline").textContent=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
     document.getElementById("ccySel").innerHTML=CCYS.map(c=>`<option ${c===state.baseCcy?"selected":""}>${c}</option>`).join("");
     renderAll();
+    // Value any past-year stock holdings at that year's close (one-time fetch, then cached on the entry).
+    try{refreshHistPrices().then(ch=>{if(ch){scheduleSync();renderAll();}}).catch(()=>{});}catch(e){}
   }catch(e){console&&console.error&&console.error("enterApp:",e);}
 }
 document.getElementById("showAcctBtn").onclick=()=>{const t=LS.get("nw_token")||"(none)";navigator.clipboard&&navigator.clipboard.writeText(t);toast("Account number copied: "+t);};
@@ -390,8 +423,8 @@ function cardHTML(en,i,names){
   const baseV=entryBase(en);
   let valuePart;
   if(en.kind==="ticker"){
-    const p=state.prices[en.ticker];
-    const pxtxt=p?("@ "+moneyIn(p.price,p.currency)):(en.ticker?"no price":"set ticker");
+    const p=tickerPx(en);
+    const pxtxt=p?("@ "+moneyIn(p.price,p.currency)+(p.frozen?" · year-end":"")):(en.ticker?"no price":"set ticker");
     valuePart=`<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares!=null?en.shares:0}" data-i="${i}" data-f="shares" placeholder="shares" title="shares">
     <input class="rtk" value="${esc(en.ticker||"")}" data-i="${i}" data-f="ticker" placeholder="AMS:VWRL" title="ticker">
     <span class="rconv">${p?money(baseV):pxtxt}</span>`;
@@ -481,7 +514,13 @@ document.getElementById("edEntries").addEventListener("change",async e=>{
   const t=e.target,f=t.dataset.f;
   if(t.dataset.grp!=null){renderEntries();return;}
   if(f==="name"){renderEntries();return;}
-  if(f==="ticker"&&t.value.trim()){toast("Fetching price…");const ok=await fetchPrice(t.value.trim());scheduleSync();renderEntries();renderAll&&0;toast(ok?"Price updated":"Couldn't fetch that ticker");}
+  if(f==="ticker"&&t.value.trim()){
+    const sn=state.snapshots[edIdx],en=sn&&sn.entries[+t.dataset.i],sym=t.value.trim(),cy=new Date().getFullYear();
+    if(!en)return;
+    toast("Fetching price…");
+    if(sn.year<cy){const r=await fetchPriceYear(sym,sn.year);if(r){en.px=r.price;en.pxCcy=r.currency;en.pxKey=sym+"@"+sn.year;}else{delete en.px;delete en.pxCcy;delete en.pxKey;}scheduleSync();renderEntries();toast(r?("Year-end price · "+sn.year):"Couldn't fetch that ticker");}
+    else{delete en.px;delete en.pxCcy;delete en.pxKey;const ok=await fetchPrice(sym);scheduleSync();renderEntries();toast(ok?"Price updated":"Couldn't fetch that ticker");}
+  }
 });
 document.getElementById("edEntries").addEventListener("click",e=>{
   const sn=state.snapshots[edIdx];
