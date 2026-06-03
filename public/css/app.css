@@ -277,6 +277,12 @@ button.act.ghost:hover{border-color:var(--amber)}
 .salpick:focus{outline:none;border-color:var(--amber)}
 .salctrls{align-items:center}
 .salrlbl{font-size:11px;letter-spacing:.04em;color:var(--muted)}
+/* read-only salary table (Salary tab) */
+.saltab.rotab th,.saltab.rotab td{text-align:right;padding:8px 14px;white-space:nowrap}
+.saltab.rotab th.salm-h,.saltab.rotab td.salm{text-align:left}
+.saltab.rotab thead th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.04em}
+.saltab.rotab tbody td{font-size:13.5px;font-variant-numeric:tabular-nums}
+.evtag{display:inline-block;margin-left:8px;font-size:9.5px;letter-spacing:.03em;color:var(--amber2);border:1px solid var(--line2);border-radius:99px;padding:2px 8px;vertical-align:middle}
 .salimport{margin-top:16px;border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:0 13px}
 .salimport summary{cursor:pointer;padding:12px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
 .salimport[open]{padding-bottom:13px}

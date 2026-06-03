@@ -93,12 +93,37 @@ function importSalary(){
     if(cells[2]&&cells[2].trim()&&parseAmt(cells[2])==null)e.event=cells[2].trim();
     n++;
   });
-  scheduleSync();renderSalary();
+  scheduleSync();renderSalaryEdit();
   document.getElementById("salImportText").value="";
   toast(n?("Imported "+n+" month"+(n===1?"":"s")+(bad?(" · "+bad+" skipped"):"")):"Nothing parsed — paste Month + amount columns");
 }
+// Read-only table shown on the Salary tab; all edits happen in the edit overlay.
 function renderSalary(){
   drawSalaryChart();
+  const host=document.getElementById("salaryTable"),people=state.salaries||[];
+  if(!people.length){host.innerHTML=`<div class="emptyhint">No salary history yet. Tap “Edit salaries” to add people and months, or import from a spreadsheet.</div>`;return;}
+  const yms=salGlobalYms(),multi=people.length>1;
+  let head=`<tr><th class="salm-h">Month</th>`;
+  people.forEach(p=>head+=`<th class="r salgsep">${esc(p.name)}</th>`);
+  if(multi)head+=`<th class="r salgsep">Household</th>`;
+  head+=`</tr>`;
+  let body="",curY=null;
+  yms.forEach(ym=>{
+    const y=ym.slice(0,4);
+    if(y!==curY){curY=y;let yr=`<tr class="saly"><td>${y}</td>`,ht=0;
+      people.forEach(p=>{const t=(p.entries||[]).filter(e=>e.ym.slice(0,4)===y).reduce((a,e)=>a+salTotal(e),0);ht+=t;yr+=`<td class="num salgsep">${t?moneyIn(t,p.ccy):"—"}</td>`;});
+      if(multi)yr+=`<td class="num salgsep">${ht?money(ht):"—"}</td>`;
+      body+=yr+`</tr>`;}
+    let row=`<tr><td class="salm">${ymLabel(ym)}</td>`,hh=0;
+    people.forEach(p=>{const e=salEntry(p,ym);if(e)hh+=salTotal(e);
+      row+=`<td class="num salgsep">${e&&e.amount?moneyIn(salTotal(e),p.ccy):"—"}${e&&e.event?`<span class="evtag">${esc(e.event)}</span>`:""}</td>`;});
+    if(multi)row+=`<td class="num salgsep">${hh?money(hh):"—"}</td>`;
+    body+=row+`</tr>`;
+  });
+  host.innerHTML=`<div class="saltable-scroll"><table class="saltab rotab"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+}
+// Editable table — rendered into the edit overlay.
+function renderSalaryEdit(){
   const host=document.getElementById("salaryList");
   const people=state.salaries||[];
   if(!people.length){host.innerHTML=`<div class="emptyhint">No one yet. Add yourself (and your partner) below, then add a range of months and type each one's net salary side by side.</div>`;return;}
@@ -134,18 +159,18 @@ document.getElementById("salaryList").addEventListener("input",e=>{
     if(f==="amount"){const yr=t.dataset.ym.slice(0,4),yt=document.querySelector('[data-ytot="'+sid+':'+yr+'"]');if(yt){const tot=p.entries.filter(x=>x.ym.slice(0,4)===yr).reduce((a,x)=>a+salTotal(x),0);yt.textContent=tot?moneyIn(tot,p.ccy):"—";}drawSalaryChart();}
   }else{ if(f==="name")p.name=t.value; else if(f==="ccy")p.ccy=t.value; scheduleSync(); if(f==="name")drawSalaryChart(); }
 });
-document.getElementById("salaryList").addEventListener("change",e=>{if(e.target.dataset.f==="ccy")renderSalary();});
+document.getElementById("salaryList").addEventListener("change",e=>{if(e.target.dataset.f==="ccy")renderSalaryEdit();});
 document.getElementById("salaryList").addEventListener("click",e=>{
-  const pd=e.target.closest("[data-perdel]");if(pd){const p=state.salaries.find(x=>x.id===pd.dataset.perdel);if(confirm("Remove "+(p?p.name:"this person")+" and their salary history?")){state.salaries=state.salaries.filter(x=>x.id!==pd.dataset.perdel);scheduleSync();renderSalary();}return;}
-  const rd=e.target.closest("[data-salrowdel]");if(rd){const ym=rd.dataset.salrowdel;state.salaries.forEach(p=>{p.entries=(p.entries||[]).filter(en=>en.ym!==ym);});scheduleSync();renderSalary();return;}
-  const nx=e.target.closest("[data-salnext]");if(nx){const ys=salGlobalYms();salAddRowAt(ys.length?nextYm(ys[ys.length-1]):salThisMonth(),true);scheduleSync();renderSalary();return;}
+  const pd=e.target.closest("[data-perdel]");if(pd){const p=state.salaries.find(x=>x.id===pd.dataset.perdel);if(confirm("Remove "+(p?p.name:"this person")+" and their salary history?")){state.salaries=state.salaries.filter(x=>x.id!==pd.dataset.perdel);scheduleSync();renderSalaryEdit();}return;}
+  const rd=e.target.closest("[data-salrowdel]");if(rd){const ym=rd.dataset.salrowdel;state.salaries.forEach(p=>{p.entries=(p.entries||[]).filter(en=>en.ym!==ym);});scheduleSync();renderSalaryEdit();return;}
+  const nx=e.target.closest("[data-salnext]");if(nx){const ys=salGlobalYms();salAddRowAt(ys.length?nextYm(ys[ys.length-1]):salThisMonth(),true);scheduleSync();renderSalaryEdit();return;}
   const gn=e.target.closest("[data-salgen]");if(gn){const c=e.target.closest(".controls");let from=c.querySelector(".salfrom").value,to=c.querySelector(".salto").value;
     if(!/^\d{4}-\d{2}$/.test(from)||!/^\d{4}-\d{2}$/.test(to)){toast("Pick both months");return;}
     if(from>to){const t2=from;from=to;to=t2;}
     let cur=from,n=0;while(cur<=to&&n<600){salAddRowAt(cur,true);cur=nextYm(cur);n++;}
-    scheduleSync();renderSalary();toast("Added "+n+" month"+(n===1?"":"s"));return;}
+    scheduleSync();renderSalaryEdit();toast("Added "+n+" month"+(n===1?"":"s"));return;}
 });
-document.getElementById("addPerson").onclick=()=>{state.salaries.push({id:nid(),name:state.salaries.length?"Partner":"Me",ccy:state.baseCcy,entries:[]});scheduleSync();renderSalary();};
+document.getElementById("addPerson").onclick=()=>{state.salaries.push({id:nid(),name:state.salaries.length?"Partner":"Me",ccy:state.baseCcy,entries:[]});scheduleSync();renderSalaryEdit();};
 document.getElementById("salImportBtn").onclick=importSalary;
 // In-chart tooltip flag: shown next to the hovered/tapped point, not as a bottom toast.
 function salShowTip(c){
@@ -164,4 +189,10 @@ function salHideTip(){const t=document.getElementById("salTip");if(t)t.classList
 })();
 document.getElementById("dlSalary").onclick=downloadSalary;
 document.getElementById("salaryBtn").onclick=()=>showView("salary");
+// Salary tab (read-only) actions: quick "+ Next month", and open the edit overlay.
+function openSalaryEdit(){document.getElementById("salaryEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderSalaryEdit();}
+function closeSalaryEdit(){document.getElementById("salaryEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");renderSalary();}
+document.getElementById("salEdit").onclick=openSalaryEdit;
+document.getElementById("salaryBack").onclick=()=>{scheduleSync();closeSalaryEdit();};
+document.getElementById("salNext").onclick=()=>{const ys=salGlobalYms();salAddRowAt(ys.length?nextYm(ys[ys.length-1]):salThisMonth(),true);scheduleSync();renderSalary();};
 

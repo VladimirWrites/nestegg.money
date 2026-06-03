@@ -109,16 +109,8 @@
         <div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div>
         <div class="chiplegend" id="salaryLegend"></div>
       </section>
-      <p class="edlede">Log each month's <strong>net</strong> pay per person. The event field notes a raise or job change; yearly totals are summed automatically.</p>
-      <div id="salaryList"></div>
-      <div class="controls"><button class="act" id="addPerson">+ Add person</button></div>
-      <details class="salimport">
-        <summary>Import from a spreadsheet</summary>
-        <p class="edlede" style="margin:10px 0">In Google Sheets, select the <strong>Month</strong> column and the <strong>net amount</strong> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</p>
-        <div class="controls" style="margin:0 0 8px"><span class="salrlbl">Import for</span><select id="salImportWho" class="salccy"></select></div>
-        <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
-        <div class="controls"><button class="act" id="salImportBtn">Import pasted rows</button></div>
-      </details>
+      <div id="salaryTable"></div>
+      <div class="controls"><button class="act ghost" id="salNext">+ Next month</button><button class="act" id="salEdit">Edit salaries</button></div>
     </div>
   </main>
   <div class="foot">
@@ -140,6 +132,25 @@
     <div class="ed-total"><span class="et-k">Year total</span><span class="et-v" id="edTotal">—</span></div>
     <div class="cards" id="edEntries"></div>
     <div class="controls"><button class="act" id="edAdd">+ Add asset</button><button class="act ghost" id="edAddLongterm">+ Property / vehicle</button><button class="act ghost" id="edAddGroup">+ Add group</button><button class="act ghost" id="edCopyPrev">Copy previous year</button></div>
+  </div>
+</div>
+
+<div id="salaryEditor" class="editor hide">
+  <div class="ed-bar">
+    <button id="salaryBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
+    <div class="ed-title">Edit salaries</div>
+  </div>
+  <div class="ed-wrap">
+    <p class="edlede">Type each person's monthly <strong>net</strong> pay side by side; the event field notes a raise or job change. Add a range of months, or import from a spreadsheet below.</p>
+    <div id="salaryList"></div>
+    <div class="controls"><button class="act" id="addPerson">+ Add person</button></div>
+    <details class="salimport">
+      <summary>Import from a spreadsheet</summary>
+      <p class="edlede" style="margin:10px 0">In Google Sheets, select the <strong>Month</strong> column and the <strong>net amount</strong> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</p>
+      <div class="controls" style="margin:0 0 8px"><span class="salrlbl">Import for</span><select id="salImportWho" class="salccy"></select></div>
+      <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
+      <div class="controls"><button class="act" id="salImportBtn">Import pasted rows</button></div>
+    </details>
   </div>
 </div>
 
