@@ -246,10 +246,17 @@ async function decS(blob){const[i,c]=blob.split(".");const pt=await crypto.subtl
 
 /* persistence/sync */
 const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}},rem(k){try{localStorage.removeItem(k);}catch(e){}}};
-const saveLocal=()=>LS.set("nw_state",JSON.stringify(state));
+// Keep a one-deep backup of the previous local state, so a bad save/clobber is recoverable.
+const saveLocal=()=>{try{const prev=LS.get("nw_state");if(prev)LS.set("nw_state_bak",prev);}catch(e){}LS.set("nw_state",JSON.stringify(state));};
 const loadLocal=()=>{const r=LS.get("nw_state");try{return r?JSON.parse(r):null;}catch(e){return null;}};
-let syncTimer;function scheduleSync(){saveLocal();clearTimeout(syncTimer);syncTimer=setTimeout(pushServer,1200);}
-async function pushServer(){if(!accountId||!cryptoKey)return;try{const blob=await encS();const r=await fetch("/api/vault",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({id:accountId,blob})});setSync(r.ok?"ok":"off",r.ok?"Synced":"Sync error");}catch(e){setSync("off","Local only");}}
+let syncTimer;function scheduleSync(){state.updatedAt=Date.now();saveLocal();clearTimeout(syncTimer);syncTimer=setTimeout(pushServer,1200);}
+let syncWarned=false;
+async function pushServer(){if(!accountId||!cryptoKey)return;try{const blob=await encS();
+  if(blob.length>1900000){setSync("off","Too big to sync");toast("Data too large to sync — Export JSON to back up");return;}
+  const r=await fetch("/api/vault",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({id:accountId,blob})});
+  if(r.ok){setSync("ok","Synced");syncWarned=false;}
+  else{setSync("off","Sync error");if(!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}
+}catch(e){setSync("off","Local only");if(!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}}
 async function loadServer(){if(!accountId)return null;try{const r=await fetch("/api/vault?id="+accountId);if(r.status===404){setSync("ok","Synced (new)");return null;}if(!r.ok){setSync("off","Local only");return null;}const{blob}=await r.json();const o=await decS(blob);setSync("ok","Synced");return o;}catch(e){setSync("off","Local only");return null;}}
 function setSync(c,t){const d=document.getElementById("syncDot"),x=document.getElementById("syncTxt");d.className="syncdot "+(c==="ok"?"ok":c==="off"?"off":"");x.textContent=t;}
 async function fetchFx(){try{const r=await fetch("/api/fx");if(!r.ok)return false;const d=await r.json();if(d.rates){state.fxRates=Object.assign({EUR:1},d.rates);state.fxDate=d.date;return true;}}catch(e){}return false;}
@@ -312,8 +319,21 @@ async function boot(){
     if(!tok){showCreate();return;}
     try{await deriveKeys(tok);}catch(e){}
     let rem=null; try{rem=await loadServer();}catch(e){rem=null;}
-    try{state=migrate(rem&&rem.snapshots?rem:(loadLocal()||emptyState()));}catch(e){state=emptyState();}
+    let repair=false;
+    try{
+      const loc=loadLocal();
+      const remOk=rem&&rem.snapshots, locOk=loc&&loc.snapshots;
+      let chosen;
+      if(remOk&&locOk){
+        // Newer copy wins (never let an older server copy clobber newer local edits).
+        const rt=+rem.updatedAt||0,lt=+loc.updatedAt||0;
+        if(lt>rt){chosen=loc;repair=true;}else{chosen=rem;}
+      }else{chosen=remOk?rem:(locOk?loc:emptyState());}
+      state=migrate(chosen);
+    }catch(e){state=emptyState();}
     enterApp();
+    // Local was ahead of the server (e.g. earlier pushes failed) — push it back up to repair.
+    if(repair){try{pushServer();}catch(e){}}
   }catch(e){
     // absolute fallback: never leave a blank screen
     try{state=emptyState();}catch(_){}
