@@ -54,8 +54,8 @@ document.getElementById("profileBtn").onclick=openProfile;
 document.getElementById("profileBack").onclick=closeProfile;
 document.getElementById("profEye").onclick=()=>{profShown=!profShown;renderProfAcct();};
 document.getElementById("profCopyAcct").onclick=()=>{const t=LS.get("nw_token")||"";if(navigator.clipboard)navigator.clipboard.writeText(t);toast("Account number copied");};
-document.getElementById("profSyncNow").onclick=pushServer;
-document.getElementById("syncNowHome").onclick=pushServer;
+document.getElementById("profSyncNow").onclick=()=>pushServer(true);
+document.getElementById("syncNowHome").onclick=()=>pushServer(true);
 // Net worth / Salary are tabs within the home page — switch the visible view in place.
 function showView(name){
   const net=name!=="salary";

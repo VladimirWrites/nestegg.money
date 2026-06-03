@@ -257,12 +257,12 @@ const loadLocal=()=>{const r=LS.get("nw_state");try{return r?JSON.parse(r):null;
 let syncTimer;function scheduleSync(){state.updatedAt=Date.now();stampMtimes();saveLocal();clearTimeout(syncTimer);syncTimer=setTimeout(pushServer,1200);}
 function flushSync(){clearTimeout(syncTimer);pushServer();}   // push the pending change immediately
 let syncWarned=false;
-async function pushServer(){if(!accountId||!cryptoKey)return;try{stampMtimes();const blob=await encS();
+async function pushServer(manual){if(!accountId||!cryptoKey)return;try{stampMtimes();const blob=await encS();
   if(blob.length>1900000){setSync("off","Too big to sync");toast("Data too large to sync — Export JSON to back up");return;}
   const r=await fetch("/api/vault",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({id:accountId,blob})});
-  if(r.ok){setSync("ok","Synced");syncWarned=false;setBaseline();}
-  else{setSync("off","Sync error");if(!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}
-}catch(e){setSync("off","Local only");if(!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}}
+  if(r.ok){setSync("ok","Synced");syncWarned=false;setBaseline();if(manual)toast("Data sent to server ✓");}
+  else{setSync("off","Sync error");if(manual||!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}
+}catch(e){setSync("off","Local only");if(manual||!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}}
 async function loadServer(){if(!accountId)return null;try{const r=await fetch("/api/vault?id="+accountId);if(r.status===404){setSync("ok","Synced (new)");return null;}if(!r.ok){setSync("off","Local only");return null;}const{blob}=await r.json();const o=await decS(blob);setSync("ok","Synced");return o;}catch(e){setSync("off","Local only");return null;}}
 function setSync(c,t){const cls="syncdot "+(c==="ok"?"ok":c==="off"?"off":"");["syncDot","syncDot2"].forEach(id=>{const d=document.getElementById(id);if(d)d.className=cls;});["syncTxt","syncTxt2"].forEach(id=>{const x=document.getElementById(id);if(x)x.textContent=t;});}
 
