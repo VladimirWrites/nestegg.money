@@ -4,18 +4,34 @@ const PALETTE=["#4aa3ff","#ff8c1a","#3ad17a","#ffd23a","#ff4d6d","#9b8cff","#2fd
 let uid=1;const nid=()=>"i"+(uid++)+Date.now().toString(36);
 
 function emptyState(){
-  return {v:5,baseCcy:"EUR",fxRates:Object.assign({},FALLBACK_FX),fxDate:null,prices:{},snapshots:[{year:new Date().getFullYear(),entries:[]}]};
+  return {v:6,baseCcy:"EUR",fxRates:Object.assign({},FALLBACK_FX),fxDate:null,prices:{},assets:[],snapshots:[{year:new Date().getFullYear(),entries:[]}]};
+}
+function normLoan(L,fallbackDate){
+  if(!L||typeof L!=="object")return null;
+  if(L.amount==null)L.amount=0;if(L.rate==null)L.rate=0;if(L.termYears==null)L.termYears=30;if(!L.startDate)L.startDate=fallbackDate;
+  if(!Array.isArray(L.extra))L.extra=[];L.extra.forEach(x=>{if(!x.id)x.id=nid();if(x.amount==null)x.amount=0;if(!x.date)x.date=L.startDate;});
+  return L;
 }
 function migrate(s){
   if(!s.baseCcy)s.baseCcy="EUR";
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
   if(!s.prices)s.prices={};
+  const today=new Date().toISOString().slice(0,10);
+  if(!Array.isArray(s.assets))s.assets=[];
+  // Fold any earlier-format cars/properties into the unified asset list.
+  (s.cars||[]).forEach(c=>s.assets.push({id:c.id||nid(),name:c.name||"Asset",ccy:c.ccy||s.baseCcy,value:c.price||0,depreciates:true,date:c.date||today,rate:c.rate!=null?c.rate:0.15,loan:null,group:c.group}));
+  (s.properties||[]).forEach(p=>s.assets.push({id:p.id||nid(),name:p.name||"Property",ccy:p.ccy||s.baseCcy,value:p.value||0,depreciates:false,date:(p.loan&&p.loan.startDate)||today,rate:0,loan:normLoan(p.loan,today),group:p.group}));
+  delete s.cars;delete s.properties;
+  // A long-term asset: a value that optionally depreciates and/or carries a loan.
+  s.assets.forEach(a=>{if(!a.id)a.id=nid();if(!a.name)a.name="Asset";if(!a.ccy)a.ccy=s.baseCcy||"EUR";if(a.value==null)a.value=0;
+    a.depreciates=!!a.depreciates;if(!a.date)a.date=today;if(a.rate==null)a.rate=0.15;
+    a.loan=a.loan?normLoan(a.loan,a.date):null;});
   (s.snapshots||[]).forEach(sn=>{
     if(!sn.entries){const c=sn.cats||{};sn.entries=Object.keys(c).filter(k=>c[k]).map(k=>({id:nid(),name:k,ccy:"EUR",value:c[k]}));}
     sn.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.name)en.name=en.cat||"Asset";if(!en.ccy)en.ccy="EUR";if(en.value==null)en.value=0;if(!en.kind)en.kind="fixed";if(en.kind==="ticker"){if(en.shares==null)en.shares=0;if(en.ticker==null)en.ticker="";}delete en.cat;delete en.qty;});
     delete sn.cats;
   });
-  delete s.items;s.v=5;return s;
+  delete s.items;s.v=6;return s;
 }
 let state=emptyState();
 
@@ -31,7 +47,7 @@ const esc=s=>String(s).replace(/"/g,"&quot;").replace(/</g,"&lt;");
    entry's group if it has one, otherwise the asset's own name — so charts show
    one segment per group, summing its members. */
 const seriesKey=e=>e.group||e.name;
-function allNames(){return [...new Set(state.snapshots.flatMap(s=>s.entries.map(seriesKey)))].sort((a,b)=>a.localeCompare(b));}
+function allNames(){return [...new Set(state.snapshots.flatMap(s=>effEntries(s).map(seriesKey)))].sort((a,b)=>a.localeCompare(b));}
 function colorOf(name,names){const i=(names||allNames()).indexOf(name);return PALETTE[(i<0?0:i)%PALETTE.length];}
 
 /* totals */
@@ -55,7 +71,60 @@ function dayChangeBase(nw){
   const prev=nw-abs;
   return {abs,pct:prev>0?abs/prev*100:0};
 }
-const snapTotalEUR=sn=>(sn.entries||[]).reduce((a,e)=>a+entryEUR(e),0);
+/* computed assets: vehicles (depreciating) + property equity (value − mortgage).
+   These live at the top level of state and are injected into every relevant
+   year's snapshot as read-only "auto" entries, so net worth always reflects them. */
+const DAY_MS=86400000, YEAR_MS=365.25*DAY_MS;
+const parseDate=s=>{const d=new Date(s);return isNaN(+d)?null:d;};
+// Reference date for a snapshot: today for the current year (so values move daily),
+// year-end for any other year (past values are locked, future ones projected).
+function refDateForYear(y){const cy=new Date().getFullYear();if(y===cy)return new Date();return new Date(y,11,31,23,59,59);}
+// Continuous declining-balance: value loses `rate` of itself per year, every day.
+function depreciatedValue(price,rate,fromDate,date){
+  const d0=parseDate(fromDate);if(!d0)return +price||0;
+  const yrs=(date-d0)/YEAR_MS;if(yrs<=0)return +price||0;
+  const r=Math.min(Math.max(+rate||0,0),0.99);
+  return (+price||0)*Math.pow(1-r,yrs);
+}
+// Gross (pre-loan) value of an asset on a date: depreciated price, or flat market value.
+function assetGrossAt(a,date){return a.depreciates?depreciatedValue(a.value,a.rate,a.date,date):(+a.value||0);}
+// Net contribution: gross value minus any outstanding loan balance.
+function assetNetAt(a,date){return assetGrossAt(a,date)-(a.loan?outstandingAt(a.loan,date):0);}
+// When the asset starts counting: its acquired date, falling back to the loan start.
+function assetOwnedFrom(a){return parseDate(a.date)||(a.loan&&parseDate(a.loan.startDate))||null;}
+function addMonths(date,m){const d=new Date(date);const day=d.getDate();d.setMonth(d.getMonth()+m);if(d.getDate()<day)d.setDate(0);return d;}
+// Full monthly amortization schedule, applying extra principal payments by date.
+function buildSchedule(loan){
+  const L=+loan.amount||0,i=(+loan.rate||0)/100/12,n=Math.round((+loan.termYears||0)*12),rows=[];
+  const start=parseDate(loan.startDate);if(L<=0||n<=0||!start)return rows;
+  const M=i>0?L*i/(1-Math.pow(1+i,-n)):L/n;
+  const extras=(loan.extra||[]).map(e=>({d:parseDate(e.date),a:+e.amount||0})).filter(e=>e.d&&e.a>0).sort((a,b)=>a.d-b.d);
+  let bal=L,ei=0;
+  for(let k=0;k<n&&bal>0.005;k++){
+    const date=addMonths(start,k+1),interest=bal*i;
+    let principal=M-interest;if(principal>bal)principal=bal;
+    bal-=principal;let extraThis=0;
+    while(ei<extras.length&&extras[ei].d<=date){extraThis+=extras[ei].a;bal-=extras[ei].a;ei++;}
+    if(bal<0)bal=0;
+    rows.push({date,payment:M,interest,principal,extra:extraThis,balance:bal});
+  }
+  return rows;
+}
+function outstandingAt(loan,asOf){
+  const rows=buildSchedule(loan);if(!rows.length)return Math.max(0,+loan.amount||0);
+  let bal=+loan.amount||0;
+  for(const r of rows){if(r.date<=asOf)bal=r.balance;else break;}
+  return Math.max(0,bal);
+}
+// Synthetic entries: each long-term asset's net value, for the years it's owned.
+function autoEntriesFor(year){
+  const ref=refDateForYear(year),out=[];
+  (state.assets||[]).forEach(a=>{const from=assetOwnedFrom(a);if(from&&from>ref)return;
+    out.push({id:"asset:"+a.id,auto:true,assetId:a.id,kind:"fixed",name:a.name||"Asset",ccy:a.ccy||state.baseCcy,value:assetNetAt(a,ref),group:a.group});});
+  return out;
+}
+const effEntries=sn=>(sn.entries||[]).concat(autoEntriesFor(sn.year));
+const snapTotalEUR=sn=>effEntries(sn).reduce((a,e)=>a+entryEUR(e),0);
 const sortedSnaps=()=>[...state.snapshots].sort((a,b)=>a.year-b.year);
 const latestSnap=()=>sortedSnaps().slice(-1)[0];
 
@@ -172,8 +241,8 @@ function drawHist(){
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
   let s="";const sym=ccySym();
   for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#26262a" stroke-width="1"/>`;s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
-  snaps.forEach((sn,idx)=>{const x=padL+idx*(bw+gap);let yTop=padT+plotH;
-    names.forEach(nm2=>{const tot=sn.entries.filter(e=>seriesKey(e)===nm2).reduce((a,e)=>a+toBase(entryEUR(e)),0);if(tot<=0)return;const h=(tot/nm)*plotH;yTop-=h;s+=`<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2,names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`;});
+  snaps.forEach((sn,idx)=>{const x=padL+idx*(bw+gap);let yTop=padT+plotH;const ents=effEntries(sn);
+    names.forEach(nm2=>{const tot=ents.filter(e=>seriesKey(e)===nm2).reduce((a,e)=>a+toBase(entryEUR(e)),0);if(tot<=0)return;const h=(tot/nm)*plotH;yTop-=h;s+=`<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2,names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`;});
     const t=toBase(snapTotalEUR(sn));s+=`<text x="${x+bw/2}" y="${yTop-6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="#8a867c">${sym}${shortK(t)}</text>`;s+=`<text x="${x+bw/2}" y="${H-padB+16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#e8e4d8">${sn.year}</text>`;});
   svg.innerHTML=s;
   // hero = latest
@@ -190,7 +259,7 @@ function drawDonut(){
   const ls=latestSnap();const svg=document.getElementById("donut");svg.innerHTML="";
   document.getElementById("allocYear").textContent=ls?("— "+ls.year):"";
   const names=allNames();
-  const agg={};(ls?ls.entries:[]).forEach(e=>{const k=seriesKey(e);agg[k]=(agg[k]||0)+entryBase(e);});
+  const agg={};(ls?effEntries(ls):[]).forEach(e=>{const k=seriesKey(e);agg[k]=(agg[k]||0)+entryBase(e);});
   const rows=Object.keys(agg).map(k=>({name:k,v:agg[k]})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
   const total=rows.reduce((a,r)=>a+r.v,0);
   if(total>0){const cx=120,cy=120,r=82,sw=30;let a=-Math.PI/2;
@@ -234,7 +303,7 @@ function downloadHist(){
 }
 function downloadDonut(){
   const ls=latestSnap(),src=document.getElementById("donut"),names=allNames();
-  const agg={};(ls?ls.entries:[]).forEach(e=>{const k=seriesKey(e);agg[k]=(agg[k]||0)+entryBase(e);});
+  const agg={};(ls?effEntries(ls):[]).forEach(e=>{const k=seriesKey(e);agg[k]=(agg[k]||0)+entryBase(e);});
   const rows=Object.keys(agg).map(k=>({name:k,v:agg[k]})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
   if(!rows.length){toast("No allocation to save");return;}
   const total=rows.reduce((a,r)=>a+r.v,0);
@@ -250,7 +319,7 @@ function renderYears(){
   const snaps=[...state.snapshots].sort((a,b)=>b.year-a.year);const toBase=eur=>convTo(eur,"EUR",state.baseCcy);
   const maxV=Math.max(1,...state.snapshots.map(s=>snapTotalEUR(s)));
   snaps.forEach(sn=>{const ri=state.snapshots.indexOf(sn),totEUR=snapTotalEUR(sn);
-    const agg={};sn.entries.forEach(e=>{const v=entryEUR(e);if(v>0){const k=seriesKey(e);agg[k]=(agg[k]||0)+v;}});
+    const agg={};effEntries(sn).forEach(e=>{const v=entryEUR(e);if(v>0){const k=seriesKey(e);agg[k]=(agg[k]||0)+v;}});
     const segs=Object.keys(agg).map(k=>`<i style="width:${agg[k]/(totEUR||1)*100}%;background:${colorOf(k,names)}"></i>`).join("");
     const card=document.createElement("div");card.className="ycard";
     card.innerHTML=`<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar" style="max-width:${Math.max(8,totEUR/maxV*100)}%">${segs}</span><span class="ytot">${money(toBase(totEUR))}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
@@ -284,6 +353,15 @@ function cardHTML(en,i,names){
 function renderEntries(){
   const sn=state.snapshots[edIdx];if(!sn)return;const wrap=document.getElementById("edEntries");const names=allNames();
   let html="";
+  // long-term assets (depreciating / financed) shown read-only here; tap to edit
+  const autos=autoEntriesFor(sn.year);
+  autos.forEach(en=>{const a=(state.assets||[]).find(x=>x.id===en.assetId)||{};
+    const tags=[a.depreciates?"depreciating":"",a.loan?"loan":""].filter(Boolean).join(" · ")||"asset";
+    html+=`<div class="rcard auto" data-editasset="${en.assetId}" title="Edit long-term asset"><span class="dot" style="background:${colorOf(seriesKey(en),names)}"></span>`+
+      `<span class="rname ro">${esc(en.name)}</span>`+
+      `<span class="autotag">${tags}</span>`+
+      `<span class="rconv">${money(entryBase(en))}</span>`+
+      `<svg class="autoedit" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2.5l2.5 2.5L6 12.5 3 13l.5-3z"/></svg></div>`;});
   // standalone assets (no group) first, in array order
   sn.entries.forEach((en,i)=>{if(!en.group)html+=cardHTML(en,i,names);});
   // then one section per group, in order of first appearance
@@ -306,6 +384,7 @@ document.getElementById("edBack").onclick=()=>{scheduleSync();closeYearEditor();
 document.getElementById("edYear").addEventListener("input",e=>{const sn=state.snapshots[edIdx];if(!sn)return;const y=parseInt(e.target.value);if(!isNaN(y))sn.year=y;scheduleSync();});
 document.getElementById("edDelYear").onclick=()=>{if(edIdx<0)return;if(confirm("Delete year "+state.snapshots[edIdx].year+"?")){state.snapshots.splice(edIdx,1);scheduleSync();closeYearEditor();}};
 document.getElementById("edAdd").onclick=()=>{state.snapshots[edIdx].entries.push({id:nid(),name:"New asset",kind:"fixed",ccy:state.baseCcy,value:0});scheduleSync();renderEntries();};
+document.getElementById("edAddLongterm").onclick=()=>{const a=newAsset();openAssetEditor(a.id);};
 document.getElementById("edAddGroup").onclick=()=>{const sn=state.snapshots[edIdx];const ex=new Set(sn.entries.map(e=>e.group).filter(Boolean));let base="New group",nm=base,k=2;while(ex.has(nm))nm=base+" "+(k++);sn.entries.push({id:nid(),name:"New asset",kind:"fixed",ccy:state.baseCcy,value:0,group:nm});scheduleSync();renderEntries();};
 document.getElementById("edCopyPrev").onclick=()=>{const cur=state.snapshots[edIdx];const prev=state.snapshots.filter(s=>s.year<cur.year).sort((a,b)=>b.year-a.year)[0];if(!prev){toast("No earlier year to copy from");return;}if(cur.entries.length&&!confirm("Replace this year's entries with a copy of "+prev.year+"?"))return;cur.entries=prev.entries.map(e=>({id:nid(),name:e.name,kind:e.kind||"fixed",ccy:e.ccy,value:e.value,shares:e.shares,ticker:e.ticker,group:e.group}));scheduleSync();renderEntries();toast("Copied "+prev.year);};
 document.getElementById("edEntries").addEventListener("input",e=>{
@@ -330,6 +409,8 @@ document.getElementById("edEntries").addEventListener("change",async e=>{
 });
 document.getElementById("edEntries").addEventListener("click",e=>{
   const sn=state.snapshots[edIdx];
+  const ae=e.target.closest("[data-editasset]");
+  if(ae){openAssetEditor(ae.dataset.editasset);return;}
   if(e.target.dataset.del!=null){sn.entries.splice(+e.target.dataset.del,1);scheduleSync();renderEntries();return;}
   const ga=e.target.closest("[data-grpadd]");
   if(ga){sn.entries.push({id:nid(),name:"New asset",kind:"fixed",ccy:state.baseCcy,value:0,group:ga.dataset.grpadd});scheduleSync();renderEntries();return;}
@@ -338,6 +419,106 @@ document.getElementById("edEntries").addEventListener("click",e=>{
 });
 
 document.getElementById("addYear").onclick=()=>{const ys=state.snapshots.map(s=>s.year);const ny=ys.length?Math.max(...ys)+1:new Date().getFullYear();state.snapshots.push({year:ny,entries:[]});scheduleSync();openYearEditor(state.snapshots.length-1);};
+
+/* ───────── long-term assets editor (depreciation + loan) ─────────
+   One asset with optional toggles: it depreciates and/or carries a loan.
+   Net contribution = (depreciated price or market value) − outstanding loan. */
+const ymd=d=>d.toLocaleDateString("en-GB",{month:"short",year:"numeric"});
+function openAssetEditor(focusId){document.getElementById("assetEditor").classList.remove("hide");window.scrollTo(0,0);renderAssets(focusId);}
+function closeAssetEditor(){
+  document.getElementById("assetEditor").classList.add("hide");
+  if(!document.getElementById("yearEditor").classList.contains("hide"))renderEntries();else renderAll();
+}
+function assetCardHTML(a){
+  const today=new Date();
+  const gross=assetGrossAt(a,today),bal=a.loan?outstandingAt(a.loan,today):0,net=gross-bal;
+  const inBase=v=>a.ccy!==state.baseCcy?(" · "+money(convTo(v,a.ccy,state.baseCcy))):"";
+  let depBlock="",loanBlock="";
+  if(a.depreciates){
+    depBlock=`<div class="frow">
+      <label class="fld">Bought<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label>
+      <label class="fld">Depreciation / yr<span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${+(a.rate*100).toFixed(2)}" data-aid="${a.id}" data-f="rate"><i>%</i></span></label>
+    </div>`;
+  }
+  if(a.loan){
+    const L=a.loan,sched=buildSchedule(L);
+    const i=(+L.rate||0)/100/12,n=Math.round((+L.termYears||0)*12);
+    const M=(+L.amount>0&&n>0)?(i>0?L.amount*i/(1-Math.pow(1+i,-n)):L.amount/n):0;
+    const payoff=sched.length?sched[sched.length-1].date:null,totInt=sched.reduce((s,r)=>s+r.interest,0);
+    const extras=(L.extra||[]).map(x=>`<div class="exrow">
+        <input type="date" class="fin" value="${esc(x.date)}" data-aid="${a.id}" data-eid="${x.id}" data-ef="date">
+        <span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${x.amount}" data-aid="${a.id}" data-eid="${x.id}" data-ef="amount" placeholder="amount"></span>
+        <button class="rdel" data-extradel="${x.id}" data-aid="${a.id}" title="Remove payment">×</button></div>`).join("");
+    const rows=sched.map(r=>`<tr><td>${ymd(r.date)}</td><td class="num">${moneyIn(r.payment,a.ccy)}</td><td class="num">${moneyIn(r.interest,a.ccy)}</td><td class="num">${moneyIn(r.principal,a.ccy)}</td><td class="num">${r.extra?moneyIn(r.extra,a.ccy):"—"}</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`).join("");
+    loanBlock=`<div class="loanbox">
+      <div class="frow">
+        <label class="fld">Loan amount<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.amount}" data-aid="${a.id}" data-lf="amount"></label>
+        <label class="fld">Interest / yr<span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${L.rate}" data-aid="${a.id}" data-lf="rate"><i>%</i></span></label>
+        <label class="fld">Term<span class="suffix"><input class="fin num" type="number" step="any" inputmode="numeric" value="${L.termYears}" data-aid="${a.id}" data-lf="termYears"><i>yr</i></span></label>
+        <label class="fld">Start<input class="fin" type="date" value="${esc(L.startDate)}" data-aid="${a.id}" data-lf="startDate"></label>
+      </div>
+      <div class="exwrap"><div class="psub">Extra payments<button class="act ghost mini" data-extraadd="${a.id}">+ add</button></div>${extras||'<div class="exhint">None — add one-off lump sums to pay down principal faster.</div>'}</div>
+      <div class="pstats">
+        <div class="pstat"><span class="k">Monthly payment</span><span class="v num">${M?moneyIn(M,a.ccy):"—"}</span></div>
+        <div class="pstat"><span class="k">Balance today</span><span class="v num">${moneyIn(bal,a.ccy)}</span></div>
+        <div class="pstat"><span class="k">Payoff</span><span class="v num">${payoff?ymd(payoff):"—"}</span></div>
+        <div class="pstat"><span class="k">Total interest</span><span class="v num">${moneyIn(totInt,a.ccy)}</span></div>
+      </div>
+      ${sched.length?`<details class="psched"><summary>Payment schedule · ${sched.length} months</summary>
+        <div class="schscroll"><table class="schtab"><thead><tr><th>When</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Extra</th><th>Balance</th></tr></thead><tbody>${rows}</tbody></table></div></details>`:""}
+    </div>`;
+  }
+  return `<div class="rcard acard" id="acard-${a.id}" data-aid="${a.id}">
+    <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="Asset name">
+      <button class="rdel" data-adel="${a.id}" title="Remove asset">×</button></div>
+    <div class="frow">
+      <label class="fld">${a.depreciates?"Purchase price":"Value"}<input class="fin num" type="number" step="any" inputmode="decimal" value="${a.value}" data-aid="${a.id}" data-f="value"></label>
+      <label class="fld">Currency<select data-aid="${a.id}" data-f="ccy">${CCYS.map(x=>`<option ${x===a.ccy?"selected":""}>${x}</option>`).join("")}</select></label>
+    </div>
+    <div class="toggles">
+      <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="depreciates" ${a.depreciates?"checked":""}><span>Depreciates over time</span></label>
+      <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="loan" ${a.loan?"checked":""}><span>Has a loan</span></label>
+    </div>
+    ${depBlock}${loanBlock}
+    <div class="vsum"><span class="k">Net value today</span><span class="vval num">${moneyIn(net,a.ccy)}${inBase(net)}</span></div>
+  </div>`;
+}
+function renderAssets(focusId){
+  const wrap=document.getElementById("assetList");
+  if(!state.assets.length)wrap.innerHTML=`<div class="emptyhint">No long-term assets yet. Add one — a car, a house, anything that depreciates or carries a loan. Toggle "Depreciates" to have its value fall daily, and "Has a loan" to subtract the outstanding balance. The net value flows into your net worth for every year you own it.</div>`;
+  else wrap.innerHTML=state.assets.map(assetCardHTML).join("");
+  if(focusId){const el=document.getElementById("acard-"+focusId);if(el){el.scrollIntoView({block:"center"});const nm=el.querySelector(".rname");if(nm)nm.focus();}}
+}
+function newAsset(){const a={id:nid(),name:"New asset",ccy:state.baseCcy,value:0,depreciates:false,date:new Date().toISOString().slice(0,10),rate:0.15,loan:null};state.assets.push(a);scheduleSync();return a;}
+document.getElementById("assetList").addEventListener("input",e=>{
+  const t=e.target,id=t.dataset.aid;if(!id)return;const a=state.assets.find(x=>x.id===id);if(!a)return;
+  if(t.dataset.eid){const x=(a.loan&&a.loan.extra||[]).find(z=>z.id===t.dataset.eid);if(x){if(t.dataset.ef==="amount")x.amount=parseFloat(t.value||0);else x.date=t.value;}}
+  else if(t.dataset.lf){const f=t.dataset.lf;if(a.loan)a.loan[f]=(f==="startDate")?t.value:parseFloat(t.value||0);}
+  else if(t.dataset.f){const f=t.dataset.f;
+    if(f==="value")a.value=parseFloat(t.value||0);
+    else if(f==="rate")a.rate=Math.min(Math.max(parseFloat(t.value||0)/100,0),0.99);
+    else a[f]=t.value;}
+  scheduleSync();
+  const card=t.closest(".acard"),vv=card&&card.querySelector(".vval");
+  if(vv){const net=assetNetAt(a,new Date());vv.textContent=moneyIn(net,a.ccy)+(a.ccy!==state.baseCcy?(" · "+money(convTo(net,a.ccy,state.baseCcy))):"");}
+});
+document.getElementById("assetList").addEventListener("change",e=>{
+  const t=e.target,id=t.dataset.aid;if(!id)return;const a=state.assets.find(x=>x.id===id);if(!a)return;
+  if(t.dataset.toggle){
+    if(t.dataset.toggle==="depreciates")a.depreciates=t.checked;
+    else a.loan=t.checked?normLoan(a.loan||{startDate:a.date},a.date):null;
+    scheduleSync();renderAssets();return;
+  }
+  // ccy / dates / loan fields changing → re-render to refresh schedule & conversions
+  renderAssets();
+});
+document.getElementById("assetList").addEventListener("click",e=>{
+  const ad=e.target.closest("[data-adel]");if(ad){const a=state.assets.find(x=>x.id===ad.dataset.adel);if(confirm("Remove "+(a?a.name:"this asset")+"?")){state.assets=state.assets.filter(x=>x.id!==ad.dataset.adel);scheduleSync();renderAssets();}return;}
+  const ea=e.target.closest("[data-extraadd]");if(ea){const a=state.assets.find(x=>x.id===ea.dataset.extraadd);if(a&&a.loan){a.loan.extra=a.loan.extra||[];a.loan.extra.push({id:nid(),date:a.loan.startDate,amount:0});scheduleSync();renderAssets();}return;}
+  const ed=e.target.closest("[data-extradel]");if(ed){const a=state.assets.find(x=>x.id===ed.dataset.aid);if(a&&a.loan){a.loan.extra=(a.loan.extra||[]).filter(z=>z.id!==ed.dataset.extradel);scheduleSync();renderAssets();}return;}
+});
+document.getElementById("addAsset").onclick=()=>{const a=newAsset();renderAssets(a.id);};
+document.getElementById("assetBack").onclick=()=>{scheduleSync();closeAssetEditor();};
 
 document.getElementById("exportBtn").onclick=()=>{const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="networth-"+new Date().toISOString().slice(0,10)+".json";a.click();};
 document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();

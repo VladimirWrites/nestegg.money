@@ -189,8 +189,57 @@ button.act.ghost:hover{border-color:var(--amber)}
 #edBack{display:inline-flex;align-items:center;gap:7px}
 .ed-bar .ic{width:13px;height:13px;flex:none}
 
+/* read-only computed (long-term asset) rows inside the year editor — tap to edit */
+.rcard.auto{background:var(--panel2);border-style:dashed;cursor:pointer}
+.rcard.auto:hover{border-color:var(--amber)}
+.rcard.auto .rname.ro{flex:1;min-width:120px;font-size:15px;color:var(--ink)}
+.autotag{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line2);border-radius:99px;padding:3px 9px;white-space:nowrap}
+.rcard.auto .rconv{color:var(--amber);font-weight:600;font-size:13px}
+.autoedit{width:14px;height:14px;color:var(--muted);flex:none}
+.rcard.auto:hover .autoedit{color:var(--amber)}
+
+/* long-term assets editor */
+.edlede{color:var(--muted);font-size:12.5px;line-height:1.6;margin-bottom:18px;max-width:680px}
+.edlede strong{color:var(--amber2);font-weight:600}
+.emptyhint,.exhint{color:var(--muted);font-size:12.5px;line-height:1.6;border:1px dashed var(--line2);border-radius:4px;padding:16px;background:var(--panel)}
+.exhint{padding:10px 12px;border:none;background:none}
+.acard{flex-direction:column;align-items:stretch;gap:12px}
+.toggles{display:flex;flex-wrap:wrap;gap:10px 22px}
+.tgl{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer}
+.tgl input{width:17px;height:17px;accent-color:var(--amber);cursor:pointer}
+.loanbox{border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:13px;display:flex;flex-direction:column;gap:12px}
+.frow{display:flex;flex-wrap:wrap;gap:12px}
+.fld{display:flex;flex-direction:column;gap:5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex:1;min-width:130px}
+.fin{font:inherit;font-size:15px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--ink);min-height:42px;width:100%}
+.fin:focus{outline:none;border-color:var(--amber)}
+.fld select{font:inherit;font-size:14px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--ink);min-height:42px;width:100%}
+.suffix{display:flex;align-items:center;gap:7px}.suffix i{font-style:normal;color:var(--muted);font-size:12px}
+.vsum,.pstat{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.vsum{border-top:1px solid var(--line);padding-top:11px}
+.vsum .k,.pstat .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.vval,.pstat .v{font-weight:600;font-size:15px;color:var(--amber)}
+.pchead{display:flex;align-items:center;gap:10px}
+.psub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-top:4px;display:flex;align-items:center;gap:10px}
+.act.mini{min-height:26px;padding:4px 10px;font-size:9px}
+.exwrap{display:flex;flex-direction:column;gap:8px}
+.exrow{display:flex;gap:10px;align-items:center}
+.exrow .fin{flex:1}
+.pstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 22px;border-top:1px solid var(--line);padding-top:13px}
+.pstat{flex-direction:column;align-items:flex-start;gap:3px}
+.pstat .eqv{color:var(--green)}
+.psched{border-top:1px solid var(--line);padding-top:6px}
+.psched summary{cursor:pointer;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 0}
+.psched summary:hover{color:var(--amber)}
+.schscroll{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:3px}
+.schtab{width:100%;border-collapse:collapse;font-size:11.5px}
+.schtab th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:600;text-align:right;padding:8px 10px;letter-spacing:.04em;white-space:nowrap}
+.schtab th:first-child{text-align:left}
+.schtab td{padding:7px 10px;text-align:right;border-top:1px solid var(--line);color:var(--ink);white-space:nowrap}
+.schtab td:first-child{text-align:left;color:var(--muted)}
+.schtab tbody tr:hover{background:var(--panel2)}
+
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
-.ccypick select,#ccySel,.rcard select,.rcard .rkind{
+.ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select{
   -webkit-appearance:none;-moz-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238a867c' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 9px center;background-size:11px;

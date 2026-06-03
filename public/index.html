@@ -116,7 +116,19 @@
   <div class="ed-wrap">
     <div class="ed-total"><span class="et-k">Year total</span><span class="et-v" id="edTotal">—</span></div>
     <div class="cards" id="edEntries"></div>
-    <div class="controls"><button class="act" id="edAdd">+ Add asset</button><button class="act ghost" id="edAddGroup">+ Add group</button><button class="act ghost" id="edCopyPrev">Copy previous year</button></div>
+    <div class="controls"><button class="act" id="edAdd">+ Add asset</button><button class="act ghost" id="edAddLongterm">+ Depreciating / loan</button><button class="act ghost" id="edAddGroup">+ Add group</button><button class="act ghost" id="edCopyPrev">Copy previous year</button></div>
+  </div>
+</div>
+
+<div id="assetEditor" class="editor hide">
+  <div class="ed-bar">
+    <button id="assetBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
+    <div class="ed-title">Long-term assets</div>
+  </div>
+  <div class="ed-wrap">
+    <p class="edlede">A car, a house, anything that depreciates or carries a loan. Toggle <strong>Depreciates</strong> to have its value fall a little every day (current year live, past years locked to year-end); toggle <strong>Has a loan</strong> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it.</p>
+    <div class="cards" id="assetList"></div>
+    <div class="controls"><button class="act" id="addAsset">+ Add asset</button></div>
   </div>
 </div>
 
