@@ -246,8 +246,13 @@ async function deriveKeys(tok){
     {name:"PBKDF2",salt:enc.encode("nw|salt|v2|"+t),iterations:PBKDF2_ITERS,hash:"SHA-256"},
     base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
 }
-async function encS(){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},cryptoKey,new TextEncoder().encode(JSON.stringify(state)));return b64(iv)+"."+b64(ct);}
-async function decS(blob){const[i,c]=blob.split(".");const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(unb64(i))},cryptoKey,unb64(c));return JSON.parse(new TextDecoder().decode(pt));}
+// gzip/gunzip via the browser's Compression Streams (no library). JSON compresses well,
+// so we compress BEFORE encrypting (ciphertext itself is incompressible). Falls back to
+// uncompressed if the API is missing; reads detect gzip by its magic bytes (1f 8b).
+async function gzip(bytes){if(typeof CompressionStream==="undefined")return null;const s=new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));return new Uint8Array(await new Response(s).arrayBuffer());}
+async function gunzip(bytes){const s=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));return new Uint8Array(await new Response(s).arrayBuffer());}
+async function encS(){const iv=crypto.getRandomValues(new Uint8Array(12));let data=new TextEncoder().encode(JSON.stringify(state));const gz=await gzip(data);if(gz)data=gz;const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},cryptoKey,data);return b64(iv)+"."+b64(ct);}
+async function decS(blob){const[i,c]=blob.split(".");const buf=await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(unb64(i))},cryptoKey,unb64(c));let pt=new Uint8Array(buf);if(pt[0]===0x1f&&pt[1]===0x8b)pt=await gunzip(pt);return JSON.parse(new TextDecoder().decode(pt));}
 
 /* persistence/sync */
 const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}},rem(k){try{localStorage.removeItem(k);}catch(e){}}};
