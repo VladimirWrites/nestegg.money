@@ -126,6 +126,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .rcard .rtk{width:120px;font:inherit;font-size:14px;background:#000;border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--green);min-height:40px;text-transform:uppercase}
 .rcard .rsh:focus,.rcard .rtk:focus{outline:none;border-color:var(--amber)}
 .rcard .rconv{font-size:11px;color:var(--green);min-width:80px;text-align:right}
+.rcard .rcat{font-size:12px;max-width:150px;color:var(--muted)}
 .rcard .rdel{background:none;border:none;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 4px}
 .rcard .rdel:hover{color:var(--red)}
 

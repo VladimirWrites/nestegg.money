@@ -4,7 +4,7 @@ const PALETTE=["#4aa3ff","#ff8c1a","#3ad17a","#ffd23a","#ff4d6d","#9b8cff","#2fd
 let uid=1;const nid=()=>"i"+(uid++)+Date.now().toString(36);
 
 function emptyState(){
-  return {v:6,baseCcy:"EUR",fxRates:Object.assign({},FALLBACK_FX),fxDate:null,prices:{},assets:[],snapshots:[{year:new Date().getFullYear(),entries:[]}]};
+  return {v:6,baseCcy:"EUR",fxRates:Object.assign({},FALLBACK_FX),fxDate:null,prices:{},assets:[],categories:[],snapshots:[{year:new Date().getFullYear(),entries:[]}]};
 }
 function normLoan(L,fallbackDate){
   if(!L||typeof L!=="object")return null;
@@ -33,6 +33,12 @@ function migrate(s){
     sn.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.name)en.name=en.cat||"Asset";if(!en.ccy)en.ccy="EUR";if(en.value==null)en.value=0;if(!en.kind)en.kind="fixed";if(en.kind==="ticker"){if(en.shares==null)en.shares=0;if(en.ticker==null)en.ticker="";}delete en.cat;delete en.qty;});
     delete sn.cats;
   });
+  // Categories are a global list (tags). Backfill from any groups already in use.
+  if(!Array.isArray(s.categories))s.categories=[];
+  const cset=new Set(s.categories);
+  (s.snapshots||[]).forEach(sn=>(sn.entries||[]).forEach(e=>{if(e.group)cset.add(e.group);}));
+  (s.assets||[]).forEach(a=>{if(a.group)cset.add(a.group);});
+  s.categories=[...cset];
   delete s.items;s.v=6;return s;
 }
 let state=emptyState();
@@ -297,7 +303,8 @@ function drawHist(){
   // hero = latest
   const ls=latestSnap();const nw=ls?convTo(snapTotalEUR(ls),"EUR",state.baseCcy):0;
   document.getElementById("nwTotal").textContent=money(nw);
-  document.getElementById("nwNote").textContent=ls?("as of "+ls.year+" · "+ls.entries.length+" asset"+(ls.entries.length===1?"":"s")):"No data yet";
+  const nAssets=ls?effEntries(ls).length:0;
+  document.getElementById("nwNote").textContent=ls?("as of "+ls.year+" · "+nAssets+" asset"+(nAssets===1?"":"s")):"No data yet";
   const dEl=document.getElementById("nwDay");const dc=dayChangeBase(nw);
   if(dc){const flat=Math.abs(dc.abs)<0.005,up=dc.abs>=0;dEl.className="day "+(flat?"flat":(up?"up":"down"));const sign=up?"+":"−",arrow=flat?"":(up?"▲ ":"▼ ");dEl.textContent=arrow+sign+money(Math.abs(dc.abs))+" · "+sign+Math.abs(dc.pct).toFixed(2)+"% today";}
   else{dEl.className="day";dEl.textContent="";}
@@ -376,8 +383,8 @@ function renderYears(){
 }
 
 /* year editor */
-let edIdx=-1;
-function openYearEditor(ri){edIdx=ri;document.getElementById("edYear").value=state.snapshots[ri].year;document.getElementById("yearEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderEntries();}
+let edIdx=-1,edYearPrev=null;
+function openYearEditor(ri){edIdx=ri;edYearPrev=state.snapshots[ri].year;document.getElementById("edYear").value=state.snapshots[ri].year;document.getElementById("yearEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderEntries();}
 function closeYearEditor(){document.getElementById("yearEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");edIdx=-1;renderAll();}
 function cardHTML(en,i,names){
   const baseV=entryBase(en);
@@ -393,10 +400,13 @@ function cardHTML(en,i,names){
     <select data-i="${i}" data-f="ccy">${CCYS.map(x=>`<option ${x===en.ccy?"selected":""}>${x}</option>`).join("")}</select>
     <span class="rconv">${en.ccy!==state.baseCcy?("= "+money(baseV)):""}</span>`;
   }
+  const cats=groupNames();
+  const catSel=cats.length?`<select class="rcat" data-i="${i}" data-f="group" title="Category"><option value="" ${!en.group?"selected":""}>— no category —</option>${cats.map(g=>`<option ${g===en.group?"selected":""}>${esc(g)}</option>`).join("")}</select>`:"";
   return `<div class="rcard"><span class="dot" style="background:${colorOf(seriesKey(en),names)}"></span>
     <input class="rname" value="${esc(en.name)}" data-i="${i}" data-f="name" placeholder="Asset name">
     <select class="rkind" data-i="${i}" data-f="kind"><option value="fixed" ${en.kind!=="ticker"?"selected":""}>Value</option><option value="ticker" ${en.kind==="ticker"?"selected":""}>Ticker</option></select>
     ${valuePart}
+    ${catSel}
     <button class="rdel" data-del="${i}" title="Remove asset">×</button></div>`;
 }
 // Read-only card for a long-term asset (tap to edit in the focused asset editor).
@@ -416,8 +426,8 @@ function renderEntries(){
   // ungrouped: per-year entries, then long-term assets that aren't in a category
   sn.entries.forEach((en,i)=>{if(!en.group)html+=cardHTML(en,i,names);});
   autos.forEach(en=>{if(!en.group)html+=autoCardHTML(en,names);});
-  // category sections, in order of first appearance (entries first, then any asset-only groups)
-  const order=[];
+  // category sections: the global category list, plus any stray groups still in use
+  const order=[...(state.categories||[])];
   sn.entries.forEach(en=>{if(en.group&&order.indexOf(en.group)<0)order.push(en.group);});
   autos.forEach(en=>{if(en.group&&order.indexOf(en.group)<0)order.push(en.group);});
   order.forEach(g=>{
@@ -428,7 +438,7 @@ function renderEntries(){
       `<input class="grpname" data-grp="${esc(g)}" value="${esc(g)}" title="Category name" placeholder="Category name">`+
       `<span class="grpsub num">${money(sub)}</span>`+
       `<button class="grpdel" data-grpdel="${esc(g)}" title="Delete category">×</button></div>`+
-      `<div class="grpcards">${cards}</div></div>`;
+      `<div class="grpcards">${cards||'<div class="exhint">Empty — set an item\'s Category to this to file it here.</div>'}</div></div>`;
   });
   wrap.innerHTML=html;
   document.getElementById("edTotal").textContent=money(convTo(snapTotalEUR(sn),"EUR",state.baseCcy));
@@ -436,20 +446,32 @@ function renderEntries(){
 document.getElementById("years").addEventListener("click",e=>{const h=e.target.closest("[data-open]");if(h)openYearEditor(+h.dataset.open);});
 document.getElementById("edBack").onclick=()=>{scheduleSync();closeYearEditor();};
 document.getElementById("edYear").addEventListener("input",e=>{const sn=state.snapshots[edIdx];if(!sn)return;const y=parseInt(e.target.value);if(!isNaN(y))sn.year=y;scheduleSync();});
+// On commit, reject a year that's already used by another snapshot (no duplicates).
+document.getElementById("edYear").addEventListener("change",e=>{const sn=state.snapshots[edIdx];if(!sn)return;const y=parseInt(e.target.value);
+  if(isNaN(y)||state.snapshots.some((s,idx)=>idx!==edIdx&&s.year===y)){
+    if(!isNaN(y))toast("You already have a "+y+" — pick another year");
+    sn.year=edYearPrev;e.target.value=edYearPrev;scheduleSync();return;}
+  edYearPrev=y;scheduleSync();});
 document.getElementById("edDelYear").onclick=()=>{if(edIdx<0)return;if(confirm("Delete year "+state.snapshots[edIdx].year+"?")){state.snapshots.splice(edIdx,1);scheduleSync();closeYearEditor();}};
 document.getElementById("edAdd").onclick=()=>{state.snapshots[edIdx].entries.push({id:nid(),name:"New asset",kind:"fixed",ccy:state.baseCcy,value:0});scheduleSync();renderEntries();};
 document.getElementById("edAddLongterm").onclick=()=>{const a=newAsset();openAssetEditor(a.id,true);};
-document.getElementById("edAddGroup").onclick=()=>{const sn=state.snapshots[edIdx];const ex=new Set(sn.entries.map(e=>e.group).filter(Boolean));let base="New group",nm=base,k=2;while(ex.has(nm))nm=base+" "+(k++);sn.entries.push({id:nid(),name:"New asset",kind:"fixed",ccy:state.baseCcy,value:0,group:nm});scheduleSync();renderEntries();};
+document.getElementById("edAddGroup").onclick=()=>{const ex=new Set(state.categories||(state.categories=[]));let base="New category",nm=base,k=2;while(ex.has(nm))nm=base+" "+(k++);state.categories.push(nm);scheduleSync();renderEntries();};
 document.getElementById("edCopyPrev").onclick=()=>{const cur=state.snapshots[edIdx];const prev=state.snapshots.filter(s=>s.year<cur.year).sort((a,b)=>b.year-a.year)[0];if(!prev){toast("No earlier year to copy from");return;}if(cur.entries.length&&!confirm("Replace this year's entries with a copy of "+prev.year+"?"))return;cur.entries=prev.entries.map(e=>({id:nid(),name:e.name,kind:e.kind||"fixed",ccy:e.ccy,value:e.value,shares:e.shares,ticker:e.ticker,group:e.group}));scheduleSync();renderEntries();toast("Copied "+prev.year);};
 document.getElementById("edEntries").addEventListener("input",e=>{
   const t=e.target,sn=state.snapshots[edIdx];
-  if(t.dataset.grp!=null){const old=t.dataset.grp,nw=t.value;sn.entries.forEach(en=>{if(en.group===old)en.group=nw;});(state.assets||[]).forEach(a=>{if(a.group===old)a.group=nw;});t.dataset.grp=nw;scheduleSync();return;}
+  if(t.dataset.grp!=null){const old=t.dataset.grp,nw=t.value;
+    // Categories are global tags — rename in the list and across every year and asset.
+    const ci=(state.categories||[]).indexOf(old);if(ci>=0)state.categories[ci]=nw;
+    state.snapshots.forEach(s=>(s.entries||[]).forEach(en=>{if(en.group===old)en.group=nw;}));
+    (state.assets||[]).forEach(a=>{if(a.group===old)a.group=nw;});
+    t.dataset.grp=nw;scheduleSync();return;}
   const i=+t.dataset.i,f=t.dataset.f;if(t.dataset.i==null||!f)return;
   const en=sn.entries[i];
   if(f==="value"||f==="shares")en[f]=parseFloat(t.value||0);
+  else if(f==="group")en.group=t.value||undefined;
   else en[f]=t.value;
   scheduleSync();
-  if(f==="kind"||f==="ccy"){renderEntries();return;}
+  if(f==="kind"||f==="ccy"||f==="group"){renderEntries();return;}
   const card=t.closest(".rcard");const cv=card&&card.querySelector(".rconv");
   if(cv){const bv=entryBase(en);if(en.kind==="ticker"){const p=state.prices[en.ticker];cv.textContent=p?money(bv):(en.ticker?"no price":"set ticker");}else{cv.textContent=en.ccy!==state.baseCcy?("= "+money(bv)):"";}}
   if(en.group){const gb=t.closest(".grp"),gs=gb&&gb.querySelector(".grpsub");if(gs)gs.textContent=money(sn.entries.filter(x=>x.group===en.group).reduce((a,x)=>a+entryBase(x),0));}
@@ -467,9 +489,13 @@ document.getElementById("edEntries").addEventListener("click",e=>{
   if(ae){openAssetEditor(ae.dataset.editasset);return;}
   if(e.target.dataset.del!=null){sn.entries.splice(+e.target.dataset.del,1);scheduleSync();renderEntries();return;}
   const gd=e.target.closest("[data-grpdel]");
-  if(gd){const g=gd.dataset.grpdel,n=sn.entries.filter(x=>x.group===g).length+(state.assets||[]).filter(x=>x.group===g).length;
-    if(confirm('Remove the "'+g+'" category? Its '+n+' item'+(n===1?"":"s")+' move out of the category — nothing is deleted.')){
-      sn.entries.forEach(x=>{if(x.group===g)x.group=undefined;});(state.assets||[]).forEach(x=>{if(x.group===g)x.group=undefined;});scheduleSync();renderEntries();}return;}
+  if(gd){const g=gd.dataset.grpdel;
+    // Deleting a category removes the tag from every item in every year (nothing is removed).
+    const n=state.snapshots.reduce((a,s)=>a+(s.entries||[]).filter(x=>x.group===g).length,0)+(state.assets||[]).filter(x=>x.group===g).length;
+    if(n===0||confirm('Remove the "'+g+'" category from all years? Its '+n+' tagged item'+(n===1?"":"s")+' lose the category — nothing is deleted.')){
+      state.categories=(state.categories||[]).filter(c=>c!==g);
+      state.snapshots.forEach(s=>(s.entries||[]).forEach(x=>{if(x.group===g)x.group=undefined;}));
+      (state.assets||[]).forEach(x=>{if(x.group===g)x.group=undefined;});scheduleSync();renderEntries();}return;}
 });
 
 document.getElementById("addYear").onclick=()=>{const ys=state.snapshots.map(s=>s.year);const ny=ys.length?Math.max(...ys)+1:new Date().getFullYear();state.snapshots.push({year:ny,entries:[]});scheduleSync();openYearEditor(state.snapshots.length-1);};
@@ -485,8 +511,8 @@ function closeAssetEditor(){
   document.getElementById("assetEditor").classList.add("hide");
   if(!document.getElementById("yearEditor").classList.contains("hide"))renderEntries();else renderAll();
 }
-// Existing category names, drawn from per-year entries and long-term assets alike.
-function groupNames(){const s=new Set();state.snapshots.forEach(sn=>(sn.entries||[]).forEach(e=>{if(e.group)s.add(e.group);}));(state.assets||[]).forEach(a=>{if(a.group)s.add(a.group);});return [...s].sort((a,b)=>a.localeCompare(b));}
+// The global category list (plus any group still in use, defensively).
+function groupNames(){const s=new Set(state.categories||[]);state.snapshots.forEach(sn=>(sn.entries||[]).forEach(e=>{if(e.group)s.add(e.group);}));(state.assets||[]).forEach(a=>{if(a.group)s.add(a.group);});return [...s];}
 // The computed (read-only) outputs for a loan — refreshed in place as inputs change,
 // so the editable fields (and the caret) are never destroyed by a re-render.
 function loanComputedHTML(a){
