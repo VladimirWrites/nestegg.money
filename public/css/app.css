@@ -136,6 +136,9 @@ button.act.ghost:hover{border-color:var(--amber)}
 .fchint{color:var(--muted);font-size:13px;padding:8px 0}
 .fccheck{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:var(--ink);cursor:pointer}
 .fccheck input{width:16px;height:16px;accent-color:var(--amber);cursor:pointer}
+.fcpension{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:2px 0 14px}
+.fcpension .fccheck{margin:0 0 10px}
+.fcp-fields{margin:0}
 .chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--amber) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
 .fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--muted)}
 .fcswitch input{position:absolute;opacity:0;pointer-events:none}

@@ -9,7 +9,14 @@ function fcSyncInputs(){const fc=fcCfg();
   const gm=document.getElementById("fcGoalMode");if(gm)gm.value=fc.goalMode;
   const lbl=document.getElementById("fcGoalLbl");if(lbl)lbl.textContent=fc.goalMode==="spend"?"Annual spending":"Target amount";
   const gv=document.getElementById("fcGoalVal");if(gv&&document.activeElement!==gv)gv.value=(fc.goalMode==="spend"?fc.annualSpending:fc.goalAmount)||"";
-  const rd=document.getElementById("fcRedirect");if(rd)rd.checked=!!fc.redirectLoans;}
+  const rd=document.getElementById("fcRedirect");if(rd)rd.checked=!!fc.redirectLoans;
+  const cgr=document.getElementById("fcContribGrowth");if(cgr&&document.activeElement!==cgr)cgr.value=fc.contribGrowth?+(fc.contribGrowth*100).toFixed(2):"";
+  const bd=document.getElementById("fcBand");if(bd)bd.checked=!!fc.band;
+  const p=fc.pension||{};
+  const pon=document.getElementById("fcPensionOn");if(pon)pon.checked=!!p.on;
+  const pf=document.getElementById("fcPensionFields");if(pf)pf.classList.toggle("hide",!p.on);
+  const set=(id,val)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=val;};
+  set("fcPts",p.points||"");set("fcPtsYr",p.ptsPerYear!=null?p.ptsPerYear:"");set("fcPtVal",p.ptValue!=null?p.ptValue:"");set("fcPtStart",p.startYear||"");}
 function moY(d){return d?d.toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";}
 function renderForecast(){
   const svg=document.getElementById("fcChart");if(!svg)return;
@@ -29,8 +36,11 @@ function renderForecast(){
   // projection from the last actual point forward (dashed, connects to the solid line)
   const proj=[];for(let Y=lastA.y;Y<=horizon;Y++)proj.push({y:Y,v:Y<=lastA.y?lastA.v:forecastNetAt(new Date(Y,11,31))});
   const projEnd=proj[proj.length-1];
+  // scenario band: poor / great return paths (only the liquid+contributions vary)
+  const band=fc.band,br=fcBandRates(),bandLo=[],bandHi=[];
+  if(band)for(let Y=lastA.y;Y<=horizon;Y++){const dt=new Date(Y,11,31);bandLo.push({y:Y,v:Y<=lastA.y?lastA.v:forecastNetAt(dt,br.lo)});bandHi.push({y:Y,v:Y<=lastA.y?lastA.v:forecastNetAt(dt,br.hi)});}
   const minY=actual[0].y,maxY=horizon,span=Math.max(1,maxY-minY);
-  const allV=actual.map(p=>Math.max(0,p.v)).concat(proj.map(p=>Math.max(0,p.v)));if(target>0)allV.push(target);
+  const allV=actual.map(p=>Math.max(0,p.v)).concat(proj.map(p=>Math.max(0,p.v)));if(target>0)allV.push(target);if(band)bandHi.forEach(p=>allV.push(Math.max(0,p.v)));
   const nm=niceCeil(Math.max(1,...allV));
   const dim=chartDims(svg,720),W=dim.W,H=dim.H;
   const padL=58,padR=16,padT=22,padB=30,innerW=W-padL-padR,plotH=H-padT-padB;
@@ -47,6 +57,11 @@ function renderForecast(){
     const lbl="goal "+sym+shortK(target),lw=lbl.length*5.6+10,above=gy>padT+18,ty=above?gy-5:gy+12,ry=above?gy-15:gy+2;
     s+=`<rect x="${padL+2}" y="${ry}" width="${lw}" height="14" rx="3" fill="#0a0a0b" opacity="0.78"/>`;
     s+=`<text x="${padL+7}" y="${ty}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9.5" fill="${FC_GREEN}">${lbl}</text>`;}
+  // scenario band fill (poor → great), drawn under the lines
+  if(band){const poly=bandHi.map(p=>X(p.y)+","+Y(p.v)).concat(bandLo.slice().reverse().map(p=>X(p.y)+","+Y(p.v))).join(" ");
+    s+=`<polygon points="${poly}" fill="${FC_AMBER}" opacity="0.1"/>`;
+    s+=`<polyline points="${bandHi.map(p=>X(p.y)+","+Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>great: ${Math.round(br.hi*100)}%/yr</title></polyline>`;
+    s+=`<polyline points="${bandLo.map(p=>X(p.y)+","+Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>poor: ${Math.round(br.lo*100)}%/yr</title></polyline>`;}
   // projection (dashed)
   s+=`<polyline points="${proj.map(p=>X(p.y)+","+Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`;
   // actual (solid) + dots
@@ -61,7 +76,9 @@ function renderForecast(){
   const d=debtSummary();
   const goalStat=target>0?(fireY?`<div class="fcstat"><span class="k">${fc.goalMode==="spend"?"FIRE goal ("+money(target)+")":"Goal "+money(target)}</span><span class="v ok">${fireY<=cy?"reached 🎉":("~"+fireY+" · in "+(fireY-cy)+" yr"+(fireY-cy===1?"":"s"))}</span></div>`:`<div class="fcstat"><span class="k">Goal ${money(target)}</span><span class="v">not within 45 yrs</span></div>`):`<div class="fcstat"><span class="k">Goal</span><span class="v dim">set a target above</span></div>`;
   const debtStat=d.has?`<div class="fcstat"><span class="k">Debt-free by</span><span class="v ok">${moY(d.payoff)}</span><span class="sub">${money(d.rem)} interest remaining</span></div>`:`<div class="fcstat"><span class="k">Debt</span><span class="v ok">none 🎉</span></div>`;
-  if(stEl)stEl.innerHTML=`<div class="fcstat"><span class="k">Projected ${projEnd.y}</span><span class="v">${money(projEnd.v)}</span></div>`+goalStat+debtStat;
+  const pm=pensionMonthly(),pst=fc.pension&&fc.pension.on?`<div class="fcstat"><span class="k">Pension from ${fc.pension.startYear}</span><span class="v ok">${money(pm)}/mo</span><span class="sub">${pensionPts().toFixed(1)} pts · ${money(pensionAnnual())}/yr</span></div>`:"";
+  const projStat=`<div class="fcstat"><span class="k">Projected ${projEnd.y}</span><span class="v">${money(projEnd.v)}</span>${band?`<span class="sub">range ${money(bandLo[bandLo.length-1].v)} – ${money(bandHi[bandHi.length-1].v)}</span>`:""}</div>`;
+  if(stEl)stEl.innerHTML=projStat+goalStat+debtStat+pst;
 }
 function downloadForecast(){
   const src=document.getElementById("fcChart");if(!src||!src.innerHTML){toast("Nothing to save");return;}

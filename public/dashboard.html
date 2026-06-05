@@ -96,10 +96,22 @@
         <div class="fcrow">
           <label class="fld">Monthly contribution<input id="fcMonthly" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
           <label class="fld">Expected return / yr<span class="pct"><input id="fcGrowth" class="fin num" type="number" step="any" inputmode="decimal" placeholder="5"><i>%</i></span></label>
+          <label class="fld">Contributions grow / yr<span class="pct"><input id="fcContribGrowth" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"><i>%</i></span></label>
           <label class="fld">Goal<select id="fcGoalMode"><option value="amount">Target amount</option><option value="spend">Annual spending ×25</option></select></label>
           <label class="fld"><span id="fcGoalLbl">Target amount</span><input id="fcGoalVal" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
         </div>
         <label class="fccheck"><input type="checkbox" id="fcRedirect"><span>Reinvest freed-up loan payments after each loan is paid off</span></label>
+        <label class="fccheck"><input type="checkbox" id="fcBand"><span>Show return range (poor / expected / great)</span></label>
+        <div class="fcpension">
+          <label class="fccheck"><input type="checkbox" id="fcPensionOn"><span>Include German statutory pension (gesetzliche Rente)</span></label>
+          <div class="fcrow fcp-fields" id="fcPensionFields">
+            <label class="fld">Points so far (Entgeltpunkte)<input id="fcPts" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
+            <label class="fld">Points / year<input id="fcPtsYr" class="fin num" type="number" step="any" inputmode="decimal" placeholder="1"></label>
+            <label class="fld">Value / point (€/mo)<input id="fcPtVal" class="fin num" type="number" step="any" inputmode="decimal" placeholder="39.32"></label>
+            <label class="fld">Pension starts (year)<input id="fcPtStart" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2050"></label>
+          </div>
+          <div class="fchint" style="padding:2px 0 0">Estimate: ~1 point per year at the national-average salary. Reduces the spending-based goal (assumes you draw it from the start year).</div>
+        </div>
         <div class="fcstats" id="fcStats"></div>
         <div class="histscroll"><svg id="fcChart"></svg></div>
         <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span>Actual</span><span><span class="chip fcdash"></span>Projected</span><span><span class="chip" style="background:var(--green)"></span>Goal</span></div>

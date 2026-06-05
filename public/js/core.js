@@ -18,6 +18,9 @@ function migrate(s){
   if(!s.baseCcy)s.baseCcy="EUR";
   if(!s.forecast||typeof s.forecast!=="object")s.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0,redirectLoans:false};
   else{const f=s.forecast;f.enabled=f.enabled!==false;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;f.redirectLoans=!!f.redirectLoans;}
+  {const f=s.forecast;f.band=!!f.band;f.contribGrowth=+f.contribGrowth||0;
+   if(!f.pension||typeof f.pension!=="object")f.pension={on:false,points:0,ptsPerYear:1,ptValue:39.32,startYear:new Date().getFullYear()+20};
+   else{const p=f.pension;p.on=!!p.on;p.points=+p.points||0;p.ptsPerYear=p.ptsPerYear!=null?+p.ptsPerYear:1;p.ptValue=p.ptValue!=null?+p.ptValue:39.32;p.startYear=+p.startYear||(new Date().getFullYear()+20);}}
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
   if(!s.prices)s.prices={};
   if(!s.fxHist||typeof s.fxHist!=="object")s.fxHist={};
@@ -234,18 +237,26 @@ function redirectStreams(){const fc=fcCfg();if(!fc.redirectLoans)return [];const
     const payoff=pays[pays.length-1].date;if(payoff<=now)return;const M=loanTerms(a.loan).M;if(!(M>0)||!isFinite(M))return;
     out.push({month:Math.max(1,Math.round((payoff-now)/MONTH_MS)),amt:convTo(M,a.ccy||state.baseCcy,state.baseCcy)});});
   return out;}
-// Future value of the contribution stream to `date`: a fixed monthly amount that steps up
-// as each loan is paid off (if reinvest is enabled), grown at the assumed monthly return.
-function contribFV(date){const fc=fcCfg(),i=(+fc.growth||0)/12,now=new Date();
+// Future value of the contribution stream to `date`: a monthly amount that ramps each year
+// (raises), steps up as each loan is paid off (if reinvest is on), grown at the assumed
+// monthly return. `gOverride` lets the scenario band re-run at low/high returns.
+function contribFV(date,gOverride){const fc=fcCfg(),g=gOverride!=null?gOverride:(+fc.growth||0),i=g/12,cg=+fc.contribGrowth||0,now=new Date();
   const months=Math.round((date-now)/MONTH_MS);if(months<=0)return 0;
-  const streams=redirectStreams();let fv=0,cur=+fc.monthly||0;
-  for(let m=0;m<months;m++){for(const s of streams)if(s.month===m)cur+=s.amt;fv=fv*(1+i)+cur;}
+  const streams=redirectStreams();let fv=0,base=+fc.monthly||0,redirect=0;
+  for(let m=0;m<months;m++){if(m>0&&m%12===0)base*=(1+cg);for(const s of streams)if(s.month===m)redirect+=s.amt;fv=fv*(1+i)+base+redirect;}
   return fv;}
-function forecastNetAt(date){const fc=fcCfg(),g=+fc.growth||0;let t=(date-new Date())/YEAR_MS;if(t<0)t=0;
+function forecastNetAt(date,gOverride){const fc=fcCfg(),g=gOverride!=null?gOverride:(+fc.growth||0);let t=(date-new Date())/YEAR_MS;if(t<0)t=0;
   const grown=manualNetBase()*Math.pow(1+g,t);
-  return grown+contribFV(date)+ltNetBaseAt(date);}
-// Goal target: an explicit amount, or annual spending × 25 (the 4% rule).
-function fcTarget(){const fc=fcCfg();return fc.goalMode==="spend"?(+fc.annualSpending||0)*25:(+fc.goalAmount||0);}
+  return grown+contribFV(date,gOverride)+ltNetBaseAt(date);}
+// Scenario band returns: poor / expected / great (expected ∓ 3pp, floored at 0).
+function fcBandRates(){const g=+fcCfg().growth||0;return {lo:Math.max(0,g-0.03),mid:g,hi:g+0.03};}
+// German statutory pension: total Rentenpunkte (points so far + points/yr until start) × point value.
+function pensionPts(){const p=fcCfg().pension;if(!p||!p.on)return 0;const cy=new Date().getFullYear();const yrs=Math.max(0,(+p.startYear||cy)-cy);return (+p.points||0)+(+p.ptsPerYear||0)*yrs;}
+function pensionMonthly(){const p=fcCfg().pension;if(!p||!p.on)return 0;return pensionPts()*(+p.ptValue||0);}
+function pensionAnnual(){return pensionMonthly()*12;}
+// Goal target: an explicit amount, or (annual spending − statutory pension) × 25 (the 4% rule).
+function fcTarget(){const fc=fcCfg();if(fc.goalMode!=="spend")return +fc.goalAmount||0;
+  return Math.max(0,(+fc.annualSpending||0)-pensionAnnual())*25;}
 // Across every loan (asset-backed or standalone), the last payment date and remaining interest.
 function debtSummary(){const now=new Date();let payoff=null,rem=0,has=false;
   (state.assets||[]).forEach(a=>{if(!a.loan)return;const rows=buildSchedule(a.loan),pays=rows.filter(r=>r.type!=="extra");if(!pays.length)return;has=true;
