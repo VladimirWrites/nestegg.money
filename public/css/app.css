@@ -56,7 +56,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .sectitle .tin{letter-spacing:.02em;text-transform:none;font-size:11.5px;color:var(--muted)}
 
 .histscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
-#histChart,#fcChart{display:block;width:100%;height:auto}
+#histChart,#fcChart,#rtChart{display:block;width:100%;height:auto}
 #histChart{display:block}
 .chiplegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;margin-bottom:22px;font-size:11.5px;color:var(--muted)}
 .chiplegend span{display:flex;align-items:center;gap:6px}.chip{width:10px;height:10px;border-radius:1px}
@@ -131,6 +131,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .fcstat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .fcstat .v{font-size:18px;font-variant-numeric:tabular-nums}
 .fcstat .v.ok{color:var(--green)}
+.fcstat .v.bad{color:var(--red)}
 .fcstat .v.dim{color:var(--muted);font-size:13px}
 .fcstat .sub{font-size:10.5px;color:var(--muted)}
 .fcstat.hero{border-color:var(--amber);background:linear-gradient(180deg,rgba(255,176,0,.08),transparent)}

@@ -17,6 +17,6 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 window.addEventListener("pagehide",()=>{try{flushSync();}catch(e){}});
 
 // Re-fit the width-filling charts when the viewport changes size.
-let _rszT;window.addEventListener("resize",()=>{clearTimeout(_rszT);_rszT=setTimeout(()=>{try{const vn=document.getElementById("viewNet");if(vn&&!vn.classList.contains("hide")){drawHist();renderForecast();}}catch(e){}},160);});
+let _rszT;window.addEventListener("resize",()=>{clearTimeout(_rszT);_rszT=setTimeout(()=>{try{const vn=document.getElementById("viewNet");if(vn&&!vn.classList.contains("hide")){drawHist();renderForecast();renderRetire();}}catch(e){}},160);});
 
 try{boot();}catch(e){try{showCreate();}catch(_){}}

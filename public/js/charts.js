@@ -79,28 +79,43 @@ function renderForecast(){
   if(stEl)stEl.innerHTML=projStat+goalStat+debtStat;
 }
 function retSyncInputs(){const r=retCfg();
-  const set=(id,val,fmt)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=fmt?fmt(val):val;};
+  const set=(id,val,fmt)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=(fmt?fmt(val):val)||(val===0?"":val)||"";};
   const on=document.getElementById("rtOn");if(on)on.checked=r.on;
   const body=document.getElementById("rtBody");if(body)body.classList.toggle("hide",!r.on);
-  set("rtYear",r.year||"");set("rtPts",r.points||"");set("rtPtsYr",r.ptsPerYear!=null?r.ptsPerYear:"");set("rtPtVal",r.ptValue!=null?r.ptValue:"");
-  set("rtInfl",r.inflation,v=>v?+(v*100).toFixed(2):"");
-  const wm=document.getElementById("rtWrMode");if(wm)wm.value=r.wrMode;
-  set("rtWrRate",r.wrRate,v=>v?+(v*100).toFixed(2):"");set("rtYears",r.years||"");
-  const rateFld=document.getElementById("rtRateFld"),yrsFld=document.getElementById("rtYearsFld");
-  if(rateFld)rateFld.classList.toggle("hide",r.wrMode!=="rate");if(yrsFld)yrsFld.classList.toggle("hide",r.wrMode!=="years");}
+  set("rtYear",r.retireYear);set("rtSpend",r.spending);set("rtPts",r.points);set("rtPtsYr",r.ptsPerYear!=null?r.ptsPerYear:"");set("rtPtVal",r.ptValue!=null?r.ptValue:"");
+  set("rtPensStart",r.pensionStart);set("rtUntil",r.untilYear);set("rtInfl",r.inflation,v=>v?+(v*100).toFixed(2):"");}
 function renderRetire(){
   const stEl=document.getElementById("rtStats");if(!stEl)return;
-  const r=retCfg(),on=document.getElementById("rtOn"),body=document.getElementById("rtBody");
+  const r=retCfg(),on=document.getElementById("rtOn"),body=document.getElementById("rtBody"),svg=document.getElementById("rtChart");
   if(on)on.checked=r.on;if(body)body.classList.toggle("hide",!r.on);
   if(!r.on)return;
   retSyncInputs();
-  if(!latestSnap()){stEl.innerHTML='<div class="fchint">Add a year of net worth to project your nest egg.</div>';return;}
-  const pot=retNestEggReal(),pm=pensionMonthly(),w=retWithdrawal(),total=pm+w.monthly;
-  stEl.innerHTML=
-    `<div class="fcstat"><span class="k">Nest egg ${r.year}</span><span class="v">${money(pot)}</span><span class="sub">today's money · ${money(retNestEggNominal())} nominal</span></div>`+
-    `<div class="fcstat"><span class="k">Pension</span><span class="v ok">${money(pm)}/mo</span><span class="sub">${pensionPts().toFixed(1)} pts · today's value</span></div>`+
-    `<div class="fcstat"><span class="k">Portfolio withdrawal</span><span class="v">${money(w.monthly)}/mo</span><span class="sub">${w.note}</span></div>`+
-    `<div class="fcstat hero"><span class="k">Total income from ${r.year}</span><span class="v ok">${money(total)}/mo</span><span class="sub">${money(total*12)}/yr · today's money</span></div>`;
+  if(!latestSnap()){if(svg){svg.innerHTML="";svg.removeAttribute("width");}stEl.innerHTML='<div class="fchint">Add a year of net worth to simulate retirement.</div>';return;}
+  const sim=retSim();
+  if(svg){
+    const dim=chartDims(svg,720),W=dim.W,H=dim.H,padL=58,padR=16,padT=22,padB=30,innerW=W-padL-padR,plotH=H-padT-padB;
+    const minY=sim.pts[0].y,maxY=sim.pts[sim.pts.length-1].y,span=Math.max(1,maxY-minY);
+    const nm=niceCeil(Math.max(1,...sim.pts.map(p=>Math.max(0,p.pot))));
+    const X=y=>padL+(y-minY)/span*innerW,Y=v=>padT+plotH-(Math.max(0,v)/nm)*plotH;
+    svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+    let s="";const sym=ccySym();
+    for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#26262a" stroke-width="1"/>`;s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
+    const step=Math.max(1,Math.ceil(span/8));for(let y=minY;y<=maxY;y+=step)s+=`<text x="${X(y)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="#8a867c">${y}</text>`;
+    // pension-start marker
+    if(sim.pensY>minY&&sim.pensY<=maxY&&sim.pensionAnnual>0){const px=X(sim.pensY);s+=`<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT+plotH}" stroke="${FC_GREEN}" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.8"/>`;
+      s+=`<text x="${px+4}" y="${padT+10}" font-family="ui-monospace,monospace" font-size="9" fill="${FC_GREEN}">pension ${sim.pensY}</text>`;}
+    // pot area + line
+    s+=`<polygon points="${X(minY)},${Y(0)} ${sim.pts.map(p=>X(p.y)+","+Y(p.pot)).join(" ")} ${X(maxY)},${Y(0)}" fill="${FC_AMBER}" opacity="0.1"/>`;
+    s+=`<polyline points="${sim.pts.map(p=>X(p.y)+","+Y(p.pot)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
+    sim.pts.forEach(p=>{if(p.y===sim.pensY||p.y===minY||p.y===maxY)s+=`<circle cx="${X(p.y)}" cy="${Y(p.pot)}" r="3" fill="${FC_AMBER}"><title>${p.y}: ${money(p.pot)}</title></circle>`;});
+    if(sim.depleted)s+=`<circle cx="${X(sim.depleted)}" cy="${Y(0)}" r="4" fill="#ff4d6d"><title>Depleted ${sim.depleted}</title></circle>`;
+    svg.innerHTML=s;
+  }
+  const eggStat=`<div class="fcstat"><span class="k">Nest egg ${sim.retY}</span><span class="v">${money(sim.pts[0].pot)}</span><span class="sub">today's money · investable</span></div>`;
+  const pensStat=sim.pensionAnnual>0?`<div class="fcstat"><span class="k">Pension from ${sim.pensY}</span><span class="v ok">${money(sim.pensionMonthly)}/mo</span><span class="sub">${pensionPts().toFixed(1)} pts · covers ${sim.spend>0?Math.min(100,Math.round(sim.pensionAnnual/sim.spend*100)):0}% of spend</span></div>`:`<div class="fcstat"><span class="k">Pension</span><span class="v dim">set points</span></div>`;
+  const spendStat=`<div class="fcstat"><span class="k">Spending</span><span class="v">${money(sim.spend)}/yr</span><span class="sub">${money(sim.spend/12)}/mo · today's money</span></div>`;
+  const verdict=sim.depleted?`<div class="fcstat hero"><span class="k">Pot runs out</span><span class="v bad">${sim.depleted}</span><span class="sub">${sim.depleted-sim.retY} yrs into retirement</span></div>`:`<div class="fcstat hero"><span class="k">Lasts past ${sim.until}</span><span class="v ok">${money(sim.endPot)} left</span><span class="sub">low point ${money(sim.minPot)}</span></div>`;
+  stEl.innerHTML=eggStat+pensStat+spendStat+verdict;
 }
 function downloadForecast(){
   const src=document.getElementById("fcChart");if(!src||!src.innerHTML){toast("Nothing to save");return;}

@@ -19,9 +19,11 @@ function migrate(s){
   if(!s.forecast||typeof s.forecast!=="object")s.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0,redirectLoans:false};
   else{const f=s.forecast;f.enabled=f.enabled!==false;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;f.redirectLoans=!!f.redirectLoans;}
   {const f=s.forecast;f.band=!!f.band;f.contribGrowth=+f.contribGrowth||0;f.horizonYear=+f.horizonYear||0;delete f.real;delete f.inflation;delete f.pension;}
-  {const cy=new Date().getFullYear();const old=s.forecast&&s.forecast.pension;
-   if(!s.retire||typeof s.retire!=="object")s.retire={on:false,year:cy+20,points:0,ptsPerYear:1,ptValue:39.32,inflation:0.02,wrMode:"rate",wrRate:0.04,years:30};
-   const r=s.retire;r.on=!!r.on;r.year=+r.year||(cy+20);r.points=+r.points||0;r.ptsPerYear=r.ptsPerYear!=null?+r.ptsPerYear:1;r.ptValue=r.ptValue!=null?+r.ptValue:39.32;r.inflation=r.inflation!=null?+r.inflation:0.02;r.wrMode=r.wrMode==="years"?"years":"rate";r.wrRate=r.wrRate!=null?+r.wrRate:0.04;r.years=+r.years||30;}
+  {const cy=new Date().getFullYear();
+   if(!s.retire||typeof s.retire!=="object")s.retire={on:false,retireYear:cy,spending:0,points:0,ptsPerYear:1,ptValue:39.32,pensionStart:cy+15,inflation:0.02,untilYear:cy+45};
+   const r=s.retire;r.on=!!r.on;if(r.year!=null&&r.retireYear==null)r.retireYear=r.year;delete r.year;delete r.wrMode;delete r.wrRate;delete r.years;
+   r.retireYear=+r.retireYear||cy;r.spending=+r.spending||0;r.points=+r.points||0;r.ptsPerYear=r.ptsPerYear!=null?+r.ptsPerYear:1;r.ptValue=r.ptValue!=null?+r.ptValue:39.32;
+   r.pensionStart=+r.pensionStart||(cy+15);r.inflation=r.inflation!=null?+r.inflation:0.02;r.untilYear=+r.untilYear||(cy+45);}
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
   if(!s.prices)s.prices={};
   if(!s.fxHist||typeof s.fxHist!=="object")s.fxHist={};
@@ -254,25 +256,32 @@ function fcBandRates(){const g=+fcCfg().growth||0;return {lo:Math.max(0,g-0.03),
 // Goal target: an explicit amount, or annual spending × 25 (the 4% rule).
 function fcTarget(){const fc=fcCfg();return fc.goalMode==="spend"?(+fc.annualSpending||0)*25:(+fc.goalAmount||0);}
 
-/* ---- Retirement calculator (separate from the forecast graph) ----
-   At the retirement year, contributions stop and the German statutory pension begins.
-   Everything is shown in today's money (the nest egg is deflated by inflation; the pension
-   is already a today's-money figure since it uses the current point value). */
-function retCfg(){if(!state.retire||typeof state.retire!=="object")state.retire={on:false,year:new Date().getFullYear()+20,points:0,ptsPerYear:1,ptValue:39.32,inflation:0.02,wrMode:"rate",wrRate:0.04,years:30};return state.retire;}
-function retDeflator(year){const r=retCfg(),infl=+r.inflation||0,t=Math.max(0,year-new Date().getFullYear());return 1/Math.pow(1+infl,t);}
-function pensionPts(){const r=retCfg();const yrs=Math.max(0,(+r.year||0)-new Date().getFullYear());return (+r.points||0)+(+r.ptsPerYear||0)*yrs;}
+/* ---- Retirement simulation (separate from the forecast graph) ----
+   At the retirement year contributions stop and drawdown begins: each year you withdraw your
+   spending from the investable nest egg. When the government pension starts (its own, later
+   year) it covers part of spending, so the portfolio draw shrinks. Everything is in today's
+   money and the pot grows at the real (inflation-adjusted) return between withdrawals. */
+function retCfg(){if(!state.retire||typeof state.retire!=="object"){const cy=new Date().getFullYear();state.retire={on:false,retireYear:cy,spending:0,points:0,ptsPerYear:1,ptValue:39.32,pensionStart:cy+15,inflation:0.02,untilYear:cy+45};}return state.retire;}
+function retDeflator(year){const infl=+retCfg().inflation||0,t=Math.max(0,year-new Date().getFullYear());return 1/Math.pow(1+infl,t);}
+// Investable nest egg only (liquid + contributions, grown) — excludes property/loans, which you
+// don't sell to fund monthly spending.
+function forecastLiquidAt(date,gOverride){const fc=fcCfg(),g=gOverride!=null?gOverride:(+fc.growth||0);let t=(date-new Date())/YEAR_MS;if(t<0)t=0;return manualNetBase()*Math.pow(1+g,t)+contribFV(date,gOverride);}
+// Pension points accrue only while working (until the retirement year).
+function pensionPts(){const r=retCfg();const yrs=Math.max(0,(+r.retireYear||0)-new Date().getFullYear());return (+r.points||0)+(+r.ptsPerYear||0)*yrs;}
 function pensionMonthly(){return pensionPts()*(+retCfg().ptValue||0);}        // today's money (current Rentenwert)
 function pensionAnnual(){return pensionMonthly()*12;}
-// Nest egg projected to the retirement year — nominal, then converted to today's money.
-function retNestEggNominal(){const r=retCfg();return forecastNetAt(new Date((+r.year||new Date().getFullYear()),11,31));}
-function retNestEggReal(){const r=retCfg();return retNestEggNominal()*retDeflator(+r.year||new Date().getFullYear());}
-// Sustainable monthly withdrawal in today's money: a safe rate, or deplete the pot over N years
-// at the real (inflation-adjusted) return. Returns {monthly, note}.
-function retWithdrawal(){const r=retCfg(),pot=retNestEggReal();
-  if(r.wrMode==="years"){const n=Math.max(1,+r.years||30),g=+fcCfg().growth||0,infl=+r.inflation||0,rr=(1+g)/(1+infl)-1;
-    const annual=Math.abs(rr)<1e-6?pot/n:pot*rr/(1-Math.pow(1+rr,-n));
-    return {monthly:annual/12,note:"depletes over "+n+" yr"+(n===1?"":"s")};}
-  const wr=+r.wrRate||0.04;return {monthly:pot*wr/12,note:"at "+(wr*100).toFixed(1)+"% · pot sustained"};}
+function retNestEggReal(){const y=+retCfg().retireYear||new Date().getFullYear();return forecastLiquidAt(new Date(y,11,31))*retDeflator(y);}
+// Year-by-year drawdown in today's money. Returns the pot trajectory + verdict.
+function retSim(){const r=retCfg(),cy=new Date().getFullYear();
+  const retY=Math.max(cy,+r.retireYear||cy),pensY=Math.max(retY,+r.pensionStart||retY),until=Math.max(retY+1,+r.untilYear||retY+45);
+  const g=+fcCfg().growth||0,infl=+r.inflation||0,rr=(1+g)/(1+infl)-1,spend=+r.spending||0,pensA=pensionAnnual();
+  let pot=retNestEggReal();const pts=[{y:retY,pot}];let depleted=null,potAtPens=pot,minPot=pot;
+  for(let y=retY+1;y<=until;y++){const pension=y>=pensY?pensA:0,draw=Math.max(0,spend-pension);
+    pot=(pot-draw)*(1+rr);
+    if(y===pensY)potAtPens=Math.max(0,pot);
+    if(pot<=0){depleted=y;pts.push({y,pot:0});break;}
+    minPot=Math.min(minPot,pot);pts.push({y,pot});}
+  return {pts,depleted,potAtPens,minPot,retY,pensY,until,pensionMonthly:pensionMonthly(),pensionAnnual:pensA,spend,rr,endPot:pts[pts.length-1].pot};}
 // Across every loan (asset-backed or standalone), the last payment date and remaining interest.
 function debtSummary(){const now=new Date();let payoff=null,rem=0,has=false;
   (state.assets||[]).forEach(a=>{if(!a.loan)return;const rows=buildSchedule(a.loan),pays=rows.filter(r=>r.type!=="extra");if(!pays.length)return;has=true;

@@ -110,20 +110,22 @@
     </section>
 
     <section class="forecast retire">
-      <div class="sectitle">Retirement <span class="tin">— when the pension starts &amp; contributions stop</span><label class="fcswitch"><input type="checkbox" id="rtOn"><span class="track"></span><em>Show</em></label></div>
+      <div class="sectitle">Retirement <span class="tin">— spend down the nest egg, then the pension kicks in</span><label class="fcswitch"><input type="checkbox" id="rtOn"><span class="track"></span><em>Show</em></label></div>
       <div id="rtBody">
         <div class="fcrow">
-          <label class="fld">Retirement year<input id="rtYear" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2050"></label>
+          <label class="fld">Retire in (year)<input id="rtYear" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2026"></label>
+          <label class="fld">Annual spending<input id="rtSpend" class="fin num" type="number" step="any" inputmode="decimal" placeholder="30000"></label>
+          <label class="fld">Pension starts (year)<input id="rtPensStart" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2050"></label>
+          <label class="fld">Plan until (year)<input id="rtUntil" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2071"></label>
+          <label class="fld">Inflation / yr<span class="pct"><input id="rtInfl" class="fin num" type="number" step="any" inputmode="decimal" placeholder="2"><i>%</i></span></label>
           <label class="fld">Points so far (Entgeltpunkte)<input id="rtPts" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
           <label class="fld">Points / year<input id="rtPtsYr" class="fin num" type="number" step="any" inputmode="decimal" placeholder="1"></label>
           <label class="fld">Value / point (€/mo)<input id="rtPtVal" class="fin num" type="number" step="any" inputmode="decimal" placeholder="39.32"></label>
-          <label class="fld">Inflation / yr<span class="pct"><input id="rtInfl" class="fin num" type="number" step="any" inputmode="decimal" placeholder="2"><i>%</i></span></label>
-          <label class="fld">Withdrawal<select id="rtWrMode"><option value="rate">Safe rate</option><option value="years">Deplete over N years</option></select></label>
-          <label class="fld" id="rtRateFld">Withdrawal rate<span class="pct"><input id="rtWrRate" class="fin num" type="number" step="any" inputmode="decimal" placeholder="4"><i>%</i></span></label>
-          <label class="fld hide" id="rtYearsFld">Years in retirement<input id="rtYears" class="fin num" type="number" step="1" inputmode="numeric" placeholder="30"></label>
         </div>
-        <div class="fchint" style="padding:0 0 4px">Pension = points × value (~1 point per year at the national-average salary). The nest egg is your forecast value at the retirement year, shown in today's money.</div>
+        <div class="fchint" style="padding:0 0 4px">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Pension = points × value (~1 point/yr at the average salary) and points accrue only while working.</div>
         <div class="fcstats" id="rtStats"></div>
+        <div class="histscroll"><svg id="rtChart"></svg></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span>Nest egg (today's money)</span><span><span class="chip" style="background:var(--green)"></span>Pension starts</span></div>
       </div>
     </section>
 
