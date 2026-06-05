@@ -16,8 +16,8 @@ function normLoan(L,fallbackDate){
 }
 function migrate(s){
   if(!s.baseCcy)s.baseCcy="EUR";
-  if(!s.forecast||typeof s.forecast!=="object")s.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0};
-  else{const f=s.forecast;f.enabled=f.enabled!==false;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;}
+  if(!s.forecast||typeof s.forecast!=="object")s.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0,redirectLoans:false};
+  else{const f=s.forecast;f.enabled=f.enabled!==false;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;f.redirectLoans=!!f.redirectLoans;}
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
   if(!s.prices)s.prices={};
   if(!s.fxHist||typeof s.fxHist!=="object")s.fxHist={};
@@ -221,15 +221,29 @@ const latestSnap=()=>sortedSnaps().slice(-1)[0];
    project exactly for any future date. The "liquid" portion (the latest year's manually
    entered values) is grown at an assumed annual return, and a planned monthly contribution
    is added with monthly compounding. Future FX is unknown, so current rates are used. */
-function fcCfg(){if(!state.forecast||typeof state.forecast!=="object")state.forecast={monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0};return state.forecast;}
+function fcCfg(){if(!state.forecast||typeof state.forecast!=="object")state.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0,redirectLoans:false};return state.forecast;}
 // Net of all long-term assets/liabilities (in base ccy) on an arbitrary date.
 function ltNetBaseAt(date){return (state.assets||[]).reduce((s,a)=>{const from=assetOwnedFrom(a);if(from&&from>date)return s;const nat=a.liability?-(a.loan?outstandingAt(a.loan,date):0):assetNetAt(a,date);return s+convTo(nat,a.ccy||state.baseCcy,state.baseCcy);},0);}
 // The manually-entered ("liquid") portion of the latest snapshot, in base ccy.
 function manualNetBase(){const ls=latestSnap();if(!ls)return 0;return (ls.entries||[]).reduce((s,e)=>s+entryBase(e,ls.year),0);}
+const MONTH_MS=YEAR_MS/12;
+// When "reinvest after payoff" is on, each future loan payoff frees its monthly payment
+// into the contribution stream from that month on: [{month, amt(base)}].
+function redirectStreams(){const fc=fcCfg();if(!fc.redirectLoans)return [];const now=new Date(),out=[];
+  (state.assets||[]).forEach(a=>{if(!a.loan)return;const rows=buildSchedule(a.loan),pays=rows.filter(r=>r.type!=="extra");if(!pays.length)return;
+    const payoff=pays[pays.length-1].date;if(payoff<=now)return;const M=loanTerms(a.loan).M;if(!(M>0)||!isFinite(M))return;
+    out.push({month:Math.max(1,Math.round((payoff-now)/MONTH_MS)),amt:convTo(M,a.ccy||state.baseCcy,state.baseCcy)});});
+  return out;}
+// Future value of the contribution stream to `date`: a fixed monthly amount that steps up
+// as each loan is paid off (if reinvest is enabled), grown at the assumed monthly return.
+function contribFV(date){const fc=fcCfg(),i=(+fc.growth||0)/12,now=new Date();
+  const months=Math.round((date-now)/MONTH_MS);if(months<=0)return 0;
+  const streams=redirectStreams();let fv=0,cur=+fc.monthly||0;
+  for(let m=0;m<months;m++){for(const s of streams)if(s.month===m)cur+=s.amt;fv=fv*(1+i)+cur;}
+  return fv;}
 function forecastNetAt(date){const fc=fcCfg(),g=+fc.growth||0;let t=(date-new Date())/YEAR_MS;if(t<0)t=0;
   const grown=manualNetBase()*Math.pow(1+g,t);
-  const i=g/12,n=Math.round(t*12),fv=(+fc.monthly||0)*(i>0?(Math.pow(1+i,n)-1)/i:n);
-  return grown+fv+ltNetBaseAt(date);}
+  return grown+contribFV(date)+ltNetBaseAt(date);}
 // Goal target: an explicit amount, or annual spending × 25 (the 4% rule).
 function fcTarget(){const fc=fcCfg();return fc.goalMode==="spend"?(+fc.annualSpending||0)*25:(+fc.goalAmount||0);}
 // Across every loan (asset-backed or standalone), the last payment date and remaining interest.

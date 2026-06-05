@@ -8,7 +8,8 @@ function fcSyncInputs(){const fc=fcCfg();
   const g=document.getElementById("fcGrowth");if(g&&document.activeElement!==g)g.value=fc.growth?+(fc.growth*100).toFixed(2):"";
   const gm=document.getElementById("fcGoalMode");if(gm)gm.value=fc.goalMode;
   const lbl=document.getElementById("fcGoalLbl");if(lbl)lbl.textContent=fc.goalMode==="spend"?"Annual spending":"Target amount";
-  const gv=document.getElementById("fcGoalVal");if(gv&&document.activeElement!==gv)gv.value=(fc.goalMode==="spend"?fc.annualSpending:fc.goalAmount)||"";}
+  const gv=document.getElementById("fcGoalVal");if(gv&&document.activeElement!==gv)gv.value=(fc.goalMode==="spend"?fc.annualSpending:fc.goalAmount)||"";
+  const rd=document.getElementById("fcRedirect");if(rd)rd.checked=!!fc.redirectLoans;}
 function moY(d){return d?d.toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";}
 function renderForecast(){
   const svg=document.getElementById("fcChart");if(!svg)return;

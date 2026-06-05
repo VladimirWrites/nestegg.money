@@ -79,6 +79,7 @@ document.getElementById("pricesBtn").onclick=refreshPrices;
   const g=document.getElementById("fcGrowth");if(g)g.oninput=e=>{fcCfg().growth=Math.min(Math.max((parseFloat(e.target.value)||0)/100,-0.5),1);fcU();};
   const gm=document.getElementById("fcGoalMode");if(gm)gm.onchange=e=>{fcCfg().goalMode=e.target.value==="spend"?"spend":"amount";fcSyncInputs();fcU();};
   const gv=document.getElementById("fcGoalVal");if(gv)gv.oninput=e=>{const fc=fcCfg(),v=parseFloat(e.target.value)||0;if(fc.goalMode==="spend")fc.annualSpending=v;else fc.goalAmount=v;fcU();};
+  const rd=document.getElementById("fcRedirect");if(rd)rd.onchange=e=>{fcCfg().redirectLoans=e.target.checked;fcU();};
 })();
 document.getElementById("dlFc")&&(document.getElementById("dlFc").onclick=()=>downloadForecast());
 document.getElementById("dlHist").onclick=()=>downloadHist();
