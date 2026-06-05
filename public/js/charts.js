@@ -12,6 +12,7 @@ function fcSyncInputs(){const fc=fcCfg();
   const rd=document.getElementById("fcRedirect");if(rd)rd.checked=!!fc.redirectLoans;
   const cgr=document.getElementById("fcContribGrowth");if(cgr&&document.activeElement!==cgr)cgr.value=fc.contribGrowth?+(fc.contribGrowth*100).toFixed(2):"";
   const bd=document.getElementById("fcBand");if(bd)bd.checked=!!fc.band;
+  const hz=document.getElementById("fcHorizon");if(hz&&document.activeElement!==hz)hz.value=fc.horizonYear||"";
   const p=fc.pension||{};
   const pon=document.getElementById("fcPensionOn");if(pon)pon.checked=!!p.on;
   const pf=document.getElementById("fcPensionFields");if(pf)pf.classList.toggle("hide",!p.on);
@@ -33,6 +34,7 @@ function renderForecast(){
   let fireY=null;if(target>0){if(forecastNetAt(now)>=target)fireY=cy;else for(let Y=cy+1;Y<=cy+50;Y++){if(forecastNetAt(new Date(Y,11,31))>=target){fireY=Y;break;}}}
   // horizon
   let horizon=cy+25;if(target>0)horizon=fireY?Math.min(fireY+3,cy+45):cy+45;horizon=Math.max(horizon,lastA.y+1);
+  if(fc.horizonYear>0)horizon=Math.min(Math.max(fc.horizonYear,lastA.y+1),cy+60);  // user-chosen end year overrides auto
   // projection from the last actual point forward (dashed, connects to the solid line)
   const proj=[];for(let Y=lastA.y;Y<=horizon;Y++)proj.push({y:Y,v:Y<=lastA.y?lastA.v:forecastNetAt(new Date(Y,11,31))});
   const projEnd=proj[proj.length-1];
@@ -76,7 +78,7 @@ function renderForecast(){
   const d=debtSummary();
   const goalStat=target>0?(fireY?`<div class="fcstat"><span class="k">${fc.goalMode==="spend"?"FIRE goal ("+money(target)+")":"Goal "+money(target)}</span><span class="v ok">${fireY<=cy?"reached 🎉":("~"+fireY+" · in "+(fireY-cy)+" yr"+(fireY-cy===1?"":"s"))}</span></div>`:`<div class="fcstat"><span class="k">Goal ${money(target)}</span><span class="v">not within 45 yrs</span></div>`):`<div class="fcstat"><span class="k">Goal</span><span class="v dim">set a target above</span></div>`;
   const debtStat=d.has?`<div class="fcstat"><span class="k">Debt-free by</span><span class="v ok">${moY(d.payoff)}</span><span class="sub">${money(d.rem)} interest remaining</span></div>`:`<div class="fcstat"><span class="k">Debt</span><span class="v ok">none 🎉</span></div>`;
-  const pm=pensionMonthly(),pst=fc.pension&&fc.pension.on?`<div class="fcstat"><span class="k">Pension from ${fc.pension.startYear}</span><span class="v ok">${money(pm)}/mo</span><span class="sub">${pensionPts().toFixed(1)} pts · ${money(pensionAnnual())}/yr</span></div>`:"";
+  const pm=pensionMonthly(),pst=fc.pension&&fc.pension.on?`<div class="fcstat"><span class="k">Pension from ${fc.pension.startYear}</span><span class="v ok">${money(pm)}/mo</span><span class="sub">${pensionPts().toFixed(1)} pts · ${money(pensionAnnual())}/yr · today's value</span></div>`:"";
   const projStat=`<div class="fcstat"><span class="k">Projected ${projEnd.y}</span><span class="v">${money(projEnd.v)}</span>${band?`<span class="sub">range ${money(bandLo[bandLo.length-1].v)} – ${money(bandHi[bandHi.length-1].v)}</span>`:""}</div>`;
   if(stEl)stEl.innerHTML=projStat+goalStat+debtStat+pst;
 }

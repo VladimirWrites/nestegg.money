@@ -82,6 +82,7 @@ document.getElementById("pricesBtn").onclick=refreshPrices;
   const rd=document.getElementById("fcRedirect");if(rd)rd.onchange=e=>{fcCfg().redirectLoans=e.target.checked;fcU();};
   const cg=document.getElementById("fcContribGrowth");if(cg)cg.oninput=e=>{fcCfg().contribGrowth=Math.min(Math.max((parseFloat(e.target.value)||0)/100,0),0.5);fcU();};
   const bd=document.getElementById("fcBand");if(bd)bd.onchange=e=>{fcCfg().band=e.target.checked;fcU();};
+  const hz=document.getElementById("fcHorizon");if(hz)hz.oninput=e=>{fcCfg().horizonYear=parseInt(e.target.value,10)||0;fcU();};
   const pen=()=>{const fc=fcCfg();if(!fc.pension)fc.pension={};return fc.pension;};
   const pon=document.getElementById("fcPensionOn");if(pon)pon.onchange=e=>{pen().on=e.target.checked;fcSyncInputs();fcU();};
   const pts=document.getElementById("fcPts");if(pts)pts.oninput=e=>{pen().points=parseFloat(e.target.value)||0;fcU();};

@@ -18,7 +18,7 @@ function migrate(s){
   if(!s.baseCcy)s.baseCcy="EUR";
   if(!s.forecast||typeof s.forecast!=="object")s.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0,redirectLoans:false};
   else{const f=s.forecast;f.enabled=f.enabled!==false;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;f.redirectLoans=!!f.redirectLoans;}
-  {const f=s.forecast;f.band=!!f.band;f.contribGrowth=+f.contribGrowth||0;
+  {const f=s.forecast;f.band=!!f.band;f.contribGrowth=+f.contribGrowth||0;f.horizonYear=+f.horizonYear||0;
    if(!f.pension||typeof f.pension!=="object")f.pension={on:false,points:0,ptsPerYear:1,ptValue:39.32,startYear:new Date().getFullYear()+20};
    else{const p=f.pension;p.on=!!p.on;p.points=+p.points||0;p.ptsPerYear=p.ptsPerYear!=null?+p.ptsPerYear:1;p.ptValue=p.ptValue!=null?+p.ptValue:39.32;p.startYear=+p.startYear||(new Date().getFullYear()+20);}}
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
