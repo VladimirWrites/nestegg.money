@@ -18,7 +18,7 @@ function migrate(s){
   if(!s.baseCcy)s.baseCcy="EUR";
   if(!s.forecast||typeof s.forecast!=="object")s.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0,redirectLoans:false};
   else{const f=s.forecast;f.enabled=f.enabled!==false;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;f.redirectLoans=!!f.redirectLoans;}
-  {const f=s.forecast;f.band=!!f.band;f.contribGrowth=+f.contribGrowth||0;f.horizonYear=+f.horizonYear||0;
+  {const f=s.forecast;f.band=!!f.band;f.contribGrowth=+f.contribGrowth||0;f.horizonYear=+f.horizonYear||0;f.real=f.real!==false;f.inflation=f.inflation!=null?+f.inflation:0.02;
    if(!f.pension||typeof f.pension!=="object")f.pension={on:false,points:0,ptsPerYear:1,ptValue:39.32,startYear:new Date().getFullYear()+20};
    else{const p=f.pension;p.on=!!p.on;p.points=+p.points||0;p.ptsPerYear=p.ptsPerYear!=null?+p.ptsPerYear:1;p.ptValue=p.ptValue!=null?+p.ptValue:39.32;p.startYear=+p.startYear||(new Date().getFullYear()+20);}}
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
@@ -248,6 +248,8 @@ function contribFV(date,gOverride){const fc=fcCfg(),g=gOverride!=null?gOverride:
 function forecastNetAt(date,gOverride){const fc=fcCfg(),g=gOverride!=null?gOverride:(+fc.growth||0);let t=(date-new Date())/YEAR_MS;if(t<0)t=0;
   const grown=manualNetBase()*Math.pow(1+g,t);
   return grown+contribFV(date,gOverride)+ltNetBaseAt(date);}
+// Inflation deflator to convert a future nominal value into today's purchasing power.
+function fcDeflator(date){const infl=+fcCfg().inflation||0;let t=(date-new Date())/YEAR_MS;if(t<0)t=0;return 1/Math.pow(1+infl,t);}
 // Scenario band returns: poor / expected / great (expected ∓ 3pp, floored at 0).
 function fcBandRates(){const g=+fcCfg().growth||0;return {lo:Math.max(0,g-0.03),mid:g,hi:g+0.03};}
 // German statutory pension: total Rentenpunkte (points so far + points/yr until start) × point value.

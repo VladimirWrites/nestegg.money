@@ -13,6 +13,8 @@ function fcSyncInputs(){const fc=fcCfg();
   const cgr=document.getElementById("fcContribGrowth");if(cgr&&document.activeElement!==cgr)cgr.value=fc.contribGrowth?+(fc.contribGrowth*100).toFixed(2):"";
   const bd=document.getElementById("fcBand");if(bd)bd.checked=!!fc.band;
   const hz=document.getElementById("fcHorizon");if(hz&&document.activeElement!==hz)hz.value=fc.horizonYear||"";
+  const rl=document.getElementById("fcReal");if(rl)rl.checked=fc.real!==false;
+  const inf=document.getElementById("fcInflation");if(inf){if(document.activeElement!==inf)inf.value=fc.inflation?+(fc.inflation*100).toFixed(2):"";inf.closest(".fld")&&inf.closest(".fld").classList.toggle("hide",fc.real===false);}
   const p=fc.pension||{};
   const pon=document.getElementById("fcPensionOn");if(pon)pon.checked=!!p.on;
   const pf=document.getElementById("fcPensionFields");if(pf)pf.classList.toggle("hide",!p.on);
@@ -30,17 +32,20 @@ function renderForecast(){
   const actual=sortedSnaps().map(s=>({y:s.year,v:snapTotalBase(s)}));
   if(!actual.length){svg.innerHTML="";svg.removeAttribute("width");if(stEl)stEl.innerHTML='<div class="fchint">Add a year of net worth to see your trajectory.</div>';return;}
   const lastA=actual[actual.length-1],target=fcTarget();
+  // Real mode shows every future value in today's purchasing power (consistent with the
+  // pension + spending goal, which are already today's-money). Nominal mode = legacy.
+  const real=fc.real!==false,fnet=(d,g)=>forecastNetAt(d,g)*(real?fcDeflator(d):1);
   // FIRE crossing
-  let fireY=null;if(target>0){if(forecastNetAt(now)>=target)fireY=cy;else for(let Y=cy+1;Y<=cy+50;Y++){if(forecastNetAt(new Date(Y,11,31))>=target){fireY=Y;break;}}}
+  let fireY=null;if(target>0){if(fnet(now)>=target)fireY=cy;else for(let Y=cy+1;Y<=cy+50;Y++){if(fnet(new Date(Y,11,31))>=target){fireY=Y;break;}}}
   // horizon
   let horizon=cy+25;if(target>0)horizon=fireY?Math.min(fireY+3,cy+45):cy+45;horizon=Math.max(horizon,lastA.y+1);
   if(fc.horizonYear>0)horizon=Math.min(Math.max(fc.horizonYear,lastA.y+1),cy+60);  // user-chosen end year overrides auto
   // projection from the last actual point forward (dashed, connects to the solid line)
-  const proj=[];for(let Y=lastA.y;Y<=horizon;Y++)proj.push({y:Y,v:Y<=lastA.y?lastA.v:forecastNetAt(new Date(Y,11,31))});
+  const proj=[];for(let Y=lastA.y;Y<=horizon;Y++)proj.push({y:Y,v:Y<=lastA.y?lastA.v:fnet(new Date(Y,11,31))});
   const projEnd=proj[proj.length-1];
   // scenario band: poor / great return paths (only the liquid+contributions vary)
   const band=fc.band,br=fcBandRates(),bandLo=[],bandHi=[];
-  if(band)for(let Y=lastA.y;Y<=horizon;Y++){const dt=new Date(Y,11,31);bandLo.push({y:Y,v:Y<=lastA.y?lastA.v:forecastNetAt(dt,br.lo)});bandHi.push({y:Y,v:Y<=lastA.y?lastA.v:forecastNetAt(dt,br.hi)});}
+  if(band)for(let Y=lastA.y;Y<=horizon;Y++){const dt=new Date(Y,11,31);bandLo.push({y:Y,v:Y<=lastA.y?lastA.v:fnet(dt,br.lo)});bandHi.push({y:Y,v:Y<=lastA.y?lastA.v:fnet(dt,br.hi)});}
   const minY=actual[0].y,maxY=horizon,span=Math.max(1,maxY-minY);
   const allV=actual.map(p=>Math.max(0,p.v)).concat(proj.map(p=>Math.max(0,p.v)));if(target>0)allV.push(target);if(band)bandHi.forEach(p=>allV.push(Math.max(0,p.v)));
   const nm=niceCeil(Math.max(1,...allV));
@@ -70,7 +75,7 @@ function renderForecast(){
   s+=`<polyline points="${actual.map(p=>X(p.y)+","+Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
   actual.forEach(p=>{s+=`<circle cx="${X(p.y)}" cy="${Y(p.v)}" r="3" fill="${FC_AMBER}"><title>${p.y}: ${money(p.v)}</title></circle>`;});
   // fire crossing marker
-  if(fireY&&forecastNetAt(new Date(fireY,11,31))>=target){const fx=X(fireY),fyv=Y(Math.min(target,nm));s+=`<line x1="${fx}" y1="${padT}" x2="${fx}" y2="${padT+plotH}" stroke="${FC_GREEN}" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>`;s+=`<circle cx="${fx}" cy="${fyv}" r="4" fill="${FC_GREEN}"><title>Goal reached ${fireY}</title></circle>`;}
+  if(fireY&&fnet(new Date(fireY,11,31))>=target){const fx=X(fireY),fyv=Y(Math.min(target,nm));s+=`<line x1="${fx}" y1="${padT}" x2="${fx}" y2="${padT+plotH}" stroke="${FC_GREEN}" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>`;s+=`<circle cx="${fx}" cy="${fyv}" r="4" fill="${FC_GREEN}"><title>Goal reached ${fireY}</title></circle>`;}
   // projection endpoint
   s+=`<circle cx="${X(projEnd.y)}" cy="${Y(projEnd.v)}" r="3" fill="${FC_AMBER}" opacity="0.85"><title>${projEnd.y}: ${money(projEnd.v)}</title></circle>`;
   svg.innerHTML=s;
@@ -79,7 +84,8 @@ function renderForecast(){
   const goalStat=target>0?(fireY?`<div class="fcstat"><span class="k">${fc.goalMode==="spend"?"FIRE goal ("+money(target)+")":"Goal "+money(target)}</span><span class="v ok">${fireY<=cy?"reached 🎉":("~"+fireY+" · in "+(fireY-cy)+" yr"+(fireY-cy===1?"":"s"))}</span></div>`:`<div class="fcstat"><span class="k">Goal ${money(target)}</span><span class="v">not within 45 yrs</span></div>`):`<div class="fcstat"><span class="k">Goal</span><span class="v dim">set a target above</span></div>`;
   const debtStat=d.has?`<div class="fcstat"><span class="k">Debt-free by</span><span class="v ok">${moY(d.payoff)}</span><span class="sub">${money(d.rem)} interest remaining</span></div>`:`<div class="fcstat"><span class="k">Debt</span><span class="v ok">none 🎉</span></div>`;
   const pm=pensionMonthly(),pst=fc.pension&&fc.pension.on?`<div class="fcstat"><span class="k">Pension from ${fc.pension.startYear}</span><span class="v ok">${money(pm)}/mo</span><span class="sub">${pensionPts().toFixed(1)} pts · ${money(pensionAnnual())}/yr · today's value</span></div>`:"";
-  const projStat=`<div class="fcstat"><span class="k">Projected ${projEnd.y}</span><span class="v">${money(projEnd.v)}</span>${band?`<span class="sub">range ${money(bandLo[bandLo.length-1].v)} – ${money(bandHi[bandHi.length-1].v)}</span>`:""}</div>`;
+  const projSub=[real?"today's money":"future €",band?("range "+money(bandLo[bandLo.length-1].v)+" – "+money(bandHi[bandHi.length-1].v)):""].filter(Boolean).join(" · ");
+  const projStat=`<div class="fcstat"><span class="k">Projected ${projEnd.y}</span><span class="v">${money(projEnd.v)}</span><span class="sub">${projSub}</span></div>`;
   if(stEl)stEl.innerHTML=projStat+goalStat+debtStat+pst;
 }
 function downloadForecast(){
