@@ -1,6 +1,6 @@
 /* render */
 function getCss(v){return v;}
-function renderAll(){drawHist();drawHistLegend();renderYears();drawDonut();updNote();renderForecast();}
+function renderAll(){drawHist();drawHistLegend();renderYears();drawDonut();updNote();renderForecast();renderRetire();}
 
 const FC_AMBER="#ffb000",FC_GREEN="#3ad17a";
 function fcSyncInputs(){const fc=fcCfg();
@@ -12,14 +12,7 @@ function fcSyncInputs(){const fc=fcCfg();
   const rd=document.getElementById("fcRedirect");if(rd)rd.checked=!!fc.redirectLoans;
   const cgr=document.getElementById("fcContribGrowth");if(cgr&&document.activeElement!==cgr)cgr.value=fc.contribGrowth?+(fc.contribGrowth*100).toFixed(2):"";
   const bd=document.getElementById("fcBand");if(bd)bd.checked=!!fc.band;
-  const hz=document.getElementById("fcHorizon");if(hz&&document.activeElement!==hz)hz.value=fc.horizonYear||"";
-  const rl=document.getElementById("fcReal");if(rl)rl.checked=fc.real!==false;
-  const inf=document.getElementById("fcInflation");if(inf){if(document.activeElement!==inf)inf.value=fc.inflation?+(fc.inflation*100).toFixed(2):"";inf.closest(".fld")&&inf.closest(".fld").classList.toggle("hide",fc.real===false);}
-  const p=fc.pension||{};
-  const pon=document.getElementById("fcPensionOn");if(pon)pon.checked=!!p.on;
-  const pf=document.getElementById("fcPensionFields");if(pf)pf.classList.toggle("hide",!p.on);
-  const set=(id,val)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=val;};
-  set("fcPts",p.points||"");set("fcPtsYr",p.ptsPerYear!=null?p.ptsPerYear:"");set("fcPtVal",p.ptValue!=null?p.ptValue:"");set("fcPtStart",p.startYear||"");}
+  const hz=document.getElementById("fcHorizon");if(hz&&document.activeElement!==hz)hz.value=fc.horizonYear||"";}
 function moY(d){return d?d.toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";}
 function renderForecast(){
   const svg=document.getElementById("fcChart");if(!svg)return;
@@ -32,9 +25,7 @@ function renderForecast(){
   const actual=sortedSnaps().map(s=>({y:s.year,v:snapTotalBase(s)}));
   if(!actual.length){svg.innerHTML="";svg.removeAttribute("width");if(stEl)stEl.innerHTML='<div class="fchint">Add a year of net worth to see your trajectory.</div>';return;}
   const lastA=actual[actual.length-1],target=fcTarget();
-  // Real mode shows every future value in today's purchasing power (consistent with the
-  // pension + spending goal, which are already today's-money). Nominal mode = legacy.
-  const real=fc.real!==false,fnet=(d,g)=>forecastNetAt(d,g)*(real?fcDeflator(d):1);
+  const fnet=(d,g)=>forecastNetAt(d,g);
   // FIRE crossing
   let fireY=null;if(target>0){if(fnet(now)>=target)fireY=cy;else for(let Y=cy+1;Y<=cy+50;Y++){if(fnet(new Date(Y,11,31))>=target){fireY=Y;break;}}}
   // horizon
@@ -83,10 +74,33 @@ function renderForecast(){
   const d=debtSummary();
   const goalStat=target>0?(fireY?`<div class="fcstat"><span class="k">${fc.goalMode==="spend"?"FIRE goal ("+money(target)+")":"Goal "+money(target)}</span><span class="v ok">${fireY<=cy?"reached 🎉":("~"+fireY+" · in "+(fireY-cy)+" yr"+(fireY-cy===1?"":"s"))}</span></div>`:`<div class="fcstat"><span class="k">Goal ${money(target)}</span><span class="v">not within 45 yrs</span></div>`):`<div class="fcstat"><span class="k">Goal</span><span class="v dim">set a target above</span></div>`;
   const debtStat=d.has?`<div class="fcstat"><span class="k">Debt-free by</span><span class="v ok">${moY(d.payoff)}</span><span class="sub">${money(d.rem)} interest remaining</span></div>`:`<div class="fcstat"><span class="k">Debt</span><span class="v ok">none 🎉</span></div>`;
-  const pm=pensionMonthly(),pst=fc.pension&&fc.pension.on?`<div class="fcstat"><span class="k">Pension from ${fc.pension.startYear}</span><span class="v ok">${money(pm)}/mo</span><span class="sub">${pensionPts().toFixed(1)} pts · ${money(pensionAnnual())}/yr · today's value</span></div>`:"";
-  const projSub=[real?"today's money":"future €",band?("range "+money(bandLo[bandLo.length-1].v)+" – "+money(bandHi[bandHi.length-1].v)):""].filter(Boolean).join(" · ");
-  const projStat=`<div class="fcstat"><span class="k">Projected ${projEnd.y}</span><span class="v">${money(projEnd.v)}</span><span class="sub">${projSub}</span></div>`;
-  if(stEl)stEl.innerHTML=projStat+goalStat+debtStat+pst;
+  const projSub=band?("range "+money(bandLo[bandLo.length-1].v)+" – "+money(bandHi[bandHi.length-1].v)):"";
+  const projStat=`<div class="fcstat"><span class="k">Projected ${projEnd.y}</span><span class="v">${money(projEnd.v)}</span>${projSub?`<span class="sub">${projSub}</span>`:""}</div>`;
+  if(stEl)stEl.innerHTML=projStat+goalStat+debtStat;
+}
+function retSyncInputs(){const r=retCfg();
+  const set=(id,val,fmt)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=fmt?fmt(val):val;};
+  const on=document.getElementById("rtOn");if(on)on.checked=r.on;
+  const body=document.getElementById("rtBody");if(body)body.classList.toggle("hide",!r.on);
+  set("rtYear",r.year||"");set("rtPts",r.points||"");set("rtPtsYr",r.ptsPerYear!=null?r.ptsPerYear:"");set("rtPtVal",r.ptValue!=null?r.ptValue:"");
+  set("rtInfl",r.inflation,v=>v?+(v*100).toFixed(2):"");
+  const wm=document.getElementById("rtWrMode");if(wm)wm.value=r.wrMode;
+  set("rtWrRate",r.wrRate,v=>v?+(v*100).toFixed(2):"");set("rtYears",r.years||"");
+  const rateFld=document.getElementById("rtRateFld"),yrsFld=document.getElementById("rtYearsFld");
+  if(rateFld)rateFld.classList.toggle("hide",r.wrMode!=="rate");if(yrsFld)yrsFld.classList.toggle("hide",r.wrMode!=="years");}
+function renderRetire(){
+  const stEl=document.getElementById("rtStats");if(!stEl)return;
+  const r=retCfg(),on=document.getElementById("rtOn"),body=document.getElementById("rtBody");
+  if(on)on.checked=r.on;if(body)body.classList.toggle("hide",!r.on);
+  if(!r.on)return;
+  retSyncInputs();
+  if(!latestSnap()){stEl.innerHTML='<div class="fchint">Add a year of net worth to project your nest egg.</div>';return;}
+  const pot=retNestEggReal(),pm=pensionMonthly(),w=retWithdrawal(),total=pm+w.monthly;
+  stEl.innerHTML=
+    `<div class="fcstat"><span class="k">Nest egg ${r.year}</span><span class="v">${money(pot)}</span><span class="sub">today's money · ${money(retNestEggNominal())} nominal</span></div>`+
+    `<div class="fcstat"><span class="k">Pension</span><span class="v ok">${money(pm)}/mo</span><span class="sub">${pensionPts().toFixed(1)} pts · today's value</span></div>`+
+    `<div class="fcstat"><span class="k">Portfolio withdrawal</span><span class="v">${money(w.monthly)}/mo</span><span class="sub">${w.note}</span></div>`+
+    `<div class="fcstat hero"><span class="k">Total income from ${r.year}</span><span class="v ok">${money(total)}/mo</span><span class="sub">${money(total*12)}/yr · today's money</span></div>`;
 }
 function downloadForecast(){
   const src=document.getElementById("fcChart");if(!src||!src.innerHTML){toast("Nothing to save");return;}

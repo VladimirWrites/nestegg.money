@@ -18,9 +18,10 @@ function migrate(s){
   if(!s.baseCcy)s.baseCcy="EUR";
   if(!s.forecast||typeof s.forecast!=="object")s.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0,redirectLoans:false};
   else{const f=s.forecast;f.enabled=f.enabled!==false;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;f.redirectLoans=!!f.redirectLoans;}
-  {const f=s.forecast;f.band=!!f.band;f.contribGrowth=+f.contribGrowth||0;f.horizonYear=+f.horizonYear||0;f.real=f.real!==false;f.inflation=f.inflation!=null?+f.inflation:0.02;
-   if(!f.pension||typeof f.pension!=="object")f.pension={on:false,points:0,ptsPerYear:1,ptValue:39.32,startYear:new Date().getFullYear()+20};
-   else{const p=f.pension;p.on=!!p.on;p.points=+p.points||0;p.ptsPerYear=p.ptsPerYear!=null?+p.ptsPerYear:1;p.ptValue=p.ptValue!=null?+p.ptValue:39.32;p.startYear=+p.startYear||(new Date().getFullYear()+20);}}
+  {const f=s.forecast;f.band=!!f.band;f.contribGrowth=+f.contribGrowth||0;f.horizonYear=+f.horizonYear||0;delete f.real;delete f.inflation;delete f.pension;}
+  {const cy=new Date().getFullYear();const old=s.forecast&&s.forecast.pension;
+   if(!s.retire||typeof s.retire!=="object")s.retire={on:false,year:cy+20,points:0,ptsPerYear:1,ptValue:39.32,inflation:0.02,wrMode:"rate",wrRate:0.04,years:30};
+   const r=s.retire;r.on=!!r.on;r.year=+r.year||(cy+20);r.points=+r.points||0;r.ptsPerYear=r.ptsPerYear!=null?+r.ptsPerYear:1;r.ptValue=r.ptValue!=null?+r.ptValue:39.32;r.inflation=r.inflation!=null?+r.inflation:0.02;r.wrMode=r.wrMode==="years"?"years":"rate";r.wrRate=r.wrRate!=null?+r.wrRate:0.04;r.years=+r.years||30;}
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
   if(!s.prices)s.prices={};
   if(!s.fxHist||typeof s.fxHist!=="object")s.fxHist={};
@@ -248,17 +249,30 @@ function contribFV(date,gOverride){const fc=fcCfg(),g=gOverride!=null?gOverride:
 function forecastNetAt(date,gOverride){const fc=fcCfg(),g=gOverride!=null?gOverride:(+fc.growth||0);let t=(date-new Date())/YEAR_MS;if(t<0)t=0;
   const grown=manualNetBase()*Math.pow(1+g,t);
   return grown+contribFV(date,gOverride)+ltNetBaseAt(date);}
-// Inflation deflator to convert a future nominal value into today's purchasing power.
-function fcDeflator(date){const infl=+fcCfg().inflation||0;let t=(date-new Date())/YEAR_MS;if(t<0)t=0;return 1/Math.pow(1+infl,t);}
 // Scenario band returns: poor / expected / great (expected ∓ 3pp, floored at 0).
 function fcBandRates(){const g=+fcCfg().growth||0;return {lo:Math.max(0,g-0.03),mid:g,hi:g+0.03};}
-// German statutory pension: total Rentenpunkte (points so far + points/yr until start) × point value.
-function pensionPts(){const p=fcCfg().pension;if(!p||!p.on)return 0;const cy=new Date().getFullYear();const yrs=Math.max(0,(+p.startYear||cy)-cy);return (+p.points||0)+(+p.ptsPerYear||0)*yrs;}
-function pensionMonthly(){const p=fcCfg().pension;if(!p||!p.on)return 0;return pensionPts()*(+p.ptValue||0);}
+// Goal target: an explicit amount, or annual spending × 25 (the 4% rule).
+function fcTarget(){const fc=fcCfg();return fc.goalMode==="spend"?(+fc.annualSpending||0)*25:(+fc.goalAmount||0);}
+
+/* ---- Retirement calculator (separate from the forecast graph) ----
+   At the retirement year, contributions stop and the German statutory pension begins.
+   Everything is shown in today's money (the nest egg is deflated by inflation; the pension
+   is already a today's-money figure since it uses the current point value). */
+function retCfg(){if(!state.retire||typeof state.retire!=="object")state.retire={on:false,year:new Date().getFullYear()+20,points:0,ptsPerYear:1,ptValue:39.32,inflation:0.02,wrMode:"rate",wrRate:0.04,years:30};return state.retire;}
+function retDeflator(year){const r=retCfg(),infl=+r.inflation||0,t=Math.max(0,year-new Date().getFullYear());return 1/Math.pow(1+infl,t);}
+function pensionPts(){const r=retCfg();const yrs=Math.max(0,(+r.year||0)-new Date().getFullYear());return (+r.points||0)+(+r.ptsPerYear||0)*yrs;}
+function pensionMonthly(){return pensionPts()*(+retCfg().ptValue||0);}        // today's money (current Rentenwert)
 function pensionAnnual(){return pensionMonthly()*12;}
-// Goal target: an explicit amount, or (annual spending − statutory pension) × 25 (the 4% rule).
-function fcTarget(){const fc=fcCfg();if(fc.goalMode!=="spend")return +fc.goalAmount||0;
-  return Math.max(0,(+fc.annualSpending||0)-pensionAnnual())*25;}
+// Nest egg projected to the retirement year — nominal, then converted to today's money.
+function retNestEggNominal(){const r=retCfg();return forecastNetAt(new Date((+r.year||new Date().getFullYear()),11,31));}
+function retNestEggReal(){const r=retCfg();return retNestEggNominal()*retDeflator(+r.year||new Date().getFullYear());}
+// Sustainable monthly withdrawal in today's money: a safe rate, or deplete the pot over N years
+// at the real (inflation-adjusted) return. Returns {monthly, note}.
+function retWithdrawal(){const r=retCfg(),pot=retNestEggReal();
+  if(r.wrMode==="years"){const n=Math.max(1,+r.years||30),g=+fcCfg().growth||0,infl=+r.inflation||0,rr=(1+g)/(1+infl)-1;
+    const annual=Math.abs(rr)<1e-6?pot/n:pot*rr/(1-Math.pow(1+rr,-n));
+    return {monthly:annual/12,note:"depletes over "+n+" yr"+(n===1?"":"s")};}
+  const wr=+r.wrRate||0.04;return {monthly:pot*wr/12,note:"at "+(wr*100).toFixed(1)+"% · pot sustained"};}
 // Across every loan (asset-backed or standalone), the last payment date and remaining interest.
 function debtSummary(){const now=new Date();let payoff=null,rem=0,has=false;
   (state.assets||[]).forEach(a=>{if(!a.loan)return;const rows=buildSchedule(a.loan),pays=rows.filter(r=>r.type!=="extra");if(!pays.length)return;has=true;
