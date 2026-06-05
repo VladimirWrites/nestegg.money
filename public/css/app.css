@@ -121,6 +121,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .forecast{position:relative}
 .fcrow{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 14px}
 .fcrow .fld{flex:1 1 150px;min-width:140px;display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted)}
+.fcrow .fld>.cap{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fcrow .fld input,.fcrow .fld select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:13px}
 .fcrow .pct{position:relative;display:flex;align-items:center}
 .fcrow .pct input{flex:1;width:100%;padding-right:24px;-moz-appearance:textfield}

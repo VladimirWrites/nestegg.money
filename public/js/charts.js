@@ -7,7 +7,7 @@ function fcSyncInputs(){const fc=fcCfg();
   const m=document.getElementById("fcMonthly");if(m&&document.activeElement!==m)m.value=fc.monthly||"";
   const g=document.getElementById("fcGrowth");if(g&&document.activeElement!==g)g.value=fc.growth?+(fc.growth*100).toFixed(2):"";
   const gm=document.getElementById("fcGoalMode");if(gm)gm.value=fc.goalMode;
-  const lbl=document.getElementById("fcGoalLbl");if(lbl)lbl.textContent=fc.goalMode==="spend"?"Annual spending":"Target amount";
+  const lbl=document.getElementById("fcGoalLbl");if(lbl){lbl.textContent=fc.goalMode==="spend"?"Annual spending":"Target amount";lbl.title=lbl.textContent;}
   const gv=document.getElementById("fcGoalVal");if(gv&&document.activeElement!==gv)gv.value=(fc.goalMode==="spend"?fc.annualSpending:fc.goalAmount)||"";
   const rd=document.getElementById("fcRedirect");if(rd)rd.checked=!!fc.redirectLoans;
   const cgr=document.getElementById("fcContribGrowth");if(cgr&&document.activeElement!==cgr)cgr.value=fc.contribGrowth?+(fc.contribGrowth*100).toFixed(2):"";
