@@ -32,7 +32,8 @@ function renderForecast(){
   const minY=actual[0].y,maxY=horizon,span=Math.max(1,maxY-minY);
   const allV=actual.map(p=>Math.max(0,p.v)).concat(proj.map(p=>Math.max(0,p.v)));if(target>0)allV.push(target);
   const nm=niceCeil(Math.max(1,...allV));
-  const padL=58,padR=16,padT=22,padB=30,perY=Math.max(20,Math.min(46,Math.round(720/span))),innerW=span*perY,W=Math.max(innerW+padL+padR,320),H=280,plotH=H-padT-padB;
+  const dim=chartDims(svg,720),W=dim.W,H=dim.H;
+  const padL=58,padR=16,padT=22,padB=30,innerW=W-padL-padR,plotH=H-padT-padB;
   const X=y=>padL+(y-minY)/span*innerW,Y=v=>padT+plotH-(Math.max(0,v)/nm)*plotH;
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
   let s="";const sym=ccySym();
@@ -76,19 +77,25 @@ function shortK(v){const a=Math.abs(v);
   if(a>=1e3)return +(v/1e3).toFixed(a>=1e4?0:1)+"k";
   return Math.round(v);}
 function niceCeil(v){const p=Math.pow(10,Math.floor(Math.log10(v||1)));const f=(v||1)/p;const n=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10;return n*p;}
+// Fit a chart to its container's width; height scales gently with width (bounded), so the
+// charts always span the full width of the screen and grow/shrink vertically with it.
+function chartDims(svg,fallbackW){const c=svg&&svg.parentElement;let w=c?c.clientWidth:0;if(!w||w<80)w=fallbackW||680;w=Math.max(280,Math.floor(w));
+  return {W:w,H:Math.round(Math.max(220,Math.min(w*0.42,360)))};}
 
 function drawHist(){
   const svg=document.getElementById("histChart");const snaps=sortedSnaps();const n=snaps.length;const names=allNames();
-  const bw=40,gap=18,padL=58,padR=14,padT=24,padB=32,innerW=Math.max(n,1)*bw+(n-1)*gap,W=Math.max(innerW+padL+padR,320),H=300,plotH=H-padT-padB;
+  const dim=chartDims(svg,680),W=dim.W,H=dim.H;
+  const padL=58,padR=14,padT=24,padB=32,innerW=W-padL-padR,plotH=H-padT-padB;
+  const slot=innerW/Math.max(n,1),bw=Math.max(8,Math.min(64,slot*0.62));   // bars fill the width, capped so few years don't look absurd
   const maxV=Math.max(1,...snaps.map(s=>snapGrossBase(s))),nm=niceCeil(maxV);
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
   let s="";const sym=ccySym();
   for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#26262a" stroke-width="1"/>`;s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
-  snaps.forEach((sn,idx)=>{const x=padL+idx*(bw+gap);let yTop=padT+plotH;const ents=effEntries(sn);
+  snaps.forEach((sn,idx)=>{const cx=padL+idx*slot+slot/2,x=cx-bw/2;let yTop=padT+plotH;const ents=effEntries(sn);
     names.forEach(nm2=>{const tot=ents.filter(e=>seriesKey(e)===nm2).reduce((a,e)=>a+entryBase(e,sn.year),0);if(tot<=0)return;const h=(tot/nm)*plotH;yTop-=h;s+=`<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2,names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`;});
     const net=snapTotalBase(sn),gross=snapGrossBase(sn);
     if(gross-net>0.005){const ny=padT+plotH-(Math.max(0,net)/nm)*plotH;s+=`<line x1="${x-3}" y1="${ny}" x2="${x+bw+3}" y2="${ny}" stroke="#ff4d6d" stroke-width="2"><title>${sn.year} net worth ${money(net)} — after ${money(gross-net)} liabilities</title></line>`;}
-    s+=`<text x="${x+bw/2}" y="${yTop-6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="#8a867c">${sym}${shortK(net)}</text>`;s+=`<text x="${x+bw/2}" y="${H-padB+16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#e8e4d8">${sn.year}</text>`;});
+    s+=`<text x="${cx}" y="${yTop-6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="#8a867c">${sym}${shortK(net)}</text>`;s+=`<text x="${cx}" y="${H-padB+16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#e8e4d8">${sn.year}</text>`;});
   svg.innerHTML=s;
   // hero = latest
   const ls=latestSnap();const nw=ls?snapTotalBase(ls):0;

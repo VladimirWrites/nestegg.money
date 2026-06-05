@@ -16,4 +16,7 @@ let toastTimer;function toast(m){const el=document.getElementById("toast");el.te
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")try{flushSync();}catch(e){}});
 window.addEventListener("pagehide",()=>{try{flushSync();}catch(e){}});
 
+// Re-fit the width-filling charts when the viewport changes size.
+let _rszT;window.addEventListener("resize",()=>{clearTimeout(_rszT);_rszT=setTimeout(()=>{try{const vn=document.getElementById("viewNet");if(vn&&!vn.classList.contains("hide")){drawHist();renderForecast();}}catch(e){}},160);});
+
 try{boot();}catch(e){try{showCreate();}catch(_){}}
