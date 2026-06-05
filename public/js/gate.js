@@ -39,9 +39,9 @@ function enterApp(){
     document.getElementById("dateline").textContent=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
     document.getElementById("ccySel").innerHTML=CCYS.map(c=>`<option ${c===state.baseCcy?"selected":""}>${c}</option>`).join("");
     renderAll();
-    // Value past-year holdings at that year's stock close and that year's ECB FX rate
-    // (one-time fetch, then cached). Re-render once the historical data lands.
-    try{Promise.all([refreshHistPrices(),refreshHistFx()]).then(([a,b])=>{if(a||b){scheduleSync();renderAll();}}).catch(()=>{});}catch(e){}
+    // Refresh live FX rates + ticker prices (and value past-year holdings at that year's
+    // close + ECB FX). Silent; re-render once fresh data lands. Won't block first paint.
+    try{autoRefresh().then(ch=>{if(ch){scheduleSync();renderAll();}}).catch(()=>{});}catch(e){}
   }catch(e){console&&console.error&&console.error("enterApp:",e);}
 }
 let profShown=false;

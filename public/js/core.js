@@ -391,6 +391,18 @@ function ensureHist(){
     if(a||b){scheduleSync();if(!document.getElementById("yearEditor").classList.contains("hide"))renderEntries();else renderAll();}
   }).catch(()=>{});}catch(e){}
 }
+// On page open: refresh live FX + ticker prices, plus historical year-end values.
+// Silent (no toasts); returns true if anything actually changed, so the caller can re-sync/re-render.
+async function autoRefresh(){
+  let changed=false;
+  try{const pd=state.fxDate;if(await fetchFx()&&state.fxDate!==pd)changed=true;}catch(e){}
+  try{if(!state.prices)state.prices={};const ts=tickersInUse();
+    for(const t of ts){const old=state.prices[t]&&state.prices[t].price;if(await fetchPrice(t)&&state.prices[t].price!==old)changed=true;}
+    if(ts.length)state.lastPx=Date.now();}catch(e){}
+  try{if(await refreshHistFx())changed=true;}catch(e){}
+  try{if(await refreshHistPrices())changed=true;}catch(e){}
+  return changed;
+}
 async function fetchPrice(t){try{const r=await fetch("/api/price?ticker="+encodeURIComponent(t));if(!r.ok)return false;const d=await r.json();if(d.price!=null){state.prices[t]={price:d.price,prevClose:(d.prevClose!=null?d.prevClose:d.price),currency:d.currency||"USD",t:Date.now()};return true;}}catch(e){}return false;}
 function tickersInUse(){return [...new Set(state.snapshots.flatMap(s=>s.entries).filter(e=>e.kind==="ticker"&&e.ticker).map(e=>e.ticker))];}
 // Year-end close for a ticker, used to value holdings held in a past year.
