@@ -74,6 +74,7 @@ document.getElementById("ccySel").onchange=e=>{state.baseCcy=e.target.value;sche
 document.getElementById("pricesBtn").onclick=refreshPrices;
 // Forecast inputs
 (()=>{const fcU=()=>{scheduleSync();renderForecast();};
+  const on=document.getElementById("fcOn");if(on)on.onchange=e=>{fcCfg().enabled=e.target.checked;fcU();};
   const m=document.getElementById("fcMonthly");if(m)m.oninput=e=>{fcCfg().monthly=parseFloat(e.target.value)||0;fcU();};
   const g=document.getElementById("fcGrowth");if(g)g.oninput=e=>{fcCfg().growth=Math.min(Math.max((parseFloat(e.target.value)||0)/100,-0.5),1);fcU();};
   const gm=document.getElementById("fcGoalMode");if(gm)gm.onchange=e=>{fcCfg().goalMode=e.target.value==="spend"?"spend":"amount";fcSyncInputs();fcU();};

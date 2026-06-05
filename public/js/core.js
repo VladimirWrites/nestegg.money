@@ -16,8 +16,8 @@ function normLoan(L,fallbackDate){
 }
 function migrate(s){
   if(!s.baseCcy)s.baseCcy="EUR";
-  if(!s.forecast||typeof s.forecast!=="object")s.forecast={monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0};
-  else{const f=s.forecast;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;}
+  if(!s.forecast||typeof s.forecast!=="object")s.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0};
+  else{const f=s.forecast;f.enabled=f.enabled!==false;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;}
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
   if(!s.prices)s.prices={};
   if(!s.fxHist||typeof s.fxHist!=="object")s.fxHist={};

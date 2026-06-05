@@ -11,8 +11,13 @@ function fcSyncInputs(){const fc=fcCfg();
   const gv=document.getElementById("fcGoalVal");if(gv&&document.activeElement!==gv)gv.value=(fc.goalMode==="spend"?fc.annualSpending:fc.goalAmount)||"";}
 function moY(d){return d?d.toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";}
 function renderForecast(){
-  const svg=document.getElementById("fcChart");if(!svg)return;fcSyncInputs();
-  const stEl=document.getElementById("fcStats"),fc=fcCfg(),now=new Date(),cy=now.getFullYear();
+  const svg=document.getElementById("fcChart");if(!svg)return;
+  const fc=fcCfg(),enabled=fc.enabled!==false;
+  const body=document.getElementById("fcBody"),dl=document.getElementById("dlFc"),on=document.getElementById("fcOn");
+  if(on)on.checked=enabled;if(body)body.classList.toggle("hide",!enabled);if(dl)dl.style.display=enabled?"":"none";
+  if(!enabled)return;
+  fcSyncInputs();
+  const stEl=document.getElementById("fcStats"),now=new Date(),cy=now.getFullYear();
   const actual=sortedSnaps().map(s=>({y:s.year,v:snapTotalBase(s)}));
   if(!actual.length){svg.innerHTML="";svg.removeAttribute("width");if(stEl)stEl.innerHTML='<div class="fchint">Add a year of net worth to see your trajectory.</div>';return;}
   const lastA=actual[actual.length-1],target=fcTarget();
@@ -34,8 +39,12 @@ function renderForecast(){
   // x labels — first, last, and a sparse set between
   const step=Math.max(1,Math.ceil(span/8));for(let y=minY;y<=maxY;y+=step){s+=`<text x="${X(y)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="#8a867c">${y}</text>`;}
   if((maxY-minY)%step!==0)s+=`<text x="${X(maxY)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="#8a867c">${maxY}</text>`;
-  // goal line
-  if(target>0&&target<=nm){const gy=Y(target);s+=`<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="${FC_GREEN}" stroke-width="1.4" stroke-dasharray="2 4"/>`;s+=`<text x="${W-padR}" y="${gy-5}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="${FC_GREEN}">goal ${sym}${shortK(target)}</text>`;}
+  // goal line — label sits at the left with a backing chip so it stays legible over the curve;
+  // it flips below the line when the goal is near the top of the plot.
+  if(target>0&&target<=nm){const gy=Y(target);s+=`<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="${FC_GREEN}" stroke-width="1.4" stroke-dasharray="2 4"/>`;
+    const lbl="goal "+sym+shortK(target),lw=lbl.length*5.6+10,above=gy>padT+18,ty=above?gy-5:gy+12,ry=above?gy-15:gy+2;
+    s+=`<rect x="${padL+2}" y="${ry}" width="${lw}" height="14" rx="3" fill="#0a0a0b" opacity="0.78"/>`;
+    s+=`<text x="${padL+7}" y="${ty}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9.5" fill="${FC_GREEN}">${lbl}</text>`;}
   // projection (dashed)
   s+=`<polyline points="${proj.map(p=>X(p.y)+","+Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`;
   // actual (solid) + dots
@@ -61,7 +70,10 @@ function downloadForecast(){
 }
 function updNote(){const px=state.lastPx?("prices "+new Date(state.lastPx).toLocaleString("en-GB",{hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})):"";const fxd=state.fxDate?("FX "+state.fxDate):"";document.getElementById("updNote").textContent=[px,fxd].filter(Boolean).join(" · ");}
 
-function shortK(v){const a=Math.abs(v);if(a>=1000)return (v/1000).toFixed(a>=10000?0:1)+"k";return Math.round(v);}
+function shortK(v){const a=Math.abs(v);
+  if(a>=1e6)return +(v/1e6).toFixed(a>=1e7?0:1)+"M";
+  if(a>=1e3)return +(v/1e3).toFixed(a>=1e4?0:1)+"k";
+  return Math.round(v);}
 function niceCeil(v){const p=Math.pow(10,Math.floor(Math.log10(v||1)));const f=(v||1)/p;const n=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10;return n*p;}
 
 function drawHist(){
