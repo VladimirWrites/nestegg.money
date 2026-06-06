@@ -93,7 +93,7 @@ async function priceGet(request) {
     const meta = d && d.chart && d.chart.result && d.chart.result[0] && d.chart.result[0].meta;
     if (!meta || meta.regularMarketPrice == null) return json({ error: "no price", symbol }, 404);
     const prevClose = meta.chartPreviousClose != null ? meta.chartPreviousClose : (meta.previousClose != null ? meta.previousClose : meta.regularMarketPrice);
-    return json({ ticker: t, symbol, price: meta.regularMarketPrice, prevClose, currency: meta.currency || "USD" }, 200, 60);
+    return json({ ticker: t, symbol, price: meta.regularMarketPrice, prevClose, currency: meta.currency || "USD", asOf: meta.regularMarketTime || null }, 200, 60);
   } catch (e) {
     return json({ error: "fetch failed", symbol }, 502);
   }

@@ -3,13 +3,13 @@ let edIdx=-1,edYearPrev=null;
 function openYearEditor(ri){edIdx=ri;edYearPrev=state.snapshots[ri].year;document.getElementById("edYear").value=state.snapshots[ri].year;document.getElementById("yearEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderEntries();ensureHist();}
 function closeYearEditor(){document.getElementById("yearEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");edIdx=-1;renderAll();}
 function cardHTML(en,i,names,year){
-  const baseV=entryBase(en,year),liab=en.kind==="liability";
+  const baseV=entryBase(en,year),liab=en.kind==="liability",priced=en.kind==="ticker"||en.kind==="crypto";
   let valuePart;
-  if(en.kind==="ticker"){
-    const p=tickerPx(en);
-    const pxtxt=p?("@ "+moneyIn(p.price,p.currency)+(p.frozen?" · year-end":"")):(en.ticker?"no price":"set ticker");
-    valuePart=`<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares!=null?en.shares:0}" data-i="${i}" data-f="shares" placeholder="shares" title="shares">
-    <input class="rtk" value="${esc(en.ticker||"")}" data-i="${i}" data-f="ticker" placeholder="AMS:VWRL" title="ticker">
+  if(priced){
+    const p=tickerPx(en),isC=en.kind==="crypto";
+    const pxtxt=p?("@ "+moneyIn(p.price,p.currency)+(p.frozen?" · year-end":"")):(en.ticker?"no price":(isC?"set coin":"set ticker"));
+    valuePart=`<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares!=null?en.shares:0}" data-i="${i}" data-f="shares" placeholder="${isC?"coins":"shares"}" title="${isC?"coins":"shares"}">
+    <input class="rtk" value="${esc(en.ticker||"")}" data-i="${i}" data-f="ticker" placeholder="${isC?"BTC-EUR":"AMS:VWRL"}" title="${isC?"coin pair, e.g. BTC-EUR":"ticker"}">
     <span class="rconv">${p?money(baseV):pxtxt}</span>`;
   }else{
     valuePart=`<input class="rval num" type="number" step="any" inputmode="decimal" value="${en.value!=null?en.value:0}" data-i="${i}" data-f="value" placeholder="${liab?"amount owed":"0"}">
@@ -20,7 +20,7 @@ function cardHTML(en,i,names,year){
   const catSel=cats.length?`<select class="rcat" data-i="${i}" data-f="group" title="Category"><option value="" ${!en.group?"selected":""}>— no category —</option>${cats.map(g=>`<option ${g===en.group?"selected":""}>${esc(g)}</option>`).join("")}</select>`:"";
   return `<div class="rcard${liab?" liabcard":""}"><span class="dot" style="background:${liab?"var(--red)":colorOf(seriesKey(en),names)}"></span>
     <input class="rname" value="${esc(en.name)}" data-i="${i}" data-f="name" placeholder="${liab?"Liability name":"Asset name"}">
-    <select class="rkind" data-i="${i}" data-f="kind"><option value="fixed" ${(en.kind!=="ticker"&&!liab)?"selected":""}>Value</option><option value="ticker" ${en.kind==="ticker"?"selected":""}>Ticker</option><option value="liability" ${liab?"selected":""}>Liability</option></select>
+    <select class="rkind" data-i="${i}" data-f="kind"><option value="fixed" ${(!priced&&!liab)?"selected":""}>Value</option><option value="ticker" ${en.kind==="ticker"?"selected":""}>Ticker</option><option value="crypto" ${en.kind==="crypto"?"selected":""}>Crypto</option><option value="liability" ${liab?"selected":""}>Liability</option></select>
     ${valuePart}
     ${catSel}
     <button class="rdel" data-del="${i}" title="Remove">×</button></div>`;
@@ -91,7 +91,7 @@ document.getElementById("edEntries").addEventListener("input",e=>{
   scheduleSync();
   if(f==="kind"||f==="ccy"||f==="group"){renderEntries();return;}
   const card=t.closest(".rcard");const cv=card&&card.querySelector(".rconv");
-  if(cv){const bv=entryBase(en,sn.year);if(en.kind==="ticker"){const p=tickerPx(en);cv.textContent=p?money(bv):(en.ticker?"no price":"set ticker");}else if(en.kind==="liability"){cv.textContent="− "+money(Math.abs(bv));}else{cv.textContent=en.ccy!==state.baseCcy?("= "+money(bv)):"";}}
+  if(cv){const bv=entryBase(en,sn.year);if(en.kind==="ticker"||en.kind==="crypto"){const p=tickerPx(en);cv.textContent=p?money(bv):(en.ticker?"no price":(en.kind==="crypto"?"set coin":"set ticker"));}else if(en.kind==="liability"){cv.textContent="− "+money(Math.abs(bv));}else{cv.textContent=en.ccy!==state.baseCcy?("= "+money(bv)):"";}}
   if(en.group){const gb=t.closest(".grp"),gs=gb&&gb.querySelector(".grpsub");if(gs)gs.textContent=money(sn.entries.filter(x=>x.group===en.group).reduce((a,x)=>a+entryBase(x,sn.year),0));}
   document.getElementById("edTotal").textContent=money(snapTotalBase(sn));
 });
@@ -100,8 +100,10 @@ document.getElementById("edEntries").addEventListener("change",async e=>{
   if(t.dataset.grp!=null){renderEntries();return;}
   if(f==="name"){renderEntries();return;}
   if(f==="ticker"&&t.value.trim()){
-    const sn=state.snapshots[edIdx],en=sn&&sn.entries[+t.dataset.i],sym=t.value.trim(),cy=new Date().getFullYear();
+    const sn=state.snapshots[edIdx],en=sn&&sn.entries[+t.dataset.i],cy=new Date().getFullYear();
     if(!en)return;
+    // Crypto: accept a bare coin (BTC → BTC-EUR) and normalise so it matches Yahoo's symbols.
+    let sym=t.value.trim();if(en.kind==="crypto"&&!sym.includes("-"))sym=sym.toUpperCase()+"-EUR";en.ticker=sym;
     toast("Fetching price…");
     if(sn.year<cy){const r=await fetchPriceYear(sym,sn.year);if(r){en.px=r.price;en.pxCcy=r.currency;en.pxKey=sym+"@"+sn.year;}else{delete en.px;delete en.pxCcy;delete en.pxKey;}scheduleSync();renderEntries();toast(r?("Year-end price · "+sn.year):"Couldn't fetch that ticker");}
     else{delete en.px;delete en.pxCcy;delete en.pxKey;const ok=await fetchPrice(sym);scheduleSync();renderEntries();toast(ok?"Price updated":"Couldn't fetch that ticker");}

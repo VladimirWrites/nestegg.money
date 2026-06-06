@@ -43,7 +43,7 @@ function migrate(s){
     p.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.ym)en.ym=new Date().toISOString().slice(0,7);if(en.amount==null)en.amount=(parseFloat(en.base)||0)+(parseFloat(en.extra)||0);if(en.event==null)en.event="";if(!en.ccy)en.ccy=p.ccy||s.baseCcy||"EUR";delete en.base;delete en.extra;});});
   (s.snapshots||[]).forEach(sn=>{
     if(!sn.entries){const c=sn.cats||{};sn.entries=Object.keys(c).filter(k=>c[k]).map(k=>({id:nid(),name:k,ccy:"EUR",value:c[k]}));}
-    sn.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.name)en.name=en.cat||"Asset";if(!en.ccy)en.ccy="EUR";if(en.value==null)en.value=0;if(!en.kind)en.kind="fixed";if(en.kind==="ticker"){if(en.shares==null)en.shares=0;if(en.ticker==null)en.ticker="";}delete en.cat;delete en.qty;});
+    sn.entries.forEach(en=>{if(!en.id)en.id=nid();if(!en.name)en.name=en.cat||"Asset";if(!en.ccy)en.ccy="EUR";if(en.value==null)en.value=0;if(!en.kind)en.kind="fixed";if(en.kind==="ticker"||en.kind==="crypto"){if(en.shares==null)en.shares=0;if(en.ticker==null)en.ticker="";}delete en.cat;delete en.qty;});
     delete sn.cats;
   });
   // Categories are a global list (tags). Backfill from any groups already in use.
@@ -90,8 +90,12 @@ function tickerPx(en){
   return null;
 }
 const isLiability=en=>en.kind==="liability";
+const isPriced=en=>en.kind==="ticker"||en.kind==="crypto";   // holdings valued at a live unit price
+// Was the stored price from today (the market's last trade)? Used to suppress a stale "today"
+// change on days the market is closed (weekends / holidays). Crypto trades 24/7 so it stays fresh.
+function priceIsToday(p){if(!p||p.asOf==null)return true;const d=new Date(p.asOf*1000),n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
 function entryNative(en){
-  if(en.kind==="ticker"){const p=tickerPx(en);if(!p)return{v:0,ccy:en.ccy||"EUR",miss:true};return{v:(parseFloat(en.shares)||0)*p.price,ccy:p.currency};}
+  if(isPriced(en)){const p=tickerPx(en);if(!p)return{v:0,ccy:en.ccy||"EUR",miss:true};return{v:(parseFloat(en.shares)||0)*p.price,ccy:p.currency};}
   // Liabilities are entered as a positive amount owed but count negative toward net worth.
   if(isLiability(en))return {v:-(parseFloat(en.value)||0),ccy:en.ccy||"EUR"};
   return {v:parseFloat(en.value)||0,ccy:en.ccy||"EUR"};
@@ -102,8 +106,8 @@ function dayChangeBase(nw){
   const ls=latestSnap();if(!ls)return null;
   let abs=0,any=false;
   ls.entries.forEach(en=>{
-    if(en.kind!=="ticker"||en.px!=null)return;   // frozen historical holdings have no daily change
-    const p=state.prices[en.ticker];if(!p||p.prevClose==null)return;
+    if(!isPriced(en)||en.px!=null)return;   // frozen historical holdings have no daily change
+    const p=state.prices[en.ticker];if(!p||p.prevClose==null||!priceIsToday(p))return;   // skip stale (markets closed)
     const sh=parseFloat(en.shares)||0;
     abs+=convTo(sh*(p.price-p.prevClose),p.currency,state.baseCcy);
     any=true;
@@ -439,8 +443,8 @@ async function autoRefresh(){
   try{if(await refreshHistPrices())changed=true;}catch(e){}
   return changed;
 }
-async function fetchPrice(t){try{const r=await fetch("/api/price?ticker="+encodeURIComponent(t));if(!r.ok)return false;const d=await r.json();if(d.price!=null){state.prices[t]={price:d.price,prevClose:(d.prevClose!=null?d.prevClose:d.price),currency:d.currency||"USD",t:Date.now()};return true;}}catch(e){}return false;}
-function tickersInUse(){return [...new Set(state.snapshots.flatMap(s=>s.entries).filter(e=>e.kind==="ticker"&&e.ticker).map(e=>e.ticker))];}
+async function fetchPrice(t){try{const r=await fetch("/api/price?ticker="+encodeURIComponent(t));if(!r.ok)return false;const d=await r.json();if(d.price!=null){state.prices[t]={price:d.price,prevClose:(d.prevClose!=null?d.prevClose:d.price),currency:d.currency||"USD",asOf:d.asOf||null,t:Date.now()};return true;}}catch(e){}return false;}
+function tickersInUse(){return [...new Set(state.snapshots.flatMap(s=>s.entries).filter(e=>(e.kind==="ticker"||e.kind==="crypto")&&e.ticker).map(e=>e.ticker))];}
 // Year-end close for a ticker, used to value holdings held in a past year.
 async function fetchPriceYear(t,year){try{const r=await fetch("/api/price?ticker="+encodeURIComponent(t)+"&year="+year);if(!r.ok)return null;const d=await r.json();if(d.price!=null)return{price:d.price,currency:d.currency||"USD"};}catch(e){}return null;}
 // Freeze each past-year ticker holding to that year's close (stored on the entry);
@@ -449,7 +453,7 @@ async function refreshHistPrices(){
   const cy=new Date().getFullYear();let changed=false;
   for(const sn of state.snapshots){const past=sn.year<cy;
     for(const en of (sn.entries||[])){
-      if(en.kind!=="ticker"||!en.ticker)continue;
+      if((en.kind!=="ticker"&&en.kind!=="crypto")||!en.ticker)continue;
       if(past){const key=en.ticker+"@"+sn.year;
         if(en.px!=null&&en.pxKey===key)continue;
         const r=await fetchPriceYear(en.ticker,sn.year);
