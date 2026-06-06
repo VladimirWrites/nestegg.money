@@ -9,7 +9,7 @@ function cardHTML(en,i,names,year){
     const p=tickerPx(en),isC=en.kind==="crypto";
     const pxtxt=p?("@ "+moneyIn(p.price,p.currency)+(p.frozen?" · year-end":"")):(en.ticker?"no price":(isC?"set coin":"set ticker"));
     valuePart=`<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares!=null?en.shares:0}" data-i="${i}" data-f="shares" placeholder="${isC?"coins":"shares"}" title="${isC?"coins":"shares"}">
-    <input class="rtk" value="${esc(en.ticker||"")}" data-i="${i}" data-f="ticker" placeholder="${isC?"BTC-EUR":"AMS:VWRL"}" title="${isC?"coin pair, e.g. BTC-EUR":"ticker"}">
+    <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker||"")}" data-i="${i}" data-f="ticker" placeholder="${isC?"BTC-EUR":"AMS:VWRL"}" title="${isC?"coin pair, e.g. BTC-EUR":"ticker"}"><button type="button" class="rinfo" data-info="${isC?"crypto":"ticker"}" title="Where do I find this?" aria-label="Symbol help">i</button></span>
     <span class="rconv">${p?money(baseV):pxtxt}</span>`;
   }else{
     valuePart=`<input class="rval num" type="number" step="any" inputmode="decimal" value="${en.value!=null?en.value:0}" data-i="${i}" data-f="value" placeholder="${liab?"amount owed":"0"}">
@@ -109,8 +109,34 @@ document.getElementById("edEntries").addEventListener("change",async e=>{
     else{delete en.px;delete en.pxCcy;delete en.pxKey;const ok=await fetchPrice(sym);scheduleSync();renderEntries();toast(ok?"Price updated":"Couldn't fetch that ticker");}
   }
 });
+// Symbol-format help, shown in an overlay from the (i) button next to the ticker field.
+const INFO_HELP={
+  ticker:`<h3>Stock / ETF ticker</h3>
+    <p>Enter it as <code>EXCHANGE:TICKER</code>. US symbols also work plain (e.g. <code>AAPL</code>).</p>
+    <ul>
+      <li><b>US</b> — plain symbol (<code>AAPL</code>, <code>VOO</code>), or <code>NASDAQ:</code> · <code>NYSE:</code> · <code>NYSEARCA:</code> · <code>AMEX:</code></li>
+      <li><b>Europe</b> — <code>AMS:</code> Amsterdam · <code>EPA:</code> Paris · <code>ETR:</code>/<code>XETRA:</code> German Xetra · <code>FRA:</code> Frankfurt · <code>LON:</code> London · <code>BIT:</code> Milan · <code>BME:</code> Madrid · <code>EBR:</code> Brussels · <code>ELI:</code> Lisbon · <code>VIE:</code> Vienna · <code>SWX:</code>/<code>VTX:</code> Switzerland</li>
+      <li><b>Nordics</b> — <code>STO:</code> Stockholm · <code>HEL:</code> Helsinki · <code>CPH:</code> Copenhagen · <code>OSL:</code> Oslo · <code>WSE:</code> Warsaw</li>
+      <li><b>Other</b> — <code>TSE:</code>/<code>TSX:</code> Toronto · <code>ASX:</code> Australia</li>
+    </ul>
+    <p>Look a symbol up on <a href="https://www.google.com/finance" target="_blank" rel="noopener">Google Finance ↗</a>. Note it shows <code>VWRL:AMS</code> — flip it to <code>AMS:VWRL</code> here. Other markets: paste the <a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance ↗</a> symbol directly (e.g. <code>VWRL.AS</code>).</p>`,
+  crypto:`<h3>Crypto</h3>
+    <p>Enter it as <code>COIN-CURRENCY</code>, e.g. <code>BTC-EUR</code>, <code>ETH-USD</code>, <code>SOL-EUR</code>. Type just the coin (<code>BTC</code>) and we'll assume <code>-EUR</code>.</p>
+    <ul>
+      <li><b>Examples</b> — <code>BTC-EUR</code> Bitcoin · <code>ETH-EUR</code> Ethereum · <code>SOL-EUR</code> Solana · <code>ADA-EUR</code> Cardano · <code>XRP-EUR</code> XRP</li>
+      <li><b>Quantity</b> is the number of coins you hold (decimals are fine).</li>
+    </ul>
+    <p>Find a coin's symbol on <a href="https://finance.yahoo.com/crypto" target="_blank" rel="noopener">Yahoo Finance · Crypto ↗</a> — that's what prices it.</p>`,
+};
+function openInfo(kind){const b=document.getElementById("infoBody");if(b)b.innerHTML=INFO_HELP[kind]||"";document.getElementById("infoModal").classList.remove("hide");}
+function closeInfo(){document.getElementById("infoModal").classList.add("hide");}
+document.getElementById("infoClose").onclick=closeInfo;
+document.getElementById("infoModal").addEventListener("click",e=>{if(e.target.id==="infoModal")closeInfo();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeInfo();});
 document.getElementById("edEntries").addEventListener("click",e=>{
   const sn=state.snapshots[edIdx];
+  const inf=e.target.closest("[data-info]");
+  if(inf){openInfo(inf.dataset.info);return;}
   const ae=e.target.closest("[data-editasset]");
   if(ae){openAssetEditor(ae.dataset.editasset);return;}
   if(e.target.dataset.del!=null){sn.entries.splice(+e.target.dataset.del,1);scheduleSync();renderEntries();return;}

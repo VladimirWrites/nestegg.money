@@ -172,7 +172,6 @@
     <div class="ed-total"><span class="et-k">Year total</span><span class="et-v" id="edTotal">—</span></div>
     <div class="cards" id="edEntries"></div>
     <div class="controls"><button class="act" id="edAdd">+ Add asset</button><button class="act ghost" id="edAddLongterm">+ Property / vehicle</button><button class="act ghost" id="edAddLiability">+ Loan / debt</button><button class="act ghost" id="edAddGroup">+ Add group</button><button class="act ghost" id="edCopyPrev">Copy previous year</button></div>
-    <p class="tickerhelp"><b>Ticker</b> uses <code>EXCHANGE:TICKER</code> (e.g. <code>AMS:VWRL</code>, <code>NASDAQ:AAPL</code>) · <b>Crypto</b> uses <code>COIN-CCY</code> (e.g. <code>BTC-EUR</code>). Find a stock's code on <a href="https://www.google.com/finance" target="_blank" rel="noopener">Google Finance ↗</a> — it shows <code>VWRL:AMS</code>, so flip it to <code>AMS:VWRL</code>.</p>
   </div>
 </div>
 
@@ -221,6 +220,7 @@
   </div>
 </div>
 
+<div id="infoModal" class="infomodal hide"><div class="infobox"><button class="infoclose" id="infoClose" aria-label="Close">×</button><div id="infoBody"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <!-- App scripts load in dependency order (shared global scope, no bundler). -->
