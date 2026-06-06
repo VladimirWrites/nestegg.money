@@ -11,19 +11,24 @@ async function boot(){
   try{
     const tok=LS.get("nw_token");
     if(!tok){showCreate();return;}
+    // Already signed in — never flash the login screen. Paint from the local cache
+    // immediately (it's plaintext + synchronous), then reconcile with the server.
+    document.getElementById("gate").classList.add("hide");
+    let loc=null;try{loc=loadLocal();}catch(e){}
+    if(loc&&loc.snapshots){try{state=migrate(loc);setBaseline();enterApp();}catch(e){}}
     try{await deriveKeys(tok);}catch(e){}
     let rem=null; try{rem=await loadServer();}catch(e){rem=null;}
     let repair=false;
     try{
-      const loc=loadLocal();
       const remOk=rem&&rem.snapshots, locOk=loc&&loc.snapshots;
       if(remOk&&locOk){
         // Merge per record (newest m wins, deletions honoured) — never clobber whole-doc.
         state=migrate(mergeStates(migrate(loc),migrate(rem)));repair=true;
       }else{state=migrate(remOk?rem:(locOk?loc:emptyState()));}
-    }catch(e){state=emptyState();}
+    }catch(e){if(!state||!state.snapshots)state=emptyState();}
     setBaseline();
-    enterApp();
+    // First paint already happened from local; otherwise enter now. Either way re-render the merged result.
+    if(document.getElementById("app").classList.contains("hide"))enterApp();else renderAll();
     // Push the reconciled/merged result so the server and this device converge.
     if(repair){try{pushServer();}catch(e){}}
   }catch(e){
