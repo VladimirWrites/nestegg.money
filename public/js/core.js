@@ -20,12 +20,10 @@ function migrate(s){
   else{const f=s.forecast;f.enabled=f.enabled!==false;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;f.redirectLoans=!!f.redirectLoans;}
   {const f=s.forecast;f.band=!!f.band;f.contribGrowth=+f.contribGrowth||0;f.horizonYear=+f.horizonYear||0;delete f.real;delete f.inflation;delete f.pension;}
   {const cy=new Date().getFullYear();
-   if(!s.retire||typeof s.retire!=="object")s.retire={on:false,retireYear:cy,spending:0,pension:0,pensionStart:cy+15,inflation:0.02,untilYear:cy+45};
-   const r=s.retire;r.on=!!r.on;if(r.year!=null&&r.retireYear==null)r.retireYear=r.year;
-   // Carry the old German points model forward to a plain monthly pension, then drop those fields.
-   if(r.pension==null&&r.points!=null)r.pension=(+r.points||0)*(r.ptValue!=null?+r.ptValue:39.32);
-   delete r.year;delete r.wrMode;delete r.wrRate;delete r.years;delete r.points;delete r.ptsPerYear;delete r.ptValue;
-   r.retireYear=+r.retireYear||cy;r.spending=+r.spending||0;r.pension=+r.pension||0;
+   if(!s.retire||typeof s.retire!=="object")s.retire={on:false,retireYear:cy,spending:0,pmode:"amount",pension:0,points:0,ptsPerYear:1,ptValue:39.32,pensionStart:cy+15,inflation:0.02,untilYear:cy+45};
+   const r=s.retire;r.on=!!r.on;if(r.year!=null&&r.retireYear==null)r.retireYear=r.year;delete r.year;delete r.wrMode;delete r.wrRate;delete r.years;
+   r.pmode=r.pmode==="de"?"de":"amount";r.retireYear=+r.retireYear||cy;r.spending=+r.spending||0;r.pension=+r.pension||0;
+   r.points=+r.points||0;r.ptsPerYear=r.ptsPerYear!=null?+r.ptsPerYear:1;r.ptValue=r.ptValue!=null?+r.ptValue:39.32;
    r.pensionStart=+r.pensionStart||(cy+15);r.inflation=r.inflation!=null?+r.inflation:0.02;r.untilYear=+r.untilYear||(cy+45);}
   if(!s.fxRates)s.fxRates=Object.assign({},FALLBACK_FX);s.fxRates.EUR=1;
   if(!s.prices)s.prices={};
@@ -268,12 +266,14 @@ function fcTarget(){const fc=fcCfg();return fc.goalMode==="spend"?(+fc.annualSpe
    spending from the investable nest egg. When the government pension starts (its own, later
    year) it covers part of spending, so the portfolio draw shrinks. Everything is in today's
    money and the pot grows at the real (inflation-adjusted) return between withdrawals. */
-function retCfg(){if(!state.retire||typeof state.retire!=="object"){const cy=new Date().getFullYear();state.retire={on:false,retireYear:cy,spending:0,pension:0,pensionStart:cy+15,inflation:0.02,untilYear:cy+45};}return state.retire;}
+function retCfg(){if(!state.retire||typeof state.retire!=="object"){const cy=new Date().getFullYear();state.retire={on:false,retireYear:cy,spending:0,pmode:"amount",pension:0,points:0,ptsPerYear:1,ptValue:39.32,pensionStart:cy+15,inflation:0.02,untilYear:cy+45};}return state.retire;}
 function retDeflator(year){const infl=+retCfg().inflation||0,t=Math.max(0,year-new Date().getFullYear());return 1/Math.pow(1+infl,t);}
 // Investable nest egg only (liquid + contributions, grown) — excludes property/loans, which you
 // don't sell to fund monthly spending.
 function forecastLiquidAt(date,gOverride){const fc=fcCfg(),g=gOverride!=null?gOverride:(+fc.growth||0);let t=(date-new Date())/YEAR_MS;if(t<0)t=0;return manualNetBase()*Math.pow(1+g,t)+contribFV(date,gOverride);}
-function pensionMonthly(){return +retCfg().pension||0;}        // expected pension in today's money
+// German Rentenpunkte accrue only while working (until the retirement year).
+function pensionPts(){const r=retCfg();const yrs=Math.max(0,(+r.retireYear||0)-new Date().getFullYear());return (+r.points||0)+(+r.ptsPerYear||0)*yrs;}
+function pensionMonthly(){const r=retCfg();return r.pmode==="de"?pensionPts()*(+r.ptValue||0):(+r.pension||0);}   // today's money
 function pensionAnnual(){return pensionMonthly()*12;}
 function retNestEggReal(){const y=+retCfg().retireYear||new Date().getFullYear();return forecastLiquidAt(new Date(y,11,31))*retDeflator(y);}
 // Year-by-year drawdown in today's money. Returns the pot trajectory + verdict.

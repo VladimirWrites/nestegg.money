@@ -83,7 +83,11 @@ function retSyncInputs(){const r=retCfg();
   const on=document.getElementById("rtOn");if(on)on.checked=r.on;
   const body=document.getElementById("rtBody");if(body)body.classList.toggle("hide",!r.on);
   set("rtYear",r.retireYear);set("rtSpend",r.spending);set("rtPension",r.pension);
-  set("rtPensStart",r.pensionStart);set("rtUntil",r.untilYear);set("rtInfl",r.inflation,v=>v?+(v*100).toFixed(2):"");}
+  set("rtPts",r.points);set("rtPtsYr",r.ptsPerYear!=null?r.ptsPerYear:"");set("rtPtVal",r.ptValue!=null?r.ptValue:"");
+  set("rtPensStart",r.pensionStart);set("rtUntil",r.untilYear);set("rtInfl",r.inflation,v=>v?+(v*100).toFixed(2):"");
+  const pm=document.getElementById("rtPmode");if(pm)pm.value=r.pmode;const de=r.pmode==="de";
+  const amt=document.getElementById("rtAmtFld");if(amt)amt.classList.toggle("hide",de);
+  document.querySelectorAll(".rt-de").forEach(el=>el.classList.toggle("hide",!de));}
 function renderRetire(){
   const stEl=document.getElementById("rtStats");if(!stEl)return;
   const r=retCfg(),on=document.getElementById("rtOn"),body=document.getElementById("rtBody"),svg=document.getElementById("rtChart");
@@ -112,7 +116,8 @@ function renderRetire(){
     svg.innerHTML=s;
   }
   const eggStat=`<div class="fcstat"><span class="k">Nest egg ${sim.retY}</span><span class="v">${money(sim.pts[0].pot)}</span><span class="sub">today's money · investable</span></div>`;
-  const pensStat=sim.pensionAnnual>0?`<div class="fcstat"><span class="k">Pension from ${sim.pensY}</span><span class="v ok">${money(sim.pensionMonthly)}/mo</span><span class="sub">covers ${sim.spend>0?Math.min(100,Math.round(sim.pensionAnnual/sim.spend*100)):0}% of spend · today's money</span></div>`:`<div class="fcstat"><span class="k">Pension</span><span class="v dim">set amount</span></div>`;
+  const ptsNote=r.pmode==="de"?(pensionPts().toFixed(1)+" pts · "):"";
+  const pensStat=sim.pensionAnnual>0?`<div class="fcstat"><span class="k">Pension from ${sim.pensY}</span><span class="v ok">${money(sim.pensionMonthly)}/mo</span><span class="sub">${ptsNote}covers ${sim.spend>0?Math.min(100,Math.round(sim.pensionAnnual/sim.spend*100)):0}% of spend</span></div>`:`<div class="fcstat"><span class="k">Pension</span><span class="v dim">set amount</span></div>`;
   const spendStat=`<div class="fcstat"><span class="k">Spending</span><span class="v">${money(sim.spend)}/yr</span><span class="sub">${money(sim.spend/12)}/mo · today's money</span></div>`;
   const verdict=sim.depleted?`<div class="fcstat hero"><span class="k">Pot runs out</span><span class="v bad">${sim.depleted}</span><span class="sub">${sim.depleted-sim.retY} yrs into retirement</span></div>`:`<div class="fcstat hero"><span class="k">Lasts past ${sim.until}</span><span class="v ok">${money(sim.endPot)} left</span><span class="sub">low point ${money(sim.minPot)}</span></div>`;
   stEl.innerHTML=eggStat+pensStat+spendStat+verdict;

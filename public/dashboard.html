@@ -115,12 +115,16 @@
         <div class="fcrow">
           <label class="fld"><span class="cap" title="Retire in (year)">Retire in (year)</span><input id="rtYear" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2026"></label>
           <label class="fld"><span class="cap" title="Annual spending">Annual spending</span><input id="rtSpend" class="fin num" type="number" step="any" inputmode="decimal" placeholder="30000"></label>
-          <label class="fld"><span class="cap" title="Monthly pension (today's money)">Monthly pension</span><input id="rtPension" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
+          <label class="fld"><span class="cap" title="Pension type">Pension</span><select id="rtPmode"><option value="amount">Enter amount</option><option value="de">Germany (Rentenpunkte)</option></select></label>
+          <label class="fld" id="rtAmtFld"><span class="cap" title="Monthly pension (today's money)">Monthly pension</span><input id="rtPension" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
+          <label class="fld rt-de"><span class="cap" title="Points so far (Entgeltpunkte)">Points so far</span><input id="rtPts" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
+          <label class="fld rt-de"><span class="cap" title="Points / year">Points / year</span><input id="rtPtsYr" class="fin num" type="number" step="any" inputmode="decimal" placeholder="1"></label>
+          <label class="fld rt-de"><span class="cap" title="Value / point (€/mo)">Value / point</span><input id="rtPtVal" class="fin num" type="number" step="any" inputmode="decimal" placeholder="39.32"></label>
           <label class="fld"><span class="cap" title="Pension starts (year)">Pension starts (year)</span><input id="rtPensStart" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2050"></label>
           <label class="fld"><span class="cap" title="Plan until (year)">Plan until (year)</span><input id="rtUntil" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2071"></label>
           <label class="fld"><span class="cap" title="Inflation / yr">Inflation / yr</span><span class="pct"><input id="rtInfl" class="fin num" type="number" step="any" inputmode="decimal" placeholder="2"><i>%</i></span></label>
         </div>
-        <div class="fchint" style="padding:0 0 4px">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the monthly state/private pension you expect (in today's value), and when it starts.</div>
+        <div class="fchint" style="padding:0 0 4px">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the pension you expect (in today's value) and when it starts. Germany: pension = points × value (~1 point/yr at the average salary; points accrue while working).</div>
         <div class="fcstats" id="rtStats"></div>
         <div class="histscroll"><svg id="rtChart"></svg></div>
         <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span>Nest egg (today's money)</span></div>
