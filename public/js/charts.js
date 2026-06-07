@@ -102,8 +102,8 @@ function renderRetire(){
     for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#26262a" stroke-width="1"/>`;s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
     const step=Math.max(1,Math.ceil(span/8));for(let y=minY;y<=maxY;y+=step)s+=`<text x="${X(y)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="#8a867c">${y}</text>`;
     // pension-start marker
-    if(sim.pensY>minY&&sim.pensY<=maxY&&sim.pensionAnnual>0){const px=X(sim.pensY);s+=`<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT+plotH}" stroke="${FC_GREEN}" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.8"/>`;
-      s+=`<text x="${px+4}" y="${padT+10}" font-family="ui-monospace,monospace" font-size="9" fill="${FC_GREEN}">pension ${sim.pensY}</text>`;}
+    if(sim.pensY>minY&&sim.pensY<=maxY&&sim.pensionAnnual>0){const px=X(sim.pensY);s+=`<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT+plotH}" stroke="${FC_GREEN}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`;
+      s+=`<text x="${px+4}" y="${padT+10}" font-family="ui-monospace,monospace" font-size="9.5" fill="${FC_GREEN}">pension starts ${sim.pensY}</text>`;}
     // pot area + line
     s+=`<polygon points="${X(minY)},${Y(0)} ${sim.pts.map(p=>X(p.y)+","+Y(p.pot)).join(" ")} ${X(maxY)},${Y(0)}" fill="${FC_AMBER}" opacity="0.1"/>`;
     s+=`<polyline points="${sim.pts.map(p=>X(p.y)+","+Y(p.pot)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;

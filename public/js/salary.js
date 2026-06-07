@@ -28,7 +28,9 @@ function drawSalaryChart(){
   const combY=years.filter(y=>y<nowY).map(y=>({y,v:people.reduce((s,p)=>s+(salAnnual(p)[y]||0),0)}));
   const nmR=axisMax(Math.max(1,...combY.map(c=>c.v)));
   const padL=56,padR=56,padT=22,padB=30,H=400,plotH=H-padT-padB;
-  const innerW=Math.max(span*9,360),W=innerW+padL+padR,plotW=W-padL-padR;
+  // Fill the available width (the .histscroll container), so the graph scales with the screen.
+  const cont=svg.closest(".histscroll");let cw=cont?cont.clientWidth:0;if(!cw||cw<80)cw=720;
+  const W=Math.max(360,Math.floor(cw)),plotW=W-padL-padR;
   const X=i=>padL+((i-minI)/span)*plotW,YL=v=>padT+plotH-(v/nmL)*plotH,YR=v=>padT+plotH-(v/nmR)*plotH,sym=ccySym();
   let s="";
   for(let g=0;g<=5;g++){const yy=padT+plotH-(g/5)*plotH;
