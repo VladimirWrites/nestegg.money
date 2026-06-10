@@ -24,3 +24,6 @@ let _rszT;window.addEventListener("resize",()=>{clearTimeout(_rszT);_rszT=setTim
   const vs=document.getElementById("viewSalary");if(vs&&!vs.classList.contains("hide"))drawSalaryChart();}catch(e){}},160);});
 
 try{boot();}catch(e){try{showCreate();}catch(_){}}
+
+// PWA: offline app shell. Registered after boot so it never competes with startup.
+if("serviceWorker"in navigator){try{navigator.serviceWorker.register("/sw.js");}catch(e){}}
