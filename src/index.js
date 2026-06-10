@@ -64,7 +64,7 @@ async function priceGet(request) {
   try {
     // Historical: the closing price for a given calendar year (last trading day of it).
     if (yearStr) {
-      const y = parseInt(yearStr);
+      const y = parseInt(yearStr, 10);
       if (!(y >= 1970 && y <= 3000)) return json({ error: "bad year" }, 400);
       const p1 = Math.floor(Date.UTC(y, 0, 1) / 1000);
       const p2 = Math.floor(Date.UTC(y, 11, 31, 23, 59, 59) / 1000);
@@ -161,10 +161,14 @@ export default {
     }
 
     if (pathname === "/api/vault") {
-      if (method === "GET") return vaultGet(request, env);
-      if (method === "PUT") return vaultPut(request, env);
-      if (method === "DELETE") return vaultDelete(request, env);
-      return json({ error: "method not allowed" }, 405);
+      try {
+        if (method === "GET") return await vaultGet(request, env);
+        if (method === "PUT") return await vaultPut(request, env);
+        if (method === "DELETE") return await vaultDelete(request, env);
+        return json({ error: "method not allowed" }, 405);
+      } catch (e) {
+        return json({ error: "storage error" }, 500);
+      }
     }
 
     // Host/path routing: marketing landing at the root domain, app at the dashboard

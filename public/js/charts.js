@@ -1,5 +1,4 @@
 /* render */
-function getCss(v){return v;}
 function renderAll(){drawHist();drawHistLegend();renderYears();drawDonut();updNote();renderForecast();renderRetire();}
 
 const FC_AMBER="#ffb000",FC_GREEN="#3ad17a";

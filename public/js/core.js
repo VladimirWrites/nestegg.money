@@ -53,7 +53,10 @@ function migrate(s){
   (s.snapshots||[]).forEach(sn=>(sn.entries||[]).forEach(e=>{if(e.group)cset.add(e.group);}));
   (s.assets||[]).forEach(a=>{if(a.group)cset.add(a.group);});
   s.categories=[...cset];
-  ensureDel(s);   // tombstone store for cross-device deletions
+  // Tombstone store for cross-device deletions. Prune entries older than 180 days —
+  // by then every device has synced past them, and they'd otherwise grow forever.
+  {const del=ensureDel(s),cut=Date.now()-180*86400000;
+   DEL_KINDS.forEach(k=>{const b=del[k];Object.keys(b).forEach(id=>{if(b[id]<cut)delete b[id];});});}
   delete s.items;s.v=6;return s;
 }
 let state=emptyState();
@@ -72,7 +75,7 @@ const convToY=(a,from,to,year)=>a*rateAt(to,year)/rateAt(from,year);
 function money(v){try{return new Intl.NumberFormat("en-IE",{style:"currency",currency:state.baseCcy,maximumFractionDigits:0}).format(v);}catch(e){return state.baseCcy+" "+Math.round(v).toLocaleString();}}
 function moneyIn(v,ccy){try{return new Intl.NumberFormat("en-IE",{style:"currency",currency:ccy,maximumFractionDigits:2}).format(v);}catch(e){return ccy+" "+(+v).toFixed(2);}}
 function ccySym(){try{const p=new Intl.NumberFormat("en-IE",{style:"currency",currency:state.baseCcy}).formatToParts(0);const s=p.find(x=>x.type==="currency");return s?s.value:state.baseCcy;}catch(e){return state.baseCcy;}}
-const esc=s=>String(s).replace(/"/g,"&quot;").replace(/</g,"&lt;");
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 
 /* asset colours (stable within the current set of series). A "series" is the
    entry's group if it has one, otherwise the asset's own name — so charts show
@@ -197,7 +200,10 @@ function buildSchedule(loan){
     // Round each month's interest to whole cents, like a bank statement, then carry forward.
     const interest=round2((bal-credit)*i);
     let principal=round2(pay-interest),rowPay=pay;
-    if(principal>bal){principal=bal;rowPay=round2(interest+principal);}   // final (partial) payment
+    // Last scheduled month, or early payoff: settle exactly what's still owed after
+    // this month's extras — banks fold the cent-rounding residue into the final payment.
+    const owe=round2(bal-extraThis);
+    if(k===n-1||principal>owe){principal=Math.max(0,owe);rowPay=round2(interest+principal);}
     bal=round2(bal-principal-extraThis);
     if(bal<0)bal=0;
     rows.push({type:"payment",date,payment:rowPay,interest,principal,balance:bal,estimated:est(date)});
@@ -342,6 +348,10 @@ async function gunzip(bytes){const s=new Blob([bytes]).stream().pipeThrough(new 
 async function encS(){const iv=crypto.getRandomValues(new Uint8Array(12));let data=new TextEncoder().encode(JSON.stringify(state));const gz=await gzip(data);if(gz)data=gz;const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},cryptoKey,data);return b64(iv)+"."+b64(ct);}
 async function decS(blob){const[i,c]=blob.split(".");const buf=await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(unb64(i))},cryptoKey,unb64(c));let pt=new Uint8Array(buf);if(pt[0]===0x1f&&pt[1]===0x8b)pt=await gunzip(pt);return JSON.parse(new TextDecoder().decode(pt));}
 
+// Copy to clipboard, reporting whether it actually worked (clipboard API needs a
+// secure context and can be denied) so callers don't toast "Copied" on failure.
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(e){return false;}}
+
 /* persistence/sync */
 const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}},rem(k){try{localStorage.removeItem(k);}catch(e){}}};
 // Keep a one-deep backup of the previous local state, so a bad save/clobber is recoverable.
@@ -352,7 +362,9 @@ function flushSync(){clearTimeout(syncTimer);pushServer();}   // push the pendin
 let syncWarned=false;
 async function pushServer(manual){if(!accountId||!cryptoKey)return;try{stampMtimes();const blob=await encS();
   if(blob.length>1900000){setSync("off","Too big to sync");toast("Data too large to sync — Export JSON to back up");return;}
-  const r=await fetch("/api/vault",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({id:accountId,blob})});
+  const body=JSON.stringify({id:accountId,blob});
+  // keepalive lets a flush on tab-close survive the page going away (64 KB browser cap).
+  const r=await fetch("/api/vault",{method:"PUT",headers:{"content-type":"application/json"},body,keepalive:body.length<60000});
   if(r.ok){setSync("ok","Synced");syncWarned=false;setBaseline();if(manual)toast("Data sent to server ✓");}
   else{setSync("off","Sync error");if(manual||!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}
 }catch(e){setSync("off","Local only");if(manual||!syncWarned){syncWarned=true;toast("Sync failed — changes are saved on this device only");}}}
@@ -368,7 +380,8 @@ let baseline=null;
 const cloneState=s=>JSON.parse(JSON.stringify(s));
 function setBaseline(){try{baseline=cloneState(state);}catch(e){baseline=null;}}
 const sigNoM=o=>{const c=Object.assign({},o);delete c.m;return JSON.stringify(c);};
-function ensureDel(s){s.del=s.del||{};["asset","snap","sper","sent"].forEach(k=>{if(!s.del[k])s.del[k]={};});return s.del;}
+const DEL_KINDS=["asset","snap","sper","sent","yent"];
+function ensureDel(s){s.del=s.del||{};DEL_KINDS.forEach(k=>{if(!s.del[k])s.del[k]={};});return s.del;}
 function stampMtimes(){
   const now=Date.now(),b=baseline||{},del=ensureDel(state);
   const stamp=(cur,base,key,tomb)=>{
@@ -378,7 +391,17 @@ function stampMtimes(){
     bm.forEach((o,id)=>{if(!seen.has(id))tomb[id]=now;});
   };
   stamp(state.assets,b.assets,a=>a.id,del.asset);
-  stamp(state.snapshots,b.snapshots,s=>String(s.year),del.snap);
+  // Snapshots: the year is the record; its entries are stamped individually (like
+  // salary months) so two devices editing different rows of the same year both win.
+  const bs=new Map((b.snapshots||[]).map(s=>[String(s.year),s])),seenS=new Set();
+  (state.snapshots||[]).forEach(s=>{const k=String(s.year);seenS.add(k);const o=bs.get(k);
+    if(!o)s.m=s.m||now;else s.m=s.m||o.m||0;
+    const be=new Map(((o&&o.entries)||[]).map(e=>[e.id,e])),seenE=new Set();
+    (s.entries||[]).forEach(e=>{seenE.add(e.id);const oe=be.get(e.id);
+      if(!oe)e.m=e.m||now;else if(sigNoM(e)!==sigNoM(oe))e.m=now;else e.m=e.m||oe.m||0;});
+    be.forEach((oe,id)=>{if(!seenE.has(id))del.yent[id]=now;});
+  });
+  bs.forEach((o,k)=>{if(!seenS.has(k))del.snap[k]=now;});
   const bp=new Map((b.salaries||[]).map(p=>[p.id,p])),seenP=new Set();
   (state.salaries||[]).forEach(p=>{seenP.add(p.id);const o=bp.get(p.id);
     const meta=JSON.stringify([p.name,p.ccy,p.group]);
@@ -390,8 +413,22 @@ function stampMtimes(){
   });
   bp.forEach((o,id)=>{if(!seenP.has(id))del.sper[id]=now;});
 }
-function mergeDel(a,b){a=a||{};b=b||{};const out={};["asset","snap","sper","sent"].forEach(k=>{const o={};Object.entries(a[k]||{}).forEach(([i,t])=>o[i]=Math.max(o[i]||0,t));Object.entries(b[k]||{}).forEach(([i,t])=>o[i]=Math.max(o[i]||0,t));out[k]=o;});return out;}
+function mergeDel(a,b){a=a||{};b=b||{};const out={};DEL_KINDS.forEach(k=>{const o={};Object.entries(a[k]||{}).forEach(([i,t])=>o[i]=Math.max(o[i]||0,t));Object.entries(b[k]||{}).forEach(([i,t])=>o[i]=Math.max(o[i]||0,t));out[k]=o;});return out;}
 function mergeArr(la,ra,key,tomb){const m=new Map();const add=r=>{const id=key(r),mt=+r.m||0,t=tomb[id]||0;if(t>0&&t>=mt)return;const ex=m.get(id);if(!ex||(+ex.m||0)<mt)m.set(id,r);};(la||[]).forEach(add);(ra||[]).forEach(add);return [...m.values()];}
+// A snapshot's effective mtime: the newest of the year record and its entries —
+// so a year-deletion tombstone only wins over edits that are actually older.
+const snapM=s=>(s.entries||[]).reduce((m,e)=>Math.max(m,+e.m||0),+s.m||0);
+function mergeSnaps(la,ra,del){
+  const A=new Map((la||[]).map(s=>[String(s.year),s])),B=new Map((ra||[]).map(s=>[String(s.year),s])),out=[];
+  new Set([...A.keys(),...B.keys()]).forEach(k=>{
+    const sa=A.get(k),sb=B.get(k),sm=Math.max(sa?snapM(sa):0,sb?snapM(sb):0),t=del.snap[k]||0;
+    if(t>0&&t>=sm)return;
+    const meta=((sa?+sa.m||0:0)>=(sb?+sb.m||0:0)?sa:sb)||sa||sb,em=new Map();
+    const addE=e=>{const tt=del.yent[e.id]||0,mt=+e.m||0;if(tt>0&&tt>=mt)return;const ex=em.get(e.id);if(!ex||(+ex.m||0)<mt)em.set(e.id,e);};
+    ((sa&&sa.entries)||[]).forEach(addE);((sb&&sb.entries)||[]).forEach(addE);
+    out.push(Object.assign({},meta,{entries:[...em.values()]}));});
+  return out;
+}
 function mergeSal(la,ra,del){
   const A=new Map((la||[]).map(p=>[p.id,p])),B=new Map((ra||[]).map(p=>[p.id,p])),out=[];
   new Set([...A.keys(),...B.keys()]).forEach(id=>{
@@ -408,7 +445,7 @@ function mergeStates(a,b){
   const out=cloneState((+a.updatedAt||0)>=(+b.updatedAt||0)?a:b);
   const del=mergeDel(a.del,b.del);out.del=del;
   out.assets=mergeArr(a.assets,b.assets,x=>x.id,del.asset);
-  out.snapshots=mergeArr(a.snapshots,b.snapshots,x=>String(x.year),del.snap);
+  out.snapshots=mergeSnaps(a.snapshots,b.snapshots,del);
   out.salaries=mergeSal(a.salaries,b.salaries,del);
   out.categories=[...new Set([...(a.categories||[]),...(b.categories||[])])];
   out.updatedAt=Math.max(+a.updatedAt||0,+b.updatedAt||0);

@@ -92,7 +92,8 @@ document.getElementById("edEntries").addEventListener("input",e=>{
   if(f==="kind"||f==="ccy"||f==="group"){renderEntries();return;}
   const card=t.closest(".rcard");const cv=card&&card.querySelector(".rconv");
   if(cv){const bv=entryBase(en,sn.year);if(en.kind==="ticker"||en.kind==="crypto"){const p=tickerPx(en);cv.textContent=p?money(bv):(en.ticker?"no price":(en.kind==="crypto"?"set coin":"set ticker"));}else if(en.kind==="liability"){cv.textContent="− "+money(Math.abs(bv));}else{cv.textContent=en.ccy!==state.baseCcy?("= "+money(bv)):"";}}
-  if(en.group){const gb=t.closest(".grp"),gs=gb&&gb.querySelector(".grpsub");if(gs)gs.textContent=money(sn.entries.filter(x=>x.group===en.group).reduce((a,x)=>a+entryBase(x,sn.year),0));}
+
+  if(en.group){const gb=t.closest(".grp"),gs=gb&&gb.querySelector(".grpsub");if(gs)gs.textContent=money(sn.entries.concat(autoEntriesFor(sn.year)).filter(x=>x.group===en.group).reduce((a,x)=>a+entryBase(x,sn.year),0));}
   document.getElementById("edTotal").textContent=money(snapTotalBase(sn));
 });
 document.getElementById("edEntries").addEventListener("change",async e=>{

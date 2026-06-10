@@ -7,7 +7,10 @@ document.addEventListener("mouseup",e=>{if(_selJustFocused&&selField(e.target)){
 
 document.getElementById("exportBtn").onclick=()=>{const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="networth-"+new Date().toISOString().slice(0,10)+".json";a.click();};
 document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
-document.getElementById("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(d.snapshots){state=migrate(d);document.getElementById("ccySel").value=state.baseCcy;scheduleSync();renderAll();toast("Imported");}else toast("No snapshots in that file");}catch(err){toast("Could not read that file");}};rd.readAsText(f);};
+document.getElementById("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(d.snapshots){state=migrate(d);document.getElementById("ccySel").value=state.baseCcy;scheduleSync();renderAll();toast("Imported");
+  // Refresh FX, live prices and past-year closes for whatever the import brought in.
+  try{autoRefresh().then(ch=>{if(ch){scheduleSync();renderAll();}}).catch(()=>{});}catch(err){}
+  }else toast("No snapshots in that file");}catch(err){toast("Could not read that file");}finally{e.target.value="";}};rd.readAsText(f);};
 document.getElementById("resetBtn").onclick=()=>{if(confirm("Clear all data and start fresh? Export JSON first if you want a backup.")){state=emptyState();document.getElementById("ccySel").value="EUR";scheduleSync();renderAll();toast("Cleared");}};
 
 let toastTimer;function toast(m){const el=document.getElementById("toast");el.textContent=m;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2300);}

@@ -4,9 +4,14 @@ function showCreate(){document.getElementById("gateCreate").classList.remove("hi
 function showSignin(){document.getElementById("gateCreate").classList.add("hide");document.getElementById("gateSignin").classList.remove("hide");}
 document.getElementById("toSignin").onclick=showSignin;document.getElementById("toCreate").onclick=showCreate;
 document.getElementById("regenAcct").onclick=()=>{pendingToken=generateToken();showToken(document.getElementById("newAcct"),pendingToken);};
-document.getElementById("copyAcct").onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(pendingToken);toast("Copied");};
+document.getElementById("copyAcct").onclick=async()=>{toast(await copyText(pendingToken)?"Copied":"Couldn't copy — write it down");};
 document.getElementById("confirmAcct").onclick=async()=>{LS.set("nw_token",pendingToken);try{await deriveKeys(pendingToken);}catch(e){}state=emptyState();setBaseline();saveLocal();enterApp();try{pushServer();}catch(e){}try{fetchFx().then(ok=>{if(ok){scheduleSync();renderAll();}}).catch(()=>{});}catch(e){}};
-document.getElementById("signinBtn").onclick=async()=>{const t=document.getElementById("signinInput").value.trim();if(!validToken(t)){toast("That's not a valid account number");return;}const canon=canonToken(t);LS.set("nw_token",canon);try{await deriveKeys(canon);}catch(e){}const rem=await loadServer();const loc=loadLocal();state=migrate(rem&&rem.snapshots?(loc&&loc.snapshots?mergeStates(migrate(loc),migrate(rem)):rem):(loc||emptyState()));setBaseline();enterApp();try{pushServer();}catch(e){}};
+document.getElementById("signinBtn").onclick=async()=>{const t=document.getElementById("signinInput").value.trim();if(!validToken(t)){toast("That's not a valid account number");return;}const canon=canonToken(t);
+  // Any cached local state belongs to whoever was signed in before. Only merge it if
+  // it's the same account — otherwise discard it so two accounts can never bleed together.
+  const prevTok=LS.get("nw_token"),sameAcct=!!prevTok&&normTok(prevTok)===normTok(canon);
+  if(!sameAcct){LS.rem("nw_state");LS.rem("nw_state_bak");}
+  LS.set("nw_token",canon);try{await deriveKeys(canon);}catch(e){}const rem=await loadServer();const loc=sameAcct?loadLocal():null;state=migrate(rem&&rem.snapshots?(loc&&loc.snapshots?mergeStates(migrate(loc),migrate(rem)):rem):(loc||emptyState()));setBaseline();enterApp();try{pushServer();}catch(e){}};
 async function boot(){
   try{
     const tok=LS.get("nw_token");
@@ -58,7 +63,7 @@ function closeProfile(){document.getElementById("profileEditor").classList.add("
 document.getElementById("profileBtn").onclick=openProfile;
 document.getElementById("profileBack").onclick=closeProfile;
 document.getElementById("profEye").onclick=()=>{profShown=!profShown;renderProfAcct();};
-document.getElementById("profCopyAcct").onclick=()=>{const t=LS.get("nw_token")||"";if(navigator.clipboard)navigator.clipboard.writeText(t);toast("Account number copied");};
+document.getElementById("profCopyAcct").onclick=async()=>{const t=LS.get("nw_token")||"";toast(await copyText(t)?"Account number copied":"Couldn't copy — use the eye to reveal it");};
 document.getElementById("profSyncNow").onclick=()=>pushServer(true);
 document.getElementById("syncNowHome").onclick=()=>pushServer(true);
 // Net worth / Salary are tabs within the home page — switch the visible view in place.
@@ -74,7 +79,7 @@ function showView(name){
   window.scrollTo(0,0);
 }
 document.getElementById("navNet").onclick=()=>showView("net");
-document.getElementById("profLogout").onclick=()=>{if(confirm("Log out on this device? Make sure your account number is saved — it's the only way back in.")){LS.rem("nw_token");LS.rem("nw_state");location.reload();}};
+document.getElementById("profLogout").onclick=()=>{if(confirm("Log out on this device? Make sure your account number is saved — it's the only way back in.")){LS.rem("nw_token");LS.rem("nw_state");LS.rem("nw_state_bak");location.reload();}};
 document.getElementById("ccySel").onchange=e=>{state.baseCcy=e.target.value;scheduleSync();renderAll();};
 document.getElementById("pricesBtn").onclick=refreshPrices;
 // Forecast inputs
