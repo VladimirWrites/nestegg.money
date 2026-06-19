@@ -228,13 +228,7 @@
 <div id="infoModal" class="infomodal hide"><div class="infobox"><button class="infoclose" id="infoClose" aria-label="Close">×</button><div id="infoBody"></div></div></div>
 <div class="toast" id="toast"></div>
 
-<!-- App scripts load in dependency order (shared global scope, no bundler). -->
-<script src="js/core.js"></script>
-<script src="js/gate.js"></script>
-<script src="js/charts.js"></script>
-<script src="js/networth.js"></script>
-<script src="js/assets.js"></script>
-<script src="js/salary.js"></script>
-<script src="js/wire.js"></script>
+<!-- App is an ES-module graph; main.js imports everything (domain / io / ui). No bundler. -->
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
