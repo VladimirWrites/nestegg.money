@@ -57,7 +57,6 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 .histscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 #histChart,#fcChart,#rtChart{display:block;width:100%;height:auto}
-#histChart{display:block}
 .chiplegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;margin-bottom:22px;font-size:11.5px;color:var(--muted)}
 .chiplegend span{display:flex;align-items:center;gap:6px}.chip{width:10px;height:10px;border-radius:1px}
 
@@ -157,9 +156,6 @@ button.act.ghost:hover{border-color:var(--amber)}
 .infobox a:hover{text-decoration:underline}
 .fccheck{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:var(--ink);cursor:pointer}
 .fccheck input{width:16px;height:16px;accent-color:var(--amber);cursor:pointer}
-.fcpension{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:2px 0 14px}
-.fcpension .fccheck{margin:0 0 10px}
-.fcp-fields{margin:0}
 .chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--amber) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
 .fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--muted)}
 .fcswitch input{position:absolute;opacity:0;pointer-events:none}
@@ -275,7 +271,6 @@ button.act.ghost:hover{border-color:var(--amber)}
 .exrow .fin{flex:1}
 .pstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 22px;border-top:1px solid var(--line);padding-top:13px}
 .pstat{flex-direction:column;align-items:flex-start;gap:3px}
-.pstat .eqv{color:var(--green)}
 .psched{border-top:1px solid var(--line);padding-top:6px}
 .psched summary{cursor:pointer;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 0}
 .psched summary:hover{color:var(--amber)}
@@ -298,10 +293,6 @@ button.act.ghost:hover{border-color:var(--amber)}
 .chartwrap{position:relative;display:inline-block}
 .saldot{cursor:pointer}
 .salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--amber);border-radius:4px;padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
-.salviewtog{display:inline-flex;gap:0;border:1px solid var(--line2);border-radius:4px;overflow:hidden;order:3}
-.over>.sectitle:has(.salviewtog)::after{order:2}
-.salvb{font:inherit;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:transparent;color:var(--muted);border:none;padding:6px 11px;cursor:pointer}
-.salvb.on{background:var(--amber);color:#000;font-weight:600}
 .saltable-scroll{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:4px;margin-bottom:10px}
 .saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}

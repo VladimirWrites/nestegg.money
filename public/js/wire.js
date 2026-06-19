@@ -5,7 +5,7 @@ let _selJustFocused=false;
 document.addEventListener("focusin",e=>{if(selField(e.target)){try{e.target.select();}catch(_){}_selJustFocused=true;}});
 document.addEventListener("mouseup",e=>{if(_selJustFocused&&selField(e.target)){e.preventDefault();}_selJustFocused=false;});
 
-document.getElementById("exportBtn").onclick=()=>{const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="networth-"+new Date().toISOString().slice(0,10)+".json";a.click();};
+document.getElementById("exportBtn").onclick=()=>{const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});downloadBlob(b,"networth-"+new Date().toISOString().slice(0,10)+".json");};
 document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
 document.getElementById("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(d.snapshots){state=migrate(d);document.getElementById("ccySel").value=state.baseCcy;scheduleSync();renderAll();toast("Imported");
   // Refresh FX, live prices and past-year closes for whatever the import brought in.

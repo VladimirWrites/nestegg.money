@@ -58,8 +58,8 @@ let profShown=false;
 function renderProfAcct(){const el=document.getElementById("profAcct"),tok=LS.get("nw_token")||"";
   if(profShown)showToken(el,tok);else el.textContent=(tok.replace(/[0-9A-Za-z]/g,"•")||"…");
   document.getElementById("profEye").classList.toggle("on",profShown);}
-function openProfile(){profShown=false;document.getElementById("profileEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderProfAcct();}
-function closeProfile(){document.getElementById("profileEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");}
+function openProfile(){profShown=false;showEditor("profileEditor");renderProfAcct();}
+function closeProfile(){hideEditor("profileEditor");}
 document.getElementById("profileBtn").onclick=openProfile;
 document.getElementById("profileBack").onclick=closeProfile;
 document.getElementById("profEye").onclick=()=>{profShown=!profShown;renderProfAcct();};

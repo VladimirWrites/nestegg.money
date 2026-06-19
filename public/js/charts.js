@@ -2,17 +2,26 @@
 function renderAll(){drawHist();drawHistLegend();renderYears();drawDonut();updNote();renderForecast();renderRetire();}
 
 const FC_AMBER="#ffb000",FC_GREEN="#3ad17a";
+// Shared chart palette: gridlines, axis labels, ink, background, the net/depleted red.
+const CH_GRID="#26262a",CH_AXIS="#8a867c",CH_INK="#e8e4d8",CH_BG="#0a0a0b",CH_RED="#ff4d6d";
+// Set an input's value unless it's focused (so syncing never fights the user mid-type).
+const syncVal=(id,val)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=val||"";};
+// Horizontal gridlines + left y-axis money labels (5 ticks), shared by the line/bar charts.
+function yGrid(W,padL,padR,padT,plotH,nm,sym){let s="";
+  for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;
+    s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="${CH_GRID}" stroke-width="1"/>`;
+    s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="${CH_AXIS}">${sym}${shortK(val)}</text>`;}
+  return s;}
 function fcSyncInputs(){const fc=fcCfg();
-  const m=document.getElementById("fcMonthly");if(m&&document.activeElement!==m)m.value=fc.monthly||"";
-  const g=document.getElementById("fcGrowth");if(g&&document.activeElement!==g)g.value=fc.growth?+(fc.growth*100).toFixed(2):"";
+  syncVal("fcMonthly",fc.monthly);
+  syncVal("fcGrowth",fc.growth?+(fc.growth*100).toFixed(2):"");
   const gm=document.getElementById("fcGoalMode");if(gm)gm.value=fc.goalMode;
   const lbl=document.getElementById("fcGoalLbl");if(lbl){lbl.textContent=fc.goalMode==="spend"?"Annual spending":"Target amount";lbl.title=lbl.textContent;}
-  const gv=document.getElementById("fcGoalVal");if(gv&&document.activeElement!==gv)gv.value=(fc.goalMode==="spend"?fc.annualSpending:fc.goalAmount)||"";
+  syncVal("fcGoalVal",(fc.goalMode==="spend"?fc.annualSpending:fc.goalAmount)||"");
   const rd=document.getElementById("fcRedirect");if(rd)rd.checked=!!fc.redirectLoans;
-  const cgr=document.getElementById("fcContribGrowth");if(cgr&&document.activeElement!==cgr)cgr.value=fc.contribGrowth?+(fc.contribGrowth*100).toFixed(2):"";
+  syncVal("fcContribGrowth",fc.contribGrowth?+(fc.contribGrowth*100).toFixed(2):"");
   const bd=document.getElementById("fcBand");if(bd)bd.checked=!!fc.band;
-  const hz=document.getElementById("fcHorizon");if(hz&&document.activeElement!==hz)hz.value=fc.horizonYear||"";}
-function moY(d){return d?d.toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";}
+  syncVal("fcHorizon",fc.horizonYear);}
 function renderForecast(){
   const svg=document.getElementById("fcChart");if(!svg)return;
   const fc=fcCfg(),enabled=fc.enabled!==false;
@@ -43,16 +52,15 @@ function renderForecast(){
   const padL=58,padR=16,padT=22,padB=30,innerW=W-padL-padR,plotH=H-padT-padB;
   const X=y=>padL+(y-minY)/span*innerW,Y=v=>padT+plotH-(Math.max(0,v)/nm)*plotH;
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
-  let s="";const sym=ccySym();
-  for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#26262a" stroke-width="1"/>`;s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
+  const sym=ccySym();let s=yGrid(W,padL,padR,padT,plotH,nm,sym);
   // x labels — first, last, and a sparse set between
-  const step=Math.max(1,Math.ceil(span/8));for(let y=minY;y<=maxY;y+=step){s+=`<text x="${X(y)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="#8a867c">${y}</text>`;}
-  if((maxY-minY)%step!==0)s+=`<text x="${X(maxY)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="#8a867c">${maxY}</text>`;
+  const step=Math.max(1,Math.ceil(span/8));for(let y=minY;y<=maxY;y+=step){s+=`<text x="${X(y)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${CH_AXIS}">${y}</text>`;}
+  if((maxY-minY)%step!==0)s+=`<text x="${X(maxY)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${CH_AXIS}">${maxY}</text>`;
   // goal line — label sits at the left with a backing chip so it stays legible over the curve;
   // it flips below the line when the goal is near the top of the plot.
   if(target>0&&target<=nm){const gy=Y(target);s+=`<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="${FC_GREEN}" stroke-width="1.4" stroke-dasharray="2 4"/>`;
     const lbl="goal "+sym+shortK(target),lw=lbl.length*5.6+10,above=gy>padT+18,ty=above?gy-5:gy+12,ry=above?gy-15:gy+2;
-    s+=`<rect x="${padL+2}" y="${ry}" width="${lw}" height="14" rx="3" fill="#0a0a0b" opacity="0.78"/>`;
+    s+=`<rect x="${padL+2}" y="${ry}" width="${lw}" height="14" rx="3" fill="${CH_BG}" opacity="0.78"/>`;
     s+=`<text x="${padL+7}" y="${ty}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9.5" fill="${FC_GREEN}">${lbl}</text>`;}
   // scenario band fill (poor → great), drawn under the lines
   if(band){const poly=bandHi.map(p=>X(p.y)+","+Y(p.v)).concat(bandLo.slice().reverse().map(p=>X(p.y)+","+Y(p.v))).join(" ");
@@ -72,7 +80,7 @@ function renderForecast(){
   // stats
   const d=debtSummary();
   const goalStat=target>0?(fireY?`<div class="fcstat"><span class="k">${fc.goalMode==="spend"?"FIRE goal ("+money(target)+")":"Goal "+money(target)}</span><span class="v ok">${fireY<=cy?"reached 🎉":("~"+fireY+" · in "+(fireY-cy)+" yr"+(fireY-cy===1?"":"s"))}</span></div>`:`<div class="fcstat"><span class="k">Goal ${money(target)}</span><span class="v">not within 45 yrs</span></div>`):`<div class="fcstat"><span class="k">Goal</span><span class="v dim">set a target above</span></div>`;
-  const debtStat=d.has?`<div class="fcstat"><span class="k">Debt-free by</span><span class="v ok">${moY(d.payoff)}</span><span class="sub">${money(d.rem)} interest remaining</span></div>`:`<div class="fcstat"><span class="k">Debt</span><span class="v ok">none 🎉</span></div>`;
+  const debtStat=d.has?`<div class="fcstat"><span class="k">Debt-free by</span><span class="v ok">${fmtMY(d.payoff)}</span><span class="sub">${money(d.rem)} interest remaining</span></div>`:`<div class="fcstat"><span class="k">Debt</span><span class="v ok">none 🎉</span></div>`;
   const projSub=band?("range "+money(bandLo[bandLo.length-1].v)+" – "+money(bandHi[bandHi.length-1].v)):"";
   const projStat=`<div class="fcstat"><span class="k">Projected ${projEnd.y}</span><span class="v">${money(projEnd.v)}</span>${projSub?`<span class="sub">${projSub}</span>`:""}</div>`;
   if(stEl)stEl.innerHTML=projStat+goalStat+debtStat;
@@ -101,9 +109,8 @@ function renderRetire(){
     const nm=niceCeil(Math.max(1,...sim.pts.map(p=>Math.max(0,p.pot))));
     const X=y=>padL+(y-minY)/span*innerW,Y=v=>padT+plotH-(Math.max(0,v)/nm)*plotH;
     svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
-    let s="";const sym=ccySym();
-    for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#26262a" stroke-width="1"/>`;s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
-    const step=Math.max(1,Math.ceil(span/8));for(let y=minY;y<=maxY;y+=step)s+=`<text x="${X(y)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="#8a867c">${y}</text>`;
+    const sym=ccySym();let s=yGrid(W,padL,padR,padT,plotH,nm,sym);
+    const step=Math.max(1,Math.ceil(span/8));for(let y=minY;y<=maxY;y+=step)s+=`<text x="${X(y)}" y="${H-padB+15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${CH_AXIS}">${y}</text>`;
     // pension-start marker
     if(sim.pensY>minY&&sim.pensY<=maxY&&sim.pensionAnnual>0){const px=X(sim.pensY);s+=`<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT+plotH}" stroke="${FC_GREEN}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`;
       s+=`<text x="${px+4}" y="${padT+10}" font-family="ui-monospace,monospace" font-size="9.5" fill="${FC_GREEN}">pension starts ${sim.pensY}</text>`;}
@@ -111,7 +118,7 @@ function renderRetire(){
     s+=`<polygon points="${X(minY)},${Y(0)} ${sim.pts.map(p=>X(p.y)+","+Y(p.pot)).join(" ")} ${X(maxY)},${Y(0)}" fill="${FC_AMBER}" opacity="0.1"/>`;
     s+=`<polyline points="${sim.pts.map(p=>X(p.y)+","+Y(p.pot)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
     sim.pts.forEach(p=>{if(p.y===sim.pensY||p.y===minY||p.y===maxY)s+=`<circle cx="${X(p.y)}" cy="${Y(p.pot)}" r="3" fill="${FC_AMBER}"><title>${p.y}: ${money(p.pot)}</title></circle>`;});
-    if(sim.depleted)s+=`<circle cx="${X(sim.depleted)}" cy="${Y(0)}" r="4" fill="#ff4d6d"><title>Depleted ${sim.depleted}</title></circle>`;
+    if(sim.depleted)s+=`<circle cx="${X(sim.depleted)}" cy="${Y(0)}" r="4" fill="${CH_RED}"><title>Depleted ${sim.depleted}</title></circle>`;
     svg.innerHTML=s;
   }
   const eggStat=`<div class="fcstat"><span class="k">Nest egg ${sim.retY}</span><span class="v">${money(sim.pts[0].pot)}</span><span class="sub">today's money · investable</span></div>`;
@@ -147,13 +154,12 @@ function drawHist(){
   const slot=innerW/Math.max(n,1),bw=Math.max(8,Math.min(64,slot*0.62));   // bars fill the width, capped so few years don't look absurd
   const maxV=Math.max(1,...snaps.map(s=>snapGrossBase(s))),nm=niceCeil(maxV);
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
-  let s="";const sym=ccySym();
-  for(let i=0;i<=5;i++){const val=nm*i/5,y=padT+plotH-(val/nm)*plotH;s+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#26262a" stroke-width="1"/>`;s+=`<text x="${padL-8}" y="${y+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(val)}</text>`;}
+  const sym=ccySym();let s=yGrid(W,padL,padR,padT,plotH,nm,sym);
   snaps.forEach((sn,idx)=>{const cx=padL+idx*slot+slot/2,x=cx-bw/2;let yTop=padT+plotH;const ents=effEntries(sn);
     names.forEach(nm2=>{const tot=ents.filter(e=>seriesKey(e)===nm2).reduce((a,e)=>a+entryBase(e,sn.year),0);if(tot<=0)return;const h=(tot/nm)*plotH;yTop-=h;s+=`<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2,names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`;});
     const net=snapTotalBase(sn),gross=snapGrossBase(sn);
-    if(gross-net>0.005){const ny=padT+plotH-(Math.max(0,net)/nm)*plotH;s+=`<line x1="${x-3}" y1="${ny}" x2="${x+bw+3}" y2="${ny}" stroke="#ff4d6d" stroke-width="2"><title>${sn.year} net worth ${money(net)} — after ${money(gross-net)} liabilities</title></line>`;}
-    s+=`<text x="${cx}" y="${yTop-6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="#8a867c">${sym}${shortK(net)}</text>`;s+=`<text x="${cx}" y="${H-padB+16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#e8e4d8">${sn.year}</text>`;});
+    if(gross-net>0.005){const ny=padT+plotH-(Math.max(0,net)/nm)*plotH;s+=`<line x1="${x-3}" y1="${ny}" x2="${x+bw+3}" y2="${ny}" stroke="${CH_RED}" stroke-width="2"><title>${sn.year} net worth ${money(net)} — after ${money(gross-net)} liabilities</title></line>`;}
+    s+=`<text x="${cx}" y="${yTop-6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="${CH_AXIS}">${sym}${shortK(net)}</text>`;s+=`<text x="${cx}" y="${H-padB+16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${CH_INK}">${sn.year}</text>`;});
   svg.innerHTML=s;
   // hero = latest
   const ls=latestSnap();const nw=ls?snapTotalBase(ls):0;
@@ -175,7 +181,7 @@ function drawDonut(){
   const total=rows.reduce((a,r)=>a+r.v,0);
   if(total>0){const cx=120,cy=120,r=82,sw=30;let a=-Math.PI/2;
     rows.forEach(row=>{const f=row.v/total,a2=a+f*Math.PI*2,lg=f>0.5?1:0;const x1=cx+r*Math.cos(a),y1=cy+r*Math.sin(a),x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2);const p=document.createElementNS("http://www.w3.org/2000/svg","path");p.setAttribute("d",`M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`);p.setAttribute("fill","none");p.setAttribute("stroke",colorOf(row.name,names));p.setAttribute("stroke-width",sw);svg.appendChild(p);a=a2;});
-    txt(svg,cx,cy-4,"TOTAL",10,"#8a867c",2,400);txt(svg,cx,cy+18,money(total),16,"#e8e4d8",0,600);}
+    txt(svg,cx,cy-4,"TOTAL",10,CH_AXIS,2,400);txt(svg,cx,cy+18,money(total),16,CH_INK,0,600);}
   const leg=document.getElementById("legend");leg.innerHTML="";
   rows.forEach(row=>{const d=document.createElement("div");d.className="legrow";d.innerHTML=`<span class="swatch" style="background:${colorOf(row.name,names)}"></span><span>${esc(row.name)}</span><span class="pct">${(row.v/total*100).toFixed(0)}%</span><span class="amt num">${money(row.v)}</span>`;leg.appendChild(d);});
 }
@@ -186,22 +192,22 @@ function legendSVG(items,x,y,fs){
   const rowH=fs+10;let s="",maxW=0;
   items.forEach((it,i)=>{const yy=y+i*rowH;
     s+=`<rect x="${x}" y="${yy}" width="${fs}" height="${fs}" rx="2" fill="${it.color}"/>`;
-    s+=`<text x="${x+fs+9}" y="${yy+fs-1}" font-family="ui-monospace,Menlo,monospace" font-size="${fs}" fill="#e8e4d8">${esc(it.label)}</text>`;
+    s+=`<text x="${x+fs+9}" y="${yy+fs-1}" font-family="ui-monospace,Menlo,monospace" font-size="${fs}" fill="${CH_INK}">${esc(it.label)}</text>`;
     const w=fs+9+it.label.length*fs*0.62;if(w>maxW)maxW=w;});
   return {svg:s,height:items.length*rowH,width:maxW};
 }
 function frameSVG(title,inner,innerW,innerH,leg,pad,titleH){
   const footH=34,W=Math.max(innerW+pad*2,(leg?leg.width:0)+pad*2,520),H=titleH+innerH+16+(leg?leg.height:0)+footH,dx=(W-innerW)/2;
   return {W,H,svg:`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`+
-    `<rect width="${W}" height="${H}" fill="#0a0a0b"/>`+
-    `<text x="${pad}" y="34" font-family="ui-monospace,Menlo,monospace" font-size="20" font-weight="700" fill="#ffb000">${esc(title)}</text>`+
+    `<rect width="${W}" height="${H}" fill="${CH_BG}"/>`+
+    `<text x="${pad}" y="34" font-family="ui-monospace,Menlo,monospace" font-size="20" font-weight="700" fill="${FC_AMBER}">${esc(title)}</text>`+
     `<g transform="translate(${dx},${titleH})">${inner}</g>`+(leg?leg.svg:"")+
-    `<text x="${W-pad}" y="${H-13}" text-anchor="end" font-family="ui-monospace,Menlo,monospace" font-size="12" fill="#8a867c">nestegg.money</text></svg>`};
+    `<text x="${W-pad}" y="${H-13}" text-anchor="end" font-family="ui-monospace,Menlo,monospace" font-size="12" fill="${CH_AXIS}">nestegg.money</text></svg>`};
 }
 function svgToPng(svgString,w,h,scale,filename){
   const blob=new Blob([svgString],{type:"image/svg+xml;charset=utf-8"}),url=URL.createObjectURL(blob),img=new Image();
   img.onload=()=>{const c=document.createElement("canvas");c.width=Math.round(w*scale);c.height=Math.round(h*scale);const ctx=c.getContext("2d");ctx.scale(scale,scale);ctx.drawImage(img,0,0);URL.revokeObjectURL(url);
-    c.toBlob(b=>{if(!b){toast("Could not save image");return;}const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("Image saved");},"image/png");};
+    c.toBlob(b=>{if(!b){toast("Could not save image");return;}downloadBlob(b,filename);toast("Image saved");},"image/png");};
   img.onerror=()=>{URL.revokeObjectURL(url);toast("Could not render image");};
   img.src=url;
 }

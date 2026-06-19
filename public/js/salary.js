@@ -4,8 +4,7 @@ const salEccy=(p,e)=>e.ccy||p.ccy||state.baseCcy;                  // a month's 
 const salBase=(p,e)=>convToY(salTotal(e),salEccy(p,e),state.baseCcy,+e.ym.slice(0,4));  // value in the display currency
 const salMonths=p=>[...(p.entries||[])].sort((a,b)=>a.ym<b.ym?-1:(a.ym>b.ym?1:0));
 function nextYm(ym){if(!/^\d{4}-\d{2}$/.test(ym||""))return new Date().toISOString().slice(0,7);let[y,m]=ym.split("-").map(Number);m++;if(m>12){m=1;y++;}return y+"-"+String(m).padStart(2,"0");}
-function prevYm(ym){if(!/^\d{4}-\d{2}$/.test(ym||""))return new Date().toISOString().slice(0,7);let[y,m]=ym.split("-").map(Number);m--;if(m<1){m=12;y--;}return y+"-"+String(m).padStart(2,"0");}
-const ymLabel=ym=>{const[y,m]=String(ym).split("-").map(Number);return new Date(y,(m||1)-1,1).toLocaleDateString("en-GB",{month:"short",year:"numeric"});};
+const ymLabel=ym=>{const[y,m]=String(ym).split("-").map(Number);return fmtMY(new Date(y,(m||1)-1,1));};
 // Per-year totals, converted to the display currency (handles mixed currencies across months).
 function salAnnual(p){const a={};salMonths(p).forEach(en=>{const y=en.ym.slice(0,4);a[y]=(a[y]||0)+salBase(p,en);});return a;}
 const salColor=i=>PALETTE[i%PALETTE.length];
@@ -32,13 +31,11 @@ function drawSalaryChart(){
   const cont=svg.closest(".histscroll");let cw=cont?cont.clientWidth:0;if(!cw||cw<80)cw=720;
   const W=Math.max(360,Math.floor(cw)),plotW=W-padL-padR;
   const X=i=>padL+((i-minI)/span)*plotW,YL=v=>padT+plotH-(v/nmL)*plotH,YR=v=>padT+plotH-(v/nmR)*plotH,sym=ccySym();
-  let s="";
-  for(let g=0;g<=5;g++){const yy=padT+plotH-(g/5)*plotH;
-    s+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#26262a"/>`;
-    s+=`<text x="${padL-8}" y="${yy+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${sym}${shortK(nmL*g/5)}</text>`;
-    s+=`<text x="${W-padR+8}" y="${yy+3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${shortK(nmR*g/5)}</text>`;}
+  // Left axis (per-person monthly) reuses the shared grid; the right axis (combined yearly) is overlaid.
+  let s=yGrid(W,padL,padR,padT,plotH,nmL,sym);
+  for(let g=0;g<=5;g++){const yy=padT+plotH-(g/5)*plotH;s+=`<text x="${W-padR+8}" y="${yy+3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${shortK(nmR*g/5)}</text>`;}
   const minYr=Math.floor(minI/12),maxYr=Math.floor(maxI/12),stepYr=Math.max(1,Math.ceil((maxYr-minYr+1)/14));
-  for(let yr=minYr;yr<=maxYr;yr+=stepYr){const xc=X(yr*12);if(xc>=padL-1&&xc<=W-padR+1)s+=`<text x="${xc}" y="${H-9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#8a867c">${yr}</text>`;}
+  for(let yr=minYr;yr<=maxYr;yr+=stepYr){const xc=X(yr*12);if(xc>=padL-1&&xc<=W-padR+1)s+=`<text x="${xc}" y="${H-9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${CH_AXIS}">${yr}</text>`;}
   // monthly per-person lines (left axis) + event dots
   people.forEach((p,pi)=>{const ms=salMonths(p);if(!ms.length)return;const col=salColor(pi);
     s+=`<polyline points="${ms.map(e=>X(idxM(e.ym)).toFixed(1)+","+YL(salBase(p,e)).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
@@ -62,10 +59,13 @@ function downloadSalary(){
 }
 // Shared month axis across all people, and per-(person,month) lookup/creation.
 function salGlobalYms(){const s=new Set();(state.salaries||[]).forEach(p=>(p.entries||[]).forEach(e=>s.add(e.ym)));return [...s].sort();}
-function salEntry(p,ym){return (p.entries||[]).find(e=>e.ym===ym);}
-function salEnsure(p,ym){let e=salEntry(p,ym);if(!e){const prev=salMonths(p).filter(x=>x.ym<ym).pop();e={id:nid(),ym,amount:0,event:"",ccy:(prev&&prev.ccy)||p.ccy||state.baseCcy};p.entries.push(e);}return e;}
-// Add a month row for every person at ym; carry each person's most recent salary + currency when carry=true.
-function salAddRowAt(ym,carry){(state.salaries||[]).forEach(p=>{if(salEntry(p,ym))return;const before=salMonths(p).filter(e=>e.ym<ym),prev=before[before.length-1];const amt=carry&&prev?prev.amount:0;p.entries.push({id:nid(),ym,amount:amt,event:"",ccy:(prev&&prev.ccy)||p.ccy||state.baseCcy});});}
+const salEntry=(p,ym)=>(p.entries||[]).find(e=>e.ym===ym);
+const salPrevEntry=(p,ym)=>salMonths(p).filter(e=>e.ym<ym).pop();   // the person's most recent month before ym
+// A new monthly entry, inheriting the previous month's currency (and its amount, when carrying forward).
+const salNewEntry=(p,ym,amount)=>{const prev=salPrevEntry(p,ym);return {id:nid(),ym,amount:amount||0,event:"",ccy:(prev&&prev.ccy)||p.ccy||state.baseCcy};};
+function salEnsure(p,ym){let e=salEntry(p,ym);if(!e){e=salNewEntry(p,ym,0);p.entries.push(e);}return e;}
+// Add a month row for every person at ym; carry each person's most recent salary when carry=true.
+function salAddRowAt(ym,carry){(state.salaries||[]).forEach(p=>{if(salEntry(p,ym))return;const prev=salPrevEntry(p,ym);p.entries.push(salNewEntry(p,ym,carry&&prev?prev.amount:0));});}
 const salThisMonth=()=>new Date().toISOString().slice(0,7);
 // Parse a pasted month cell into YYYY-MM: "May 2013", "2013-05", "5/2013", "2013/05/01"…
 const SAL_MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
@@ -196,8 +196,8 @@ function salHideTip(){const t=document.getElementById("salTip");if(t)t.classList
 document.getElementById("dlSalary").onclick=downloadSalary;
 document.getElementById("salaryBtn").onclick=()=>showView("salary");
 // Salary tab (read-only) actions: quick "+ Next month", and open the edit overlay.
-function openSalaryEdit(){document.getElementById("salaryEditor").classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);renderSalaryEdit();}
-function closeSalaryEdit(){document.getElementById("salaryEditor").classList.add("hide");document.getElementById("app").classList.remove("hide");renderSalary();}
+function openSalaryEdit(){showEditor("salaryEditor");renderSalaryEdit();}
+function closeSalaryEdit(){hideEditor("salaryEditor");renderSalary();}
 document.getElementById("salEdit").onclick=openSalaryEdit;
 document.getElementById("salaryBack").onclick=()=>{scheduleSync();closeSalaryEdit();};
 document.getElementById("salNext").onclick=()=>{const ys=salGlobalYms();salAddRowAt(ys.length?nextYm(ys[ys.length-1]):salThisMonth(),true);scheduleSync();renderSalary();};

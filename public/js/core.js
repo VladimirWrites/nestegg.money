@@ -14,13 +14,16 @@ function normLoan(L,fallbackDate){
   if(!Array.isArray(L.extra))L.extra=[];L.extra.forEach(x=>{if(!x.id)x.id=nid();if(x.amount==null)x.amount=0;if(!x.date)x.date=L.startDate;});
   return L;
 }
+// Default forecast/retirement configs — one source of truth, shared by migrate() and the lazy accessors.
+function defForecast(){return {enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0,redirectLoans:false};}
+function defRetire(){const cy=new Date().getFullYear();return {on:false,retireYear:cy,spending:0,pmode:"amount",pension:0,points:0,ptsPerYear:1,ptValue:39.32,pensionStart:cy+15,inflation:0.02,untilYear:cy+45};}
 function migrate(s){
   if(!s.baseCcy)s.baseCcy="EUR";
-  if(!s.forecast||typeof s.forecast!=="object")s.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0,redirectLoans:false};
+  if(!s.forecast||typeof s.forecast!=="object")s.forecast=defForecast();
   else{const f=s.forecast;f.enabled=f.enabled!==false;f.monthly=+f.monthly||0;f.growth=+f.growth||0;f.goalMode=f.goalMode==="spend"?"spend":"amount";f.goalAmount=+f.goalAmount||0;f.annualSpending=+f.annualSpending||0;f.redirectLoans=!!f.redirectLoans;}
   {const f=s.forecast;f.band=!!f.band;f.contribGrowth=+f.contribGrowth||0;f.horizonYear=+f.horizonYear||0;delete f.real;delete f.inflation;delete f.pension;}
   {const cy=new Date().getFullYear();
-   if(!s.retire||typeof s.retire!=="object")s.retire={on:false,retireYear:cy,spending:0,pmode:"amount",pension:0,points:0,ptsPerYear:1,ptValue:39.32,pensionStart:cy+15,inflation:0.02,untilYear:cy+45};
+   if(!s.retire||typeof s.retire!=="object")s.retire=defRetire();
    const r=s.retire;r.on=!!r.on;if(r.year!=null&&r.retireYear==null)r.retireYear=r.year;delete r.year;delete r.wrMode;delete r.wrRate;delete r.years;
    r.pmode=r.pmode==="de"?"de":"amount";r.retireYear=+r.retireYear||cy;r.spending=+r.spending||0;r.pension=+r.pension||0;
    r.points=+r.points||0;r.ptsPerYear=r.ptsPerYear!=null?+r.ptsPerYear:1;r.ptValue=r.ptValue!=null?+r.ptValue:39.32;
@@ -76,6 +79,13 @@ function money(v){try{return new Intl.NumberFormat("en-IE",{style:"currency",cur
 function moneyIn(v,ccy){try{return new Intl.NumberFormat("en-IE",{style:"currency",currency:ccy,maximumFractionDigits:2}).format(v);}catch(e){return ccy+" "+(+v).toFixed(2);}}
 function ccySym(){try{const p=new Intl.NumberFormat("en-IE",{style:"currency",currency:state.baseCcy}).formatToParts(0);const s=p.find(x=>x.type==="currency");return s?s.value:state.baseCcy;}catch(e){return state.baseCcy;}}
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+// Short "Mon YYYY" label for a Date (en-GB); empty string for a missing date.
+const fmtMY=d=>d?d.toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";
+// Editor overlays: show one full-screen editor over the hidden app shell (scrolled to top), or reverse it.
+const showEditor=id=>{document.getElementById(id).classList.remove("hide");document.getElementById("app").classList.add("hide");window.scrollTo(0,0);};
+const hideEditor=id=>{document.getElementById(id).classList.add("hide");document.getElementById("app").classList.remove("hide");};
+// Trigger a browser download of a Blob, releasing the object URL afterward.
+function downloadBlob(blob,filename){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 
 /* asset colours (stable within the current set of series). A "series" is the
    entry's group if it has one, otherwise the asset's own name — so charts show
@@ -238,7 +248,7 @@ const latestSnap=()=>sortedSnaps().slice(-1)[0];
    project exactly for any future date. The "liquid" portion (the latest year's manually
    entered values) is grown at an assumed annual return, and a planned monthly contribution
    is added with monthly compounding. Future FX is unknown, so current rates are used. */
-function fcCfg(){if(!state.forecast||typeof state.forecast!=="object")state.forecast={enabled:true,monthly:0,growth:0,goalMode:"amount",goalAmount:0,annualSpending:0,redirectLoans:false};return state.forecast;}
+function fcCfg(){if(!state.forecast||typeof state.forecast!=="object")state.forecast=defForecast();return state.forecast;}
 // Net of all long-term assets/liabilities (in base ccy) on an arbitrary date.
 function ltNetBaseAt(date){return (state.assets||[]).reduce((s,a)=>{const from=assetOwnedFrom(a);if(from&&from>date)return s;const nat=a.liability?-(a.loan?outstandingAt(a.loan,date):0):assetNetAt(a,date);return s+convTo(nat,a.ccy||state.baseCcy,state.baseCcy);},0);}
 // The manually-entered ("liquid") portion of the latest snapshot, in base ccy.
@@ -272,7 +282,7 @@ function fcTarget(){const fc=fcCfg();return fc.goalMode==="spend"?(+fc.annualSpe
    spending from the investable nest egg. When the government pension starts (its own, later
    year) it covers part of spending, so the portfolio draw shrinks. Everything is in today's
    money and the pot grows at the real (inflation-adjusted) return between withdrawals. */
-function retCfg(){if(!state.retire||typeof state.retire!=="object"){const cy=new Date().getFullYear();state.retire={on:false,retireYear:cy,spending:0,pmode:"amount",pension:0,points:0,ptsPerYear:1,ptValue:39.32,pensionStart:cy+15,inflation:0.02,untilYear:cy+45};}return state.retire;}
+function retCfg(){if(!state.retire||typeof state.retire!=="object")state.retire=defRetire();return state.retire;}
 function retDeflator(year){const infl=+retCfg().inflation||0,t=Math.max(0,year-new Date().getFullYear());return 1/Math.pow(1+infl,t);}
 // Investable nest egg only (liquid + contributions, grown) — excludes property/loans, which you
 // don't sell to fund monthly spending.

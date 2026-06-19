@@ -1,8 +1,7 @@
 /* ───────── long-term assets editor (depreciation + loan) ─────────
    One asset with optional toggles: it depreciates and/or carries a loan.
    Net contribution = (depreciated price or market value) − outstanding loan. */
-const ymd=d=>d.toLocaleDateString("en-GB",{month:"short",year:"numeric"});
-const ymdDay=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+const ymdDay=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});   // day-precision sibling of core's fmtMY
 let curAssetId=null;   // the single long-term asset the editor is focused on
 function openAssetEditor(id,focusName){curAssetId=id;document.getElementById("assetEditor").classList.remove("hide");window.scrollTo(0,0);renderAssets(focusName);}
 function closeAssetEditor(){
@@ -27,18 +26,18 @@ function loanComputedHTML(a){
   let divDone=false;
   const rows=sched.map(r=>{
     let pre="";
-    if(!divDone&&r.estimated){divDone=true;pre=`<tr class="fxdiv"><td colspan="6">Fixed rate ends ${ymd(fixedUntil)} · ${moneyIn(balAtChange,a.ccy)} left · estimated at ${L.rate}% beyond</td></tr>`;}
+    if(!divDone&&r.estimated){divDone=true;pre=`<tr class="fxdiv"><td colspan="6">Fixed rate ends ${fmtMY(fixedUntil)} · ${moneyIn(balAtChange,a.ccy)} left · estimated at ${L.rate}% beyond</td></tr>`;}
     const cls=r.estimated?" est":"";
     return pre+(r.type==="extra"
       ?`<tr class="exline${cls}"><td>${ymdDay(r.date)}</td><td colspan="3">Additional payment</td><td class="num">${moneyIn(r.extra,a.ccy)}</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`
-      :`<tr class="${cls.trim()}"><td>${ymd(r.date)}</td><td class="num">${moneyIn(r.payment,a.ccy)}</td><td class="num">${moneyIn(r.interest,a.ccy)}</td><td class="num">${moneyIn(r.principal,a.ccy)}</td><td class="num">—</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`);
+      :`<tr class="${cls.trim()}"><td>${fmtMY(r.date)}</td><td class="num">${moneyIn(r.payment,a.ccy)}</td><td class="num">${moneyIn(r.interest,a.ccy)}</td><td class="num">${moneyIn(r.principal,a.ccy)}</td><td class="num">—</td><td class="num">${moneyIn(r.balance,a.ccy)}</td></tr>`);
   }).join("");
   return `${tooLow?`<div class="loanwarn">That payment is below the monthly interest, so the loan never amortizes — raise it above ${moneyIn((+L.amount||0)*(+L.rate||0)/100/12,a.ccy)}.</div>`:""}
     <div class="pstats">
       ${calcStat}
       <div class="pstat"><span class="k">Balance today</span><span class="v num">${moneyIn(bal,a.ccy)}</span></div>
       ${balAtChange!=null?`<div class="pstat"><span class="k">Left at rate change</span><span class="v num hilite">${moneyIn(balAtChange,a.ccy)}</span></div>`:""}
-      <div class="pstat"><span class="k">Payoff</span><span class="v num">${payoff?ymd(payoff):"—"}</span></div>
+      <div class="pstat"><span class="k">Payoff</span><span class="v num">${payoff?fmtMY(payoff):"—"}</span></div>
       <div class="pstat"><span class="k">Total interest</span><span class="v num">${moneyIn(totInt,a.ccy)}</span></div>
     </div>
     ${payRows.length?`<details class="psched"><summary>Payment schedule · ${payRows.length} payments</summary>
