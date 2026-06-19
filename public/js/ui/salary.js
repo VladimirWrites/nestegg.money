@@ -1,6 +1,6 @@
 // Salary history: per person, monthly net pay. Read-only table on the Salary tab; all edits
 // happen in the edit overlay. Dual-axis chart: per-person monthly + combined yearly total.
-import { $, showEditor, hideEditor, toast } from "./dom.js";
+import { $, showEditor, hideEditor, toast, debounce } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS, PALETTE } from "../domain/constants.js";
@@ -33,7 +33,13 @@ function axisMax(v) {
 }
 const SAL_COMB = "#c9a227"; // gold, matching the combined-yearly line
 
+// Entrance animation armed by the Salary tab, consumed on the next draw only.
+let _animSal = false;
+export function armSalaryAnim() { _animSal = true; }
+const drawSalDebounced = debounce(() => drawSalaryChart(), 120);
+
 export function drawSalaryChart() {
+  const animOn = _animSal; _animSal = false;
   const svg = $("salaryChart"), people = state.salaries || [], leg = $("salaryLegend");
   const all = people.flatMap((p) => p.entries || []);
   if (!all.length) { svg.innerHTML = ""; svg.removeAttribute("width"); leg.innerHTML = ""; return; }
@@ -57,17 +63,18 @@ export function drawSalaryChart() {
   // monthly per-person lines (left axis) + event dots
   people.forEach((p, pi) => {
     const ms = salMonths(p); if (!ms.length) return; const col = salColor(pi);
-    s += `<polyline points="${ms.map((e) => X(idxM(e.ym)).toFixed(1) + "," + YL(salBase(p, e)).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
+    s += `<polyline class="line" pathLength="1" points="${ms.map((e) => X(idxM(e.ym)).toFixed(1) + "," + YL(salBase(p, e)).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
     ms.forEach((e) => { if (!e.event) return; const lab = esc(ymLabel(e.ym) + " · " + p.name + " · " + moneyIn(salTotal(e), salEccy(p, e)) + " · " + e.event); s += `<circle class="saldot" cx="${X(idxM(e.ym)).toFixed(1)}" cy="${YL(salBase(p, e)).toFixed(1)}" r="4" fill="${col}" stroke="#0a0a0b" stroke-width="1.5" data-lbl="${lab}"></circle>`; });
   });
   // combined yearly line (right axis), one point per finalized year, with year labels
   const cpts = combY.map((c) => ({ x: X(idxM(c.y + "-07")), yy: YR(c.v), y0: c.y, v: c.v }));
-  s += `<polyline points="${cpts.map((p) => p.x.toFixed(1) + "," + p.yy.toFixed(1)).join(" ")}" fill="none" stroke="${SAL_COMB}" stroke-width="2.4"/>`;
+  s += `<polyline class="line" pathLength="1" points="${cpts.map((p) => p.x.toFixed(1) + "," + p.yy.toFixed(1)).join(" ")}" fill="none" stroke="${SAL_COMB}" stroke-width="2.4"/>`;
   cpts.forEach((p) => {
     s += `<circle class="saldot" cx="${p.x.toFixed(1)}" cy="${p.yy.toFixed(1)}" r="3.5" fill="${SAL_COMB}" data-lbl="${esc(p.y0 + " · combined · " + sym + Math.round(p.v).toLocaleString())}"></circle>`;
     s += `<text x="${p.x.toFixed(1)}" y="${(p.yy - 8).toFixed(1)}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${p.y0}</text>`;
   });
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = s;
+  svg.classList.toggle("anim", animOn);
   leg.innerHTML = people.map((p, pi) => `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("") + `<span><span class="chip" style="background:${SAL_COMB}"></span>Combined yearly net salary</span>`;
 }
 
@@ -195,8 +202,8 @@ $("salaryList").addEventListener("input", (e) => {
     const en = salEnsure(p, t.dataset.ym);
     if (f === "amount") en.amount = parseFloat(t.value || 0); else en[f] = t.value;
     scheduleSync();
-    if (f === "amount") { const yr = t.dataset.ym.slice(0, 4), yt = document.querySelector('[data-ytot="' + sid + ":" + yr + '"]'); if (yt) { const tot = p.entries.filter((x) => x.ym.slice(0, 4) === yr).reduce((a, x) => a + salBase(p, x), 0); yt.textContent = tot ? money(tot) : "—"; } drawSalaryChart(); }
-  } else { if (f === "name") p.name = t.value; else if (f === "ccy") p.ccy = t.value; scheduleSync(); if (f === "name") drawSalaryChart(); }
+    if (f === "amount") { const yr = t.dataset.ym.slice(0, 4), yt = document.querySelector('[data-ytot="' + sid + ":" + yr + '"]'); if (yt) { const tot = p.entries.filter((x) => x.ym.slice(0, 4) === yr).reduce((a, x) => a + salBase(p, x), 0); yt.textContent = tot ? money(tot) : "—"; } drawSalDebounced(); }
+  } else { if (f === "name") p.name = t.value; else if (f === "ccy") p.ccy = t.value; scheduleSync(); if (f === "name") drawSalDebounced(); }
 });
 $("salaryList").addEventListener("change", (e) => { if (e.target.dataset.f === "ccy") renderSalaryEdit(); });
 $("salaryList").addEventListener("click", (e) => {

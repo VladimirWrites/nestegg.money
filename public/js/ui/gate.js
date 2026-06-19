@@ -1,6 +1,6 @@
 // The gate (create / sign in), boot + reconcile flow, the home view switcher, the profile
 // overlay, and the forecast/retirement input wiring.
-import { $, showEditor, hideEditor, toast } from "./dom.js";
+import { $, showEditor, hideEditor, toast, debounce } from "./dom.js";
 import { state, setState } from "../domain/store.js";
 import { emptyState, migrate } from "../domain/schema.js";
 import { mergeStates, setBaseline } from "../domain/merge.js";
@@ -9,8 +9,8 @@ import { fcCfg } from "../domain/forecast.js";
 import { retCfg } from "../domain/retirement.js";
 import { generateToken, validToken, canonToken, normTok, deriveKeys, copyText } from "../io/crypto.js";
 import { LS, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
-import { renderAll, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut } from "./charts.js";
-import { renderSalary } from "./salary.js";
+import { renderAll, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut, armChartAnim } from "./charts.js";
+import { renderSalary, armSalaryAnim } from "./salary.js";
 
 // Render an account number with digits and letters coloured differently, kept on one line —
 // shrinking the font only if the screen is too narrow.
@@ -87,6 +87,7 @@ function enterApp() {
     $("app").classList.remove("hide");
     $("dateline").textContent = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     $("ccySel").innerHTML = CCYS.map((c) => `<option ${c === state.baseCcy ? "selected" : ""}>${c}</option>`).join("");
+    armChartAnim();
     renderAll();
     // Refresh live FX + ticker prices (+ past-year closes). Silent; re-render once fresh.
     try { autoRefresh().then((ch) => { if (ch) { scheduleSync(); renderAll(); } }).catch(() => {}); } catch (e) {}
@@ -117,7 +118,7 @@ export function showView(name) {
   $("salaryBtn").classList.toggle("on", !net);
   $("mastTitle").textContent = net ? "Net Worth" : "Salary";
   $("mastSub").textContent = net ? "A quiet accounting of what you hold." : "What you and yours bring home, month by month.";
-  if (net) renderAll(); else renderSalary();
+  if (net) { armChartAnim(); renderAll(); } else { armSalaryAnim(); renderSalary(); }
   window.scrollTo(0, 0);
 }
 $("navNet").onclick = () => showView("net");
@@ -127,7 +128,8 @@ $("pricesBtn").onclick = refreshPrices;
 
 // Forecast inputs
 (() => {
-  const fcU = () => { scheduleSync(); renderForecast(); renderRetire(); };
+  const fcRender = debounce(() => { renderForecast(); renderRetire(); }, 120);
+  const fcU = () => { scheduleSync(); fcRender(); };
   const on = $("fcOn"); if (on) on.onchange = (e) => { fcCfg().enabled = e.target.checked; fcU(); };
   const m = $("fcMonthly"); if (m) m.oninput = (e) => { fcCfg().monthly = parseFloat(e.target.value) || 0; fcU(); };
   const g = $("fcGrowth"); if (g) g.oninput = (e) => { fcCfg().growth = Math.min(Math.max((parseFloat(e.target.value) || 0) / 100, -0.5), 1); fcU(); };
@@ -140,7 +142,8 @@ $("pricesBtn").onclick = refreshPrices;
 })();
 // Retirement calculator inputs
 (() => {
-  const rU = () => { scheduleSync(); renderRetire(); };
+  const rRender = debounce(() => renderRetire(), 120);
+  const rU = () => { scheduleSync(); rRender(); };
   const r = () => retCfg(), cy = new Date().getFullYear();
   const on = $("rtOn"); if (on) on.onchange = (e) => { r().on = e.target.checked; rU(); };
   const yr = $("rtYear"); if (yr) yr.oninput = (e) => { r().retireYear = parseInt(e.target.value, 10) || cy; rU(); };

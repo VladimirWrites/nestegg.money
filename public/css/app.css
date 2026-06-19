@@ -347,3 +347,21 @@ button.act.ghost:hover{border-color:var(--amber)}
   background-repeat:no-repeat;background-position:right 9px center;background-size:11px;
   padding-right:28px;
 }
+
+/* ───────── motion: entrance + chart draw-on (subtle, gated by .anim / reduced-motion) ───────── */
+@keyframes edIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.editor{animation:edIn .2s cubic-bezier(.2,.7,.3,1) both}
+.infomodal:not(.hide) .infobox{animation:edIn .16s ease both}
+
+@keyframes barGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+#histChart.anim rect{transform-box:fill-box;transform-origin:bottom;animation:barGrow .5s cubic-bezier(.2,.7,.3,1) both}
+
+@keyframes lineDraw{to{stroke-dashoffset:0}}
+#fcChart.anim polyline.line,#rtChart.anim polyline.line,#salaryChart.anim polyline.line{stroke-dasharray:1;stroke-dashoffset:1;animation:lineDraw .9s ease forwards}
+
+@keyframes donutDraw{to{stroke-dashoffset:0}}
+#donut.anim path{stroke-dasharray:1;stroke-dashoffset:1;animation:donutDraw .8s ease forwards}
+
+@media(prefers-reduced-motion:reduce){
+  .editor,.infomodal .infobox,#histChart.anim rect,#fcChart.anim polyline.line,#rtChart.anim polyline.line,#salaryChart.anim polyline.line,#donut.anim path{animation:none!important}
+}

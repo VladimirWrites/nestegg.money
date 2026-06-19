@@ -3,6 +3,12 @@
 
 export const $ = (id) => document.getElementById(id);
 
+// True when the user prefers reduced motion — gates the JS-driven count-up.
+export const reduceMotion = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } };
+
+// Trailing debounce — collapses bursts (e.g. keystrokes) into one call.
+export const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+
 // Editor overlays: show one full-screen editor over the hidden app shell (scrolled to top),
 // or reverse it.
 export function showEditor(id) {

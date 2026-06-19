@@ -1,6 +1,6 @@
 // All chart rendering (net-worth history, allocation donut, forecast, retirement) and
 // the PNG export of each. Pulls computed values from the domain layer; only touches the DOM.
-import { $, toast, syncVal } from "./dom.js";
+import { $, toast, syncVal, reduceMotion } from "./dom.js";
 import { state } from "../domain/store.js";
 import { money, ccySym, esc, shortK } from "../domain/money.js";
 import {
@@ -12,7 +12,14 @@ import { fcCfg, forecastNetAt, fcTarget, fcBandRates, debtSummary } from "../dom
 import { retCfg, retSim, pensionPts } from "../domain/retirement.js";
 import { FC_AMBER, FC_GREEN, CH_AXIS, CH_INK, CH_BG, CH_RED, niceCeil, chartDims, yGrid, txt, legendSVG, frameSVG, svgToPng } from "./chart-kit.js";
 
+// Entrance animations play only on view-entry (boot / tab switch), never on the many
+// live re-renders (keystrokes, background refresh) — gated by this one-shot arm flag.
+let _arm = false;
+let _animOn = false;
+export function armChartAnim() { _arm = true; }
+
 export function renderAll() {
+  _animOn = _arm; _arm = false;
   drawHist();
   drawHistLegend();
   renderYears();
@@ -20,6 +27,28 @@ export function renderAll() {
   updNote();
   renderForecast();
   renderRetire();
+  _animOn = false;
+}
+
+// Count-up the hero net-worth number from its last value to the new one.
+let _heroVal = 0;
+let _heroRaf = 0;
+function setHero(nw) {
+  const el = $("nwTotal");
+  if (!el) return;
+  if (reduceMotion() || _heroVal === nw) { el.textContent = money(nw); _heroVal = nw; return; }
+  const from = _heroVal, to = nw, dur = 550;
+  let t0 = 0; // seeded from the first frame's timestamp so we never mix clocks
+  cancelAnimationFrame(_heroRaf);
+  const step = (now) => {
+    if (!t0) t0 = now;
+    const p = Math.min(1, Math.max(0, (now - t0) / dur));
+    const e = 1 - Math.pow(1 - p, 3); // ease-out cubic
+    el.textContent = money(from + (to - from) * e);
+    if (p < 1) _heroRaf = requestAnimationFrame(step);
+  };
+  _heroVal = to;
+  _heroRaf = requestAnimationFrame(step);
 }
 
 /* ---- forecast ---- */
@@ -85,11 +114,12 @@ export function renderForecast() {
     s += `<polyline points="${bandLo.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>poor: ${Math.round(br.lo * 100)}%/yr</title></polyline>`;
   }
   s += `<polyline points="${proj.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`;
-  s += `<polyline points="${actual.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
+  s += `<polyline class="line" pathLength="1" points="${actual.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
   actual.forEach((p) => { s += `<circle cx="${X(p.y)}" cy="${Y(p.v)}" r="3" fill="${FC_AMBER}"><title>${p.y}: ${money(p.v)}</title></circle>`; });
   if (fireY && fnet(new Date(fireY, 11, 31)) >= target) { const fx = X(fireY), fyv = Y(Math.min(target, nm)); s += `<line x1="${fx}" y1="${padT}" x2="${fx}" y2="${padT + plotH}" stroke="${FC_GREEN}" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>`; s += `<circle cx="${fx}" cy="${fyv}" r="4" fill="${FC_GREEN}"><title>Goal reached ${fireY}</title></circle>`; }
   s += `<circle cx="${X(projEnd.y)}" cy="${Y(projEnd.v)}" r="3" fill="${FC_AMBER}" opacity="0.85"><title>${projEnd.y}: ${money(projEnd.v)}</title></circle>`;
   svg.innerHTML = s;
+  svg.classList.toggle("anim", _animOn);
   // stats
   const d = debtSummary();
   const goalStat = target > 0 ? (fireY ? `<div class="fcstat"><span class="k">${fc.goalMode === "spend" ? "FIRE goal (" + money(target) + ")" : "Goal " + money(target)}</span><span class="v ok">${fireY <= cy ? "reached 🎉" : "~" + fireY + " · in " + (fireY - cy) + " yr" + (fireY - cy === 1 ? "" : "s")}</span></div>` : `<div class="fcstat"><span class="k">Goal ${money(target)}</span><span class="v">not within 45 yrs</span></div>`) : `<div class="fcstat"><span class="k">Goal</span><span class="v dim">set a target above</span></div>`;
@@ -131,10 +161,11 @@ export function renderRetire() {
     const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${CH_AXIS}">${y}</text>`;
     if (sim.pensY > minY && sim.pensY <= maxY && sim.pensionAnnual > 0) { const px = X(sim.pensY); s += `<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT + plotH}" stroke="${FC_GREEN}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`; s += `<text x="${px + 4}" y="${padT + 10}" font-family="ui-monospace,monospace" font-size="9.5" fill="${FC_GREEN}">pension starts ${sim.pensY}</text>`; }
     s += `<polygon points="${X(minY)},${Y(0)} ${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")} ${X(maxY)},${Y(0)}" fill="${FC_AMBER}" opacity="0.1"/>`;
-    s += `<polyline points="${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
+    s += `<polyline class="line" pathLength="1" points="${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
     sim.pts.forEach((p) => { if (p.y === sim.pensY || p.y === minY || p.y === maxY) s += `<circle cx="${X(p.y)}" cy="${Y(p.pot)}" r="3" fill="${FC_AMBER}"><title>${p.y}: ${money(p.pot)}</title></circle>`; });
     if (sim.depleted) s += `<circle cx="${X(sim.depleted)}" cy="${Y(0)}" r="4" fill="${CH_RED}"><title>Depleted ${sim.depleted}</title></circle>`;
     svg.innerHTML = s;
+    svg.classList.toggle("anim", _animOn);
   }
   const eggStat = `<div class="fcstat"><span class="k">Nest egg ${sim.retY}</span><span class="v">${money(sim.pts[0].pot)}</span><span class="sub">today's money · investable</span></div>`;
   const ptsNote = r.pmode === "de" ? pensionPts().toFixed(1) + " pts · " : "";
@@ -168,9 +199,10 @@ function drawHist() {
     s += `<text x="${cx}" y="${H - padB + 16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${CH_INK}">${sn.year}</text>`;
   });
   svg.innerHTML = s;
+  svg.classList.toggle("anim", _animOn);
   // hero = latest
   const ls = latestSnap(); const nw = ls ? snapTotalBase(ls) : 0;
-  $("nwTotal").textContent = money(nw);
+  setHero(nw);
   const nAssets = ls ? effEntries(ls).filter((e) => !isLiability(e)).length : 0;
   $("nwNote").textContent = ls ? "as of " + ls.year + " · " + nAssets + " asset" + (nAssets === 1 ? "" : "s") : "No data yet";
   const dEl = $("nwDay"); const dc = dayChangeBase(nw);
@@ -192,9 +224,10 @@ function drawDonut() {
   const total = rows.reduce((a, r) => a + r.v, 0);
   if (total > 0) {
     const cx = 120, cy = 120, r = 82, sw = 30; let a = -Math.PI / 2;
-    rows.forEach((row) => { const f = row.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0; const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`); p.setAttribute("fill", "none"); p.setAttribute("stroke", colorOf(row.name, names)); p.setAttribute("stroke-width", sw); svg.appendChild(p); a = a2; });
+    rows.forEach((row) => { const f = row.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0; const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`); p.setAttribute("fill", "none"); p.setAttribute("stroke", colorOf(row.name, names)); p.setAttribute("stroke-width", sw); p.setAttribute("pathLength", "1"); svg.appendChild(p); a = a2; });
     txt(svg, cx, cy - 4, "TOTAL", 10, CH_AXIS, 2, 400); txt(svg, cx, cy + 18, money(total), 16, CH_INK, 0, 600);
   }
+  svg.classList.toggle("anim", _animOn);
   const leg = $("legend"); leg.innerHTML = "";
   rows.forEach((row) => { const d = document.createElement("div"); d.className = "legrow"; d.innerHTML = `<span class="swatch" style="background:${colorOf(row.name, names)}"></span><span>${esc(row.name)}</span><span class="pct">${((row.v / total) * 100).toFixed(0)}%</span><span class="amt num">${money(row.v)}</span>`; leg.appendChild(d); });
 }
