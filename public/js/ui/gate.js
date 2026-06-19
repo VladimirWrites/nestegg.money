@@ -60,7 +60,8 @@ export async function boot() {
     // (it's plaintext + synchronous), then reconcile with the server.
     $("gate").classList.add("hide");
     let loc = null; try { loc = loadLocal(); } catch (e) {}
-    if (loc && loc.snapshots) { try { setState(migrate(loc)); setBaseline(); enterApp(); } catch (e) {} }
+    let paintedSig = null;
+    if (loc && loc.snapshots) { try { setState(migrate(loc)); setBaseline(); enterApp(); paintedSig = JSON.stringify(state); } catch (e) {} }
     try { await deriveKeys(tok); } catch (e) {}
     let rem = null; try { rem = await loadServer(); } catch (e) { rem = null; }
     let repair = false;
@@ -72,8 +73,11 @@ export async function boot() {
       } else { setState(migrate(remOk ? rem : locOk ? loc : emptyState())); }
     } catch (e) { if (!state || !state.snapshots) setState(emptyState()); }
     setBaseline();
-    // First paint already happened from local; otherwise enter now. Either way re-render the merge.
-    if ($("app").classList.contains("hide")) enterApp(); else renderAll();
+    // First paint already happened from local; otherwise enter now. Only re-render the
+    // reconciled result if it actually changed — re-rendering an unchanged state would
+    // cut the entrance animation short (the bars/lines rebuild without .anim).
+    if ($("app").classList.contains("hide")) enterApp();
+    else if (JSON.stringify(state) !== paintedSig) { armChartAnim(); renderAll(); }
     if (repair) { try { pushServer(); } catch (e) {} }
   } catch (e) {
     try { setState(emptyState()); } catch (_) {}
@@ -90,7 +94,7 @@ function enterApp() {
     armChartAnim();
     renderAll();
     // Refresh live FX + ticker prices (+ past-year closes). Silent; re-render once fresh.
-    try { autoRefresh().then((ch) => { if (ch) { scheduleSync(); renderAll(); } }).catch(() => {}); } catch (e) {}
+    try { autoRefresh().then((ch) => { if (ch) { scheduleSync(); armChartAnim(); renderAll(); } }).catch(() => {}); } catch (e) {}
   } catch (e) { console && console.error && console.error("enterApp:", e); }
 }
 
