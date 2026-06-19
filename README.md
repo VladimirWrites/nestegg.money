@@ -43,17 +43,23 @@ nestegg.money/
 ├── src/index.js          # the Worker: /api/fx, /api/price, /api/vault + routing
 ├── public/
 │   ├── index.html        # marketing landing (root domain)
-│   ├── dashboard.html    # the app (dashboard subdomain / *.workers.dev)
+│   ├── dashboard.html    # the app — loads one <script type="module" src="js/main.js">
 │   ├── css/              # base, landing, app styles
-│   └── js/               # core (state/math/sync), gate, charts, networth,
-│                         # assets, salary, wire — global scope, loaded in order
+│   └── js/               # native ES modules (no bundler); layers point ui → io → domain
+│       ├── domain/       #   pure logic, no DOM/network: money, dates, schema, ids,
+│       │                 #   loan, asset-value, model, forecast, retirement, merge, store
+│       ├── io/           #   effects: crypto (encrypt), storage (localStorage/sync/fetch)
+│       ├── ui/           #   DOM: dom, chart-kit, charts, networth, assets, salary, gate
+│       └── main.js       #   entry point: cross-cutting wiring + boot
+├── tests/                # node --test over the pure domain modules
 ├── schema.sql            # D1: one row per account (hash → encrypted blob)
 └── wrangler.toml
 ```
 
 The Worker runs first (`run_worker_first`) so it can route the landing page vs
 the app by hostname and handle `/api/*`; everything else falls through to the
-static assets binding.
+static assets binding. The frontend is a plain ES-module graph — the browser
+loads it directly, no build step.
 
 ## Deploy
 
@@ -66,7 +72,9 @@ Requires a Cloudflare account and `npm i -g wrangler` (then `wrangler login`).
 
 Local dev: `wrangler dev` (serves the app with live API + local D1).
 
-Tests (loan math, multi-device merge, tokens): `node --test tests/core.test.mjs`
+Tests (loan/asset/forecast/retirement math, `migrate`, multi-device merge, crypto):
+`npm test` (runs `node --test tests/*.mjs` — the pure domain modules import directly,
+no browser needed).
 
 ## Notes
 
