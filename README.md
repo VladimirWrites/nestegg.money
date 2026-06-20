@@ -84,3 +84,14 @@ no browser needed).
   fallback FX rates; sync, live FX and prices activate once deployed.
 - The server can't read your figures, but it can see the size of the
   encrypted blob, sync times, and your IP — stated plainly in the app footer.
+
+## Contributing
+
+Issues and pull requests welcome. The domain logic (`public/js/domain/`) is pure
+and covered by tests — run `npm test` before sending a PR, and add tests for new
+behaviour there. The `ui/` and `io/` layers are thin and browser-facing; keep DOM
+work out of `domain/`.
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE). © 2026 Vladimir Jovanovic.
