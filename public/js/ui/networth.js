@@ -30,7 +30,7 @@ function cardHTML(en, i, names, year) {
   const baseV = entryBase(en, year), liab = en.kind === "liability", priced = en.kind === "ticker" || en.kind === "crypto";
   let valuePart;
   if (priced) {
-    const p = tickerPx(en), isC = en.kind === "crypto";
+    const p = tickerPx(en, year), isC = en.kind === "crypto";
     const pxtxt = p ? "@ " + moneyIn(p.price, p.currency) + (p.frozen ? " · year-end" : "") : en.ticker ? "no price" : isC ? "set coin" : "set ticker";
     valuePart = `<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares != null ? en.shares : 0}" data-i="${i}" data-f="shares" placeholder="${isC ? "coins" : "shares"}" title="${isC ? "coins" : "shares"}">
     <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker || "")}" data-i="${i}" data-f="ticker" placeholder="${isC ? "BTC-EUR" : "AMS:VWRL"}" title="${isC ? "coin pair, e.g. BTC-EUR" : "ticker"}"><button type="button" class="rinfo" data-info="${isC ? "crypto" : "ticker"}" title="Where do I find this?" aria-label="Symbol help">i</button></span>
@@ -127,7 +127,7 @@ $("edEntries").addEventListener("input", (e) => {
   const card = t.closest(".rcard"); const cv = card && card.querySelector(".rconv");
   if (cv) {
     const bv = entryBase(en, sn.year);
-    if (en.kind === "ticker" || en.kind === "crypto") { const p = tickerPx(en); cv.textContent = p ? money(bv) : en.ticker ? "no price" : en.kind === "crypto" ? "set coin" : "set ticker"; }
+    if (en.kind === "ticker" || en.kind === "crypto") { const p = tickerPx(en, sn.year); cv.textContent = p ? money(bv) : en.ticker ? "no price" : en.kind === "crypto" ? "set coin" : "set ticker"; }
     else if (en.kind === "liability") cv.textContent = "− " + money(Math.abs(bv));
     else cv.textContent = en.ccy !== state.baseCcy ? "= " + money(bv) : "";
     flash(cv);

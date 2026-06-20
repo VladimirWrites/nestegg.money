@@ -31,8 +31,11 @@ export const isPriced = (en) => en.kind === "ticker" || en.kind === "crypto"; //
 
 // Effective price for a ticker entry: a frozen historical close (past years) if stored
 // on the entry, otherwise the live fetched price; null when unknown.
-export function tickerPx(en) {
+export function tickerPx(en, year) {
   if (en.px != null) return { price: en.px, currency: en.pxCcy || en.ccy || "EUR", frozen: true };
+  // For a PAST year with no frozen close, never fall back to the live price — today's price
+  // is wrong for an old holding (e.g. a 2013 BTC valued at today's BTC). Report no price.
+  if (year != null && year < new Date().getFullYear()) return null;
   const p = state.prices[en.ticker];
   if (p) return { price: p.price, currency: p.currency, prevClose: p.prevClose, frozen: false };
   return null;
@@ -47,10 +50,11 @@ export function priceIsToday(p) {
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 }
 
-// An entry's value in its own currency: { v, ccy }.
-export function entryNative(en) {
+// An entry's value in its own currency: { v, ccy }. `year` makes priced holdings use the
+// year's frozen close (and avoid the live price for past years).
+export function entryNative(en, year) {
   if (isPriced(en)) {
-    const p = tickerPx(en);
+    const p = tickerPx(en, year);
     if (!p) return { v: 0, ccy: en.ccy || "EUR", miss: true };
     return { v: (parseFloat(en.shares) || 0) * p.price, ccy: p.currency };
   }
@@ -59,8 +63,8 @@ export function entryNative(en) {
   return { v: parseFloat(en.value) || 0, ccy: en.ccy || "EUR" };
 }
 
-export const entryEUR = (en, year) => { const n = entryNative(en); return convToY(n.v, n.ccy, "EUR", year); };
-export const entryBase = (en, year) => { const n = entryNative(en); return convToY(n.v, n.ccy, state.baseCcy, year); };
+export const entryEUR = (en, year) => { const n = entryNative(en, year); return convToY(n.v, n.ccy, "EUR", year); };
+export const entryBase = (en, year) => { const n = entryNative(en, year); return convToY(n.v, n.ccy, state.baseCcy, year); };
 
 // Today's change in base currency across priced holdings (skips frozen + stale-market prices).
 export function dayChangeBase(nw) {
