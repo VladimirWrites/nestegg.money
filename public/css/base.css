@@ -18,6 +18,8 @@ html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--mono);line-height:1.5;padding:0 0 90px;min-height:100vh}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .hide{display:none!important}
+/* visually hidden but present in the DOM, so password managers can see credential fields */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 /* dark scrollbars to match the app (instead of the default light ones) */
 html{scrollbar-color:var(--line2) transparent;scrollbar-width:thin}
 .histscroll,.saltable-scroll,.schscroll,.editor,#salImportText{scrollbar-color:var(--line2) transparent;scrollbar-width:thin}

@@ -21,21 +21,41 @@ function showToken(el, tok) {
   if (avail > 0) { const base = parseFloat(getComputedStyle(line).fontSize), w = line.getBoundingClientRect().width; if (w > avail) line.style.fontSize = Math.max(11, (base * avail) / w) + "px"; }
 }
 
+// Offer the account number to the browser's password manager (Chromium Credential
+// Management API; a no-op elsewhere). The "username" is a constant label — the secret is
+// the account number itself.
+async function saveCredential(pw) {
+  try {
+    if (window.PasswordCredential && navigator.credentials && navigator.credentials.store) {
+      await navigator.credentials.store(new PasswordCredential({ id: "nestegg account", password: pw, name: "nestegg account" }));
+    }
+  } catch (e) {}
+}
+
 let pendingToken = null;
-function showCreate() { $("gateCreate").classList.remove("hide"); $("gateSignin").classList.add("hide"); pendingToken = generateToken(); showToken($("newAcct"), pendingToken); }
+function newToken() {
+  pendingToken = generateToken();
+  showToken($("newAcct"), pendingToken);
+  const pf = $("acctPass"); if (pf) pf.value = pendingToken; // mirror into the credential field
+}
+function showCreate() { $("gateCreate").classList.remove("hide"); $("gateSignin").classList.add("hide"); newToken(); }
 function showSignin() { $("gateCreate").classList.add("hide"); $("gateSignin").classList.remove("hide"); }
 $("toSignin").onclick = showSignin;
 $("toCreate").onclick = showCreate;
-$("regenAcct").onclick = () => { pendingToken = generateToken(); showToken($("newAcct"), pendingToken); };
+$("regenAcct").onclick = () => newToken();
 $("copyAcct").onclick = async () => { toast((await copyText(pendingToken)) ? "Copied" : "Couldn't copy — write it down"); };
-$("confirmAcct").onclick = async () => {
+$("gateCreate").addEventListener("submit", async (e) => {
+  e.preventDefault();
   LS.set("nw_token", pendingToken);
   try { await deriveKeys(pendingToken); } catch (e) {}
-  setState(emptyState()); setBaseline(); saveLocal(); enterApp();
+  setState(emptyState()); setBaseline(); saveLocal();
+  await saveCredential(pendingToken);
+  enterApp();
   try { pushServer(); } catch (e) {}
   try { fetchFx().then((ok) => { if (ok) { scheduleSync(); renderAll(); } }).catch(() => {}); } catch (e) {}
-};
-$("signinBtn").onclick = async () => {
+});
+$("gateSignin").addEventListener("submit", async (e) => {
+  e.preventDefault();
   const t = $("signinInput").value.trim();
   if (!validToken(t)) { toast("That's not a valid account number"); return; }
   const canon = canonToken(t);
@@ -48,9 +68,11 @@ $("signinBtn").onclick = async () => {
   const rem = await loadServer();
   const loc = sameAcct ? loadLocal() : null;
   setState(migrate(rem && rem.snapshots ? (loc && loc.snapshots ? mergeStates(migrate(loc), migrate(rem)) : rem) : loc || emptyState()));
-  setBaseline(); enterApp();
+  setBaseline();
+  await saveCredential(canon); // offer to save/update in the password manager
+  enterApp();
   try { pushServer(); } catch (e) {}
-};
+});
 
 export async function boot() {
   try {

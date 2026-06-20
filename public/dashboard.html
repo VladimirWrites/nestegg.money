@@ -38,19 +38,23 @@
   <div class="gatebox">
     <div class="kick">Personal Ledger</div><h1>Net Worth</h1>
     <div class="sub">No email. No password. Just an account number.</div>
-    <div class="panel" id="gateCreate">
+    <form class="panel" id="gateCreate" autocomplete="on">
       <p>Your account number is your only key. It identifies you and unlocks your data, which is encrypted in your browser before it ever leaves. Write it down somewhere safe.</p>
+      <!-- credential fields for password managers (account number = the secret) -->
+      <input type="text" id="acctUser" class="sr-only" autocomplete="username" value="nestegg account" readonly tabindex="-1" aria-hidden="true">
       <div class="acctnum num" id="newAcct">…</div>
-      <div class="gaterow"><button class="gatebtn ghost" id="copyAcct">Copy</button><button class="gatebtn ghost" id="regenAcct">Generate another</button><button class="gatebtn" id="confirmAcct">I've saved it — continue</button></div>
+      <input type="password" id="acctPass" class="sr-only" autocomplete="new-password" tabindex="-1" aria-hidden="true">
+      <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct">I've saved it — continue</button></div>
       <div class="warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
       <div class="switch">Already have one? <a id="toSignin">Sign in with an account number</a></div>
-    </div>
-    <div class="panel hide" id="gateSignin">
+    </form>
+    <form class="panel hide" id="gateSignin" autocomplete="on">
       <p>Enter your account number to load and decrypt your ledger on this device.</p>
-      <input class="gatein" id="signinInput" placeholder="XXXX-XXXX-XXXX-…" autocomplete="off" spellcheck="false">
-      <div class="gaterow"><button class="gatebtn" id="signinBtn">Sign in</button></div>
+      <input type="text" id="signinUser" class="sr-only" autocomplete="username" value="nestegg account" readonly tabindex="-1" aria-hidden="true">
+      <input class="gatein" id="signinInput" type="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false">
+      <div class="gaterow"><button type="submit" class="gatebtn" id="signinBtn">Sign in</button></div>
       <div class="switch">Need a new account? <a id="toCreate">Create one</a></div>
-    </div>
+    </form>
     <div class="switch">By continuing you agree to the <a href="privacy.html">Privacy Policy</a> and <a href="terms.html">Terms &amp; Conditions</a>.</div>
   </div>
 </div>
