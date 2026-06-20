@@ -311,7 +311,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel2)}
 .saltab td.salm{color:var(--muted);font-size:12px}
 .saltab tr.saly td{background:#141416;color:var(--amber);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;text-align:right;font-variant-numeric:tabular-nums}
-.saltab tr.saly td:first-child{text-align:left}
+.saltab tr.saly td:first-child{text-align:left;position:sticky;left:0;z-index:1;border-right:1px solid var(--line2)}
 .saltab .salgsep{border-left:2px solid var(--line2)}
 .saltab td.salm{min-width:90px}
 .saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:#000;border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--ink)}
