@@ -55,7 +55,7 @@ $("signinBtn").onclick = async () => {
 export async function boot() {
   try {
     const tok = LS.get("nw_token");
-    if (!tok) { showCreate(); return; }
+    if (!tok) { if (location.hash === "#signin") showSignin(); else showCreate(); return; }
     // Already signed in — never flash the login screen. Paint from the local cache immediately
     // (it's plaintext + synchronous), then reconcile with the server.
     $("gate").classList.add("hide");
