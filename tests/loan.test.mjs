@@ -63,6 +63,17 @@ test("outstandingAt: full balance before start, zero after payoff", () => {
   assert.ok(mid > 0 && mid < 100000);
 });
 
+test("buildSchedule memoizes by inputs: identical loans share the cached result, changes rebuild", () => {
+  const l = loan({ amount: 100000, rate: 3 });
+  const a = buildSchedule(l);
+  assert.equal(buildSchedule(l), a); // same object reference -> served from cache
+  assert.deepEqual(buildSchedule(loan({ amount: 100000, rate: 3 })), a); // equal inputs, equal schedule
+  l.rate = 4;
+  const b = buildSchedule(l);
+  assert.notEqual(b, a); // an input changed -> a fresh schedule
+  assert.ok(b[0].interest > a[0].interest); // 4% costs more interest than 3%
+});
+
 test("outstandingAt: monotonically non-increasing over time", () => {
   const l = loan({ amount: 100000, rate: 3 });
   let prev = Infinity;

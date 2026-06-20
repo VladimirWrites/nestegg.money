@@ -3,7 +3,7 @@
 // background data refreshes to a re-render, boots the app, and registers the service worker.
 import { state, setState } from "./domain/store.js";
 import { emptyState, migrate } from "./domain/schema.js";
-import { $, toast, downloadBlob } from "./ui/dom.js";
+import { $, toast, downloadBlob, isIOSUserAgent, isStandalone } from "./ui/dom.js";
 import { scheduleSync, flushSync, autoRefresh, setDataListener } from "./io/storage.js";
 import { renderAll } from "./ui/charts.js";
 import { renderEntries } from "./ui/networth.js";
@@ -71,23 +71,39 @@ document.addEventListener("keydown", (e) => {
   for (const id in EDITOR_BACK) { const ed = $(id); if (ed && !ed.classList.contains("hide")) { const b = $(EDITOR_BACK[id]); if (b) b.click(); return; } }
 });
 
-// PWA install: capture the browser's install prompt and surface an "Install app" button in
-// the profile (Chromium/Android only — Safari/iOS doesn't fire this event).
-let deferredInstall = null;
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredInstall = e;
-  const b = $("installBtn"); if (b) b.classList.remove("hide");
-});
+// PWA install (profile "Install app" button). Chromium/Android fire beforeinstallprompt, so
+// we trigger the native prompt. iOS/iPadOS has no install API, so the button opens a short
+// "Add to Home Screen" guide. Hidden only when already running standalone.
 const installBtn = $("installBtn");
-if (installBtn) installBtn.onclick = async () => {
-  if (!deferredInstall) return;
-  deferredInstall.prompt();
-  try { await deferredInstall.userChoice; } catch (e) {}
-  deferredInstall = null;
-  installBtn.classList.add("hide");
-};
-window.addEventListener("appinstalled", () => { deferredInstall = null; const b = $("installBtn"); if (b) b.classList.add("hide"); });
+const onIOS = isIOSUserAgent(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
+let deferredInstall = null;
+const showInstall = () => { if (installBtn) installBtn.classList.remove("hide"); };
+const hideInstall = () => { if (installBtn) installBtn.classList.add("hide"); };
+
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstall = e; if (!isStandalone()) showInstall(); });
+window.addEventListener("appinstalled", () => { deferredInstall = null; hideInstall(); });
+
+if (installBtn) {
+  if (!isStandalone() && onIOS) showInstall(); // iOS never fires beforeinstallprompt
+  installBtn.onclick = async () => {
+    if (deferredInstall) {
+      deferredInstall.prompt();
+      try { await deferredInstall.userChoice; } catch (e) {}
+      deferredInstall = null; hideInstall(); return;
+    }
+    if (onIOS) {
+      const b = $("infoBody");
+      if (b) b.innerHTML = `<h3>Install on iPhone / iPad</h3>
+        <p>iOS installs apps from the browser's Share menu:</p>
+        <ul>
+          <li>Tap the <b>Share</b> button (the square with an up-arrow) in Safari's toolbar.</li>
+          <li>Scroll down and choose <b>Add to Home Screen</b>.</li>
+          <li>Tap <b>Add</b> — nestegg opens full-screen like an app, and your data stays on this device.</li>
+        </ul>`;
+      $("infoModal").classList.remove("hide");
+    }
+  };
+}
 
 try { boot(); } catch (e) {}
 

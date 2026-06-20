@@ -9,6 +9,17 @@ export const reduceMotion = () => { try { return matchMedia("(prefers-reduced-mo
 // Trailing debounce — collapses bursts (e.g. keystrokes) into one call.
 export const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
+// Pure iOS check (incl. iPadOS, which reports as MacIntel with a touchscreen). Takes the
+// navigator bits as args so it's unit-testable.
+export const isIOSUserAgent = (ua, platform, maxTouchPoints) =>
+  /iphone|ipad|ipod/i.test(ua || "") || ((platform || "") === "MacIntel" && (maxTouchPoints || 0) > 1);
+
+// True when running as an installed/standalone PWA (so the install button can hide).
+export const isStandalone = () => {
+  try { return matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
+  catch (e) { return false; }
+};
+
 // Editor overlays: show one full-screen editor over the hidden app shell (scrolled to top),
 // or reverse it.
 export function showEditor(id) {
