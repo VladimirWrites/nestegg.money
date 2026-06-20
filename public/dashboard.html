@@ -136,12 +136,8 @@
 
     <section style="border-bottom:none;padding-top:8px">
       <div class="controls" style="margin-top:0">
-        <button class="act ghost" id="exportBtn">Export JSON</button>
-        <button class="act ghost" id="importBtn">Import JSON</button>
-        <input type="file" id="importFile" accept="application/json" style="display:none">
         <button class="act ghost" id="pricesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg>Prices</button>
         <button class="act ghost" id="ratesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg>Rates</button>
-        <button class="act ghost" id="resetBtn">Reset</button>
         <span class="updnote" id="updNote"></span>
       </div>
     </section>
@@ -221,6 +217,13 @@
     <div class="acctrow"><div class="acctnum num" id="profAcct">…</div><button class="eyebtn" id="profEye" title="Show / hide" aria-label="Show or hide account number"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
     <div class="controls"><button class="act ghost" id="profCopyAcct">Copy</button><button class="act ghost" id="profSyncNow">Sync now</button></div>
     <div class="warn">This number is your only key — it identifies you and decrypts your data. There is no recovery if you lose it. Keep it somewhere safe, and use Export JSON for a real backup.</div>
+    <div class="sectitle" style="margin-top:28px">Data</div>
+    <div class="controls">
+      <button class="act ghost" id="exportBtn">Export JSON</button>
+      <button class="act ghost" id="importBtn">Import JSON</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+      <button class="act ghost danger" id="resetBtn">Reset</button>
+    </div>
     <div class="controls" style="margin-top:28px"><button class="act ghost danger" id="profLogout">Log out on this device</button></div>
   </div>
 </div>
