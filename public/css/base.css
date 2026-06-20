@@ -5,6 +5,7 @@
   --field:#000;          /* input / track background */
   --row-alt:#141416;     /* alternating / header row background */
   --bar-bg:rgba(10,10,11,.92);  /* sticky editor bar backdrop */
+  --on-amber:#000;       /* text/icon colour on amber-filled surfaces */
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;
   --maxw:1100px;
 }
@@ -14,7 +15,7 @@
   --bg:#faf9f6;--panel:#ffffff;--panel2:#f2f0ea;--line:#e4e1d9;--line2:#d3cfc4;
   --ink:#1b1a17;--muted:#6c685e;--amber:#a86a00;--amber2:#c2410c;
   --blue:#2b6fd6;--green:#1f9d57;--yellow:#b8860b;--red:#d6394f;
-  --field:#ffffff;--row-alt:#f0eee7;--bar-bg:rgba(255,255,255,.9);
+  --field:#ffffff;--row-alt:#f0eee7;--bar-bg:rgba(255,255,255,.9);--on-amber:#fff;
 }
 /* widen the content envelope on large monitors so space isn't wasted.
    Standard 16:9 desktops top out ~1920; true ultrawides are 21:9 (2560/3440)

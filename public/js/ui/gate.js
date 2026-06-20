@@ -109,7 +109,7 @@ function renderProfAcct() {
   if (profShown) showToken(el, tok); else el.textContent = tok.replace(/[0-9A-Za-z]/g, "•") || "…";
   $("profEye").classList.toggle("on", profShown);
 }
-function openProfile() { profShown = false; showEditor("profileEditor"); renderProfAcct(); markThemeButtons(); }
+function openProfile() { profShown = false; showEditor("profileEditor"); renderProfAcct(); syncThemeSel(); }
 function closeProfile() { hideEditor("profileEditor"); }
 $("profileBtn").onclick = openProfile;
 $("profileBack").onclick = closeProfile;
@@ -123,13 +123,11 @@ function applyTheme(t) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0b");
 }
-function markThemeButtons() { document.querySelectorAll("[data-theme-set]").forEach((b) => b.classList.toggle("on", b.dataset.themeSet === currentTheme())); }
-const themeRow = $("themeRow");
-if (themeRow) themeRow.addEventListener("click", (e) => {
-  const b = e.target.closest("[data-theme-set]"); if (!b) return;
-  applyTheme(b.dataset.themeSet);
-  try { LS.set("nw_theme", b.dataset.themeSet); } catch (err) {}
-  markThemeButtons();
+function syncThemeSel() { const s = $("themeSel"); if (s) s.value = currentTheme(); }
+const themeSel = $("themeSel");
+if (themeSel) themeSel.addEventListener("change", () => {
+  applyTheme(themeSel.value);
+  try { LS.set("nw_theme", themeSel.value); } catch (err) {}
   // recolour the SVG charts (they read theme CSS vars) by re-rendering the visible view
   if ($("viewSalary") && !$("viewSalary").classList.contains("hide")) renderSalary(); else renderAll();
 });

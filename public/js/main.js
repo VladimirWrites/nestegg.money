@@ -135,6 +135,11 @@ if ("serviceWorker" in navigator) {
         o.innerHTML = '<div class="spin"></div><div class="updtxt">Updating…</div>';
         document.body.appendChild(o);
       });
+      // Installed PWAs rarely navigate, so the browser seldom re-checks sw.js on its own —
+      // force a check on load and whenever the app regains focus so updates land promptly.
+      const check = () => { try { reg.update(); } catch (e) {} };
+      check();
+      document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") check(); });
     }).catch(() => {});
   } catch (e) {}
 }

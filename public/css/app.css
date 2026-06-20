@@ -10,7 +10,7 @@
 .acctnum .d{color:var(--green)}   /* digits */
 .acctnum .a{color:var(--blue)}    /* letters */
 .acctnum .s{color:var(--muted)}   /* separators */
-.gatebtn{font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--amber);color:#000;border:none;padding:14px 20px;cursor:pointer;border-radius:3px;min-height:46px;font-weight:600;font-family:var(--mono)}
+.gatebtn{font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--amber);color:var(--on-amber);border:none;padding:14px 20px;cursor:pointer;border-radius:3px;min-height:46px;font-weight:600;font-family:var(--mono)}
 .gatebtn.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
 .gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--ink);letter-spacing:.05em;font-family:var(--mono)}
 .gatein:focus{outline:none;border-color:var(--amber)}
@@ -28,7 +28,7 @@ header.masthead{border-bottom:1px solid var(--line2);padding:14px 18px 16px;max-
 .mainnav{display:flex;gap:8px;margin-top:14px}
 .navtab{font:inherit;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--line2);border-radius:4px;padding:9px 16px;cursor:pointer}
 .navtab:hover{color:var(--amber);border-color:var(--line2)}
-.navtab.on{background:var(--amber);color:#000;border-color:var(--amber);font-weight:600}
+.navtab.on{background:var(--amber);color:var(--on-amber);border-color:var(--amber);font-weight:600}
 .acctrow{display:flex;align-items:stretch;gap:8px}
 .acctrow .acctnum{flex:1;margin:14px 0;min-width:0}
 .eyebtn{flex:none;align-self:center;width:42px;height:46px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer}
@@ -79,7 +79,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .ychev{color:var(--muted);width:14px;height:14px;flex:none}
 
 .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
-button.act{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:var(--amber);color:#000;border:none;padding:11px 15px;cursor:pointer;border-radius:3px;min-height:40px;font-weight:600;font-family:var(--mono);display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button.act{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:var(--amber);color:var(--on-amber);border:none;padding:11px 15px;cursor:pointer;border-radius:3px;min-height:40px;font-weight:600;font-family:var(--mono);display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .act .ic{width:13px;height:13px;flex:none}
 button.act.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
 button.act.ghost:hover{border-color:var(--amber)}
@@ -198,7 +198,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .legal .note{border-left:2px solid var(--line2);padding-left:14px;color:var(--muted);font-size:12.5px;margin-top:30px}
 .legal a{color:var(--amber)}
 
-.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--amber);color:#000;font-size:12px;font-weight:600;padding:10px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:all .3s;z-index:60;max-width:90vw;text-align:center}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--amber);color:var(--on-amber);font-size:12px;font-weight:600;padding:10px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:all .3s;z-index:60;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* On wide screens, sit Allocation beside Over time instead of stacking,
@@ -400,4 +400,4 @@ button.act.ghost:hover{border-color:var(--amber)}
 @media(prefers-reduced-motion:reduce){.updating .spin{animation:none}}
 
 /* active state for the theme toggle buttons */
-.act.ghost.on{background:var(--amber);color:#000;border-color:var(--amber)}
+.act.ghost.on{background:var(--amber);color:var(--on-amber);border-color:var(--amber)}
