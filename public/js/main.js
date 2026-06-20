@@ -116,5 +116,25 @@ if (installBtn) {
 
 try { boot(); } catch (e) {}
 
-// PWA: offline app shell. Registered after boot so it never competes with startup.
-if ("serviceWorker" in navigator) { try { navigator.serviceWorker.register("/sw.js"); } catch (e) {} }
+// PWA: offline app shell + auto-update. When a new service worker is found it calls
+// skipWaiting (in sw.js) and takes control; we show a brief "Updating…" overlay and reload
+// into the fresh build. Guarded so the initial install's clients.claim doesn't reload.
+if ("serviceWorker" in navigator) {
+  // Controlled at load == a SW already ran here before, so any worker found now is a real
+  // update (not the first install, whose fast skipWaiting+claim would otherwise look like one).
+  const hadController = !!navigator.serviceWorker.controller;
+  let updating = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating) window.location.reload(); });
+  try {
+    navigator.serviceWorker.register("/sw.js").then((reg) => {
+      reg.addEventListener("updatefound", () => {
+        if (!hadController) return; // first install this session, not an update
+        updating = true;
+        const o = document.createElement("div");
+        o.className = "updating";
+        o.innerHTML = '<div class="spin"></div><div class="updtxt">Updating…</div>';
+        document.body.appendChild(o);
+      });
+    }).catch(() => {});
+  } catch (e) {}
+}

@@ -391,3 +391,10 @@ button.act.ghost:hover{border-color:var(--amber)}
 
 /* full-width note inside an entry card (e.g. no historical price for a past year) */
 .rcard .rhint{flex-basis:100%;width:100%;font-size:10.5px;color:var(--amber2);border-top:1px dashed var(--line2);padding-top:7px;margin-top:1px}
+
+/* PWA auto-update overlay (shown briefly while a new version takes over and reloads) */
+.updating{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:9999}
+.updating .spin{width:34px;height:34px;border:3px solid var(--line2);border-top-color:var(--amber);border-radius:50%;animation:nw-spin .8s linear infinite}
+.updating .updtxt{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:.04em}
+@keyframes nw-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.updating .spin{animation:none}}
