@@ -388,3 +388,6 @@ button.act.ghost:hover{border-color:var(--amber)}
 @keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.35}}
 .syncdot.sync{background:var(--amber);animation:syncPulse 1s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){.syncdot.sync{animation:none!important}}
+
+/* full-width note inside an entry card (e.g. no historical price for a past year) */
+.rcard .rhint{flex-basis:100%;width:100%;font-size:10.5px;color:var(--amber2);border-top:1px dashed var(--line2);padding-top:7px;margin-top:1px}

@@ -29,9 +29,13 @@ function closeYearEditor() {
 function cardHTML(en, i, names, year) {
   const baseV = entryBase(en, year), liab = en.kind === "liability", priced = en.kind === "ticker" || en.kind === "crypto";
   let valuePart;
+  let priceNote = "";
   if (priced) {
     const p = tickerPx(en, year), isC = en.kind === "crypto";
-    const pxtxt = p ? "@ " + moneyIn(p.price, p.currency) + (p.frozen ? " · year-end" : "") : en.ticker ? "no price" : isC ? "set coin" : "set ticker";
+    // A past year with the symbol set but no price = no historical data for that year.
+    const noHistData = !p && en.ticker && year < new Date().getFullYear();
+    if (noHistData) priceNote = `<div class="rhint">No year-end price for ${year}. Set the type to “Value” and enter the amount manually.</div>`;
+    const pxtxt = p ? "@ " + moneyIn(p.price, p.currency) + (p.frozen ? " · year-end" : "") : noHistData ? "no year-end price" : en.ticker ? "no price" : isC ? "set coin" : "set ticker";
     valuePart = `<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares != null ? en.shares : 0}" data-i="${i}" data-f="shares" placeholder="${isC ? "coins" : "shares"}" title="${isC ? "coins" : "shares"}">
     <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker || "")}" data-i="${i}" data-f="ticker" placeholder="${isC ? "BTC-EUR" : "AMS:VWRL"}" title="${isC ? "coin pair, e.g. BTC-EUR" : "ticker"}"><button type="button" class="rinfo" data-info="${isC ? "crypto" : "ticker"}" title="Where do I find this?" aria-label="Symbol help">i</button></span>
     <span class="rconv">${p ? money(baseV) : pxtxt}</span>`;
@@ -47,7 +51,7 @@ function cardHTML(en, i, names, year) {
     <select class="rkind" data-i="${i}" data-f="kind"><option value="fixed" ${!priced && !liab ? "selected" : ""}>Value</option><option value="ticker" ${en.kind === "ticker" ? "selected" : ""}>Ticker</option><option value="crypto" ${en.kind === "crypto" ? "selected" : ""}>Crypto</option><option value="liability" ${liab ? "selected" : ""}>Liability</option></select>
     ${valuePart}
     ${catSel}
-    <button class="rdel" data-del="${i}" title="Remove">×</button></div>`;
+    <button class="rdel" data-del="${i}" title="Remove">×</button>${priceNote}</div>`;
 }
 
 // Read-only card for a long-term asset (tap to edit in the focused asset editor).
