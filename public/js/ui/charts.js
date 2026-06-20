@@ -16,10 +16,22 @@ import { FC_AMBER, FC_GREEN, CH_AXIS, CH_INK, CH_BG, CH_RED, niceCeil, chartDims
 // live re-renders (keystrokes, background refresh) — gated by this one-shot arm flag.
 let _arm = false;
 let _animOn = false;
+let _lastSig = "";
 export function armChartAnim() { _arm = true; }
 
+// Signature of everything the charts render from, ignoring churny non-visual fields
+// (mtimes, sync/fetch timestamps, tombstones). Lets renderAll skip a no-op redraw so a
+// background reconcile/refresh can't cut or replay the entrance animation.
+const SIG_SKIP = new Set(["m", "updatedAt", "del", "lastPx", "t", "fxDate"]);
+function chartSig() {
+  try { return JSON.stringify(state, (k, v) => (SIG_SKIP.has(k) ? undefined : v)); }
+  catch (e) { return "x" + Math.random(); }
+}
+
 export function renderAll() {
-  _animOn = _arm; _arm = false;
+  const sig = chartSig();
+  if (!_arm && sig === _lastSig) return; // nothing visual changed and not a fresh entry
+  _animOn = _arm; _arm = false; _lastSig = sig;
   drawHist();
   drawHistLegend();
   renderYears();
