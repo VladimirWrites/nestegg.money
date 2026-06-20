@@ -53,7 +53,10 @@ export function drawSalaryChart() {
   const padL = 56, padR = 56, padT = 22, padB = 30, H = 400, plotH = H - padT - padB;
   // Fill the available width (the .histscroll container), so the graph scales with the screen.
   const cont = svg.closest(".histscroll"); let cw = cont ? cont.clientWidth : 0; if (!cw || cw < 80) cw = 720;
-  const W = Math.max(360, Math.floor(cw)), plotW = W - padL - padR;
+  // Minimum ~6px per month so the x-axis year labels stay legible; the chart overflows
+  // its .histscroll container (horizontal scroll) on narrow screens rather than cramming.
+  const minData = padL + padR + Math.round((maxI - minI + 1) * 6);
+  const W = Math.max(360, Math.floor(cw), minData), plotW = W - padL - padR;
   const X = (i) => padL + ((i - minI) / span) * plotW, YL = (v) => padT + plotH - (v / nmL) * plotH, YR = (v) => padT + plotH - (v / nmR) * plotH, sym = ccySym();
   // Left axis (per-person monthly) reuses the shared grid; the right axis (combined yearly) is overlaid.
   let s = yGrid(W, padL, padR, padT, plotH, nmL, sym);

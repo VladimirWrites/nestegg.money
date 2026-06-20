@@ -196,8 +196,12 @@ export function updNote() {
 /* ---- net-worth history bars ---- */
 function drawHist() {
   const svg = $("histChart"); const snaps = sortedSnaps(); const n = snaps.length; const names = allNames();
-  const dim = chartDims(svg, 680), W = dim.W, H = dim.H;
-  const padL = 58, padR = 14, padT = 24, padB = 32, innerW = W - padL - padR, plotH = H - padT - padB;
+  const dim = chartDims(svg, 680), H = dim.H;
+  const padL = 58, padR = 14, padT = 24, padB = 32, plotH = H - padT - padB;
+  // Minimum ~46px per year so the x-axis year labels never overlap; the chart then
+  // overflows its .histscroll container (horizontal scroll) instead of squeezing.
+  const W = Math.max(dim.W, padL + padR + Math.max(n, 1) * 40);
+  const innerW = W - padL - padR;
   const slot = innerW / Math.max(n, 1), bw = Math.max(8, Math.min(64, slot * 0.62)); // bars fill the width, capped
   const maxV = Math.max(1, ...snaps.map((s) => snapGrossBase(s))), nm = niceCeil(maxV);
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
