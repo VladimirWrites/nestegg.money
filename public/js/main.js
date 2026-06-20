@@ -77,31 +77,40 @@ document.addEventListener("keydown", (e) => {
 const installBtn = $("installBtn");
 const onIOS = isIOSUserAgent(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
 let deferredInstall = null;
-const showInstall = () => { if (installBtn) installBtn.classList.remove("hide"); };
-const hideInstall = () => { if (installBtn) installBtn.classList.add("hide"); };
-
-window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstall = e; if (!isStandalone()) showInstall(); });
-window.addEventListener("appinstalled", () => { deferredInstall = null; hideInstall(); });
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstall = e; });
+window.addEventListener("appinstalled", () => { deferredInstall = null; if (installBtn) installBtn.classList.add("hide"); });
 
 if (installBtn) {
-  if (!isStandalone() && onIOS) showInstall(); // iOS never fires beforeinstallprompt
+  // Show whenever not already installed. Some browsers (Brave, Firefox) never fire
+  // beforeinstallprompt, so we can't rely on it to reveal the button.
+  if (!isStandalone()) installBtn.classList.remove("hide");
   installBtn.onclick = async () => {
     if (deferredInstall) {
+      // Chromium with a captured prompt — trigger the native install dialog.
       deferredInstall.prompt();
       try { await deferredInstall.userChoice; } catch (e) {}
-      deferredInstall = null; hideInstall(); return;
+      deferredInstall = null; installBtn.classList.add("hide");
+      return;
     }
-    if (onIOS) {
-      const b = $("infoBody");
-      if (b) b.innerHTML = `<h3>Install on iPhone / iPad</h3>
-        <p>iOS installs apps from the browser's Share menu:</p>
-        <ul>
-          <li>Tap the <b>Share</b> button (the square with an up-arrow) in Safari's toolbar.</li>
-          <li>Scroll down and choose <b>Add to Home Screen</b>.</li>
-          <li>Tap <b>Add</b> — nestegg opens full-screen like an app, and your data stays on this device.</li>
-        </ul>`;
-      $("infoModal").classList.remove("hide");
-    }
+    // No programmatic prompt (iOS, Brave, Firefox, or not yet eligible) — show how to install.
+    const b = $("infoBody");
+    if (b) b.innerHTML = onIOS
+      ? `<h3>Install on iPhone / iPad</h3>
+         <p>iOS installs apps from the browser's Share menu:</p>
+         <ul>
+           <li>Tap the <b>Share</b> button (the square with an up-arrow) in Safari's toolbar.</li>
+           <li>Scroll down and choose <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+         </ul>
+         <p>nestegg then opens full-screen like an app; your data stays on this device.</p>`
+      : `<h3>Install nestegg as an app</h3>
+         <p>Look for the install control in your browser:</p>
+         <ul>
+           <li><b>Chrome / Edge</b> — the install icon (a monitor with a ↓) at the right of the address bar, or menu → <b>Install nestegg…</b></li>
+           <li><b>Brave</b> — the install icon in the address bar, or menu → <b>Install nestegg.money…</b></li>
+           <li><b>Firefox (desktop)</b> — no built-in install; use Chrome/Edge/Brave, or your phone.</li>
+         </ul>
+         <p>Once installed it opens in its own window and works offline.</p>`;
+    if ($("infoModal")) $("infoModal").classList.remove("hide");
   };
 }
 
