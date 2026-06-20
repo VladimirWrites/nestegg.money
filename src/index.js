@@ -73,7 +73,9 @@ async function priceGet(request) {
         headers: { "user-agent": "Mozilla/5.0", "accept": "application/json" },
         cf: { cacheTtl: 86400, cacheEverything: true },
       });
-      if (!hr.ok) return json({ error: "upstream " + hr.status, symbol }, 502);
+      // 4xx from Yahoo means no data for this symbol/range (e.g. crypto before it existed) —
+      // report it as a clean 404 "no price", not a 502 server error. Reserve 502 for real 5xx.
+      if (!hr.ok) return json({ error: "no data", symbol, status: hr.status }, hr.status >= 500 ? 502 : 404);
       const hd = await hr.json();
       const res = hd && hd.chart && hd.chart.result && hd.chart.result[0];
       const closes = res && res.indicators && res.indicators.quote && res.indicators.quote[0] && res.indicators.quote[0].close;

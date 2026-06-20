@@ -147,6 +147,7 @@ export async function fetchPriceYear(t, year) {
 }
 // Freeze each past-year ticker holding to that year's close (stored on the entry); current/
 // future-year holdings stay on the live price. Returns true if anything changed.
+const _histMiss = new Set(); // (ticker@year) with no historical price — don't re-fetch this session
 export async function refreshHistPrices() {
   const cy = new Date().getFullYear();
   let changed = false;
@@ -157,8 +158,10 @@ export async function refreshHistPrices() {
       if (past) {
         const key = en.ticker + "@" + sn.year;
         if (en.px != null && en.pxKey === key) continue;
+        if (_histMiss.has(key)) continue; // already known to have no year-end price
         const r = await fetchPriceYear(en.ticker, sn.year);
         if (r) { en.px = r.price; en.pxCcy = r.currency; en.pxKey = key; changed = true; }
+        else _histMiss.add(key);
       } else if (en.px != null) {
         delete en.px; delete en.pxCcy; delete en.pxKey; changed = true;
       }
