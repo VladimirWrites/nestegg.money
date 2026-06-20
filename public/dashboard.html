@@ -40,10 +40,7 @@
     <div class="sub">No email. No password. Just an account number.</div>
     <form class="panel" id="gateCreate" autocomplete="on">
       <p>Your account number is your only key. It identifies you and unlocks your data, which is encrypted in your browser before it ever leaves. Write it down somewhere safe.</p>
-      <!-- credential fields for password managers (account number = the secret) -->
-      <input type="text" id="acctUser" class="sr-only" autocomplete="username" value="nestegg account" readonly tabindex="-1" aria-hidden="true">
       <div class="acctnum num" id="newAcct">…</div>
-      <input type="password" id="acctPass" class="sr-only" autocomplete="new-password" tabindex="-1" aria-hidden="true">
       <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct">I've saved it — continue</button></div>
       <div class="warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
       <div class="switch">Already have one? <a id="toSignin">Sign in with an account number</a></div>

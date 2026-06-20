@@ -21,22 +21,10 @@ function showToken(el, tok) {
   if (avail > 0) { const base = parseFloat(getComputedStyle(line).fontSize), w = line.getBoundingClientRect().width; if (w > avail) line.style.fontSize = Math.max(11, (base * avail) / w) + "px"; }
 }
 
-// Offer the account number to the browser's password manager (Chromium Credential
-// Management API; a no-op elsewhere). The "username" is a constant label — the secret is
-// the account number itself.
-async function saveCredential(pw) {
-  try {
-    if (window.PasswordCredential && navigator.credentials && navigator.credentials.store) {
-      await navigator.credentials.store(new PasswordCredential({ id: "nestegg account", password: pw, name: "nestegg account" }));
-    }
-  } catch (e) {}
-}
-
 let pendingToken = null;
 function newToken() {
   pendingToken = generateToken();
   showToken($("newAcct"), pendingToken);
-  const pf = $("acctPass"); if (pf) pf.value = pendingToken; // mirror into the credential field
 }
 function showCreate() { $("gateCreate").classList.remove("hide"); $("gateSignin").classList.add("hide"); newToken(); }
 function showSignin() { $("gateCreate").classList.add("hide"); $("gateSignin").classList.remove("hide"); }
@@ -49,7 +37,6 @@ $("gateCreate").addEventListener("submit", async (e) => {
   LS.set("nw_token", pendingToken);
   try { await deriveKeys(pendingToken); } catch (e) {}
   setState(emptyState()); setBaseline(); saveLocal();
-  await saveCredential(pendingToken);
   enterApp();
   try { pushServer(); } catch (e) {}
   try { fetchFx().then((ok) => { if (ok) { scheduleSync(); renderAll(); } }).catch(() => {}); } catch (e) {}
@@ -69,7 +56,6 @@ $("gateSignin").addEventListener("submit", async (e) => {
   const loc = sameAcct ? loadLocal() : null;
   setState(migrate(rem && rem.snapshots ? (loc && loc.snapshots ? mergeStates(migrate(loc), migrate(rem)) : rem) : loc || emptyState()));
   setBaseline();
-  await saveCredential(canon); // offer to save/update in the password manager
   enterApp();
   try { pushServer(); } catch (e) {}
 });
