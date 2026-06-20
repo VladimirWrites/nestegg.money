@@ -111,6 +111,10 @@ export function renderForecast() {
   // x labels — first, last, and a sparse set between
   const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) { s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${CH_AXIS}">${y}</text>`; }
   if ((maxY - minY) % step !== 0) s += `<text x="${X(maxY)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${CH_AXIS}">${maxY}</text>`;
+  // soft area fill under the actual + projected trajectory
+  { const areaPts = actual.concat(proj.slice(1)), by = Y(0);
+    s += `<defs><linearGradient id="fcArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${FC_AMBER}" stop-opacity="0.20"/><stop offset="1" stop-color="${FC_AMBER}" stop-opacity="0"/></linearGradient></defs>`;
+    s += `<polygon points="${X(areaPts[0].y)},${by} ${areaPts.map((p) => X(p.y) + "," + Y(p.v)).join(" ")} ${X(areaPts[areaPts.length - 1].y)},${by}" fill="url(#fcArea)"/>`; }
   // goal line
   if (target > 0 && target <= nm) {
     const gy = Y(target); s += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="${FC_GREEN}" stroke-width="1.4" stroke-dasharray="2 4"/>`;
@@ -172,7 +176,8 @@ export function renderRetire() {
     const sym = ccySym(); let s = yGrid(W, padL, padR, padT, plotH, nm, sym);
     const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${CH_AXIS}">${y}</text>`;
     if (sim.pensY > minY && sim.pensY <= maxY && sim.pensionAnnual > 0) { const px = X(sim.pensY); s += `<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT + plotH}" stroke="${FC_GREEN}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`; s += `<text x="${px + 4}" y="${padT + 10}" font-family="ui-monospace,monospace" font-size="9.5" fill="${FC_GREEN}">pension starts ${sim.pensY}</text>`; }
-    s += `<polygon points="${X(minY)},${Y(0)} ${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")} ${X(maxY)},${Y(0)}" fill="${FC_AMBER}" opacity="0.1"/>`;
+    s += `<defs><linearGradient id="rtArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${FC_AMBER}" stop-opacity="0.22"/><stop offset="1" stop-color="${FC_AMBER}" stop-opacity="0"/></linearGradient></defs>`;
+    s += `<polygon points="${X(minY)},${Y(0)} ${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")} ${X(maxY)},${Y(0)}" fill="url(#rtArea)"/>`;
     s += `<polyline class="line" pathLength="1" points="${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
     sim.pts.forEach((p) => { if (p.y === sim.pensY || p.y === minY || p.y === maxY) s += `<circle cx="${X(p.y)}" cy="${Y(p.pot)}" r="3" fill="${FC_AMBER}"><title>${p.y}: ${money(p.pot)}</title></circle>`; });
     if (sim.depleted) s += `<circle cx="${X(sim.depleted)}" cy="${Y(0)}" r="4" fill="${CH_RED}"><title>Depleted ${sim.depleted}</title></circle>`;
@@ -200,7 +205,7 @@ function drawHist() {
   const padL = 58, padR = 14, padT = 24, padB = 32, plotH = H - padT - padB;
   // Minimum ~46px per year so the x-axis year labels never overlap; the chart then
   // overflows its .histscroll container (horizontal scroll) instead of squeezing.
-  const W = Math.max(dim.W, padL + padR + Math.max(n, 1) * 40);
+  const W = Math.max(dim.W, padL + padR + Math.max(n, 1) * 32);
   const innerW = W - padL - padR;
   const slot = innerW / Math.max(n, 1), bw = Math.max(8, Math.min(64, slot * 0.62)); // bars fill the width, capped
   const maxV = Math.max(1, ...snaps.map((s) => snapGrossBase(s))), nm = niceCeil(maxV);

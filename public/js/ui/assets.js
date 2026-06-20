@@ -1,6 +1,6 @@
 // Long-term asset editor: one asset with optional toggles (depreciates and/or carries a loan).
 // Net contribution = (depreciated price or market value) − outstanding loan.
-import { $, toast } from "./dom.js";
+import { $, toast, flash } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
@@ -171,6 +171,7 @@ $("assetList").addEventListener("input", (e) => {
   if (vv) {
     if (a.liability) { const bal = a.loan ? outstandingAt(a.loan, new Date()) : 0; vv.textContent = (bal > 0.005 ? "− " + moneyIn(bal, a.ccy) : moneyIn(0, a.ccy)) + (a.ccy !== state.baseCcy ? " · " + money(convTo(-bal, a.ccy, state.baseCcy)) : ""); }
     else { const net = assetNetAt(a, new Date()); vv.textContent = moneyIn(net, a.ccy) + (a.ccy !== state.baseCcy ? " · " + money(convTo(net, a.ccy, state.baseCcy)) : ""); }
+    flash(vv);
   }
   const lc = card.querySelector(".lcomp");
   if (lc && a.loan) lc.innerHTML = loanComputedHTML(a);

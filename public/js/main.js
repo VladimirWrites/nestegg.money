@@ -63,6 +63,14 @@ window.addEventListener("resize", () => {
   }, 160);
 });
 
+// Esc closes the open editor — routed through its Back button so sync + re-render run.
+const EDITOR_BACK = { yearEditor: "edBack", salaryEditor: "salaryBack", assetEditor: "assetBack", profileEditor: "profileBack" };
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const im = $("infoModal"); if (im && !im.classList.contains("hide")) return; // the info modal handles its own Esc
+  for (const id in EDITOR_BACK) { const ed = $(id); if (ed && !ed.classList.contains("hide")) { const b = $(EDITOR_BACK[id]); if (b) b.click(); return; } }
+});
+
 try { boot(); } catch (e) {}
 
 // PWA: offline app shell. Registered after boot so it never competes with startup.

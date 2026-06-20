@@ -1,5 +1,5 @@
 // Year editor: the list of snapshots and the per-year entry editing overlay.
-import { $, showEditor, hideEditor, toast } from "./dom.js";
+import { $, showEditor, hideEditor, toast, flash } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
@@ -130,8 +130,9 @@ $("edEntries").addEventListener("input", (e) => {
     if (en.kind === "ticker" || en.kind === "crypto") { const p = tickerPx(en); cv.textContent = p ? money(bv) : en.ticker ? "no price" : en.kind === "crypto" ? "set coin" : "set ticker"; }
     else if (en.kind === "liability") cv.textContent = "− " + money(Math.abs(bv));
     else cv.textContent = en.ccy !== state.baseCcy ? "= " + money(bv) : "";
+    flash(cv);
   }
-  if (en.group) { const gb = t.closest(".grp"), gs = gb && gb.querySelector(".grpsub"); if (gs) gs.textContent = money(effEntries(sn).filter((x) => x.group === en.group).reduce((a, x) => a + entryBase(x, sn.year), 0)); }
+  if (en.group) { const gb = t.closest(".grp"), gs = gb && gb.querySelector(".grpsub"); if (gs) { gs.textContent = money(effEntries(sn).filter((x) => x.group === en.group).reduce((a, x) => a + entryBase(x, sn.year), 0)); flash(gs); } }
   $("edTotal").textContent = money(snapTotalBase(sn));
 });
 

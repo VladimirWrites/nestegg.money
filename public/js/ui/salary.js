@@ -1,6 +1,6 @@
 // Salary history: per person, monthly net pay. Read-only table on the Salary tab; all edits
 // happen in the edit overlay. Dual-axis chart: per-person monthly + combined yearly total.
-import { $, showEditor, hideEditor, toast, debounce } from "./dom.js";
+import { $, showEditor, hideEditor, toast, debounce, flash } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS, PALETTE } from "../domain/constants.js";
@@ -55,7 +55,7 @@ export function drawSalaryChart() {
   const cont = svg.closest(".histscroll"); let cw = cont ? cont.clientWidth : 0; if (!cw || cw < 80) cw = 720;
   // Minimum ~6px per month so the x-axis year labels stay legible; the chart overflows
   // its .histscroll container (horizontal scroll) on narrow screens rather than cramming.
-  const minData = padL + padR + Math.round((maxI - minI + 1) * 6);
+  const minData = padL + padR + Math.round((maxI - minI + 1) * 3.5);
   const W = Math.max(360, Math.floor(cw), minData), plotW = W - padL - padR;
   const X = (i) => padL + ((i - minI) / span) * plotW, YL = (v) => padT + plotH - (v / nmL) * plotH, YR = (v) => padT + plotH - (v / nmR) * plotH, sym = ccySym();
   // Left axis (per-person monthly) reuses the shared grid; the right axis (combined yearly) is overlaid.
@@ -205,7 +205,7 @@ $("salaryList").addEventListener("input", (e) => {
     const en = salEnsure(p, t.dataset.ym);
     if (f === "amount") en.amount = parseFloat(t.value || 0); else en[f] = t.value;
     scheduleSync();
-    if (f === "amount") { const yr = t.dataset.ym.slice(0, 4), yt = document.querySelector('[data-ytot="' + sid + ":" + yr + '"]'); if (yt) { const tot = p.entries.filter((x) => x.ym.slice(0, 4) === yr).reduce((a, x) => a + salBase(p, x), 0); yt.textContent = tot ? money(tot) : "—"; } drawSalDebounced(); }
+    if (f === "amount") { const yr = t.dataset.ym.slice(0, 4), yt = document.querySelector('[data-ytot="' + sid + ":" + yr + '"]'); if (yt) { const tot = p.entries.filter((x) => x.ym.slice(0, 4) === yr).reduce((a, x) => a + salBase(p, x), 0); yt.textContent = tot ? money(tot) : "—"; flash(yt); } drawSalDebounced(); }
   } else { if (f === "name") p.name = t.value; else if (f === "ccy") p.ccy = t.value; scheduleSync(); if (f === "name") drawSalDebounced(); }
 });
 $("salaryList").addEventListener("change", (e) => { if (e.target.dataset.f === "ccy") renderSalaryEdit(); });

@@ -12,9 +12,28 @@ export const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t);
 // Editor overlays: show one full-screen editor over the hidden app shell (scrolled to top),
 // or reverse it.
 export function showEditor(id) {
-  $(id).classList.remove("hide");
+  const el = $(id);
+  el.classList.remove("hide");
   $("app").classList.add("hide");
   window.scrollTo(0, 0);
+  // Desktop only: focus + select the first field so you can type immediately. Skipped on
+  // touch / coarse pointers so it doesn't pop the on-screen keyboard.
+  try {
+    if (matchMedia("(hover:hover) and (pointer:fine)").matches) {
+      requestAnimationFrame(() => {
+        const f = el.querySelector("input:not([type=checkbox]):not([type=radio]),select,textarea");
+        if (f) { f.focus(); if (f.select) try { f.select(); } catch (e) {} }
+      });
+    }
+  } catch (e) {}
+}
+
+// Brief amber highlight on an element whose displayed value just recomputed.
+export function flash(el) {
+  if (!el) return;
+  el.classList.remove("flashed");
+  void el.offsetWidth; // force reflow so the animation restarts on rapid edits
+  el.classList.add("flashed");
 }
 export function hideEditor(id) {
   $(id).classList.add("hide");

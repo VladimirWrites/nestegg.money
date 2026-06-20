@@ -366,3 +366,20 @@ button.act.ghost:hover{border-color:var(--amber)}
 @media(prefers-reduced-motion:reduce){
   .editor,.infomodal .infobox,#histChart.anim rect,#fcChart.anim polyline.line,#rtChart.anim polyline.line,#salaryChart.anim polyline.line,#donut.anim path{animation:none!important}
 }
+
+/* ───────── design polish: recompute flash, hover-brighten, edge-fade ───────── */
+@keyframes flashUpd{from{background:rgba(255,176,0,.30)}to{background:transparent}}
+.flashed{animation:flashUpd .6s ease;border-radius:3px}
+
+/* lift the hovered bar / donut slice slightly */
+#histChart rect,#donut path{transition:filter .12s ease}
+#histChart rect:hover{filter:brightness(1.18)}
+#donut path:hover{filter:brightness(1.18)}
+
+/* fade the edges of the horizontally-scrolling tables to signal there's more */
+.saltable-scroll,.schscroll{-webkit-mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent)}
+
+@media(prefers-reduced-motion:reduce){
+  .flashed{animation:none!important}
+  #histChart rect,#donut path{transition:none!important}
+}
