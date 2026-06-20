@@ -75,6 +75,10 @@ Requires a Cloudflare account and `npm i -g wrangler` (then `wrangler login`).
 
 Local dev: `wrangler dev` (serves the app with live API + local D1).
 
+Cut a release with `npm version patch|minor|major` — a `version` hook stamps the
+new number into the service-worker cache name (`public/sw.js`) so clients pick up
+the new build.
+
 Tests (loan/asset/forecast/retirement math, `migrate`, multi-device merge, crypto):
 `npm test` (runs `node --test tests/*.mjs` — the pure domain modules import directly,
 no browser needed).
@@ -93,11 +97,8 @@ no browser needed).
 Issues and pull requests welcome. The domain logic (`public/js/domain/`) is pure
 and covered by tests — run `npm test` before sending a PR, and add tests for new
 behaviour there. The `ui/` and `io/` layers are thin and browser-facing; keep DOM
-work out of `domain/`.
-
-Releases: bump with `npm version patch|minor|major`. A `version` hook stamps the
-new number into the service-worker cache name (`public/sw.js`) so clients pick up
-the new build, and a test fails the suite if the two ever drift.
+work out of `domain/`. (`package.json` version and the service-worker cache name
+must match — a test enforces it; run `npm run sync-version` if it complains.)
 
 ## License
 
