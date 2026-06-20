@@ -383,3 +383,8 @@ button.act.ghost:hover{border-color:var(--amber)}
   .flashed{animation:none!important}
   #histChart rect,#donut path{transition:none!important}
 }
+
+/* sync dot: pulse while saving to the server */
+@keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.35}}
+.syncdot.sync{background:var(--amber);animation:syncPulse 1s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.syncdot.sync{animation:none!important}}

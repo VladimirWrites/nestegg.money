@@ -53,10 +53,11 @@ export async function pushServer(manual) {
       return;
     }
     const body = JSON.stringify({ id: getAccountId(), blob });
+    setSync("sync", "Saving…");
     // keepalive lets a flush on tab-close survive the page going away (64 KB browser cap).
     const r = await fetch("/api/vault", { method: "PUT", headers: { "content-type": "application/json" }, body, keepalive: body.length < 60000 });
     if (r.ok) {
-      setSync("ok", "Synced");
+      setSync("ok", "Saved");
       syncWarned = false;
       setBaseline();
       if (manual) toast("Data sent to server ✓");

@@ -68,7 +68,7 @@ export function toast(m) {
 
 // Sync status indicator (two mirrored dots/labels in the masthead + profile).
 export function setSync(cls, text) {
-  const dotCls = "syncdot " + (cls === "ok" ? "ok" : cls === "off" ? "off" : "");
+  const dotCls = "syncdot " + (cls === "ok" ? "ok" : cls === "off" ? "off" : cls === "sync" ? "sync" : "");
   ["syncDot", "syncDot2"].forEach((id) => { const d = $(id); if (d) d.className = dotCls; });
   ["syncTxt", "syncTxt2"].forEach((id) => { const x = $(id); if (x) x.textContent = text; });
 }

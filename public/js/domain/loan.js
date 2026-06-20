@@ -22,7 +22,7 @@ export function loanTerms(loan) {
 
 // Full monthly amortization schedule, applying dated extra principal payments.
 // Returns a list of { type: "payment"|"extra", date, ... } rows.
-export function buildSchedule(loan) {
+function computeSchedule(loan) {
   const { L, i, M, n } = loanTerms(loan);
   const rows = [];
   const start = parseDate(loan.startDate);
@@ -74,6 +74,22 @@ export function buildSchedule(loan) {
     if (bal < 0) bal = 0;
     rows.push({ type: "payment", date, payment: rowPay, interest, principal, balance: bal, estimated: est(date) });
   }
+  return rows;
+}
+
+// Memoized schedule, keyed by the loan's inputs. The engine runs up to ~1200 iterations and is
+// called many times per render (outstandingAt, autoEntriesFor, forecast/retirement loops), so
+// caching by signature avoids recomputing the same schedule repeatedly. Returned rows are
+// read-only by all callers. Cache invalidates automatically when any loan field changes.
+const _schedCache = new Map();
+const loanSig = (loan) => JSON.stringify([loan.amount, loan.rate, loan.termYears, loan.startDate, loan.mode, loan.payment, loan.fixedUntil, loan.extra]);
+export function buildSchedule(loan) {
+  const key = loanSig(loan);
+  const hit = _schedCache.get(key);
+  if (hit) return hit;
+  const rows = computeSchedule(loan);
+  if (_schedCache.size > 200) _schedCache.clear(); // bound memory; rebuilds are cheap
+  _schedCache.set(key, rows);
   return rows;
 }
 
