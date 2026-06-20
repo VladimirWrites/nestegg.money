@@ -5,7 +5,7 @@
 .gatebox .sub{color:var(--muted);margin-bottom:26px;font-size:13px}
 .gatebox .panel{border-top:1px solid var(--line2);padding-top:20px}
 .gatebox p{font-size:13px;color:var(--muted);margin:10px 0}
-.acctnum{font-size:21px;letter-spacing:.06em;background:#000;border:1px solid var(--line2);border-radius:3px;padding:16px 14px;white-space:nowrap;overflow:hidden;text-align:center;margin:14px 0;line-height:1.5;color:var(--green)}
+.acctnum{font-size:21px;letter-spacing:.06em;background:#000;border:1px solid var(--line2);border-radius:3px;padding:16px 14px;white-space:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;text-align:center;margin:14px 0;line-height:1.5;color:var(--green)}
 .acctnum .tokline{display:inline-block;white-space:nowrap}
 .acctnum .d{color:var(--green)}   /* digits */
 .acctnum .a{color:var(--blue)}    /* letters */
