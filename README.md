@@ -92,6 +92,10 @@ and covered by tests — run `npm test` before sending a PR, and add tests for n
 behaviour there. The `ui/` and `io/` layers are thin and browser-facing; keep DOM
 work out of `domain/`.
 
+Releases: bump with `npm version patch|minor|major`. A `version` hook stamps the
+new number into the service-worker cache name (`public/sw.js`) so clients pick up
+the new build, and a test fails the suite if the two ever drift.
+
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE). © 2026 Vladimir Jovanovic.

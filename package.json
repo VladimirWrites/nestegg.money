@@ -1,6 +1,6 @@
 {
   "name": "nestegg-money",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "A private, zero-knowledge net worth & salary tracker. Encrypted in the browser; no email, no password.",
   "license": "Apache-2.0",
   "author": "Vladimir Jovanovic",
@@ -11,6 +11,8 @@
   },
   "private": true,
   "scripts": {
-    "test": "node --test tests/*.mjs"
+    "test": "node --test tests/*.mjs",
+    "sync-version": "node scripts/sync-version.mjs",
+    "version": "node scripts/sync-version.mjs && git add public/sw.js"
   }
 }
