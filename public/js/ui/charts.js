@@ -19,6 +19,12 @@ let _animOn = false;
 let _lastSig = "";
 export function armChartAnim() { _arm = true; }
 
+// When a chart overflows its scroll container, jump to the right edge (newest data first).
+function scrollToNewest(svg) {
+  const sc = svg && svg.closest(".histscroll");
+  if (sc) requestAnimationFrame(() => { try { sc.scrollLeft = sc.scrollWidth; } catch (e) {} });
+}
+
 // Signature of everything the charts render from, ignoring churny non-visual fields
 // (mtimes, sync/fetch timestamps, tombstones). Lets renderAll skip a no-op redraw so a
 // background reconcile/refresh can't cut or replay the entrance animation.
@@ -221,6 +227,7 @@ function drawHist() {
   });
   svg.innerHTML = s;
   svg.classList.toggle("anim", _animOn);
+  if (_animOn) scrollToNewest(svg); // when it overflows, show the most recent years first
   // hero = latest
   const ls = latestSnap(); const nw = ls ? snapTotalBase(ls) : 0;
   setHero(nw);

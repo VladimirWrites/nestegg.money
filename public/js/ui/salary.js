@@ -55,7 +55,7 @@ export function drawSalaryChart() {
   const cont = svg.closest(".histscroll"); let cw = cont ? cont.clientWidth : 0; if (!cw || cw < 80) cw = 720;
   // Minimum ~6px per month so the x-axis year labels stay legible; the chart overflows
   // its .histscroll container (horizontal scroll) on narrow screens rather than cramming.
-  const minData = padL + padR + Math.round((maxI - minI + 1) * 3.5);
+  const minData = padL + padR + Math.round((maxI - minI + 1) * 3.0);
   const W = Math.max(360, Math.floor(cw), minData), plotW = W - padL - padR;
   const X = (i) => padL + ((i - minI) / span) * plotW, YL = (v) => padT + plotH - (v / nmL) * plotH, YR = (v) => padT + plotH - (v / nmR) * plotH, sym = ccySym();
   // Left axis (per-person monthly) reuses the shared grid; the right axis (combined yearly) is overlaid.
@@ -78,6 +78,8 @@ export function drawSalaryChart() {
   });
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = s;
   svg.classList.toggle("anim", animOn);
+  // when it overflows, show the most recent months first (scroll to the right edge)
+  if (animOn) { const sc = svg.closest(".histscroll"); if (sc) requestAnimationFrame(() => { try { sc.scrollLeft = sc.scrollWidth; } catch (e) {} }); }
   leg.innerHTML = people.map((p, pi) => `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("") + `<span><span class="chip" style="background:${SAL_COMB}"></span>Combined yearly net salary</span>`;
 }
 
