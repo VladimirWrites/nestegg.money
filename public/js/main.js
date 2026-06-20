@@ -71,6 +71,24 @@ document.addEventListener("keydown", (e) => {
   for (const id in EDITOR_BACK) { const ed = $(id); if (ed && !ed.classList.contains("hide")) { const b = $(EDITOR_BACK[id]); if (b) b.click(); return; } }
 });
 
+// PWA install: capture the browser's install prompt and surface an "Install app" button in
+// the profile (Chromium/Android only — Safari/iOS doesn't fire this event).
+let deferredInstall = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstall = e;
+  const b = $("installBtn"); if (b) b.classList.remove("hide");
+});
+const installBtn = $("installBtn");
+if (installBtn) installBtn.onclick = async () => {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  try { await deferredInstall.userChoice; } catch (e) {}
+  deferredInstall = null;
+  installBtn.classList.add("hide");
+};
+window.addEventListener("appinstalled", () => { deferredInstall = null; const b = $("installBtn"); if (b) b.classList.add("hide"); });
+
 try { boot(); } catch (e) {}
 
 // PWA: offline app shell. Registered after boot so it never competes with startup.

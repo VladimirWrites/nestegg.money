@@ -4,7 +4,7 @@
   "description": "A private, zero-knowledge net worth tracker. Encrypted in your browser; no email, no password.",
   "id": "/",
   "scope": "/",
-  "start_url": "/",
+  "start_url": "/dashboard.html",
   "display": "standalone",
   "background_color": "#0a0a0b",
   "theme_color": "#0a0a0b",
