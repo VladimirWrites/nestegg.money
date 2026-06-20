@@ -6,7 +6,7 @@ import { nid } from "../domain/ids.js";
 import { CCYS, PALETTE } from "../domain/constants.js";
 import { money, moneyIn, esc, convToY, ccySym, shortK } from "../domain/money.js";
 import { fmtMY } from "../domain/dates.js";
-import { yGrid, CH_AXIS, legendSVG, frameSVG, svgToPng } from "./chart-kit.js";
+import { yGrid, C, refreshPalette, legendSVG, frameSVG, svgToPng } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
 import { showView } from "./gate.js";
 
@@ -40,6 +40,7 @@ const drawSalDebounced = debounce(() => drawSalaryChart(), 120);
 
 export function drawSalaryChart() {
   const animOn = _animSal; _animSal = false;
+  refreshPalette();
   const svg = $("salaryChart"), people = state.salaries || [], leg = $("salaryLegend");
   const all = people.flatMap((p) => p.entries || []);
   if (!all.length) { svg.innerHTML = ""; svg.removeAttribute("width"); leg.innerHTML = ""; return; }
@@ -62,12 +63,12 @@ export function drawSalaryChart() {
   let s = yGrid(W, padL, padR, padT, plotH, nmL, sym);
   for (let g = 0; g <= 5; g++) { const yy = padT + plotH - (g / 5) * plotH; s += `<text x="${W - padR + 8}" y="${yy + 3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${shortK((nmR * g) / 5)}</text>`; }
   const minYr = Math.floor(minI / 12), maxYr = Math.floor(maxI / 12), stepYr = Math.max(1, Math.ceil((maxYr - minYr + 1) / 14));
-  for (let yr = minYr; yr <= maxYr; yr += stepYr) { const xc = X(yr * 12); if (xc >= padL - 1 && xc <= W - padR + 1) s += `<text x="${xc}" y="${H - 9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${CH_AXIS}">${yr}</text>`; }
+  for (let yr = minYr; yr <= maxYr; yr += stepYr) { const xc = X(yr * 12); if (xc >= padL - 1 && xc <= W - padR + 1) s += `<text x="${xc}" y="${H - 9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${C.axis}">${yr}</text>`; }
   // monthly per-person lines (left axis) + event dots
   people.forEach((p, pi) => {
     const ms = salMonths(p); if (!ms.length) return; const col = salColor(pi);
     s += `<polyline class="line" pathLength="1" points="${ms.map((e) => X(idxM(e.ym)).toFixed(1) + "," + YL(salBase(p, e)).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
-    ms.forEach((e) => { if (!e.event) return; const lab = esc(ymLabel(e.ym) + " · " + p.name + " · " + moneyIn(salTotal(e), salEccy(p, e)) + " · " + e.event); s += `<circle class="saldot" cx="${X(idxM(e.ym)).toFixed(1)}" cy="${YL(salBase(p, e)).toFixed(1)}" r="4" fill="${col}" stroke="#0a0a0b" stroke-width="1.5" data-lbl="${lab}"></circle>`; });
+    ms.forEach((e) => { if (!e.event) return; const lab = esc(ymLabel(e.ym) + " · " + p.name + " · " + moneyIn(salTotal(e), salEccy(p, e)) + " · " + e.event); s += `<circle class="saldot" cx="${X(idxM(e.ym)).toFixed(1)}" cy="${YL(salBase(p, e)).toFixed(1)}" r="4" fill="${col}" stroke="${C.bg}" stroke-width="1.5" data-lbl="${lab}"></circle>`; });
   });
   // combined yearly line (right axis), one point per finalized year, with year labels
   const cpts = combY.map((c) => ({ x: X(idxM(c.y + "-07")), yy: YR(c.v), y0: c.y, v: c.v }));

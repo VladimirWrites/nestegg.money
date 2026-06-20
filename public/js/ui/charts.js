@@ -10,7 +10,7 @@ import {
 import { fmtMY } from "../domain/dates.js";
 import { fcCfg, forecastNetAt, fcTarget, fcBandRates, debtSummary } from "../domain/forecast.js";
 import { retCfg, retSim, pensionPts } from "../domain/retirement.js";
-import { FC_AMBER, FC_GREEN, CH_AXIS, CH_INK, CH_BG, CH_RED, niceCeil, chartDims, yGrid, txt, legendSVG, frameSVG, svgToPng } from "./chart-kit.js";
+import { C, refreshPalette, niceCeil, chartDims, yGrid, txt, legendSVG, frameSVG, svgToPng } from "./chart-kit.js";
 
 // Entrance animations play only on view-entry (boot / tab switch), never on the many
 // live re-renders (keystrokes, background refresh) — gated by this one-shot arm flag.
@@ -38,6 +38,7 @@ export function renderAll() {
   const sig = chartSig();
   if (!_arm && sig === _lastSig) return; // nothing visual changed and not a fresh entry
   _animOn = _arm; _arm = false; _lastSig = sig;
+  refreshPalette();
   drawHist();
   drawHistLegend();
   renderYears();
@@ -115,31 +116,31 @@ export function renderForecast() {
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   const sym = ccySym(); let s = yGrid(W, padL, padR, padT, plotH, nm, sym);
   // x labels — first, last, and a sparse set between
-  const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) { s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${CH_AXIS}">${y}</text>`; }
-  if ((maxY - minY) % step !== 0) s += `<text x="${X(maxY)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${CH_AXIS}">${maxY}</text>`;
+  const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) { s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.axis}">${y}</text>`; }
+  if ((maxY - minY) % step !== 0) s += `<text x="${X(maxY)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.axis}">${maxY}</text>`;
   // soft area fill under the actual + projected trajectory
   { const areaPts = actual.concat(proj.slice(1)), by = Y(0);
-    s += `<defs><linearGradient id="fcArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${FC_AMBER}" stop-opacity="0.20"/><stop offset="1" stop-color="${FC_AMBER}" stop-opacity="0"/></linearGradient></defs>`;
+    s += `<defs><linearGradient id="fcArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.amber}" stop-opacity="0.20"/><stop offset="1" stop-color="${C.amber}" stop-opacity="0"/></linearGradient></defs>`;
     s += `<polygon points="${X(areaPts[0].y)},${by} ${areaPts.map((p) => X(p.y) + "," + Y(p.v)).join(" ")} ${X(areaPts[areaPts.length - 1].y)},${by}" fill="url(#fcArea)"/>`; }
   // goal line
   if (target > 0 && target <= nm) {
-    const gy = Y(target); s += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="${FC_GREEN}" stroke-width="1.4" stroke-dasharray="2 4"/>`;
+    const gy = Y(target); s += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="${C.green}" stroke-width="1.4" stroke-dasharray="2 4"/>`;
     const lbl = "goal " + sym + shortK(target), lw = lbl.length * 5.6 + 10, above = gy > padT + 18, ty = above ? gy - 5 : gy + 12, ry = above ? gy - 15 : gy + 2;
-    s += `<rect x="${padL + 2}" y="${ry}" width="${lw}" height="14" rx="3" fill="${CH_BG}" opacity="0.78"/>`;
-    s += `<text x="${padL + 7}" y="${ty}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9.5" fill="${FC_GREEN}">${lbl}</text>`;
+    s += `<rect x="${padL + 2}" y="${ry}" width="${lw}" height="14" rx="3" fill="${C.bg}" opacity="0.78"/>`;
+    s += `<text x="${padL + 7}" y="${ty}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.green}">${lbl}</text>`;
   }
   // scenario band fill (poor -> great), drawn under the lines
   if (band) {
     const poly = bandHi.map((p) => X(p.y) + "," + Y(p.v)).concat(bandLo.slice().reverse().map((p) => X(p.y) + "," + Y(p.v))).join(" ");
-    s += `<polygon points="${poly}" fill="${FC_AMBER}" opacity="0.1"/>`;
-    s += `<polyline points="${bandHi.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>great: ${Math.round(br.hi * 100)}%/yr</title></polyline>`;
-    s += `<polyline points="${bandLo.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>poor: ${Math.round(br.lo * 100)}%/yr</title></polyline>`;
+    s += `<polygon points="${poly}" fill="${C.amber}" opacity="0.1"/>`;
+    s += `<polyline points="${bandHi.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>great: ${Math.round(br.hi * 100)}%/yr</title></polyline>`;
+    s += `<polyline points="${bandLo.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>poor: ${Math.round(br.lo * 100)}%/yr</title></polyline>`;
   }
-  s += `<polyline points="${proj.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`;
-  s += `<polyline class="line" pathLength="1" points="${actual.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
-  actual.forEach((p) => { s += `<circle cx="${X(p.y)}" cy="${Y(p.v)}" r="3" fill="${FC_AMBER}"><title>${p.y}: ${money(p.v)}</title></circle>`; });
-  if (fireY && fnet(new Date(fireY, 11, 31)) >= target) { const fx = X(fireY), fyv = Y(Math.min(target, nm)); s += `<line x1="${fx}" y1="${padT}" x2="${fx}" y2="${padT + plotH}" stroke="${FC_GREEN}" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>`; s += `<circle cx="${fx}" cy="${fyv}" r="4" fill="${FC_GREEN}"><title>Goal reached ${fireY}</title></circle>`; }
-  s += `<circle cx="${X(projEnd.y)}" cy="${Y(projEnd.v)}" r="3" fill="${FC_AMBER}" opacity="0.85"><title>${projEnd.y}: ${money(projEnd.v)}</title></circle>`;
+  s += `<polyline points="${proj.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`;
+  s += `<polyline class="line" pathLength="1" points="${actual.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2.4"/>`;
+  actual.forEach((p) => { s += `<circle cx="${X(p.y)}" cy="${Y(p.v)}" r="3" fill="${C.amber}"><title>${p.y}: ${money(p.v)}</title></circle>`; });
+  if (fireY && fnet(new Date(fireY, 11, 31)) >= target) { const fx = X(fireY), fyv = Y(Math.min(target, nm)); s += `<line x1="${fx}" y1="${padT}" x2="${fx}" y2="${padT + plotH}" stroke="${C.green}" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>`; s += `<circle cx="${fx}" cy="${fyv}" r="4" fill="${C.green}"><title>Goal reached ${fireY}</title></circle>`; }
+  s += `<circle cx="${X(projEnd.y)}" cy="${Y(projEnd.v)}" r="3" fill="${C.amber}" opacity="0.85"><title>${projEnd.y}: ${money(projEnd.v)}</title></circle>`;
   svg.innerHTML = s;
   svg.classList.toggle("anim", _animOn);
   // stats
@@ -180,13 +181,13 @@ export function renderRetire() {
     const X = (y) => padL + ((y - minY) / span) * innerW, Y = (v) => padT + plotH - (Math.max(0, v) / nm) * plotH;
     svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     const sym = ccySym(); let s = yGrid(W, padL, padR, padT, plotH, nm, sym);
-    const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${CH_AXIS}">${y}</text>`;
-    if (sim.pensY > minY && sim.pensY <= maxY && sim.pensionAnnual > 0) { const px = X(sim.pensY); s += `<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT + plotH}" stroke="${FC_GREEN}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`; s += `<text x="${px + 4}" y="${padT + 10}" font-family="ui-monospace,monospace" font-size="9.5" fill="${FC_GREEN}">pension starts ${sim.pensY}</text>`; }
-    s += `<defs><linearGradient id="rtArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${FC_AMBER}" stop-opacity="0.22"/><stop offset="1" stop-color="${FC_AMBER}" stop-opacity="0"/></linearGradient></defs>`;
+    const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.axis}">${y}</text>`;
+    if (sim.pensY > minY && sim.pensY <= maxY && sim.pensionAnnual > 0) { const px = X(sim.pensY); s += `<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT + plotH}" stroke="${C.green}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`; s += `<text x="${px + 4}" y="${padT + 10}" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.green}">pension starts ${sim.pensY}</text>`; }
+    s += `<defs><linearGradient id="rtArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.amber}" stop-opacity="0.22"/><stop offset="1" stop-color="${C.amber}" stop-opacity="0"/></linearGradient></defs>`;
     s += `<polygon points="${X(minY)},${Y(0)} ${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")} ${X(maxY)},${Y(0)}" fill="url(#rtArea)"/>`;
-    s += `<polyline class="line" pathLength="1" points="${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")}" fill="none" stroke="${FC_AMBER}" stroke-width="2.4"/>`;
-    sim.pts.forEach((p) => { if (p.y === sim.pensY || p.y === minY || p.y === maxY) s += `<circle cx="${X(p.y)}" cy="${Y(p.pot)}" r="3" fill="${FC_AMBER}"><title>${p.y}: ${money(p.pot)}</title></circle>`; });
-    if (sim.depleted) s += `<circle cx="${X(sim.depleted)}" cy="${Y(0)}" r="4" fill="${CH_RED}"><title>Depleted ${sim.depleted}</title></circle>`;
+    s += `<polyline class="line" pathLength="1" points="${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2.4"/>`;
+    sim.pts.forEach((p) => { if (p.y === sim.pensY || p.y === minY || p.y === maxY) s += `<circle cx="${X(p.y)}" cy="${Y(p.pot)}" r="3" fill="${C.amber}"><title>${p.y}: ${money(p.pot)}</title></circle>`; });
+    if (sim.depleted) s += `<circle cx="${X(sim.depleted)}" cy="${Y(0)}" r="4" fill="${C.red}"><title>Depleted ${sim.depleted}</title></circle>`;
     svg.innerHTML = s;
     svg.classList.toggle("anim", _animOn);
   }
@@ -221,9 +222,9 @@ function drawHist() {
     const cx = padL + idx * slot + slot / 2, x = cx - bw / 2; let yTop = padT + plotH; const ents = effEntries(sn);
     names.forEach((nm2) => { const tot = ents.filter((e) => seriesKey(e) === nm2).reduce((a, e) => a + entryBase(e, sn.year), 0); if (tot <= 0) return; const h = (tot / nm) * plotH; yTop -= h; s += `<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2, names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`; });
     const net = snapTotalBase(sn), gross = snapGrossBase(sn);
-    if (gross - net > 0.005) { const ny = padT + plotH - (Math.max(0, net) / nm) * plotH; s += `<line x1="${x - 3}" y1="${ny}" x2="${x + bw + 3}" y2="${ny}" stroke="${CH_RED}" stroke-width="2"><title>${sn.year} net worth ${money(net)} — after ${money(gross - net)} liabilities</title></line>`; }
-    s += `<text x="${cx}" y="${yTop - 6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="${CH_AXIS}">${sym}${shortK(net)}</text>`;
-    s += `<text x="${cx}" y="${H - padB + 16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${CH_INK}">${sn.year}</text>`;
+    if (gross - net > 0.005) { const ny = padT + plotH - (Math.max(0, net) / nm) * plotH; s += `<line x1="${x - 3}" y1="${ny}" x2="${x + bw + 3}" y2="${ny}" stroke="${C.red}" stroke-width="2"><title>${sn.year} net worth ${money(net)} — after ${money(gross - net)} liabilities</title></line>`; }
+    s += `<text x="${cx}" y="${yTop - 6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="${C.axis}">${sym}${shortK(net)}</text>`;
+    s += `<text x="${cx}" y="${H - padB + 16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${C.ink}">${sn.year}</text>`;
   });
   svg.innerHTML = s;
   svg.classList.toggle("anim", _animOn);
@@ -253,7 +254,7 @@ function drawDonut() {
   if (total > 0) {
     const cx = 120, cy = 120, r = 82, sw = 30; let a = -Math.PI / 2;
     rows.forEach((row) => { const f = row.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0; const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`); p.setAttribute("fill", "none"); p.setAttribute("stroke", colorOf(row.name, names)); p.setAttribute("stroke-width", sw); p.setAttribute("pathLength", "1"); svg.appendChild(p); a = a2; });
-    txt(svg, cx, cy - 4, "TOTAL", 10, CH_AXIS, 2, 400); txt(svg, cx, cy + 18, money(total), 16, CH_INK, 0, 600);
+    txt(svg, cx, cy - 4, "TOTAL", 10, C.axis, 2, 400); txt(svg, cx, cy + 18, money(total), 16, C.ink, 0, 600);
   }
   svg.classList.toggle("anim", _animOn);
   const leg = $("legend"); leg.innerHTML = "";
@@ -263,7 +264,7 @@ function drawDonut() {
 export function downloadForecast() {
   const src = $("fcChart"); if (!src || !src.innerHTML) { toast("Nothing to save"); return; }
   const cW = +src.getAttribute("width"), cH = +src.getAttribute("height"), pad = 24, titleH = 52;
-  const leg = legendSVG([{ color: FC_AMBER, label: "Actual / Projected" }, { color: FC_GREEN, label: "Goal" }], pad, titleH + cH + 16, 13);
+  const leg = legendSVG([{ color: C.amber, label: "Actual / Projected" }, { color: C.green, label: "Goal" }], pad, titleH + cH + 16, 13);
   const f = frameSVG("Net Worth · forecast", src.innerHTML, cW, cH, leg, pad, titleH);
   svgToPng(f.svg, f.W, f.H, 2, "nestegg-forecast.png");
 }

@@ -109,11 +109,31 @@ function renderProfAcct() {
   if (profShown) showToken(el, tok); else el.textContent = tok.replace(/[0-9A-Za-z]/g, "•") || "…";
   $("profEye").classList.toggle("on", profShown);
 }
-function openProfile() { profShown = false; showEditor("profileEditor"); renderProfAcct(); }
+function openProfile() { profShown = false; showEditor("profileEditor"); renderProfAcct(); markThemeButtons(); }
 function closeProfile() { hideEditor("profileEditor"); }
 $("profileBtn").onclick = openProfile;
 $("profileBack").onclick = closeProfile;
 $("profEye").onclick = () => { profShown = !profShown; renderProfAcct(); };
+
+/* ---- theme ---- */
+const currentTheme = () => (document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark");
+function applyTheme(t) {
+  if (t === "light") document.documentElement.setAttribute("data-theme", "light");
+  else document.documentElement.removeAttribute("data-theme");
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0b");
+}
+function markThemeButtons() { document.querySelectorAll("[data-theme-set]").forEach((b) => b.classList.toggle("on", b.dataset.themeSet === currentTheme())); }
+const themeRow = $("themeRow");
+if (themeRow) themeRow.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-theme-set]"); if (!b) return;
+  applyTheme(b.dataset.themeSet);
+  try { LS.set("nw_theme", b.dataset.themeSet); } catch (err) {}
+  markThemeButtons();
+  // recolour the SVG charts (they read theme CSS vars) by re-rendering the visible view
+  if ($("viewSalary") && !$("viewSalary").classList.contains("hide")) renderSalary(); else renderAll();
+});
+applyTheme(currentTheme()); // sync the browser UI colour to the theme set by the head script
 $("profCopyAcct").onclick = async () => { const t = LS.get("nw_token") || ""; toast((await copyText(t)) ? "Account number copied" : "Couldn't copy — use the eye to reveal it"); };
 $("profSyncNow").onclick = () => pushServer(true);
 $("syncNowHome").onclick = () => pushServer(true);

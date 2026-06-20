@@ -2,8 +2,19 @@
   --bg:#0a0a0b;--panel:#121214;--panel2:#17171a;--line:#26262a;--line2:#33333a;
   --ink:#e8e4d8;--muted:#8a867c;--amber:#ffb000;--amber2:#ff8c1a;
   --blue:#4aa3ff;--green:#3ad17a;--yellow:#ffd23a;--red:#ff4d6d;
+  --field:#000;          /* input / track background */
+  --row-alt:#141416;     /* alternating / header row background */
+  --bar-bg:rgba(10,10,11,.92);  /* sticky editor bar backdrop */
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;
   --maxw:1100px;
+}
+/* Light theme — opt in via data-theme="light" on <html>. Same variables, light values;
+   the amber accent is darkened so it stays legible as text on a light background. */
+:root[data-theme="light"]{
+  --bg:#faf9f6;--panel:#ffffff;--panel2:#f2f0ea;--line:#e4e1d9;--line2:#d3cfc4;
+  --ink:#1b1a17;--muted:#6c685e;--amber:#a86a00;--amber2:#c2410c;
+  --blue:#2b6fd6;--green:#1f9d57;--yellow:#b8860b;--red:#d6394f;
+  --field:#ffffff;--row-alt:#f0eee7;--bar-bg:rgba(255,255,255,.9);
 }
 /* widen the content envelope on large monitors so space isn't wasted.
    Standard 16:9 desktops top out ~1920; true ultrawides are 21:9 (2560/3440)

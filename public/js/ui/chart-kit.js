@@ -3,14 +3,15 @@
 import { shortK, esc } from "../domain/money.js";
 import { toast, downloadBlob } from "./dom.js";
 
-export const FC_AMBER = "#ffb000";
-export const FC_GREEN = "#3ad17a";
-// Structural chart colours: gridlines, axis labels, ink, background, the net/depleted red.
-export const CH_GRID = "#26262a";
-export const CH_AXIS = "#8a867c";
-export const CH_INK = "#e8e4d8";
-export const CH_BG = "#0a0a0b";
-export const CH_RED = "#ff4d6d";
+// Chart colours, read from the active theme's CSS variables. Mutated by refreshPalette()
+// before each render so a theme switch recolours the SVG charts.
+export const C = { amber: "#ffb000", green: "#3ad17a", grid: "#26262a", axis: "#8a867c", ink: "#e8e4d8", bg: "#0a0a0b", red: "#ff4d6d" };
+const cssVar = (n, fb) => { try { const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return v || fb; } catch (e) { return fb; } };
+export function refreshPalette() {
+  C.amber = cssVar("--amber", C.amber); C.green = cssVar("--green", C.green);
+  C.grid = cssVar("--line", C.grid); C.axis = cssVar("--muted", C.axis);
+  C.ink = cssVar("--ink", C.ink); C.bg = cssVar("--bg", C.bg); C.red = cssVar("--red", C.red);
+}
 
 // Round a value up to a "nice" axis maximum (1/2/2.5/5 x 10^n).
 export function niceCeil(v) {
@@ -35,8 +36,8 @@ export function yGrid(W, padL, padR, padT, plotH, nm, sym) {
   for (let i = 0; i <= 5; i++) {
     const val = (nm * i) / 5;
     const y = padT + plotH - (val / nm) * plotH;
-    s += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${CH_GRID}" stroke-width="1"/>`;
-    s += `<text x="${padL - 8}" y="${y + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="${CH_AXIS}">${sym}${shortK(val)}</text>`;
+    s += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${C.grid}" stroke-width="1"/>`;
+    s += `<text x="${padL - 8}" y="${y + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="${C.axis}">${sym}${shortK(val)}</text>`;
   }
   return s;
 }
@@ -56,7 +57,7 @@ export function legendSVG(items, x, y, fs) {
   items.forEach((it, i) => {
     const yy = y + i * rowH;
     s += `<rect x="${x}" y="${yy}" width="${fs}" height="${fs}" rx="2" fill="${it.color}"/>`;
-    s += `<text x="${x + fs + 9}" y="${yy + fs - 1}" font-family="ui-monospace,Menlo,monospace" font-size="${fs}" fill="${CH_INK}">${esc(it.label)}</text>`;
+    s += `<text x="${x + fs + 9}" y="${yy + fs - 1}" font-family="ui-monospace,Menlo,monospace" font-size="${fs}" fill="${C.ink}">${esc(it.label)}</text>`;
     const w = fs + 9 + it.label.length * fs * 0.62; if (w > maxW) maxW = w;
   });
   return { svg: s, height: items.length * rowH, width: maxW };
@@ -67,10 +68,10 @@ export function frameSVG(title, inner, innerW, innerH, leg, pad, titleH) {
   return {
     W, H,
     svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
-      `<rect width="${W}" height="${H}" fill="${CH_BG}"/>` +
-      `<text x="${pad}" y="34" font-family="ui-monospace,Menlo,monospace" font-size="20" font-weight="700" fill="${FC_AMBER}">${esc(title)}</text>` +
+      `<rect width="${W}" height="${H}" fill="${C.bg}"/>` +
+      `<text x="${pad}" y="34" font-family="ui-monospace,Menlo,monospace" font-size="20" font-weight="700" fill="${C.amber}">${esc(title)}</text>` +
       `<g transform="translate(${dx},${titleH})">${inner}</g>` + (leg ? leg.svg : "") +
-      `<text x="${W - pad}" y="${H - 13}" text-anchor="end" font-family="ui-monospace,Menlo,monospace" font-size="12" fill="${CH_AXIS}">nestegg.money</text></svg>`,
+      `<text x="${W - pad}" y="${H - 13}" text-anchor="end" font-family="ui-monospace,Menlo,monospace" font-size="12" fill="${C.axis}">nestegg.money</text></svg>`,
   };
 }
 
