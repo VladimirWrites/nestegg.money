@@ -84,7 +84,7 @@ export async function pushServer(manual, keepalive = false) {
 export async function loadServer() {
   if (!getAccountId()) return null;
   try {
-    const r = await fetch("/api/vault?id=" + getAccountId());
+    const r = await fetch("/api/vault", { headers: { "X-Vault-Id": getAccountId() } });
     if (r.status === 404) { setSync("ok", "Synced (new)"); return null; }
     if (!r.ok) { console.warn("[nestegg] load failed: HTTP", r.status, r.statusText); setSync("off", "Local only"); return null; }
     const { blob } = await r.json();

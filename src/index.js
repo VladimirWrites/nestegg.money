@@ -110,8 +110,12 @@ async function priceGet(request) {
 const ID_RE = /^[a-f0-9]{64}$/;          // SHA-256 hex
 const MAX_BLOB = 2_000_000;              // ~2 MB ceiling
 
+// Prefer the id from a header so it never lands in access logs / Referer / browser history
+// the way a ?id= query string would. Fall back to the query param for older cached clients.
+const vaultId = (request) => request.headers.get("X-Vault-Id") || new URL(request.url).searchParams.get("id");
+
 async function vaultGet(request, env) {
-  const id = new URL(request.url).searchParams.get("id");
+  const id = vaultId(request);
   if (!id || !ID_RE.test(id)) return json({ error: "bad id" }, 400);
   const row = await env.DB.prepare(
     "SELECT blob, updated_at FROM vaults WHERE account_id = ?"
@@ -141,7 +145,7 @@ async function vaultPut(request, env) {
 }
 
 async function vaultDelete(request, env) {
-  const id = new URL(request.url).searchParams.get("id");
+  const id = vaultId(request);
   if (!id || !ID_RE.test(id)) return json({ error: "bad id" }, 400);
   await env.DB.prepare("DELETE FROM vaults WHERE account_id = ?").bind(id).run();
   return json({ ok: true });
