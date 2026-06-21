@@ -401,3 +401,11 @@ button.act.ghost:hover{border-color:var(--amber)}
 
 /* active state for the theme toggle buttons */
 .act.ghost.on{background:var(--amber);color:var(--on-amber);border-color:var(--amber)}
+
+/* net-worth year tooltip (reuses .salflag box) */
+.salflag .tiph{font-weight:600;color:var(--amber);margin-bottom:4px}
+.salflag .tipr{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.salflag .tipr .chip{width:8px;height:8px;border-radius:2px;flex:none}
+.salflag .tipr .tipn{flex:1;overflow:hidden;text-overflow:ellipsis}
+.salflag .tipr .tipv{margin-left:10px;font-variant-numeric:tabular-nums}
+.salflag .tipnet{margin-top:5px;padding-top:5px;border-top:1px solid var(--line2)}

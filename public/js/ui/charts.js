@@ -225,6 +225,8 @@ function drawHist() {
     if (gross - net > 0.005) { const ny = padT + plotH - (Math.max(0, net) / nm) * plotH; s += `<line x1="${x - 3}" y1="${ny}" x2="${x + bw + 3}" y2="${ny}" stroke="${C.red}" stroke-width="2"><title>${sn.year} net worth ${money(net)} — after ${money(gross - net)} liabilities</title></line>`; }
     s += `<text x="${cx}" y="${yTop - 6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="${C.axis}">${sym}${shortK(net)}</text>`;
     s += `<text x="${cx}" y="${H - padB + 16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${C.ink}">${sn.year}</text>`;
+    // full-height transparent hit area: hover/tap a year to see its breakdown
+    s += `<rect class="histhit" x="${(padL + idx * slot).toFixed(1)}" y="${padT}" width="${slot.toFixed(1)}" height="${plotH}" fill="transparent" style="pointer-events:all" data-year="${sn.year}" data-cx="${cx.toFixed(1)}" data-cy="${yTop.toFixed(1)}"></rect>`;
   });
   svg.innerHTML = s;
   svg.classList.toggle("anim", _animOn);
@@ -243,6 +245,69 @@ function drawHistLegend() {
   $("histLegend").innerHTML = names.map((n) => `<span><span class="chip" style="background:${colorOf(n, names)}"></span>${esc(n)}</span>`).join("");
 }
 
+// Tooltip: hover/tap a year column to see that year's breakdown by group, plus net and liabilities.
+function histBreakdown(year) {
+  const sn = sortedSnaps().find((s) => s.year === year); if (!sn) return "";
+  const names = allNames(), ents = effEntries(sn);
+  const rows = names
+    .map((nm2) => ({ nm2, tot: ents.filter((e) => seriesKey(e) === nm2).reduce((a, e) => a + entryBase(e, sn.year), 0) }))
+    .filter((r) => r.tot > 0.005).sort((a, b) => b.tot - a.tot);
+  const net = snapTotalBase(sn), gross = snapGrossBase(sn), liab = gross - net;
+  let html = `<div class="tiph">${sn.year}</div>`;
+  rows.forEach((r) => { html += `<div class="tipr"><span class="chip" style="background:${colorOf(r.nm2, names)}"></span><span class="tipn">${esc(r.nm2)}</span><span class="tipv">${money(r.tot)}</span></div>`; });
+  if (liab > 0.005) html += `<div class="tipr"><span class="tipn">Liabilities</span><span class="tipv" style="color:var(--red)">−${money(liab)}</span></div>`;
+  html += `<div class="tipnet">Net worth <b>${money(net)}</b></div>`;
+  return html;
+}
+function histShowTip(rect) {
+  const tip = $("histTip"), chart = $("histChart"); if (!tip || !chart) return;
+  tip.innerHTML = histBreakdown(+rect.getAttribute("data-year"));
+  tip.classList.remove("hide");
+  const cx = +rect.getAttribute("data-cx"), cy = +rect.getAttribute("data-cy"), W = +chart.getAttribute("width") || tip.offsetWidth;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  const left = Math.max(2, Math.min(cx - tw / 2, W - tw - 2));
+  let top = cy - th - 12; if (top < 2) top = cy + 14;
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+}
+function histHideTip() { const t = $("histTip"); if (t) t.classList.add("hide"); }
+(function () {
+  const chart = $("histChart"); if (!chart) return;
+  chart.addEventListener("mouseover", (e) => { const c = e.target.closest(".histhit"); if (c) histShowTip(c); });
+  chart.addEventListener("mouseout", (e) => { if (e.target.closest(".histhit")) histHideTip(); });
+  chart.addEventListener("click", (e) => { const c = e.target.closest(".histhit"); if (c) histShowTip(c); else histHideTip(); });
+})();
+
+// Donut: hover/tap a wedge to see the holdings inside that allocation group.
+function donutBreakdown(name) {
+  const ls = latestSnap(); if (!ls) return "";
+  const items = effEntries(ls)
+    .filter((e) => seriesKey(e) === name)
+    .map((e) => ({ n: e.name || name, v: entryBase(e, ls.year) }))
+    .filter((i) => i.v > 0.005).sort((a, b) => b.v - a.v);
+  const sum = items.reduce((a, i) => a + i.v, 0);
+  let html = `<div class="tiph">${esc(name)}</div>`;
+  items.forEach((i) => { html += `<div class="tipr"><span class="tipn">${esc(i.n)}</span><span class="tipv">${money(i.v)}</span></div>`; });
+  if (items.length > 1) html += `<div class="tipnet">Total <b>${money(sum)}</b></div>`;
+  return html;
+}
+function donutShowTip(path) {
+  const tip = $("donutTip"); if (!tip) return;
+  tip.innerHTML = donutBreakdown(path.getAttribute("data-name"));
+  tip.classList.remove("hide");
+  const mx = +path.getAttribute("data-mx"), my = +path.getAttribute("data-my");
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  const left = Math.max(2, Math.min(mx - tw / 2, 240 - tw - 2));
+  let top = my - th - 8; if (top < 2) top = my + 8;
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+}
+function donutHideTip() { const t = $("donutTip"); if (t) t.classList.add("hide"); }
+(function () {
+  const svg = $("donut"); if (!svg) return;
+  svg.addEventListener("mouseover", (e) => { const p = e.target.closest(".dwedge"); if (p) donutShowTip(p); });
+  svg.addEventListener("mouseout", (e) => { if (e.target.closest(".dwedge")) donutHideTip(); });
+  svg.addEventListener("click", (e) => { const p = e.target.closest(".dwedge"); if (p) donutShowTip(p); else donutHideTip(); });
+})();
+
 /* ---- allocation donut ---- */
 function drawDonut() {
   const ls = latestSnap(); const svg = $("donut"); svg.innerHTML = "";
@@ -253,7 +318,7 @@ function drawDonut() {
   const total = rows.reduce((a, r) => a + r.v, 0);
   if (total > 0) {
     const cx = 120, cy = 120, r = 82, sw = 30; let a = -Math.PI / 2;
-    rows.forEach((row) => { const f = row.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0; const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`); p.setAttribute("fill", "none"); p.setAttribute("stroke", colorOf(row.name, names)); p.setAttribute("stroke-width", sw); p.setAttribute("pathLength", "1"); svg.appendChild(p); a = a2; });
+    rows.forEach((row) => { const f = row.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0; const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2); const am = (a + a2) / 2; const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`); p.setAttribute("fill", "none"); p.setAttribute("stroke", colorOf(row.name, names)); p.setAttribute("stroke-width", sw); p.setAttribute("pathLength", "1"); p.setAttribute("class", "dwedge"); p.setAttribute("data-name", row.name); p.setAttribute("data-mx", (cx + r * Math.cos(am)).toFixed(1)); p.setAttribute("data-my", (cy + r * Math.sin(am)).toFixed(1)); svg.appendChild(p); a = a2; });
     txt(svg, cx, cy - 4, "TOTAL", 10, C.axis, 2, 400); txt(svg, cx, cy + 18, money(total), 16, C.ink, 0, 600);
   }
   svg.classList.toggle("anim", _animOn);
