@@ -15,6 +15,8 @@ export const LS = {
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
   rem(k) { try { localStorage.removeItem(k); } catch (e) {} },
 };
+// Timestamp of the last successful server sync (push or load), for the profile's "last synced" line.
+export const syncedAt = () => +LS.get("nw_synced_at") || 0;
 
 // Keep a one-deep backup of the previous local state, so a bad save/clobber is recoverable.
 export function saveLocal() {
@@ -65,6 +67,7 @@ export async function pushServer(manual, keepalive = false) {
       setSync("ok", "Saved");
       syncWarned = false;
       setBaseline();
+      LS.set("nw_synced_at", String(Date.now()));
       if (manual) toast("Data sent to server ✓");
     } else {
       console.warn("[nestegg] sync failed: HTTP", r.status, r.statusText, "—", body.length, "byte body");
@@ -87,6 +90,7 @@ export async function loadServer() {
     const { blob } = await r.json();
     const o = await decS(blob);
     setSync("ok", "Synced");
+    LS.set("nw_synced_at", String(Date.now()));
     return o;
   } catch (e) {
     console.warn("[nestegg] load failed:", (e && e.name) || "", (e && e.message) || e, e);

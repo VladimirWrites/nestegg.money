@@ -1,6 +1,6 @@
 // The gate (create / sign in), boot + reconcile flow, the home view switcher, the profile
 // overlay, and the forecast/retirement input wiring.
-import { $, showEditor, hideEditor, toast, debounce } from "./dom.js";
+import { $, showEditor, hideEditor, toast, debounce, relTime } from "./dom.js";
 import { state, setState } from "../domain/store.js";
 import { emptyState, migrate } from "../domain/schema.js";
 import { mergeStates, setBaseline } from "../domain/merge.js";
@@ -8,7 +8,7 @@ import { CCYS } from "../domain/constants.js";
 import { fcCfg } from "../domain/forecast.js";
 import { retCfg } from "../domain/retirement.js";
 import { generateToken, validToken, canonToken, normTok, deriveKeys, copyText } from "../io/crypto.js";
-import { LS, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
+import { LS, syncedAt, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
 import { renderAll, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut, armChartAnim } from "./charts.js";
 import { renderSalary, armSalaryAnim } from "./salary.js";
 
@@ -108,6 +108,7 @@ function renderProfAcct() {
   const el = $("profAcct"), tok = LS.get("nw_token") || "";
   if (profShown) showToken(el, tok); else el.textContent = tok.replace(/[0-9A-Za-z]/g, "•") || "…";
   $("profEye").classList.toggle("on", profShown);
+  const ls = $("lastSync"); if (ls) ls.textContent = "Last synced " + relTime(syncedAt());
 }
 function openProfile() { profShown = false; showEditor("profileEditor"); renderProfAcct(); syncThemeSel(); }
 function closeProfile() { hideEditor("profileEditor"); }

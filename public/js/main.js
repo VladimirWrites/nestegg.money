@@ -36,6 +36,8 @@ $("importFile").onchange = (e) => {
     try {
       const d = JSON.parse(rd.result);
       if (d.snapshots) {
+        const hasData = (state.snapshots && state.snapshots.length) || (state.salaries && state.salaries.length) || (state.assets && state.assets.length);
+        if (hasData && !confirm("Importing replaces ALL current data on this device. Export a backup first if you're unsure. Continue?")) { e.target.value = ""; return; }
         setState(migrate(d)); $("ccySel").value = state.baseCcy; scheduleSync(); renderAll(); toast("Imported");
         // Refresh FX, live prices and past-year closes for whatever the import brought in.
         try { autoRefresh().then((ch) => { if (ch) { scheduleSync(); renderAll(); } }).catch(() => {}); } catch (err) {}
