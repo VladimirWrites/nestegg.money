@@ -39,10 +39,10 @@ export function scheduleSync() {
 }
 export function flushSync() {
   clearTimeout(syncTimer);
-  pushServer();
+  pushServer(false, true); // tab-close flush: allow keepalive so it survives the page going away
 }
 
-export async function pushServer(manual) {
+export async function pushServer(manual, keepalive = false) {
   if (!keysReady()) return;
   try {
     stampMtimes();
@@ -54,18 +54,25 @@ export async function pushServer(manual) {
     }
     const body = JSON.stringify({ id: getAccountId(), blob });
     setSync("sync", "Saving…");
-    // keepalive lets a flush on tab-close survive the page going away (64 KB browser cap).
-    const r = await fetch("/api/vault", { method: "PUT", headers: { "content-type": "application/json" }, body, keepalive: body.length < 60000 });
+    // keepalive is ONLY for the tab-close flush. It shares a small (~64 KB) browser-wide
+    // quota across all in-flight keepalive requests per page load; using it for every
+    // routine save can exhaust that quota over a session and make fetch throw — which a
+    // page refresh then clears. So normal saves use a plain fetch.
+    const opts = { method: "PUT", headers: { "content-type": "application/json" }, body };
+    if (keepalive && body.length < 60000) opts.keepalive = true;
+    const r = await fetch("/api/vault", opts);
     if (r.ok) {
       setSync("ok", "Saved");
       syncWarned = false;
       setBaseline();
       if (manual) toast("Data sent to server ✓");
     } else {
+      console.warn("[nestegg] sync failed: HTTP", r.status, r.statusText, "—", body.length, "byte body");
       setSync("off", "Sync error");
       if (manual || !syncWarned) { syncWarned = true; toast("Sync failed — changes are saved on this device only"); }
     }
   } catch (e) {
+    console.warn("[nestegg] sync failed:", (e && e.name) || "", (e && e.message) || e, e);
     setSync("off", "Local only");
     if (manual || !syncWarned) { syncWarned = true; toast("Sync failed — changes are saved on this device only"); }
   }
@@ -76,12 +83,13 @@ export async function loadServer() {
   try {
     const r = await fetch("/api/vault?id=" + getAccountId());
     if (r.status === 404) { setSync("ok", "Synced (new)"); return null; }
-    if (!r.ok) { setSync("off", "Local only"); return null; }
+    if (!r.ok) { console.warn("[nestegg] load failed: HTTP", r.status, r.statusText); setSync("off", "Local only"); return null; }
     const { blob } = await r.json();
     const o = await decS(blob);
     setSync("ok", "Synced");
     return o;
   } catch (e) {
+    console.warn("[nestegg] load failed:", (e && e.name) || "", (e && e.message) || e, e);
     setSync("off", "Local only");
     return null;
   }
