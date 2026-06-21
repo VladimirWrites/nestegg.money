@@ -277,6 +277,37 @@ function histHideTip() { const t = $("histTip"); if (t) t.classList.add("hide");
   chart.addEventListener("click", (e) => { const c = e.target.closest(".histhit"); if (c) histShowTip(c); else histHideTip(); });
 })();
 
+// Donut: hover/tap a wedge to see the holdings inside that allocation group.
+function donutBreakdown(name) {
+  const ls = latestSnap(); if (!ls) return "";
+  const items = effEntries(ls)
+    .filter((e) => seriesKey(e) === name)
+    .map((e) => ({ n: e.name || name, v: entryBase(e, ls.year) }))
+    .filter((i) => i.v > 0.005).sort((a, b) => b.v - a.v);
+  const sum = items.reduce((a, i) => a + i.v, 0);
+  let html = `<div class="tiph">${esc(name)}</div>`;
+  items.forEach((i) => { html += `<div class="tipr"><span class="tipn">${esc(i.n)}</span><span class="tipv">${money(i.v)}</span></div>`; });
+  if (items.length > 1) html += `<div class="tipnet">Total <b>${money(sum)}</b></div>`;
+  return html;
+}
+function donutShowTip(path) {
+  const tip = $("donutTip"); if (!tip) return;
+  tip.innerHTML = donutBreakdown(path.getAttribute("data-name"));
+  tip.classList.remove("hide");
+  const mx = +path.getAttribute("data-mx"), my = +path.getAttribute("data-my");
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  const left = Math.max(2, Math.min(mx - tw / 2, 240 - tw - 2));
+  let top = my - th - 8; if (top < 2) top = my + 8;
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+}
+function donutHideTip() { const t = $("donutTip"); if (t) t.classList.add("hide"); }
+(function () {
+  const svg = $("donut"); if (!svg) return;
+  svg.addEventListener("mouseover", (e) => { const p = e.target.closest(".dwedge"); if (p) donutShowTip(p); });
+  svg.addEventListener("mouseout", (e) => { if (e.target.closest(".dwedge")) donutHideTip(); });
+  svg.addEventListener("click", (e) => { const p = e.target.closest(".dwedge"); if (p) donutShowTip(p); else donutHideTip(); });
+})();
+
 /* ---- allocation donut ---- */
 function drawDonut() {
   const ls = latestSnap(); const svg = $("donut"); svg.innerHTML = "";
@@ -287,7 +318,7 @@ function drawDonut() {
   const total = rows.reduce((a, r) => a + r.v, 0);
   if (total > 0) {
     const cx = 120, cy = 120, r = 82, sw = 30; let a = -Math.PI / 2;
-    rows.forEach((row) => { const f = row.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0; const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`); p.setAttribute("fill", "none"); p.setAttribute("stroke", colorOf(row.name, names)); p.setAttribute("stroke-width", sw); p.setAttribute("pathLength", "1"); svg.appendChild(p); a = a2; });
+    rows.forEach((row) => { const f = row.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0; const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2); const am = (a + a2) / 2; const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`); p.setAttribute("fill", "none"); p.setAttribute("stroke", colorOf(row.name, names)); p.setAttribute("stroke-width", sw); p.setAttribute("pathLength", "1"); p.setAttribute("class", "dwedge"); p.setAttribute("data-name", row.name); p.setAttribute("data-mx", (cx + r * Math.cos(am)).toFixed(1)); p.setAttribute("data-my", (cy + r * Math.sin(am)).toFixed(1)); svg.appendChild(p); a = a2; });
     txt(svg, cx, cy - 4, "TOTAL", 10, C.axis, 2, 400); txt(svg, cx, cy + 18, money(total), 16, C.ink, 0, 600);
   }
   svg.classList.toggle("anim", _animOn);

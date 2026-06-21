@@ -23,7 +23,9 @@ export function niceCeil(v) {
 
 // Fit a chart to its container's width; height scales gently with width (bounded).
 export function chartDims(svg, fallbackW) {
-  const c = svg && svg.parentElement;
+  // measure the scroll viewport, not the immediate parent (which may be a shrink-to-fit
+  // .chartwrap added for tooltip positioning).
+  const c = svg && (svg.closest(".histscroll") || svg.parentElement);
   let w = c ? c.clientWidth : 0;
   if (!w || w < 80) w = fallbackW || 680;
   w = Math.max(280, Math.floor(w));
