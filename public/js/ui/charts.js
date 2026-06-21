@@ -225,6 +225,8 @@ function drawHist() {
     if (gross - net > 0.005) { const ny = padT + plotH - (Math.max(0, net) / nm) * plotH; s += `<line x1="${x - 3}" y1="${ny}" x2="${x + bw + 3}" y2="${ny}" stroke="${C.red}" stroke-width="2"><title>${sn.year} net worth ${money(net)} — after ${money(gross - net)} liabilities</title></line>`; }
     s += `<text x="${cx}" y="${yTop - 6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="${C.axis}">${sym}${shortK(net)}</text>`;
     s += `<text x="${cx}" y="${H - padB + 16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${C.ink}">${sn.year}</text>`;
+    // full-height transparent hit area: hover/tap a year to see its breakdown
+    s += `<rect class="histhit" x="${(padL + idx * slot).toFixed(1)}" y="${padT}" width="${slot.toFixed(1)}" height="${plotH}" fill="transparent" style="pointer-events:all" data-year="${sn.year}" data-cx="${cx.toFixed(1)}" data-cy="${yTop.toFixed(1)}"></rect>`;
   });
   svg.innerHTML = s;
   svg.classList.toggle("anim", _animOn);
@@ -242,6 +244,38 @@ function drawHistLegend() {
   const names = allNames();
   $("histLegend").innerHTML = names.map((n) => `<span><span class="chip" style="background:${colorOf(n, names)}"></span>${esc(n)}</span>`).join("");
 }
+
+// Tooltip: hover/tap a year column to see that year's breakdown by group, plus net and liabilities.
+function histBreakdown(year) {
+  const sn = sortedSnaps().find((s) => s.year === year); if (!sn) return "";
+  const names = allNames(), ents = effEntries(sn);
+  const rows = names
+    .map((nm2) => ({ nm2, tot: ents.filter((e) => seriesKey(e) === nm2).reduce((a, e) => a + entryBase(e, sn.year), 0) }))
+    .filter((r) => r.tot > 0.005).sort((a, b) => b.tot - a.tot);
+  const net = snapTotalBase(sn), gross = snapGrossBase(sn), liab = gross - net;
+  let html = `<div class="tiph">${sn.year}</div>`;
+  rows.forEach((r) => { html += `<div class="tipr"><span class="chip" style="background:${colorOf(r.nm2, names)}"></span><span class="tipn">${esc(r.nm2)}</span><span class="tipv">${money(r.tot)}</span></div>`; });
+  if (liab > 0.005) html += `<div class="tipr"><span class="tipn">Liabilities</span><span class="tipv" style="color:var(--red)">−${money(liab)}</span></div>`;
+  html += `<div class="tipnet">Net worth <b>${money(net)}</b></div>`;
+  return html;
+}
+function histShowTip(rect) {
+  const tip = $("histTip"), chart = $("histChart"); if (!tip || !chart) return;
+  tip.innerHTML = histBreakdown(+rect.getAttribute("data-year"));
+  tip.classList.remove("hide");
+  const cx = +rect.getAttribute("data-cx"), cy = +rect.getAttribute("data-cy"), W = +chart.getAttribute("width") || tip.offsetWidth;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  const left = Math.max(2, Math.min(cx - tw / 2, W - tw - 2));
+  let top = cy - th - 12; if (top < 2) top = cy + 14;
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+}
+function histHideTip() { const t = $("histTip"); if (t) t.classList.add("hide"); }
+(function () {
+  const chart = $("histChart"); if (!chart) return;
+  chart.addEventListener("mouseover", (e) => { const c = e.target.closest(".histhit"); if (c) histShowTip(c); });
+  chart.addEventListener("mouseout", (e) => { if (e.target.closest(".histhit")) histHideTip(); });
+  chart.addEventListener("click", (e) => { const c = e.target.closest(".histhit"); if (c) histShowTip(c); else histHideTip(); });
+})();
 
 /* ---- allocation donut ---- */
 function drawDonut() {
