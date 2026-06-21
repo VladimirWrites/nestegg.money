@@ -247,7 +247,9 @@ function drawHistLegend() {
 
 // Tooltip: hover/tap a year column to see that year's breakdown by group, plus net and liabilities.
 function histBreakdown(year) {
-  const sn = sortedSnaps().find((s) => s.year === year); if (!sn) return "";
+  const snaps = sortedSnaps();
+  const idx = snaps.findIndex((s) => s.year === year); if (idx < 0) return "";
+  const sn = snaps[idx];
   const names = allNames(), ents = effEntries(sn);
   const rows = names
     .map((nm2) => ({ nm2, tot: ents.filter((e) => seriesKey(e) === nm2).reduce((a, e) => a + entryBase(e, sn.year), 0) }))
@@ -257,6 +259,14 @@ function histBreakdown(year) {
   rows.forEach((r) => { html += `<div class="tipr"><span class="chip" style="background:${colorOf(r.nm2, names)}"></span><span class="tipn">${esc(r.nm2)}</span><span class="tipv">${money(r.tot)}</span></div>`; });
   if (liab > 0.005) html += `<div class="tipr"><span class="tipn">Liabilities</span><span class="tipv" style="color:var(--red)">−${money(liab)}</span></div>`;
   html += `<div class="tipnet">Net worth <b>${money(net)}</b></div>`;
+  // Year-over-year change vs the previous snapshot (just the balance delta — not a
+  // contributions/market split, which yearly balances can't tell apart).
+  const prev = idx > 0 ? snaps[idx - 1] : null;
+  if (prev) {
+    const pnw = snapTotalBase(prev), d = net - pnw, up = d >= 0, sign = up ? "+" : "−";
+    const pct = Math.abs(pnw) > 0.005 ? (d / Math.abs(pnw)) * 100 : null;
+    html += `<div class="tipyoy ${up ? "up" : "down"}">vs ${prev.year}: ${sign}${money(Math.abs(d))}${pct != null ? " · " + sign + Math.abs(pct).toFixed(1) + "%" : ""}</div>`;
+  }
   return html;
 }
 function histShowTip(rect) {
