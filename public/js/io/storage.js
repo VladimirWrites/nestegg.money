@@ -49,7 +49,7 @@ export async function pushServer(manual, keepalive = false) {
   try {
     stampMtimes();
     const blob = await encS();
-    if (blob.length > 1900000) {
+    if (blob.length > 256000) { // keep in sync with MAX_BLOB in src/index.js
       setSync("off", "Too big to sync");
       toast("Data too large to sync — Export JSON to back up");
       return;

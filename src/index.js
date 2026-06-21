@@ -108,7 +108,7 @@ async function priceGet(request) {
 // DELETE ?id=<hash>            -> { ok: true }
 // ---------------------------------------------------------------------------
 const ID_RE = /^[a-f0-9]{64}$/;          // SHA-256 hex
-const MAX_BLOB = 2_000_000;              // ~2 MB ceiling
+const MAX_BLOB = 256_000;                // ceiling; real blobs are ~1 KB avg, ~11 KB max (gzipped) — this is generous
 
 // Prefer the id from a header so it never lands in access logs / Referer / browser history
 // the way a ?id= query string would. Fall back to the query param for older cached clients.

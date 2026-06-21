@@ -77,7 +77,12 @@ test("PUT rejects bad id and bad blob", async () => {
   const env = makeEnv();
   assert.equal((await call(env, "PUT", { body: { id: "short", blob: "x" } })).status, 400);
   assert.equal((await call(env, "PUT", { body: { id: ID_A, blob: "" } })).status, 400);
-  assert.equal((await call(env, "PUT", { body: { id: ID_A, blob: "x".repeat(2_000_001) } })).status, 400);
+});
+
+test("PUT enforces the 256 KB blob cap", async () => {
+  const env = makeEnv();
+  assert.equal((await call(env, "PUT", { body: { id: ID_A, blob: "x".repeat(256_000) } })).status, 200); // at the cap: ok
+  assert.equal((await call(env, "PUT", { body: { id: ID_A, blob: "x".repeat(256_001) } })).status, 400); // over: rejected
 });
 
 test("DELETE via header removes the vault", async () => {
