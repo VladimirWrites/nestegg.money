@@ -81,14 +81,14 @@ export function drawSalaryChart() {
   svg.classList.toggle("anim", animOn);
   // when it overflows, show the most recent months first (scroll to the right edge)
   if (animOn) { const sc = svg.closest(".histscroll"); if (sc) requestAnimationFrame(() => { try { sc.scrollLeft = sc.scrollWidth; } catch (e) {} }); }
-  leg.innerHTML = people.map((p, pi) => `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("") + `<span><span class="chip" style="background:${SAL_COMB}"></span>Combined yearly net salary</span>`;
+  leg.innerHTML = people.map((p, pi) => `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("") + `<span><span class="chip" style="background:${SAL_COMB}"></span>Combined yearly salary</span>`;
 }
 
 function downloadSalary() {
   const src = $("salaryChart"); if (!src.innerHTML) { toast("Nothing to save"); return; }
   const cW = +src.getAttribute("width"), cH = +src.getAttribute("height"), pad = 24, titleH = 52;
-  const leg = legendSVG(state.salaries.map((p, pi) => ({ color: salColor(pi), label: p.name })).concat([{ color: SAL_COMB, label: "Combined yearly net salary" }]), pad, titleH + cH + 16, 13);
-  const f = frameSVG("Our Net Salary History", src.innerHTML, cW, cH, leg, pad, titleH);
+  const leg = legendSVG(state.salaries.map((p, pi) => ({ color: salColor(pi), label: p.name })).concat([{ color: SAL_COMB, label: "Combined yearly salary" }]), pad, titleH + cH + 16, 13);
+  const f = frameSVG("Our Salary History", src.innerHTML, cW, cH, leg, pad, titleH);
   svgToPng(f.svg, f.W, f.H, 2, "nestegg-salary.png");
 }
 
@@ -170,7 +170,7 @@ export function renderSalary() {
 function renderSalaryEdit() {
   const host = $("salaryList");
   const people = state.salaries || [];
-  if (!people.length) { host.innerHTML = `<div class="emptyhint">No one yet. Add yourself (and your partner) below, then add a range of months and type each one's net salary side by side.</div>`; return; }
+  if (!people.length) { host.innerHTML = `<div class="emptyhint">No one yet. Add yourself (and your partner) below, then add a range of months and type each one's salary side by side.</div>`; return; }
   const yms = salGlobalYms();
   let h1 = `<th class="salm-h"></th>`, h2 = `<th class="salm-h">Month</th>`;
   people.forEach((p) => {
