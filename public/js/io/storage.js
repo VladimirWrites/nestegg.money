@@ -69,6 +69,10 @@ export async function pushServer(manual, keepalive = false) {
       setBaseline();
       LS.set("nw_synced_at", String(Date.now()));
       if (manual) toast("Data sent to server ✓");
+    } else if (r.status === 429) {
+      console.warn("[nestegg] sync rate-limited (HTTP 429) — too many new accounts from this network");
+      setSync("off", "Rate limited");
+      if (manual || !syncWarned) { syncWarned = true; toast("Too many new accounts from your network right now — your data is saved on this device. Try syncing again later."); }
     } else {
       console.warn("[nestegg] sync failed: HTTP", r.status, r.statusText, "—", body.length, "byte body");
       setSync("off", "Sync error");

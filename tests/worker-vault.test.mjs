@@ -2,32 +2,35 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import worker from "../src/index.js";
 
-// Minimal in-memory D1 stub: supports the SELECT / upsert INSERT / DELETE the vault uses.
+// Minimal in-memory D1 stub: SQL-aware over the two tables the vault uses (vaults, create_log).
 function makeEnv() {
-  const store = {};
-  const db = {
-    store,
-    prepare(sql) {
-      const s = sql.trim();
-      return {
-        bind(...args) {
-          return {
-            async first() {
-              const row = store[args[0]];
-              return row ? { blob: row.blob, updated_at: row.updated_at } : null;
-            },
-            async run() {
-              if (/^INSERT/i.test(s)) { const [id, blob, ts] = args; store[id] = { blob, updated_at: ts }; }
-              else if (/^DELETE/i.test(s)) { delete store[args[0]]; }
-              return { meta: { changes: 1 } };
-            },
-          };
-        },
-      };
-    },
+  const vaults = {}; // id -> { blob, updated_at }
+  const log = [];    // { ip, ts }
+  const prepare = (sql) => {
+    const s = sql.replace(/\s+/g, " ").trim();
+    return {
+      bind(...a) {
+        return {
+          async first() {
+            if (/^SELECT 1 AS x FROM vaults/i.test(s)) return vaults[a[0]] ? { x: 1 } : null;
+            if (/^SELECT blob, updated_at FROM vaults/i.test(s)) { const r = vaults[a[0]]; return r ? { blob: r.blob, updated_at: r.updated_at } : null; }
+            if (/^SELECT COUNT\(\*\) AS n FROM create_log/i.test(s)) { const [ip, since] = a; return { n: log.filter((e) => e.ip === ip && e.ts > since).length }; }
+            return null;
+          },
+          async run() {
+            if (/^DELETE FROM create_log/i.test(s)) { const since = a[0]; for (let i = log.length - 1; i >= 0; i--) if (log[i].ts < since) log.splice(i, 1); }
+            else if (/^INSERT INTO create_log/i.test(s)) { log.push({ ip: a[0], ts: a[1] }); }
+            else if (/^INSERT INTO vaults/i.test(s)) { const [id, blob, ts] = a; vaults[id] = { blob, updated_at: ts }; }
+            else if (/^DELETE FROM vaults/i.test(s)) { delete vaults[a[0]]; }
+            return { meta: { changes: 1 } };
+          },
+        };
+      },
+    };
   };
-  return { DB: db };
+  return { DB: { prepare }, _vaults: vaults, _log: log };
 }
+const idHex = (i) => i.toString(16).padStart(64, "0"); // distinct valid SHA-256-hex ids for loops
 
 const ID_A = "a".repeat(64); // valid SHA-256 hex
 const ID_B = "b".repeat(64);
@@ -91,6 +94,36 @@ test("DELETE via header removes the vault", async () => {
   const d = await call(env, "DELETE", { headers: { "X-Vault-Id": ID_A } });
   assert.equal(d.status, 200);
   assert.equal((await call(env, "GET", { headers: { "X-Vault-Id": ID_A } })).status, 404);
+});
+
+test("new-vault creation is rate-limited per IP (20/window), then 429", async () => {
+  const env = makeEnv();
+  const ip = { "CF-Connecting-IP": "1.2.3.4" };
+  for (let i = 1; i <= 20; i++) {
+    const r = await call(env, "PUT", { headers: ip, body: { id: idHex(i), blob: "b" } });
+    assert.equal(r.status, 200, "create #" + i + " should succeed");
+  }
+  const over = await call(env, "PUT", { headers: ip, body: { id: idHex(21), blob: "b" } });
+  assert.equal(over.status, 429, "21st new vault from same IP is rate-limited");
+});
+
+test("updates to an existing vault are never rate-limited", async () => {
+  const env = makeEnv();
+  const ip = { "CF-Connecting-IP": "5.6.7.8" };
+  await call(env, "PUT", { headers: ip, body: { id: ID_A, blob: "v0" } }); // 1 creation
+  for (let i = 0; i < 50; i++) {
+    const r = await call(env, "PUT", { headers: ip, body: { id: ID_A, blob: "v" + i } });
+    assert.equal(r.status, 200);
+  }
+});
+
+test("the rate limit is per-IP — a different IP is unaffected", async () => {
+  const env = makeEnv();
+  for (let i = 1; i <= 20; i++) await call(env, "PUT", { headers: { "CF-Connecting-IP": "9.9.9.9" }, body: { id: idHex(i), blob: "b" } });
+  const blocked = await call(env, "PUT", { headers: { "CF-Connecting-IP": "9.9.9.9" }, body: { id: idHex(99), blob: "b" } });
+  assert.equal(blocked.status, 429);
+  const other = await call(env, "PUT", { headers: { "CF-Connecting-IP": "8.8.8.8" }, body: { id: idHex(100), blob: "b" } });
+  assert.equal(other.status, 200);
 });
 
 test("a vault id is never exposed via the GET query string by the client", async () => {

@@ -109,6 +109,8 @@ async function priceGet(request) {
 // ---------------------------------------------------------------------------
 const ID_RE = /^[a-f0-9]{64}$/;          // SHA-256 hex
 const MAX_BLOB = 256_000;                // ceiling; real blobs are ~1 KB avg, ~11 KB max (gzipped) — this is generous
+const CREATE_WINDOW_MS = 86_400_000;     // 24h rate-limit window for new-vault creation
+const CREATE_LIMIT = 20;                 // max new vaults one IP can create per window
 
 // Prefer the id from a header so it never lands in access logs / Referer / browser history
 // the way a ?id= query string would. Fall back to the query param for older cached clients.
@@ -133,6 +135,18 @@ async function vaultPut(request, env) {
   if (!id || !ID_RE.test(id)) return json({ error: "bad id" }, 400);
   if (typeof blob !== "string" || blob.length === 0 || blob.length > MAX_BLOB) {
     return json({ error: "bad blob" }, 400);
+  }
+
+  // Only NEW-vault creation is rate-limited; updates to an existing vault are unlimited.
+  // This caps how many rows a single IP can add, which is what stops table-stuffing.
+  const existing = await env.DB.prepare("SELECT 1 AS x FROM vaults WHERE account_id = ?").bind(id).first();
+  if (!existing) {
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const now = Date.now(), since = now - CREATE_WINDOW_MS;
+    await env.DB.prepare("DELETE FROM create_log WHERE ts < ?").bind(since).run(); // expire old IPs
+    const c = await env.DB.prepare("SELECT COUNT(*) AS n FROM create_log WHERE ip = ? AND ts > ?").bind(ip, since).first();
+    if ((c && c.n ? c.n : 0) >= CREATE_LIMIT) return json({ error: "rate limited" }, 429);
+    await env.DB.prepare("INSERT INTO create_log (ip, ts) VALUES (?1, ?2)").bind(ip, now).run();
   }
 
   await env.DB.prepare(
