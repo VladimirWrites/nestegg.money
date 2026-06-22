@@ -1,7 +1,30 @@
-# nestegg.money — private net worth & salary tracker
+<p align="center">
+  <img src="public/assets/icon-512.png" width="96" alt="nestegg.money logo">
+</p>
 
-[![CI](https://github.com/VladimirWrites/nestegg.money/actions/workflows/ci.yml/badge.svg)](https://github.com/VladimirWrites/nestegg.money/actions/workflows/ci.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+<h1 align="center">nestegg.money</h1>
+
+<p align="center">
+  A private, zero-knowledge net worth &amp; salary tracker.<br>
+  Encrypted in your browser. No email, no password, just an account number.
+</p>
+
+<p align="center">
+  <a href="https://nestegg.money"><b>Live app</b></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/VladimirWrites/nestegg.money/actions/workflows/ci.yml"><img src="https://github.com/VladimirWrites/nestegg.money/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License: Apache 2.0"></a>
+</p>
+
+## Screenshots
+
+<p align="center">
+  <img src="public/assets/screenshots/dashboard.png" width="820" alt="nestegg.money dashboard: net worth over time, allocation donut, and per-year breakdown">
+</p>
+
+## Overview
 
 A deliberately simple, zero-knowledge personal ledger. Single Cloudflare Worker
 serving a static frontend (no framework, no bundler) plus three small API
@@ -29,7 +52,7 @@ ciphertext.
 - **Ticker/crypto rows**: shares × live price via `/api/price` (Yahoo proxy).
   Past years freeze to that year's closing price. Only the public symbol is
   sent upstream — never an account or user identifier.
-- **Salary**: monthly net pay per person, with events (raises, job changes),
+- **Salary**: monthly pay per person (gross or net — your choice), with events (raises, job changes),
   a dual-axis chart, and paste-from-spreadsheet import.
 - **Forecast & retirement**: project net worth forward (contributions,
   growth, scenario band, FIRE goal) and simulate drawdown with a state
