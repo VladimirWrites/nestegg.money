@@ -9,7 +9,7 @@ import { fcCfg } from "../domain/forecast.js";
 import { retCfg } from "../domain/retirement.js";
 import { generateToken, validToken, canonToken, normTok, deriveKeys, copyText } from "../io/crypto.js";
 import { LS, syncedAt, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
-import { renderAll, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut, armChartAnim } from "./charts.js";
+import { renderAll, repaintCharts, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut, armChartAnim } from "./charts.js";
 import { renderSalary, armSalaryAnim } from "./salary.js";
 
 // Render an account number with digits and letters coloured differently, kept on one line —
@@ -129,8 +129,9 @@ const themeSel = $("themeSel");
 if (themeSel) themeSel.addEventListener("change", () => {
   applyTheme(themeSel.value);
   try { LS.set("nw_theme", themeSel.value); } catch (err) {}
-  // recolour the SVG charts (they read theme CSS vars) by re-rendering the visible view
-  if ($("viewSalary") && !$("viewSalary").classList.contains("hide")) renderSalary(); else renderAll();
+  // recolour the SVG charts (they read theme CSS vars) by re-rendering the visible view.
+  // renderAll() would no-op here (state unchanged), so force a repaint for the net view.
+  if ($("viewSalary") && !$("viewSalary").classList.contains("hide")) renderSalary(); else repaintCharts();
 });
 applyTheme(currentTheme()); // sync the browser UI colour to the theme set by the head script
 $("profCopyAcct").onclick = async () => { const t = LS.get("nw_token") || ""; toast((await copyText(t)) ? "Account number copied" : "Couldn't copy — use the eye to reveal it"); };

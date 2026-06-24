@@ -42,6 +42,7 @@ export function drawSalaryChart() {
   const animOn = _animSal; _animSal = false;
   refreshPalette();
   const svg = $("salaryChart"), people = state.salaries || [], leg = $("salaryLegend");
+  if (!svg || !leg) return;
   const all = people.flatMap((p) => p.entries || []);
   if (!all.length) { svg.innerHTML = ""; svg.removeAttribute("width"); leg.innerHTML = ""; return; }
   const idxM = (ym) => { const [y, m] = ym.split("-").map(Number); return y * 12 + (m - 1); };
@@ -231,7 +232,7 @@ $("salImportBtn").onclick = importSalary;
 // In-chart tooltip flag: shown next to the hovered/tapped point, not as a bottom toast.
 function salShowTip(c) {
   const tip = $("salTip"), chart = $("salaryChart");
-  tip.textContent = c.getAttribute("data-lbl"); tip.classList.remove("hide");
+  tip.textContent = c.getAttribute("data-lbl"); tip.classList.remove("hide"); // textContent: safe + getAttribute already decodes entities
   const cx = +c.getAttribute("cx"), cy = +c.getAttribute("cy"), W = +chart.getAttribute("width") || tip.offsetWidth;
   const tw = tip.offsetWidth, th = tip.offsetHeight;
   let left = Math.max(2, Math.min(cx - tw / 2, W - tw - 2)), top = cy - th - 12; if (top < 2) top = cy + 14;
@@ -243,6 +244,8 @@ function salHideTip() { const t = $("salTip"); if (t) t.classList.add("hide"); }
   chart.addEventListener("mouseover", (e) => { const c = e.target.closest(".saldot"); if (c) salShowTip(c); });
   chart.addEventListener("mouseout", (e) => { if (e.target.closest(".saldot")) salHideTip(); });
   chart.addEventListener("click", (e) => { const c = e.target.closest(".saldot"); if (c) salShowTip(c); else salHideTip(); });
+  // mobile: a tap anywhere outside the chart dismisses the tooltip (mouseout never fires on touch)
+  document.addEventListener("pointerdown", (e) => { if (!e.target.closest("#salaryChart")) salHideTip(); });
 })();
 $("dlSalary").onclick = downloadSalary;
 $("salaryBtn").onclick = () => showView("salary");

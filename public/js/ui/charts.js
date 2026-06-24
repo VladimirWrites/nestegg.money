@@ -49,6 +49,10 @@ export function renderAll() {
   _animOn = false;
 }
 
+// Force a full repaint even when state is unchanged — used after a theme switch, which
+// recolours the charts (they read theme CSS vars) but doesn't alter state.
+export function repaintCharts() { _lastSig = ""; renderAll(); }
+
 // Count-up the hero net-worth number from its last value to the new one.
 let _heroVal = 0;
 let _heroRaf = 0;
@@ -207,7 +211,8 @@ export function updNote() {
 
 /* ---- net-worth history bars ---- */
 function drawHist() {
-  const svg = $("histChart"); const snaps = sortedSnaps(); const n = snaps.length; const names = allNames();
+  const svg = $("histChart"); if (!svg) return;
+  const snaps = sortedSnaps(); const n = snaps.length; const names = allNames();
   const dim = chartDims(svg, 680), H = dim.H;
   const padL = 58, padR = 14, padT = 24, padB = 32, plotH = H - padT - padB;
   // Minimum ~46px per year so the x-axis year labels never overlap; the chart then
@@ -241,8 +246,9 @@ function drawHist() {
   else { dEl.className = "day"; dEl.textContent = ""; }
 }
 function drawHistLegend() {
+  const el = $("histLegend"); if (!el) return;
   const names = allNames();
-  $("histLegend").innerHTML = names.map((n) => `<span><span class="chip" style="background:${colorOf(n, names)}"></span>${esc(n)}</span>`).join("");
+  el.innerHTML = names.map((n) => `<span><span class="chip" style="background:${colorOf(n, names)}"></span>${esc(n)}</span>`).join("");
 }
 
 // Tooltip: hover/tap a year column to see that year's breakdown by group, plus net and liabilities.
@@ -317,10 +323,15 @@ function donutHideTip() { const t = $("donutTip"); if (t) t.classList.add("hide"
   svg.addEventListener("mouseout", (e) => { if (e.target.closest(".dwedge")) donutHideTip(); });
   svg.addEventListener("click", (e) => { const p = e.target.closest(".dwedge"); if (p) donutShowTip(p); else donutHideTip(); });
 })();
+// mobile: a tap outside a chart dismisses its tooltip (mouseout never fires on touch)
+document.addEventListener("pointerdown", (e) => {
+  if (!e.target.closest("#histChart")) histHideTip();
+  if (!e.target.closest("#donut")) donutHideTip();
+});
 
 /* ---- allocation donut ---- */
 function drawDonut() {
-  const ls = latestSnap(); const svg = $("donut"); svg.innerHTML = "";
+  const ls = latestSnap(); const svg = $("donut"); if (!svg) return; svg.innerHTML = "";
   $("allocYear").textContent = ls ? "— " + ls.year : "";
   const names = allNames();
   const agg = {}; (ls ? effEntries(ls) : []).forEach((e) => { const k = seriesKey(e); agg[k] = (agg[k] || 0) + entryBase(e, ls && ls.year); });
@@ -365,7 +376,7 @@ export function downloadDonut() {
 
 /* ---- year list ---- */
 function renderYears() {
-  const host = $("years"); host.innerHTML = ""; const names = allNames();
+  const host = $("years"); if (!host) return; host.innerHTML = ""; const names = allNames();
   const snaps = [...state.snapshots].sort((a, b) => b.year - a.year);
   const maxV = Math.max(1, ...state.snapshots.map((s) => snapGrossBase(s)));
   snaps.forEach((sn) => {
