@@ -6,7 +6,7 @@ import { nid } from "../domain/ids.js";
 import { CCYS, PALETTE } from "../domain/constants.js";
 import { money, moneyIn, esc, convToY, ccySym, shortK } from "../domain/money.js";
 import { fmtMY } from "../domain/dates.js";
-import { yGrid, C, refreshPalette, legendSVG, frameSVG, svgToPng } from "./chart-kit.js";
+import { yGrid, C, refreshPalette, legendSVG, frameSVG, svgToPng, scrollToNewest, positionTip } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
 import { showView } from "./gate.js";
 
@@ -81,7 +81,7 @@ export function drawSalaryChart() {
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = s;
   svg.classList.toggle("anim", animOn);
   // when it overflows, show the most recent months first (scroll to the right edge)
-  if (animOn) { const sc = svg.closest(".histscroll"); if (sc) requestAnimationFrame(() => { try { sc.scrollLeft = sc.scrollWidth; } catch (e) {} }); }
+  if (animOn) scrollToNewest(svg);
   leg.innerHTML = people.map((p, pi) => `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("") + `<span><span class="chip" style="background:${SAL_COMB}"></span>Combined yearly salary</span>`;
 }
 
@@ -233,10 +233,8 @@ $("salImportBtn").onclick = importSalary;
 function salShowTip(c) {
   const tip = $("salTip"), chart = $("salaryChart");
   tip.textContent = c.getAttribute("data-lbl"); tip.classList.remove("hide"); // textContent: safe + getAttribute already decodes entities
-  const cx = +c.getAttribute("cx"), cy = +c.getAttribute("cy"), W = +chart.getAttribute("width") || tip.offsetWidth;
-  const tw = tip.offsetWidth, th = tip.offsetHeight;
-  let left = Math.max(2, Math.min(cx - tw / 2, W - tw - 2)), top = cy - th - 12; if (top < 2) top = cy + 14;
-  tip.style.left = left + "px"; tip.style.top = top + "px";
+  const W = +chart.getAttribute("width") || tip.offsetWidth;
+  positionTip(tip, +c.getAttribute("cx"), +c.getAttribute("cy"), W);
 }
 function salHideTip() { const t = $("salTip"); if (t) t.classList.add("hide"); }
 (function () {

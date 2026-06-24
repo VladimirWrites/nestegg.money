@@ -5,12 +5,12 @@ import { state } from "../domain/store.js";
 import { money, ccySym, esc, shortK } from "../domain/money.js";
 import {
   colorOf, allNames, effEntries, seriesKey, snapGrossBase, snapTotalBase,
-  sortedSnaps, latestSnap, entryBase, isLiability, dayChangeBase,
+  sortedSnaps, latestSnap, entryBase, isLiability, dayChangeBase, allocationRows,
 } from "../domain/model.js";
 import { fmtMY } from "../domain/dates.js";
 import { fcCfg, forecastNetAt, fcTarget, fcBandRates, debtSummary } from "../domain/forecast.js";
 import { retCfg, retSim, pensionPts } from "../domain/retirement.js";
-import { C, refreshPalette, niceCeil, chartDims, yGrid, txt, legendSVG, frameSVG, svgToPng } from "./chart-kit.js";
+import { C, refreshPalette, niceCeil, chartDims, yGrid, txt, legendSVG, frameSVG, svgToPng, scrollToNewest, positionTip } from "./chart-kit.js";
 
 // Entrance animations play only on view-entry (boot / tab switch), never on the many
 // live re-renders (keystrokes, background refresh) — gated by this one-shot arm flag.
@@ -18,12 +18,6 @@ let _arm = false;
 let _animOn = false;
 let _lastSig = "";
 export function armChartAnim() { _arm = true; }
-
-// When a chart overflows its scroll container, jump to the right edge (newest data first).
-function scrollToNewest(svg) {
-  const sc = svg && svg.closest(".histscroll");
-  if (sc) requestAnimationFrame(() => { try { sc.scrollLeft = sc.scrollWidth; } catch (e) {} });
-}
 
 // Signature of everything the charts render from, ignoring churny non-visual fields
 // (mtimes, sync/fetch timestamps, tombstones). Lets renderAll skip a no-op redraw so a
@@ -279,11 +273,8 @@ function histShowTip(rect) {
   const tip = $("histTip"), chart = $("histChart"); if (!tip || !chart) return;
   tip.innerHTML = histBreakdown(+rect.getAttribute("data-year"));
   tip.classList.remove("hide");
-  const cx = +rect.getAttribute("data-cx"), cy = +rect.getAttribute("data-cy"), W = +chart.getAttribute("width") || tip.offsetWidth;
-  const tw = tip.offsetWidth, th = tip.offsetHeight;
-  const left = Math.max(2, Math.min(cx - tw / 2, W - tw - 2));
-  let top = cy - th - 12; if (top < 2) top = cy + 14;
-  tip.style.left = left + "px"; tip.style.top = top + "px";
+  const W = +chart.getAttribute("width") || tip.offsetWidth;
+  positionTip(tip, +rect.getAttribute("data-cx"), +rect.getAttribute("data-cy"), W);
 }
 function histHideTip() { const t = $("histTip"); if (t) t.classList.add("hide"); }
 (function () {
@@ -310,11 +301,7 @@ function donutShowTip(path) {
   const tip = $("donutTip"); if (!tip) return;
   tip.innerHTML = donutBreakdown(path.getAttribute("data-name"));
   tip.classList.remove("hide");
-  const mx = +path.getAttribute("data-mx"), my = +path.getAttribute("data-my");
-  const tw = tip.offsetWidth, th = tip.offsetHeight;
-  const left = Math.max(2, Math.min(mx - tw / 2, 240 - tw - 2));
-  let top = my - th - 8; if (top < 2) top = my + 8;
-  tip.style.left = left + "px"; tip.style.top = top + "px";
+  positionTip(tip, +path.getAttribute("data-mx"), +path.getAttribute("data-my"), 240);
 }
 function donutHideTip() { const t = $("donutTip"); if (t) t.classList.add("hide"); }
 (function () {
@@ -334,8 +321,7 @@ function drawDonut() {
   const ls = latestSnap(); const svg = $("donut"); if (!svg) return; svg.innerHTML = "";
   $("allocYear").textContent = ls ? "— " + ls.year : "";
   const names = allNames();
-  const agg = {}; (ls ? effEntries(ls) : []).forEach((e) => { const k = seriesKey(e); agg[k] = (agg[k] || 0) + entryBase(e, ls && ls.year); });
-  const rows = Object.keys(agg).map((k) => ({ name: k, v: agg[k] })).filter((r) => r.v > 0).sort((a, b) => b.v - a.v);
+  const rows = allocationRows(ls);
   const total = rows.reduce((a, r) => a + r.v, 0);
   if (total > 0) {
     const cx = 120, cy = 120, r = 82, sw = 30; let a = -Math.PI / 2;
@@ -363,8 +349,7 @@ export function downloadHist() {
 }
 export function downloadDonut() {
   const ls = latestSnap(), src = $("donut"), names = allNames();
-  const agg = {}; (ls ? effEntries(ls) : []).forEach((e) => { const k = seriesKey(e); agg[k] = (agg[k] || 0) + entryBase(e, ls && ls.year); });
-  const rows = Object.keys(agg).map((k) => ({ name: k, v: agg[k] })).filter((r) => r.v > 0).sort((a, b) => b.v - a.v);
+  const rows = allocationRows(ls);
   if (!rows.length) { toast("No allocation to save"); return; }
   const total = rows.reduce((a, r) => a + r.v, 0);
   const items = rows.map((r) => ({ color: colorOf(r.name, names), label: r.name + "   " + Math.round((r.v / total) * 100) + "%   " + money(r.v) }));
@@ -381,7 +366,7 @@ function renderYears() {
   const maxV = Math.max(1, ...state.snapshots.map((s) => snapGrossBase(s)));
   snaps.forEach((sn) => {
     const ri = state.snapshots.indexOf(sn), tot = snapTotalBase(sn), gross = snapGrossBase(sn);
-    const agg = {}; effEntries(sn).forEach((e) => { const v = entryBase(e, sn.year); if (v > 0) { const k = seriesKey(e); agg[k] = (agg[k] || 0) + v; } });
+    const agg = {}; allocationRows(sn).forEach((r) => { agg[r.name] = r.v; });
     // Order segments by allNames() (same as the graph's stacking) so colours line up.
     const segs = names.map((k) => (agg[k] > 0 ? `<i style="width:${(agg[k] / (gross || 1)) * 100}%;background:${colorOf(k, names)}"></i>` : "")).join("");
     const liab = gross - tot, liabHtml = liab > 0.005 ? `<span class="yliab num" title="liabilities">−${money(liab)}</span>` : "";

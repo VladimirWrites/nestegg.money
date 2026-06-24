@@ -86,3 +86,18 @@ export function svgToPng(svgString, w, h, scale, filename) {
   img.onerror = () => { URL.revokeObjectURL(url); toast("Could not render image"); };
   img.src = url;
 }
+
+// When a chart overflows its .histscroll container, jump to the right edge (newest data).
+export function scrollToNewest(svg) {
+  const sc = svg && svg.closest(".histscroll");
+  if (sc) requestAnimationFrame(() => { try { sc.scrollLeft = sc.scrollWidth; } catch (e) {} });
+}
+
+// Place a tooltip flag centred above point (x,y), clamped within [0,maxW], flipping below
+// the point when it would overflow the top. Shared by the net-worth, donut, and salary tips.
+export function positionTip(tip, x, y, maxW) {
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  const left = Math.max(2, Math.min(x - tw / 2, maxW - tw - 2));
+  let top = y - th - 12; if (top < 2) top = y + 14;
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+}

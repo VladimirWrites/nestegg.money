@@ -114,5 +114,15 @@ export const snapGrossBase = (sn) => effEntries(sn).reduce((a, e) => { const v =
 // Total owed (returned positive).
 export const snapLiabBase = (sn) => effEntries(sn).filter(isLiability).reduce((a, e) => a - entryBase(e, sn.year), 0);
 
+// Asset allocation for a snapshot: positive holdings summed per series, sorted high to low.
+// The total equals snapGrossBase(sn). Shared by the donut, its PNG export, and the year bars,
+// so the on-screen donut and the exported image can never drift apart.
+export function allocationRows(sn) {
+  if (!sn) return [];
+  const agg = {};
+  effEntries(sn).forEach((e) => { const v = entryBase(e, sn.year); if (v > 0) { const k = seriesKey(e); agg[k] = (agg[k] || 0) + v; } });
+  return Object.keys(agg).map((k) => ({ name: k, v: agg[k] })).sort((a, b) => b.v - a.v);
+}
+
 export const sortedSnaps = () => [...state.snapshots].sort((a, b) => a.year - b.year);
 export const latestSnap = () => sortedSnaps().slice(-1)[0];

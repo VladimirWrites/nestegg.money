@@ -4,6 +4,7 @@
 import { state } from "./store.js";
 import { defRetire } from "./schema.js";
 import { fcCfg, manualNetBase, contribFV } from "./forecast.js";
+import { YEAR_MS } from "./dates.js";
 
 // Lazily-initialised retirement config on the state.
 export function retCfg() {
@@ -22,7 +23,7 @@ export function retDeflator(year) {
 export function forecastLiquidAt(date, gOverride) {
   const fc = fcCfg();
   const g = gOverride != null ? gOverride : +fc.growth || 0;
-  let t = (date - new Date()) / (365.25 * 86400000);
+  let t = (date - new Date()) / YEAR_MS;
   if (t < 0) t = 0;
   return manualNetBase() * Math.pow(1 + g, t) + contribFV(date, gOverride);
 }
