@@ -228,6 +228,8 @@ function drawHist() {
     s += `<rect class="histhit" x="${(padL + idx * slot).toFixed(1)}" y="${padT}" width="${slot.toFixed(1)}" height="${plotH}" fill="transparent" style="pointer-events:all" data-year="${sn.year}" data-cx="${cx.toFixed(1)}" data-cy="${yTop.toFixed(1)}"></rect>`;
   });
   svg.innerHTML = s;
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", n ? `Net worth over time, ${snaps[0].year} to ${snaps[n - 1].year}. Latest net worth ${money(snapTotalBase(snaps[n - 1]))}.` : "Net worth over time — no data yet.");
   svg.classList.toggle("anim", _animOn);
   if (_animOn) scrollToNewest(svg); // when it overflows, show the most recent years first
   // hero = latest
@@ -329,6 +331,8 @@ function drawDonut() {
     txt(svg, cx, cy - 4, "TOTAL", 10, C.axis, 2, 400); txt(svg, cx, cy + 18, money(total), 16, C.ink, 0, 600);
   }
   svg.classList.toggle("anim", _animOn);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", total > 0 ? `Allocation for ${ls.year}: ${rows.map((r) => r.name + " " + Math.round((r.v / total) * 100) + "%").join(", ")}.` : "Allocation — no data yet.");
   const leg = $("legend"); leg.innerHTML = "";
   rows.forEach((row) => { const d = document.createElement("div"); d.className = "legrow"; d.innerHTML = `<span class="swatch" style="background:${colorOf(row.name, names)}"></span><span>${esc(row.name)}</span><span class="pct">${((row.v / total) * 100).toFixed(0)}%</span><span class="amt num">${money(row.v)}</span>`; leg.appendChild(d); });
 }

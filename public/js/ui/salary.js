@@ -44,7 +44,7 @@ export function drawSalaryChart() {
   const svg = $("salaryChart"), people = state.salaries || [], leg = $("salaryLegend");
   if (!svg || !leg) return;
   const all = people.flatMap((p) => p.entries || []);
-  if (!all.length) { svg.innerHTML = ""; svg.removeAttribute("width"); leg.innerHTML = ""; return; }
+  if (!all.length) { svg.innerHTML = ""; svg.removeAttribute("width"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", "Salary over time — no data yet."); leg.innerHTML = ""; return; }
   const idxM = (ym) => { const [y, m] = ym.split("-").map(Number); return y * 12 + (m - 1); };
   const minI = Math.min(...all.map((e) => idxM(e.ym))), maxI = Math.max(...all.map((e) => idxM(e.ym))), span = Math.max(1, maxI - minI);
   const nmL = axisMax(Math.max(1, ...people.flatMap((p) => (p.entries || []).map((e) => salBase(p, e)))));
@@ -79,6 +79,8 @@ export function drawSalaryChart() {
     s += `<text x="${p.x.toFixed(1)}" y="${(p.yy - 8).toFixed(1)}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${p.y0}</text>`;
   });
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = s;
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", `Monthly salary over time for ${people.length} ${people.length === 1 ? "person" : "people"}.`);
   svg.classList.toggle("anim", animOn);
   // when it overflows, show the most recent months first (scroll to the right edge)
   if (animOn) scrollToNewest(svg);

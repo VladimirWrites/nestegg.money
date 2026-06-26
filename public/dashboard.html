@@ -45,14 +45,14 @@
       <div class="acctnum num" id="newAcct">…</div>
       <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct">I've saved it — continue</button></div>
       <div class="warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
-      <div class="switch">Already have one? <a id="toSignin">Sign in with an account number</a></div>
+      <div class="switch">Already have one? <a id="toSignin" role="button" tabindex="0">Sign in with an account number</a></div>
     </form>
     <form class="panel hide" id="gateSignin" autocomplete="on">
       <p>Enter your account number to load and decrypt your ledger on this device.</p>
       <input type="text" id="signinUser" class="sr-only" autocomplete="username" value="nestegg account" readonly tabindex="-1" aria-hidden="true">
-      <input class="gatein" id="signinInput" type="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false">
+      <input class="gatein" id="signinInput" type="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false" aria-label="Account number">
       <div class="gaterow"><button type="submit" class="gatebtn" id="signinBtn">Sign in</button></div>
-      <div class="switch">Need a new account? <a id="toCreate">Create one</a></div>
+      <div class="switch">Need a new account? <a id="toCreate" role="button" tabindex="0">Create one</a></div>
     </form>
     <div class="switch">By continuing you agree to the <a href="privacy.html">Privacy Policy</a> and <a href="terms.html">Terms &amp; Conditions</a>.</div>
   </div>
@@ -238,7 +238,7 @@
 </div>
 
 <div id="infoModal" class="infomodal hide"><div class="infobox"><button class="infoclose" id="infoClose" aria-label="Close">×</button><div id="infoBody"></div></div></div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- App is an ES-module graph; main.js imports everything (domain / io / ui). No bundler. -->
 <script type="module" src="js/main.js"></script>

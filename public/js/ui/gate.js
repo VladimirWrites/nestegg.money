@@ -30,6 +30,9 @@ function showCreate() { $("gateCreate").classList.remove("hide"); $("gateSignin"
 function showSignin() { $("gateCreate").classList.add("hide"); $("gateSignin").classList.remove("hide"); }
 $("toSignin").onclick = showSignin;
 $("toCreate").onclick = showCreate;
+// these are role="button" links — let keyboard users activate them with Enter/Space too
+const keyActivate = (el) => el && el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } });
+keyActivate($("toSignin")); keyActivate($("toCreate"));
 $("regenAcct").onclick = () => newToken();
 $("copyAcct").onclick = async () => { toast((await copyText(pendingToken)) ? "Copied" : "Couldn't copy — write it down"); };
 $("gateCreate").addEventListener("submit", async (e) => {

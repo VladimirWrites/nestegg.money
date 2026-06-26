@@ -40,3 +40,7 @@ html{scrollbar-color:var(--line2) transparent;scrollbar-width:thin}
 .histscroll::-webkit-scrollbar-thumb,.saltable-scroll::-webkit-scrollbar-thumb,.schscroll::-webkit-scrollbar-thumb,.editor::-webkit-scrollbar-thumb,#salImportText::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px;border:2px solid var(--panel)}
 .histscroll::-webkit-scrollbar-thumb:hover,.saltable-scroll::-webkit-scrollbar-thumb:hover,.schscroll::-webkit-scrollbar-thumb:hover,.editor::-webkit-scrollbar-thumb:hover,#salImportText::-webkit-scrollbar-thumb:hover{background:#4a4a52}
 .histscroll::-webkit-scrollbar-corner,.saltable-scroll::-webkit-scrollbar-corner{background:var(--panel)}
+
+/* accessibility: visible keyboard focus ring (mouse/touch focus stays clean via :focus-visible) */
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:3px}
+[role="button"]{cursor:pointer}
