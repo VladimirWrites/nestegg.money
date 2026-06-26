@@ -103,18 +103,20 @@ async function priceGet(request) {
 
 // ---------------------------------------------------------------------------
 // /api/vault — zero-knowledge encrypted blob store keyed by account hash.
-// GET    ?id=<hash>            -> { blob, updated_at } | 404
+// The id is sent in the X-Vault-Id header (GET/DELETE) or the body (PUT), never the URL,
+// so it can't leak via access logs / Referer / browser history.
+// GET    [X-Vault-Id: <hash>]  -> { blob, updated_at } | 404
 // PUT    { id, blob }          -> { ok: true }
-// DELETE ?id=<hash>            -> { ok: true }
+// DELETE [X-Vault-Id: <hash>]  -> { ok: true }
 // ---------------------------------------------------------------------------
 const ID_RE = /^[a-f0-9]{64}$/;          // SHA-256 hex
 const MAX_BLOB = 256_000;                // ceiling; real blobs are ~1 KB avg, ~11 KB max (gzipped) — this is generous
 const CREATE_WINDOW_MS = 86_400_000;     // 24h rate-limit window for new-vault creation
 const CREATE_LIMIT = 20;                 // max new vaults one IP can create per window
 
-// Prefer the id from a header so it never lands in access logs / Referer / browser history
-// the way a ?id= query string would. Fall back to the query param for older cached clients.
-const vaultId = (request) => request.headers.get("X-Vault-Id") || new URL(request.url).searchParams.get("id");
+// The id comes from a header so it never lands in access logs / Referer / browser history
+// the way a ?id= query string would.
+const vaultId = (request) => request.headers.get("X-Vault-Id");
 
 async function vaultGet(request, env) {
   const id = vaultId(request);

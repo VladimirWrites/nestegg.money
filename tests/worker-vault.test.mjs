@@ -52,18 +52,17 @@ test("PUT then GET via X-Vault-Id header round-trips the blob", async () => {
   assert.equal((await r.json()).blob, "iv.ct");
 });
 
-test("GET still accepts the ?id= query param (back-compat for old clients)", async () => {
+test("GET ignores the ?id= query param (id must be in the header)", async () => {
   const env = makeEnv();
   await call(env, "PUT", { body: { id: ID_A, blob: "iv.ct" } });
+  // query-only, no header -> treated as no id -> 400 (the loggable query path is gone)
   const r = await call(env, "GET", { query: ID_A });
-  assert.equal(r.status, 200);
-  assert.equal((await r.json()).blob, "iv.ct");
+  assert.equal(r.status, 400);
 });
 
-test("GET prefers the header over the query param", async () => {
+test("GET reads the id from the header, ignoring any query param", async () => {
   const env = makeEnv();
   await call(env, "PUT", { body: { id: ID_A, blob: "from-A" } });
-  // header points at the real vault, query at a non-existent one -> header wins
   const r = await call(env, "GET", { headers: { "X-Vault-Id": ID_A }, query: ID_B });
   assert.equal(r.status, 200);
   assert.equal((await r.json()).blob, "from-A");
