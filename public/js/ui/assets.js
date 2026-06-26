@@ -9,6 +9,7 @@ import { fmtMY, fmtMonths, parseDate } from "../domain/dates.js";
 import { buildSchedule, loanTerms, outstandingAt } from "../domain/loan.js";
 import { assetGrossAt, assetNetAt } from "../domain/asset-value.js";
 import { normLoan } from "../domain/schema.js";
+import { groupNames } from "../domain/categories.js";
 import { renderAll } from "./charts.js";
 import { renderEntries } from "./networth.js";
 import { scheduleSync } from "../io/storage.js";
@@ -28,14 +29,6 @@ function closeAssetEditor() {
   $("assetEditor").classList.add("hide");
   if (!$("yearEditor").classList.contains("hide")) renderEntries();
   else renderAll();
-}
-
-// The global category list (plus any group still in use, defensively).
-export function groupNames() {
-  const s = new Set(state.categories || []);
-  state.snapshots.forEach((sn) => (sn.entries || []).forEach((e) => { if (e.group) s.add(e.group); }));
-  (state.assets || []).forEach((a) => { if (a.group) s.add(a.group); });
-  return [...s];
 }
 
 // The computed (read-only) outputs for a loan — refreshed in place as inputs change,

@@ -7,7 +7,8 @@ import { money, moneyIn, esc } from "../domain/money.js";
 import { allNames, autoEntriesFor, colorOf, seriesKey, entryBase, tickerPx, snapTotalBase, effEntries } from "../domain/model.js";
 import { scheduleSync, ensureHist, fetchPrice, fetchPriceYear } from "../io/storage.js";
 import { renderAll } from "./charts.js";
-import { openAssetEditor, newAsset, newLiability, groupNames } from "./assets.js";
+import { openAssetEditor, newAsset, newLiability } from "./assets.js";
+import { groupNames, addCategory, renameCategory, categoryUsage, removeCategory } from "../domain/categories.js";
 
 let edIdx = -1;
 let edYearPrev = null;
@@ -108,17 +109,14 @@ $("edDelYear").onclick = () => { if (edIdx < 0) return; if (confirm("Delete year
 $("edAdd").onclick = () => { state.snapshots[edIdx].entries.push({ id: nid(), name: "New asset", kind: "fixed", ccy: state.baseCcy, value: 0 }); scheduleSync(); renderEntries(); };
 $("edAddLongterm").onclick = () => { const a = newAsset(); openAssetEditor(a.id, true); };
 $("edAddLiability").onclick = () => { const a = newLiability(); openAssetEditor(a.id, true); };
-$("edAddGroup").onclick = () => { const ex = new Set(state.categories || (state.categories = [])); let base = "New category", nm = base, k = 2; while (ex.has(nm)) nm = base + " " + k++; state.categories.push(nm); scheduleSync(); renderEntries(); };
+$("edAddGroup").onclick = () => { addCategory(); scheduleSync(); renderEntries(); };
 $("edCopyPrev").onclick = () => { const cur = state.snapshots[edIdx]; const prev = state.snapshots.filter((s) => s.year < cur.year).sort((a, b) => b.year - a.year)[0]; if (!prev) { toast("No earlier year to copy from"); return; } if (cur.entries.length && !confirm("Replace this year's entries with a copy of " + prev.year + "?")) return; cur.entries = prev.entries.map((e) => ({ id: nid(), name: e.name, kind: e.kind || "fixed", ccy: e.ccy, value: e.value, shares: e.shares, ticker: e.ticker, group: e.group })); scheduleSync(); renderEntries(); ensureHist(); toast("Copied " + prev.year); };
 
 $("edEntries").addEventListener("input", (e) => {
   const t = e.target, sn = state.snapshots[edIdx];
   if (t.dataset.grp != null) {
-    const old = t.dataset.grp, nw = t.value;
-    // Categories are global tags — rename in the list and across every year and asset.
-    const ci = (state.categories || []).indexOf(old); if (ci >= 0) state.categories[ci] = nw;
-    state.snapshots.forEach((s) => (s.entries || []).forEach((en) => { if (en.group === old) en.group = nw; }));
-    (state.assets || []).forEach((a) => { if (a.group === old) a.group = nw; });
+    const nw = t.value;
+    renameCategory(t.dataset.grp, nw); // global tag: rename in the list and across every year and asset
     t.dataset.grp = nw; scheduleSync(); return;
   }
   const i = +t.dataset.i, f = t.dataset.f; if (t.dataset.i == null || !f) return;
@@ -189,12 +187,9 @@ $("edEntries").addEventListener("click", (e) => {
   if (gd) {
     const g = gd.dataset.grpdel;
     // Deleting a category removes the tag from every item in every year (nothing is removed).
-    const n = state.snapshots.reduce((a, s) => a + (s.entries || []).filter((x) => x.group === g).length, 0) + (state.assets || []).filter((x) => x.group === g).length;
+    const n = categoryUsage(g);
     if (n === 0 || confirm('Remove the "' + g + '" category from all years? Its ' + n + " tagged item" + (n === 1 ? "" : "s") + " lose the category — nothing is deleted.")) {
-      state.categories = (state.categories || []).filter((c) => c !== g);
-      state.snapshots.forEach((s) => (s.entries || []).forEach((x) => { if (x.group === g) x.group = undefined; }));
-      (state.assets || []).forEach((x) => { if (x.group === g) x.group = undefined; });
-      scheduleSync(); renderEntries();
+      removeCategory(g); scheduleSync(); renderEntries();
     }
     return;
   }
