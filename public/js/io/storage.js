@@ -18,8 +18,14 @@ export const LS = {
 // Timestamp of the last successful server sync (push or load), for the profile's "last synced" line.
 export const syncedAt = () => +LS.get("nw_synced_at") || 0;
 
+// Demo/tour mode: sample data, never persisted to localStorage and never synced to the server.
+let demoMode = false;
+export const isDemo = () => demoMode;
+export function setDemo(on) { demoMode = !!on; }
+
 // Keep a one-deep backup of the previous local state, so a bad save/clobber is recoverable.
 export function saveLocal() {
+  if (demoMode) return; // demo data is in-memory only — never touch real local storage
   try { const prev = LS.get("nw_state"); if (prev) LS.set("nw_state_bak", prev); } catch (e) {}
   LS.set("nw_state", JSON.stringify(state));
 }
@@ -33,6 +39,7 @@ let syncTimer;
 let syncWarned = false;
 
 export function scheduleSync() {
+  if (demoMode) return; // demo: no persistence, no server sync
   state.updatedAt = Date.now();
   stampMtimes();
   saveLocal();

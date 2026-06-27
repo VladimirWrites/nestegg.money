@@ -46,6 +46,7 @@
       <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct">I've saved it — continue</button></div>
       <div class="warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
       <div class="switch">Already have one? <a id="toSignin" role="button" tabindex="0">Sign in with an account number</a></div>
+      <div class="switch demoswitch"><a id="toDemo" role="button" tabindex="0">Explore a live demo — no account needed</a></div>
     </form>
     <form class="panel hide" id="gateSignin" autocomplete="on">
       <p>Enter your account number to load and decrypt your ledger on this device.</p>
@@ -59,6 +60,10 @@
 </div>
 
 <div id="app" class="hide">
+  <div id="demoBanner" class="demobar hide" role="status">
+    <span>Demo — sample data, nothing is saved.</span>
+    <span class="demobtns"><button type="button" class="act" id="demoCreate">Create an account</button><button type="button" class="demolink" id="demoExit">Leave</button></span>
+  </div>
   <div class="acctbar">
     <button class="who syncbtn" id="syncNowHome" title="Sync now"><span class="syncdot" id="syncDot"></span><span id="syncTxt">Local</span></button>
     <div><button id="profileBtn">Profile</button></div>

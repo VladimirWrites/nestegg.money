@@ -417,3 +417,10 @@ button.act.ghost:hover{border-color:var(--amber)}
 .salflag .tipyoy{margin-top:3px;font-size:11px;letter-spacing:.02em}
 .salflag .tipyoy.up{color:var(--green)}
 .salflag .tipyoy.down{color:var(--red)}
+
+/* demo/tour banner (shown only in the no-account demo) */
+.demobar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--panel2);border-bottom:1px solid var(--amber);color:var(--ink);padding:8px 16px;font-size:12.5px;letter-spacing:.02em}
+.demobar .demobtns{display:flex;gap:8px;align-items:center}
+.demobar .act{min-height:32px;padding:6px 12px;font-size:11px}
+.demolink{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
+.demoswitch{margin-top:4px}

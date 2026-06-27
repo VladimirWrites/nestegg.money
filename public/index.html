@@ -51,6 +51,7 @@
     <div class="lp-cta hide" id="lpCtaIn">
       <a class="lp-btn lp-btn-primary" href="/dashboard">Open dashboard</a>
     </div>
+    <div class="lp-demo" id="lpDemo">Just looking? <a href="/dashboard#demo">Explore a live demo</a> — no account needed.</div>
     <div class="lp-note" id="lpNote">Free · no sign-up form · works on every device</div>
   </section>
 
@@ -118,10 +119,11 @@
     if (localStorage.getItem("nw_token")) {
       var nav = document.getElementById("lpNavAuth");
       if (nav) { nav.textContent = "Dashboard"; nav.href = "/dashboard"; }
-      var out = document.getElementById("lpCtaOut"), inn = document.getElementById("lpCtaIn"), note = document.getElementById("lpNote");
+      var out = document.getElementById("lpCtaOut"), inn = document.getElementById("lpCtaIn"), note = document.getElementById("lpNote"), demo = document.getElementById("lpDemo");
       if (out) out.classList.add("hide");
       if (inn) inn.classList.remove("hide");
       if (note) note.classList.add("hide");
+      if (demo) demo.classList.add("hide");
     }
   } catch (e) {}
 </script>

@@ -8,7 +8,7 @@ import { CCYS } from "../domain/constants.js";
 import { fcCfg } from "../domain/forecast.js";
 import { retCfg } from "../domain/retirement.js";
 import { generateToken, validToken, canonToken, normTok, deriveKeys, copyText } from "../io/crypto.js";
-import { LS, syncedAt, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
+import { LS, syncedAt, setDemo, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
 import { renderAll, repaintCharts, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut, armChartAnim } from "./charts.js";
 import { renderSalary, armSalaryAnim } from "./salary.js";
 
@@ -33,6 +33,10 @@ $("toCreate").onclick = showCreate;
 // these are role="button" links — let keyboard users activate them with Enter/Space too
 const keyActivate = (el) => el && el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } });
 keyActivate($("toSignin")); keyActivate($("toCreate"));
+if ($("toDemo")) { $("toDemo").onclick = startDemo; keyActivate($("toDemo")); }
+// Leaving the demo (banner buttons) reloads to a clean gate — drops the in-memory sample.
+if ($("demoCreate")) $("demoCreate").onclick = () => location.assign("/dashboard");
+if ($("demoExit")) $("demoExit").onclick = () => location.assign("/dashboard");
 $("regenAcct").onclick = () => newToken();
 $("copyAcct").onclick = async () => { toast((await copyText(pendingToken)) ? "Copied" : "Couldn't copy — write it down"); };
 $("gateCreate").addEventListener("submit", async (e) => {
@@ -65,6 +69,7 @@ $("gateSignin").addEventListener("submit", async (e) => {
 
 export async function boot() {
   try {
+    if (location.hash === "#demo") { startDemo(); return; } // no-account tour with sample data
     const tok = LS.get("nw_token");
     if (!tok) { if (location.hash === "#signin") showSignin(); else showCreate(); return; }
     // Already signed in — never flash the login screen. Paint from the local cache immediately
@@ -93,7 +98,7 @@ export async function boot() {
   }
 }
 
-function enterApp() {
+function enterApp(skipRefresh) {
   try {
     $("gate").classList.add("hide");
     $("app").classList.remove("hide");
@@ -102,8 +107,19 @@ function enterApp() {
     armChartAnim();
     renderAll();
     // Refresh live FX + ticker prices (+ past-year closes). Silent; re-render once fresh.
-    try { autoRefresh().then((ch) => { if (ch) { scheduleSync(); renderAll(); } }).catch(() => {}); } catch (e) {}
+    // Skipped in demo mode (deterministic, offline, and scheduleSync is a no-op there anyway).
+    if (!skipRefresh) { try { autoRefresh().then((ch) => { if (ch) { scheduleSync(); renderAll(); } }).catch(() => {}); } catch (e) {} }
   } catch (e) { console && console.error && console.error("enterApp:", e); }
+}
+
+// No-account tour: load sample data, flag demo mode (no persistence, no sync), show the app.
+// The sample data module is large, so it's only fetched when the demo is actually started.
+export async function startDemo() {
+  setDemo(true);
+  const { sampleState } = await import("../domain/sample-data.js");
+  setState(migrate(sampleState()));
+  const b = $("demoBanner"); if (b) b.classList.remove("hide");
+  enterApp(true);
 }
 
 let profShown = false;
