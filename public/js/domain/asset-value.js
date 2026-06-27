@@ -2,14 +2,21 @@
 import { parseDate, YEAR_MS } from "./dates.js";
 import { outstandingAt } from "./loan.js";
 
-// Continuous compounding: value grows (up) or shrinks at `rate`/yr, every day.
+// Compounding core: value grows (up) or shrinks at `rate` (per year, decimal) over `years`.
+// Pure; rate is clamped (appreciation up to 5x/yr, depreciation up to 99%/yr). Shared by
+// compoundedValue here and the depreciate() calculator in lib/finance-math.js.
+export function compoundOver(value, rate, years, up) {
+  const v = +value || 0;
+  if (!(years > 0)) return v;
+  const r = Math.min(Math.max(+rate || 0, 0), up ? 5 : 0.99);
+  return v * Math.pow(up ? 1 + r : 1 - r, years);
+}
+
+// Compounding between two dates: value grows (up) or shrinks at `rate`/yr.
 export function compoundedValue(price, rate, fromDate, date, up) {
   const d0 = parseDate(fromDate);
   if (!d0) return +price || 0;
-  const yrs = (date - d0) / YEAR_MS;
-  if (yrs <= 0) return +price || 0;
-  const r = Math.min(Math.max(+rate || 0, 0), up ? 5 : 0.99);
-  return (+price || 0) * Math.pow(up ? 1 + r : 1 - r, yrs);
+  return compoundOver(price, rate, (date - d0) / YEAR_MS, up);
 }
 
 // Gross (pre-loan) value on a date: compounds up/down over time, or flat market value.
