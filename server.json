@@ -1,0 +1,16 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.VladimirWrites/nestegg-calculators",
+  "description": "Pure finance calculators: loans, FIRE, NPV/IRR, German payroll, VAT. No data leaves your device.",
+  "repository": {
+    "url": "https://github.com/VladimirWrites/nestegg.money",
+    "source": "github"
+  },
+  "version": "1.1.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://nestegg.money/mcp"
+    }
+  ]
+}
