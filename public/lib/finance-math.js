@@ -23,3 +23,5 @@ export * from "./finance-math/returns.js";         // roi, realReturn, returnSta
 export * from "./finance-math/loans.js";           // scheduleByYear, amortization, loanPayoff, refiBreakeven, mortgageAffordability, debtPayoff
 export * from "./finance-math/planning.js";        // savingsRate, fireNumber, portfolioLongevity, emergencyFund
 export * from "./finance-math/tax.js";             // fxConvert, taxFromBrackets, marginMarkup, germanNetSalary, vat
+export * from "./finance-math/bonds.js";           // bondPrice, currentYield, bondDuration, convexity, zeroCouponPrice, accruedInterest
+export * from "./finance-math/options.js";         // blackScholes, optionGreeks, putCallParity, optionBreakeven, intrinsicTimeValue

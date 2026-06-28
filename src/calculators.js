@@ -12,10 +12,12 @@ import {
   germanNetSalary, vat,
   roi, realReturn, returnStats, sharpeRatio, maxDrawdown,
   holdingPeriodReturn, feeDrag, dollarCostAveraging,
+  bondPrice, currentYield, bondDuration, convexity, zeroCouponPrice, accruedInterest,
+  blackScholes, optionGreeks, putCallParity, optionBreakeven, intrinsicTimeValue,
 } from "../public/lib/finance-math.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.3.0";
+export const CALC_VERSION = "1.4.0";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
@@ -347,6 +349,61 @@ export const CALCULATORS = {
     inputSchema: obj({ prices: numArray("Price at each purchase period."), periodicInvestment: num("Fixed amount invested each period.") }, ["prices", "periodicInvestment"]),
     run: (a) => dollarCostAveraging(a.prices, a.periodicInvestment),
   },
+  "bond-price": {
+    description: "Price of a coupon bond given a yield: present value of the coupons plus the face at maturity.",
+    inputSchema: obj({ faceValue: num("Face (par) value."), couponRatePct: num("Annual coupon rate in percent of face."), years: num("Years to maturity."), yieldPct: num("Annual yield in percent."), periodsPerYear: num("Coupon periods per year (default 2).") }, ["faceValue", "couponRatePct", "years", "yieldPct"]),
+    run: (a) => bondPrice(a.faceValue, a.couponRatePct, a.years, a.yieldPct, a.periodsPerYear == null ? 2 : a.periodsPerYear),
+  },
+  "current-yield": {
+    description: "Current yield: the annual coupon as a percent of the bond's current price.",
+    inputSchema: obj({ price: num("Current bond price."), faceValue: num("Face value."), couponRatePct: num("Annual coupon rate in percent of face.") }, ["price", "faceValue", "couponRatePct"]),
+    run: (a) => currentYield(a.price, a.faceValue, a.couponRatePct),
+  },
+  "bond-duration": {
+    description: "Macaulay duration (PV-weighted average time of cashflows, in years) and modified duration (price sensitivity to yield).",
+    inputSchema: obj({ faceValue: num("Face value."), couponRatePct: num("Annual coupon rate in percent."), years: num("Years to maturity."), yieldPct: num("Annual yield in percent."), periodsPerYear: num("Coupon periods per year (default 2).") }, ["faceValue", "couponRatePct", "years", "yieldPct"]),
+    run: (a) => bondDuration(a.faceValue, a.couponRatePct, a.years, a.yieldPct, a.periodsPerYear == null ? 2 : a.periodsPerYear),
+  },
+  "convexity": {
+    description: "Bond convexity (years^2): the curvature of price with respect to yield, used alongside duration.",
+    inputSchema: obj({ faceValue: num("Face value."), couponRatePct: num("Annual coupon rate in percent."), years: num("Years to maturity."), yieldPct: num("Annual yield in percent."), periodsPerYear: num("Coupon periods per year (default 2).") }, ["faceValue", "couponRatePct", "years", "yieldPct"]),
+    run: (a) => convexity(a.faceValue, a.couponRatePct, a.years, a.yieldPct, a.periodsPerYear == null ? 2 : a.periodsPerYear),
+  },
+  "zero-coupon-price": {
+    description: "Price of a zero-coupon bond: face value discounted to today at the yield.",
+    inputSchema: obj({ faceValue: num("Face value."), years: num("Years to maturity."), yieldPct: num("Annual yield in percent."), compoundingPerYear: num("Compounding periods per year (default 1).") }, ["faceValue", "years", "yieldPct"]),
+    run: (a) => zeroCouponPrice(a.faceValue, a.years, a.yieldPct, a.compoundingPerYear == null ? 1 : a.compoundingPerYear),
+  },
+  "accrued-interest": {
+    description: "Accrued interest since the last coupon: the annual coupon pro-rated by days elapsed over the day-count basis.",
+    inputSchema: obj({ faceValue: num("Face value."), couponRatePct: num("Annual coupon rate in percent."), daysSinceLastCoupon: num("Days since the last coupon."), dayCountBasis: num("Day-count basis (default 360).") }, ["faceValue", "couponRatePct", "daysSinceLastCoupon"]),
+    run: (a) => accruedInterest(a.faceValue, a.couponRatePct, a.daysSinceLastCoupon, a.dayCountBasis == null ? 360 : a.dayCountBasis),
+  },
+  "black-scholes": {
+    description: "Black-Scholes price of a European call or put option, plus d1/d2. Volatility and rates in percent; optional continuous dividend yield.",
+    inputSchema: obj({ spot: num("Current underlying price."), strike: num("Strike price."), years: num("Time to expiry in years."), volatilityPct: num("Annualized volatility in percent."), riskFreePct: num("Risk-free rate in percent."), dividendYieldPct: num("Continuous dividend yield in percent (default 0)."), type: { type: "string", enum: ["call", "put"], description: "Option type (default call)." } }, ["spot", "strike", "years", "volatilityPct", "riskFreePct"]),
+    run: (a) => blackScholes(a.spot, a.strike, a.years, a.volatilityPct, a.riskFreePct, a.dividendYieldPct || 0, a.type || "call"),
+  },
+  "option-greeks": {
+    description: "Black-Scholes greeks for a European option: delta, gamma, vega (per 1% vol), theta (per day), rho (per 1% rate).",
+    inputSchema: obj({ spot: num("Current underlying price."), strike: num("Strike price."), years: num("Time to expiry in years."), volatilityPct: num("Annualized volatility in percent."), riskFreePct: num("Risk-free rate in percent."), dividendYieldPct: num("Continuous dividend yield in percent (default 0)."), type: { type: "string", enum: ["call", "put"], description: "Option type (default call)." } }, ["spot", "strike", "years", "volatilityPct", "riskFreePct"]),
+    run: (a) => optionGreeks(a.spot, a.strike, a.years, a.volatilityPct, a.riskFreePct, a.dividendYieldPct || 0, a.type || "call"),
+  },
+  "put-call-parity": {
+    description: "Put-call parity: given one option price, returns both. Provide call or put, plus spot, strike, years, and the rate.",
+    inputSchema: obj({ call: num("Call price (provide call or put)."), put: num("Put price (provide call or put)."), spot: num("Underlying price."), strike: num("Strike price."), years: num("Time to expiry in years."), riskFreePct: num("Risk-free rate in percent."), dividendYieldPct: num("Continuous dividend yield in percent (default 0).") }, ["spot", "strike", "years", "riskFreePct"]),
+    run: (a) => putCallParity(a),
+  },
+  "option-breakeven": {
+    description: "Break-even underlying price at expiry: strike + premium for a call, strike - premium for a put.",
+    inputSchema: obj({ strike: num("Strike price."), premium: num("Option premium paid."), type: { type: "string", enum: ["call", "put"], description: "Option type (default call)." } }, ["strike", "premium"]),
+    run: (a) => optionBreakeven(a.strike, a.premium, a.type || "call"),
+  },
+  "intrinsic-time-value": {
+    description: "Split an option premium into intrinsic value (in-the-money amount) and time value.",
+    inputSchema: obj({ spot: num("Underlying price."), strike: num("Strike price."), premium: num("Option premium."), type: { type: "string", enum: ["call", "put"], description: "Option type (default call)." } }, ["spot", "strike", "premium"]),
+    run: (a) => intrinsicTimeValue(a.spot, a.strike, a.premium, a.type || "call"),
+  },
 };
 
 // Output schemas — declared so MCP clients get typed results (structuredContent shape) without a
@@ -401,6 +458,17 @@ const OUTPUTS = {
   "holding-period-return": out({ hprPct: onum("Holding-period return, percent (null if begin=0).") }),
   "fee-drag": out({ gross: onum("Gross balance."), net: onum("Net of fees."), lostToFees: onum("Amount lost to fees.") }),
   "dollar-cost-averaging": out({ units: onum("Units accumulated."), invested: onum("Total invested."), avgCost: onum("Average cost per unit (null if none)."), finalValue: onum("Value at the last price.") }),
+  "bond-price": out({ price: onum("Bond price (null if degenerate).") }),
+  "current-yield": out({ currentYieldPct: onum("Current yield, percent (null if price<=0).") }),
+  "bond-duration": out({ macaulay: onum("Macaulay duration, years."), modified: onum("Modified duration.") }),
+  "convexity": out({ convexity: onum("Convexity, years^2.") }),
+  "zero-coupon-price": out({ price: onum("Zero-coupon price.") }),
+  "accrued-interest": out({ accrued: onum("Accrued interest.") }),
+  "black-scholes": out({ price: onum("Option price (null if degenerate)."), d1: onum("d1."), d2: onum("d2.") }),
+  "option-greeks": out({ delta: onum("Delta."), gamma: onum("Gamma."), vega: onum("Vega per 1% vol."), theta: onum("Theta per day."), rho: onum("Rho per 1% rate.") }),
+  "put-call-parity": out({ call: onum("Call price."), put: onum("Put price.") }),
+  "option-breakeven": out({ breakeven: onum("Break-even underlying price.") }),
+  "intrinsic-time-value": out({ intrinsic: onum("Intrinsic value."), timeValue: onum("Time value.") }),
 };
 
 for (const [name, schema] of Object.entries(OUTPUTS)) CALCULATORS[name].outputSchema = schema;
