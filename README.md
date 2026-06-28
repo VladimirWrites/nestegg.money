@@ -106,6 +106,34 @@ Tests (loan/asset/forecast/retirement math, `migrate`, multi-device merge, crypt
 `npm test` (runs `node --test tests/*.mjs` — the pure domain modules import directly,
 no browser needed).
 
+## Calculators & MCP
+
+The finance math is also exposed as **stateless calculators** any client — including AI
+agents — can call. They are pure functions of their inputs: no user data, no live prices, no
+FX or tax lookups (you pass the rate / statutory figures in), no auth, no storage. Nothing
+leaves the device that the agent runs on.
+
+- **JSON API:** `POST https://nestegg.money/api/calc/<name>` (JSON in, JSON out).
+  `GET /api/calc` lists them. See [`public/docs/calculators.md`](public/docs/calculators.md).
+- **MCP server (Streamable HTTP):** `https://nestegg.money/mcp` — the same calculators as MCP
+  tools, with typed `outputSchema`, read-only annotations, the docs as `resources/*`, and
+  canned workflows as `prompts/*` (`mortgage-plan`, `fire-check`, `brutto-netto`).
+
+Install in an MCP client:
+
+```
+claude mcp add --transport http nestegg https://nestegg.money/mcp
+```
+
+Example (an agent keeps responses small by default, then drills in):
+
+```
+> amortization { amount: 475000, rate: 3.75, mode: "payment", payment: 2869.8, startDate: "2024-04-01" }
+  → { monthlyPayment, payments, totalInterest, payoffDate, yearly: [ …per-year… ] }   // summary
+> amortization { …same…, detail: "monthly", offset: 0, limit: 12 }
+  → { schedule: [ …12 rows… ], scheduleTotal: 204, nextOffset: 12 }                    // paginated
+```
+
 ## Notes
 
 - New accounts start empty with the current year. Tap the year to add asset

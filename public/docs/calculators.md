@@ -11,7 +11,9 @@ Each calculator below is reachable two ways: as a JSON endpoint (`POST /api/calc
 Full monthly repayment schedule and summary for a loan.
 
 - Inputs: `amount`, `rate` (annual %), `mode` (`"term"` or `"payment"`), `termYears` (when mode is term) or `payment` (when mode is payment), `startDate`, optional `extra` (array of `{ date, amount }` lump-sum principal payments), optional `fixedUntil` (date beyond which the rate is treated as an estimate).
-- Outputs: `monthlyPayment`, `scheduledMonths`, `payments` (count), `totalInterest`, `totalPaid`, `payoffDate`, and `schedule` (rows of `{ type: "payment"|"extra", date, payment, interest, principal, balance }`).
+- Output size — `detail`: `"summary"` (default) returns the totals plus a compact per-year breakdown and **omits** the monthly schedule; `"monthly"` adds the full `schedule`, paginated with `offset` and `limit` (the response then also carries `scheduleTotal` and `nextOffset`, or `nextOffset: null` on the last page). This keeps default responses small for agents.
+- Multi-rate — `rateSteps`: optional array of `{ date, rate }`. The installment from the initial rate/term is held, and from each date the outstanding balance continues at the new annual rate (e.g. a German Zinsbindung followed by an Anschlussfinanzierung).
+- Outputs: `monthlyPayment`, `scheduledMonths`, `payments` (count), `totalInterest`, `totalPaid`, `payoffDate`, `yearly` (per-year `{ year, interest, principal, extra, payments, endBalance }`), and — when `detail` is `"monthly"` — `schedule` (rows of `{ type: "payment"|"extra", date, payment, interest, principal, balance }`).
 - Formula: standard amortization. Payment `M = L * i / (1 - (1 + i)^-n)` where `i = rate/100/12` and `n = termYears * 12` (or `n` solved from the payment). Each month, interest `= round2(balance * i)`, principal `= round2(M - interest)`, balance carried forward. Dated extra payments reduce principal (credited 30/360 for the partial month). The final month settles the exact remaining balance.
 - Rounding: each month's interest and payment are rounded to cents; the final payment absorbs the residue.
 
