@@ -380,6 +380,50 @@ export function compoundInterest(principal, annualRatePct, years, periodsPerYear
   return { value: P * g + annuity };
 }
 
+/* ---------- regional helpers (statutory values are inputs, never baked in) ---------- */
+
+// German net (Netto) salary from gross (Brutto). Deliberately holds NO tax tables or rates of
+// its own: the caller passes the current year's statutory figures (the income tax / Lohnsteuer
+// amount, Soli amount, church-tax rate, the four employee social-insurance rates, and the two
+// contribution ceilings), so the math stays pure and never goes stale. Pension and unemployment
+// are capped at pensionCeiling; health and care at healthCeiling. Use consistent units (e.g. all
+// annual). Percents in; money via round2.
+export function germanNetSalary({
+  gross, incomeTax = 0, soli = 0, churchTaxPct = 0,
+  pensionPct = 0, unemploymentPct = 0, healthPct = 0, carePct = 0,
+  pensionCeiling = Infinity, healthCeiling = Infinity,
+} = {}) {
+  const g = +gross || 0;
+  const rvBase = Math.min(g, +pensionCeiling || Infinity);
+  const kvBase = Math.min(g, +healthCeiling || Infinity);
+  const pension = round2(rvBase * (+pensionPct || 0) / 100);
+  const unemployment = round2(rvBase * (+unemploymentPct || 0) / 100);
+  const health = round2(kvBase * (+healthPct || 0) / 100);
+  const care = round2(kvBase * (+carePct || 0) / 100);
+  const total = round2(pension + unemployment + health + care);
+  const tax = +incomeTax || 0, sol = +soli || 0;
+  const churchTax = round2(tax * (+churchTaxPct || 0) / 100);
+  const totalDeductions = round2(tax + sol + churchTax + total);
+  return {
+    gross: round2(g), incomeTax: round2(tax), soli: round2(sol), churchTax,
+    contributions: { pension, unemployment, health, care, total },
+    totalDeductions, net: round2(g - totalDeductions),
+  };
+}
+
+// Value-added tax (MwSt/USt, sales tax). With a net price (default) it adds the tax; with
+// inclusive=true it treats the amount as gross and extracts the tax. The rate is always an
+// input (19/7 for Germany, etc.) — nothing is assumed. Money via round2.
+export function vat(amount, ratePct, inclusive = false) {
+  const a = +amount || 0, r = (+ratePct || 0) / 100;
+  if (inclusive) {
+    const net = a / (1 + r);
+    return { net: round2(net), tax: round2(a - net), gross: round2(a) };
+  }
+  const tax = a * r;
+  return { net: round2(a), tax: round2(tax), gross: round2(a + tax) };
+}
+
 /* ---------- loan summaries (compositions over the existing schedule engine) ---------- */
 
 // Amortization schedule + summary for a loan object:

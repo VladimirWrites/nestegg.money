@@ -57,6 +57,12 @@ test("the new calculators are reachable over /api/calc/* too", async () => {
 
   r = await call("POST", "/api/calc/present-value", { futureAmount: 1967.151357, annualRatePct: 7, years: 10 });
   assert.ok(Math.abs((await r.json()).pv - 1000) < 1e-3);
+
+  r = await call("POST", "/api/calc/vat", { amount: 100, ratePct: 19 });
+  assert.equal((await r.json()).gross, 119);
+
+  r = await call("POST", "/api/calc/de-gross-to-net", { gross: 60000, incomeTax: 11000, churchTaxPct: 9, pensionPct: 9.3, unemploymentPct: 1.3, healthPct: 8.15, carePct: 2.3, pensionCeiling: 90600, healthCeiling: 62100 });
+  assert.equal((await r.json()).net, 35380);
 });
 
 test("CORS preflight, unknown calc, wrong method, and bad body are handled", async () => {

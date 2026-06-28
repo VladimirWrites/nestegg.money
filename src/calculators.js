@@ -9,6 +9,7 @@ import {
   mortgageAffordability, debtPayoff, portfolioLongevity,
   presentValue, requiredReturn, yieldToMaturity, taxFromBrackets,
   marginMarkup, compoundInterest,
+  germanNetSalary, vat,
 } from "../public/lib/finance-math.js";
 
 // CORS is open: the calculators carry no secrets and read no user data.
@@ -266,5 +267,30 @@ export const CALCULATORS = {
       contributionPerPeriod: num("Optional. Amount added each period (default 0)."),
     }, ["principal", "annualRatePct", "years"]),
     run: (a) => compoundInterest(a.principal, a.annualRatePct, a.years, a.periodsPerYear == null ? 1 : a.periodsPerYear, a.contributionPerPeriod || 0),
+  },
+  "de-gross-to-net": {
+    description: "German net (Netto) salary from gross (Brutto). No tax tables are baked in: look up the current year's statutory figures and pass them in. Income tax (Lohnsteuer) and Soli are amounts; church tax is a percent of the income tax; the four employee social rates and the two contribution ceilings are inputs. Use consistent units (e.g. all annual).",
+    inputSchema: obj({
+      gross: num("Gross salary (Brutto)."),
+      incomeTax: num("Income tax (Lohnsteuer) amount for the period — look up via the §32a / Steuerklasse tables."),
+      soli: num("Solidarity surcharge (Solidaritätszuschlag) amount (often 0 below the threshold)."),
+      churchTaxPct: num("Church tax (Kirchensteuer) rate in percent of income tax (8 or 9, 0 if none)."),
+      pensionPct: num("Employee pension (Rentenversicherung) rate in percent (e.g. 9.3)."),
+      unemploymentPct: num("Employee unemployment (Arbeitslosenversicherung) rate in percent (e.g. 1.3)."),
+      healthPct: num("Employee health (Krankenversicherung incl. Zusatzbeitrag) rate in percent."),
+      carePct: num("Employee long-term care (Pflegeversicherung) rate in percent."),
+      pensionCeiling: num("Contribution ceiling (Beitragsbemessungsgrenze) for pension and unemployment."),
+      healthCeiling: num("Contribution ceiling for health and care."),
+    }, ["gross"]),
+    run: (a) => germanNetSalary(a),
+  },
+  "vat": {
+    description: "Value-added tax (MwSt/USt, sales tax) on a price. By default adds the tax to a net price; with inclusive=true treats the amount as gross and extracts the tax. The rate is always an input (19 or 7 for Germany, etc.).",
+    inputSchema: obj({
+      amount: num("The price."),
+      ratePct: num("VAT rate in percent (e.g. 19 or 7)."),
+      inclusive: bool("false (default): amount is net, add the tax. true: amount is gross, extract the tax."),
+    }, ["amount", "ratePct"]),
+    run: (a) => vat(a.amount, a.ratePct, !!a.inclusive),
   },
 };

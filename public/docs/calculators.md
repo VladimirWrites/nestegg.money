@@ -217,3 +217,19 @@ Compound growth at any frequency. Endpoint name `compound-interest`. Generalizes
 - Inputs: `principal`, `annualRatePct`, `years`, optional `periodsPerYear` (default 1), optional `contributionPerPeriod` (default 0, paid at period end).
 - Output: `value = principal*(1+i)^n + contributionPerPeriod*((1+i)^n - 1)/i` with `i = annualRatePct/100/periodsPerYear` and `n = years*periodsPerYear`.
 - Rounding: none.
+
+## germanNetSalary
+
+German net (Netto) salary from gross (Brutto). Endpoint name `de-gross-to-net`. Holds **no** tax tables or rates of its own — like `fxConvert` takes the rate, this takes the current year's statutory figures as inputs, so the math stays pure and never goes stale. The caller looks up the year's numbers (for example via a web search) and passes them in.
+
+- Inputs: `gross`; `incomeTax` (Lohnsteuer amount), `soli` (Solidaritätszuschlag amount), `churchTaxPct` (Kirchensteuer, percent of income tax); the four employee social rates `pensionPct`, `unemploymentPct`, `healthPct`, `carePct`; and the two ceilings `pensionCeiling` (for pension + unemployment) and `healthCeiling` (for health + care). Use consistent units (e.g. all annual).
+- Outputs: `gross`, `incomeTax`, `soli`, `churchTax`, `contributions` (`pension`, `unemployment`, `health`, `care`, `total`), `totalDeductions`, `net`. Pension and unemployment are charged on `min(gross, pensionCeiling)`; health and care on `min(gross, healthCeiling)`. `churchTax = incomeTax * churchTaxPct/100`. `net = gross - incomeTax - soli - churchTax - contributions.total`.
+- Rounding: cents.
+
+## vat
+
+Value-added tax (MwSt/USt, sales tax) on a price. Endpoint name `vat`.
+
+- Inputs: `amount`, `ratePct` (e.g. 19 or 7), optional `inclusive` (default false).
+- Output: `net`, `tax`, `gross`. Default (`inclusive` false): `amount` is net, `tax = amount*ratePct/100`, `gross = amount + tax`. With `inclusive` true: `amount` is gross, `net = amount/(1 + ratePct/100)`, `tax = amount - net`.
+- Rounding: cents.

@@ -8,6 +8,7 @@ import {
   mortgageAffordability, debtPayoff, portfolioLongevity, round2,
   presentValue, requiredReturn, yieldToMaturity, taxFromBrackets,
   marginMarkup, compoundInterest,
+  germanNetSalary, vat,
 } from "../public/lib/finance-math.js";
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps, `${a} !~= ${b}`);
@@ -238,4 +239,31 @@ test("marginMarkup: a target margin implies cost and price", () => {
 test("compoundInterest: annual matches futureValue; monthly contributions match the annuity", () => {
   near(compoundInterest(1000, 7, 10, 1).value, futureValue(1000, 7, 10), 1e-6);
   near(compoundInterest(0, 12, 1, 12, 100).value, futureValueOfContributions(100, 12, 12), 1e-6);
+});
+
+test("germanNetSalary: brutto minus the statutory deductions the caller supplies", () => {
+  // All statutory figures are inputs (the caller looks up the current year's numbers).
+  const r = germanNetSalary({
+    gross: 60000, incomeTax: 11000, soli: 0, churchTaxPct: 9,
+    pensionPct: 9.3, unemploymentPct: 1.3, healthPct: 8.15, carePct: 2.3,
+    pensionCeiling: 90600, healthCeiling: 62100,
+  });
+  assert.equal(r.churchTax, 990); // 11000 * 9%
+  assert.equal(r.contributions.pension, 5580); // 60000 * 9.3%
+  assert.equal(r.contributions.total, 12630); // 5580 + 780 + 4890 + 1380
+  assert.equal(r.net, 35380); // 60000 - 11000 - 0 - 990 - 12630
+});
+
+test("germanNetSalary: contributions are capped at the contribution ceilings", () => {
+  const r = germanNetSalary({ gross: 60000, healthPct: 8, healthCeiling: 50000 });
+  assert.equal(r.contributions.health, 4000); // min(60000, 50000) * 8%, not 4800
+});
+
+test("vat: adds tax to a net price, and extracts it from a gross price", () => {
+  const add = vat(100, 19);
+  assert.equal(add.tax, 19);
+  assert.equal(add.gross, 119);
+  const extract = vat(119, 19, true);
+  assert.equal(extract.net, 100);
+  assert.equal(extract.tax, 19);
 });
