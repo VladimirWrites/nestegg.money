@@ -4,6 +4,12 @@
 import {
   amortization, loanPayoff, futureValue, futureValueOfContributions, cagr,
   savingsRate, fxConvert, depreciate, straightLineDepreciation,
+  fireNumber, requiredContribution, inflationAdjust, effectiveRate,
+  npv, irr, refiBreakeven, emergencyFund,
+  mortgageAffordability, debtPayoff, portfolioLongevity,
+  presentValue, requiredReturn, yieldToMaturity, taxFromBrackets,
+  marginMarkup, compoundInterest,
+  germanNetSalary, vat,
 } from "../public/lib/finance-math.js";
 
 // CORS is open: the calculators carry no secrets and read no user data.
@@ -16,6 +22,8 @@ export const CORS = {
 
 const num = (description) => ({ type: "number", description });
 const str = (description) => ({ type: "string", description });
+const bool = (description) => ({ type: "boolean", description });
+const numArray = (description) => ({ type: "array", description, items: { type: "number" } });
 
 // Shared loan input shape (amortization + loan-payoff).
 const loanProps = {
@@ -80,5 +88,209 @@ export const CALCULATORS = {
     description: "Straight-line depreciation: value falling evenly to a salvage value over a useful life.",
     inputSchema: obj({ value: num("Starting value."), salvage: num("Salvage value."), usefulYears: num("Useful life in years."), yearsElapsed: num("Years elapsed.") }, ["value", "salvage", "usefulYears", "yearsElapsed"]),
     run: (a) => ({ value: straightLineDepreciation(a.value, a.salvage, a.usefulYears, a.yearsElapsed) }),
+  },
+  "fire-number": {
+    description: "FIRE target nest egg from annual spend and a safe withdrawal rate (default 4%), plus the gap from today and the years to reach it given optional savings and growth. No advice.",
+    inputSchema: obj({
+      annualSpend: num("Yearly spending the nest egg must cover."),
+      withdrawalRatePct: num("Safe withdrawal rate in percent (default 4 = the 4% rule)."),
+      currentNestEgg: num("Optional. Amount already saved (default 0)."),
+      annualContribution: num("Optional. Amount saved per year (default 0)."),
+      annualRatePct: num("Optional. Annual portfolio growth in percent (default 0)."),
+    }, ["annualSpend"]),
+    run: (a) => fireNumber(a),
+  },
+  "required-contribution": {
+    description: "Inverse of contributions: the fixed monthly amount needed to reach a target future value over a number of months, given an optional starting balance.",
+    inputSchema: obj({
+      targetValue: num("Future value goal."),
+      annualRatePct: num("Annual growth rate in percent."),
+      months: num("Number of months."),
+      presentValue: num("Optional. Starting balance (default 0)."),
+    }, ["targetValue", "annualRatePct", "months"]),
+    run: (a) => requiredContribution(a.targetValue, a.annualRatePct, a.months, a.presentValue || 0),
+  },
+  "inflation-adjust": {
+    description: "Convert a nominal amount to today's purchasing power (real), or with toNominal inflate a real amount forward, at a given annual inflation rate.",
+    inputSchema: obj({
+      amount: num("Amount to adjust."),
+      inflationRatePct: num("Annual inflation rate in percent."),
+      years: num("Number of years."),
+      toNominal: bool("false (default) deflates nominal to real; true inflates real to nominal."),
+    }, ["amount", "inflationRatePct", "years"]),
+    run: (a) => inflationAdjust(a.amount, a.inflationRatePct, a.years, !!a.toNominal),
+  },
+  "effective-rate": {
+    description: "Convert a nominal annual rate to the effective annual rate (APY) for a compounding frequency, or with toNominal recover the nominal rate from an APY.",
+    inputSchema: obj({
+      ratePct: num("The rate in percent (nominal, or effective when toNominal is true)."),
+      periodsPerYear: num("Compounding periods per year (12 monthly, 365 daily)."),
+      toNominal: bool("false (default) returns the effective rate; true returns the nominal rate."),
+    }, ["ratePct", "periodsPerYear"]),
+    run: (a) => effectiveRate(a.ratePct, a.periodsPerYear, !!a.toNominal),
+  },
+  "npv": {
+    description: "Net present value of a cashflow series (index 0 is today; outflows negative) discounted at a per-period rate.",
+    inputSchema: obj({
+      cashflows: numArray("Cashflows by period, starting at period 0. Outflows are negative."),
+      discountRatePct: num("Discount rate per period in percent."),
+    }, ["cashflows", "discountRatePct"]),
+    run: (a) => npv(a.cashflows, a.discountRatePct),
+  },
+  "irr": {
+    description: "Internal rate of return: the per-period rate that zeroes the NPV of a cashflow series. Returns a percent, or null when the series never crosses zero.",
+    inputSchema: obj({
+      cashflows: numArray("Cashflows by period, starting at period 0. Outflows are negative."),
+    }, ["cashflows"]),
+    run: (a) => irr(a.cashflows),
+  },
+  "refi-breakeven": {
+    description: "Refinance break-even: monthly saving, whole months to recoup closing costs, and (if remainingMonths given) the net saving over the remaining term.",
+    inputSchema: obj({
+      closingCosts: num("Upfront cost to refinance."),
+      currentPayment: num("Current monthly payment."),
+      newPayment: num("New monthly payment after refinancing."),
+      remainingMonths: num("Optional. Months left on the loan, for the lifetime saving."),
+    }, ["closingCosts", "currentPayment", "newPayment"]),
+    run: (a) => refiBreakeven(a.closingCosts, a.currentPayment, a.newPayment, a.remainingMonths == null ? null : a.remainingMonths),
+  },
+  "emergency-fund": {
+    description: "Months of runway: liquid savings divided by monthly expenses.",
+    inputSchema: obj({
+      liquidSavings: num("Cash and liquid savings on hand."),
+      monthlyExpenses: num("Total monthly expenses."),
+    }, ["liquidSavings", "monthlyExpenses"]),
+    run: (a) => emergencyFund(a.liquidSavings, a.monthlyExpenses),
+  },
+  "mortgage-affordability": {
+    description: "Maximum loan and home price the income supports: the DTI cap on gross monthly income (less existing debts) sets the payment, whose present value at the rate and term is the loan.",
+    inputSchema: obj({
+      annualIncome: num("Gross annual income."),
+      dtiPct: num("Max share of gross monthly income for the payment, in percent (e.g. 36)."),
+      rate: num("Annual interest rate in percent."),
+      termYears: num("Loan term in years."),
+      monthlyDebts: num("Optional. Existing monthly debt payments (default 0)."),
+      downPayment: num("Optional. Cash down payment, added to the loan for the home price (default 0)."),
+    }, ["annualIncome", "dtiPct", "rate", "termYears"]),
+    run: (a) => mortgageAffordability(a),
+  },
+  "debt-payoff": {
+    description: "Multi-debt payoff plan under a fixed monthly budget. method 'avalanche' (highest rate first) minimizes interest; 'snowball' (smallest balance first) clears accounts soonest. Returns months, total interest, and payoff order; flags insolvent budgets.",
+    inputSchema: obj({
+      debts: {
+        type: "array",
+        description: "The debts to pay off.",
+        items: {
+          type: "object",
+          properties: { name: str("Optional label."), balance: num("Current balance."), rate: num("Annual interest rate in percent."), minPayment: num("Minimum monthly payment.") },
+          required: ["balance", "rate", "minPayment"],
+        },
+      },
+      monthlyBudget: num("Total amount available across all debts each month."),
+      method: { type: "string", enum: ["avalanche", "snowball"], description: "Payoff strategy (default avalanche)." },
+    }, ["debts", "monthlyBudget"]),
+    run: (a) => debtPayoff(a.debts, a.monthlyBudget, a.method || "avalanche"),
+  },
+  "portfolio-longevity": {
+    description: "How many years a balance lasts while withdrawing from it: the balance grows each year, then the withdrawal (optionally stepping up) is taken. Returns the depletion year, or sustainable=true when it outlasts 200 years.",
+    inputSchema: obj({
+      balance: num("Starting balance."),
+      annualWithdrawal: num("Amount withdrawn in the first year."),
+      annualRatePct: num("Annual portfolio growth in percent."),
+      withdrawalGrowthPct: num("Optional. Yearly step-up of the withdrawal in percent (default 0)."),
+    }, ["balance", "annualWithdrawal", "annualRatePct"]),
+    run: (a) => portfolioLongevity(a),
+  },
+  "present-value": {
+    description: "Present value of a single future amount discounted annually. The inverse of future-value.",
+    inputSchema: obj({
+      futureAmount: num("Amount received in the future."),
+      annualRatePct: num("Annual discount rate in percent."),
+      years: num("Number of years until the amount is received."),
+    }, ["futureAmount", "annualRatePct", "years"]),
+    run: (a) => presentValue(a.futureAmount, a.annualRatePct, a.years),
+  },
+  "required-return": {
+    description: "Annual return needed to grow a starting value to a target over a number of years, optionally with a fixed annual contribution. With no contribution this equals CAGR. Returns a percent, or null when unreachable.",
+    inputSchema: obj({
+      begin: num("Starting value."),
+      end: num("Target ending value."),
+      years: num("Number of years."),
+      annualContribution: num("Optional. Amount added each year (default 0)."),
+    }, ["begin", "end", "years"]),
+    run: (a) => requiredReturn(a.begin, a.end, a.years, a.annualContribution || 0),
+  },
+  "yield-to-maturity": {
+    description: "Bond yield to maturity: the nominal annual yield that prices a bond at the given price, with periodic coupons and face returned at maturity. Solved numerically. Returns a percent, or null.",
+    inputSchema: obj({
+      price: num("Current bond price."),
+      faceValue: num("Face (par) value repaid at maturity."),
+      couponRatePct: num("Annual coupon rate in percent of face."),
+      years: num("Years to maturity."),
+      periodsPerYear: num("Coupon periods per year (default 2 = semiannual)."),
+    }, ["price", "faceValue", "couponRatePct", "years"]),
+    run: (a) => yieldToMaturity(a.price, a.faceValue, a.couponRatePct, a.years, a.periodsPerYear == null ? 2 : a.periodsPerYear),
+  },
+  "tax-from-brackets": {
+    description: "Progressive tax from caller-supplied brackets. No jurisdiction, year, or rates are baked in: pass the brackets yourself. Returns total tax, effective rate, and marginal rate.",
+    inputSchema: obj({
+      income: num("Taxable income."),
+      brackets: {
+        type: "array",
+        description: "Ordered tax bands. The final band may omit upTo to run to infinity.",
+        items: {
+          type: "object",
+          properties: { upTo: num("Upper bound of this band (omit on the top band)."), ratePct: num("Marginal rate for this band in percent.") },
+          required: ["ratePct"],
+        },
+      },
+    }, ["income", "brackets"]),
+    run: (a) => taxFromBrackets(a.income, a.brackets),
+  },
+  "margin-markup": {
+    description: "Convert between margin and markup. Supply any one of cost/price plus one of marginPct/markupPct (or both cost and price); returns cost, price, profit, marginPct, and markupPct.",
+    inputSchema: obj({
+      cost: num("Unit cost."),
+      price: num("Selling price."),
+      marginPct: num("Profit as a percent of price."),
+      markupPct: num("Profit as a percent of cost."),
+    }, []),
+    run: (a) => marginMarkup(a),
+  },
+  "compound-interest": {
+    description: "Compound growth at any frequency, with an optional contribution each period (paid at period end). Generalizes future-value (periodsPerYear 1) and contributions (periodsPerYear 12).",
+    inputSchema: obj({
+      principal: num("Starting amount."),
+      annualRatePct: num("Annual growth rate in percent."),
+      years: num("Number of years."),
+      periodsPerYear: num("Compounding periods per year (default 1)."),
+      contributionPerPeriod: num("Optional. Amount added each period (default 0)."),
+    }, ["principal", "annualRatePct", "years"]),
+    run: (a) => compoundInterest(a.principal, a.annualRatePct, a.years, a.periodsPerYear == null ? 1 : a.periodsPerYear, a.contributionPerPeriod || 0),
+  },
+  "de-gross-to-net": {
+    description: "German net (Netto) salary from gross (Brutto). No tax tables are baked in: look up the current year's statutory figures and pass them in. Income tax (Lohnsteuer) and Soli are amounts; church tax is a percent of the income tax; the four employee social rates and the two contribution ceilings are inputs. Use consistent units (e.g. all annual).",
+    inputSchema: obj({
+      gross: num("Gross salary (Brutto)."),
+      incomeTax: num("Income tax (Lohnsteuer) amount for the period — look up via the §32a / Steuerklasse tables."),
+      soli: num("Solidarity surcharge (Solidaritätszuschlag) amount (often 0 below the threshold)."),
+      churchTaxPct: num("Church tax (Kirchensteuer) rate in percent of income tax (8 or 9, 0 if none)."),
+      pensionPct: num("Employee pension (Rentenversicherung) rate in percent (e.g. 9.3)."),
+      unemploymentPct: num("Employee unemployment (Arbeitslosenversicherung) rate in percent (e.g. 1.3)."),
+      healthPct: num("Employee health (Krankenversicherung incl. Zusatzbeitrag) rate in percent."),
+      carePct: num("Employee long-term care (Pflegeversicherung) rate in percent."),
+      pensionCeiling: num("Contribution ceiling (Beitragsbemessungsgrenze) for pension and unemployment."),
+      healthCeiling: num("Contribution ceiling for health and care."),
+    }, ["gross"]),
+    run: (a) => germanNetSalary(a),
+  },
+  "vat": {
+    description: "Value-added tax (MwSt/USt, sales tax) on a price. By default adds the tax to a net price; with inclusive=true treats the amount as gross and extracts the tax. The rate is always an input (19 or 7 for Germany, etc.).",
+    inputSchema: obj({
+      amount: num("The price."),
+      ratePct: num("VAT rate in percent (e.g. 19 or 7)."),
+      inclusive: bool("false (default): amount is net, add the tax. true: amount is gross, extract the tax."),
+    }, ["amount", "ratePct"]),
+    run: (a) => vat(a.amount, a.ratePct, !!a.inclusive),
   },
 };

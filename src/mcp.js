@@ -28,8 +28,13 @@ function handle(msg) {
     case "ping":
       return rpc(id, {});
     case "tools/list":
+      // Every calculator is a pure function: read-only and idempotent. Advertise that so
+      // clients can call freely without confirmation prompts.
       return rpc(id, {
-        tools: Object.entries(CALCULATORS).map(([name, c]) => ({ name, description: c.description, inputSchema: c.inputSchema })),
+        tools: Object.entries(CALCULATORS).map(([name, c]) => ({
+          name, description: c.description, inputSchema: c.inputSchema,
+          annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+        })),
       });
     case "tools/call": {
       const name = params && params.name;
