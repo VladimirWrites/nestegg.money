@@ -1,0 +1,47 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import worker from "../src/index.js";
+
+const mcp = (msg) => worker.fetch(new Request("https://x/mcp", {
+  method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(msg),
+}), {});
+
+test("initialize advertises the tools capability and server info", async () => {
+  const r = await mcp({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18" } });
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("access-control-allow-origin"), "*");
+  const j = await r.json();
+  assert.equal(j.result.protocolVersion, "2025-06-18");
+  assert.ok(j.result.capabilities.tools);
+  assert.equal(j.result.serverInfo.name, "nestegg-calculators");
+});
+
+test("tools/list returns all nine calculators with input schemas", async () => {
+  const j = await (await mcp({ jsonrpc: "2.0", id: 2, method: "tools/list" })).json();
+  assert.equal(j.result.tools.length, 9);
+  const names = j.result.tools.map((t) => t.name);
+  assert.ok(names.includes("amortization") && names.includes("cagr"));
+  assert.ok(j.result.tools.every((t) => t.inputSchema && t.inputSchema.type === "object"));
+});
+
+test("tools/call returns the Phase-1 vectors (text + structuredContent)", async () => {
+  let j = await (await mcp({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "amortization", arguments: { amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01" } } })).json();
+  assert.equal(j.result.isError, undefined);
+  assert.equal(j.result.structuredContent.monthlyPayment, 599.55);
+  assert.ok(JSON.parse(j.result.content[0].text).monthlyPayment === 599.55);
+
+  j = await (await mcp({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "cagr", arguments: { begin: 100, end: 200, years: 10 } } })).json();
+  assert.ok(Math.abs(j.result.structuredContent.value - 0.0717734625) < 1e-9);
+});
+
+test("tools/call on an unknown tool is a tool error, not a transport error", async () => {
+  const j = await (await mcp({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "nope", arguments: {} } })).json();
+  assert.equal(j.result.isError, true);
+});
+
+test("unknown method -> JSON-RPC method-not-found; notification -> 202 no body", async () => {
+  const j = await (await mcp({ jsonrpc: "2.0", id: 6, method: "bogus" })).json();
+  assert.equal(j.error.code, -32601);
+  const n = await mcp({ jsonrpc: "2.0", method: "notifications/initialized" });
+  assert.equal(n.status, 202);
+});

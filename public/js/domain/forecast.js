@@ -6,6 +6,7 @@ import { YEAR_MS, MONTH_MS } from "./dates.js";
 import { convTo } from "./money.js";
 import { buildSchedule, loanTerms, outstandingAt } from "./loan.js";
 import { assetNetAt, assetOwnedFrom } from "./asset-value.js";
+import { fvContributionsCore } from "../../lib/finance-math.js";
 import { latestSnap, entryBase } from "./model.js";
 
 // Lazily-initialised forecast config on the state.
@@ -57,21 +58,12 @@ export function redirectStreams() {
 export function contribFV(date, gOverride) {
   const fc = fcCfg();
   const g = gOverride != null ? gOverride : +fc.growth || 0;
-  const i = g / 12;
-  const cg = +fc.contribGrowth || 0;
-  const now = new Date();
-  const months = Math.round((date - now) / MONTH_MS);
+  const months = Math.round((date - new Date()) / MONTH_MS);
   if (months <= 0) return 0;
   const streams = redirectStreams();
-  let fv = 0;
-  let base = +fc.monthly || 0;
-  let redirect = 0;
-  for (let m = 0; m < months; m++) {
-    if (m > 0 && m % 12 === 0) base *= 1 + cg;
-    for (const s of streams) if (s.month === m) redirect += s.amt;
-    fv = fv * (1 + i) + base + redirect;
-  }
-  return fv;
+  // freed loan payments redirected into contributions, added in the month they start
+  const extraAt = (m) => streams.reduce((s, x) => s + (x.month === m ? x.amt : 0), 0);
+  return fvContributionsCore(+fc.monthly || 0, g / 12, months, +fc.contribGrowth || 0, extraAt);
 }
 
 export function forecastNetAt(date, gOverride) {

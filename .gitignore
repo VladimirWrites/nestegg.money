@@ -10,5 +10,5 @@ graphify-out/
 # personal data exports (never commit)
 networth-*.json
 
-# working notes, not part of the app
-docs/
+# working notes, not part of the app (repo root only; public/docs/ ships with the site)
+/docs/

@@ -1,0 +1,24 @@
+# nestegg.money
+
+> A private, zero-knowledge net worth and salary tracker. Figures are encrypted in the browser with a key derived from a random account number, so the server only ever stores ciphertext it cannot read.
+
+nestegg also exposes its deterministic finance math as stateless calculators that any client, including AI agents, can call. The calculators are pure functions of their inputs. They never read user data, never fetch live prices or exchange rates, and carry no secrets. Any currency conversion takes the rate as an explicit input. They return numbers and schedules, never financial advice.
+
+## Calculators
+
+- [Calculator reference](https://nestegg.money/docs/calculators.md): inputs, outputs, formula, and rounding for each calculator (loan amortization, loan payoff, future value, contributions, CAGR, savings rate, FX conversion, and depreciation).
+
+## API
+
+- JSON endpoints: `POST https://nestegg.money/api/calc/<name>` with a JSON body, JSON out. `GET https://nestegg.money/api/calc` lists the calculators. CORS-open, no auth, no storage.
+- MCP server (Streamable HTTP): `https://nestegg.money/mcp` exposes the same calculators as MCP tools (initialize, tools/list, tools/call).
+
+## App
+
+- [Live app](https://nestegg.money): the tracker. A no-account demo loads sample data at https://nestegg.money/dashboard#demo.
+- [Source](https://github.com/VladimirWrites/nestegg.money): open source (Apache-2.0).
+
+## Notes
+
+- Zero-knowledge: the server cannot read user financial data. This work does not touch the encryption, sync, or storage layers.
+- The calculators store nothing, require no authentication, and do not use live market data. Money is rounded half-up to two decimals.

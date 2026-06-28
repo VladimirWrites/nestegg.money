@@ -4,6 +4,11 @@
 // This Worker only runs for paths that don't match a static asset, which is
 // where the /api/* routes live. Everything here was migrated 1:1 from the
 // former Pages Functions in functions/api/*.
+//
+// /api/calc/* and /mcp expose the shared finance math (lib/finance-math.js via the calculator
+// registry) as stateless calculators. Pure: no storage, no auth, no live prices, no FX lookup.
+import { CALCULATORS, CORS } from "./calculators.js";
+import { mcpRoute } from "./mcp.js";
 
 function json(obj, status = 200, ttl = 0) {
   return new Response(JSON.stringify(obj), {
@@ -167,6 +172,32 @@ async function vaultDelete(request, env) {
   return json({ ok: true });
 }
 
+// ---------------------------------------------------------------------------
+// /api/calc/* — stateless calculators over lib/finance-math.js. Pure: no storage,
+// no auth, no live data. CORS-open (they carry no secrets). POST JSON in, JSON out.
+// ---------------------------------------------------------------------------
+function calcJson(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...CORS },
+  });
+}
+async function calcRoute(request, pathname) {
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+  if (pathname === "/api/calc" || pathname === "/api/calc/") {
+    return calcJson({ calculators: Object.keys(CALCULATORS), docs: "/docs/calculators.md" });
+  }
+  if (request.method !== "POST") return calcJson({ error: "method not allowed; POST a JSON body" }, 405);
+  const name = pathname.slice("/api/calc/".length);
+  const c = CALCULATORS[name];
+  if (!c) return calcJson({ error: "unknown calculator", calculators: Object.keys(CALCULATORS) }, 404);
+  let body;
+  try { body = await request.json(); } catch (e) { return calcJson({ error: "invalid JSON body" }, 400); }
+  if (!body || typeof body !== "object") return calcJson({ error: "body must be a JSON object" }, 400);
+  try { return calcJson(c.run(body)); }
+  catch (e) { return calcJson({ error: "calculation failed", detail: String((e && e.message) || e) }, 400); }
+}
+
 export default {
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
@@ -191,6 +222,14 @@ export default {
       } catch (e) {
         return json({ error: "storage error" }, 500);
       }
+    }
+
+    if (pathname === "/api/calc" || pathname.startsWith("/api/calc/")) {
+      return calcRoute(request, pathname);
+    }
+
+    if (pathname === "/mcp" || pathname === "/mcp/") {
+      return mcpRoute(request);
     }
 
     // Host/path routing: marketing landing at the root domain, app at the dashboard
