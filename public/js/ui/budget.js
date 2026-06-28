@@ -1,10 +1,10 @@
 // Budget tab: a rough monthly "what's left" view. Income comes from your latest salary month
 // (auto, with an override), loan payments are pulled from your loans, and you enter recurring
 // expenses as a short list. All math lives in domain/budget.js; this only renders and edits state.
-import { $, esc } from "./dom.js";
+import { $ } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
-import { money } from "../domain/money.js";
+import { money, esc } from "../domain/money.js";
 import { budgetSummary, salaryIncome } from "../domain/budget.js";
 import { scheduleSync } from "../io/storage.js";
 
