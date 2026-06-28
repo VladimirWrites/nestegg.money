@@ -57,3 +57,23 @@ export function emergencyFund(liquidSavings, monthlyExpenses) {
   if (exp <= 0) return { months: null };
   return { months: round2((+liquidSavings || 0) / exp) };
 }
+
+// Coast FIRE: whether the current nest egg, left to grow untouched to retirement, already reaches
+// the FIRE target (so no further contributions are needed). Returns the target, the projected
+// balance at retirement, whether it coasts, and any shortfall (in future-value terms).
+export function coastFire(currentNestEgg, annualRatePct, yearsToRetirement, annualSpend, withdrawalRatePct = 4) {
+  const wr = (+withdrawalRatePct || 0) / 100;
+  const fireTarget = wr > 0 ? round2((+annualSpend || 0) / wr) : null;
+  const projected = round2((+currentNestEgg || 0) * Math.pow(1 + (+annualRatePct || 0) / 100, +yearsToRetirement || 0));
+  if (fireTarget === null) return { fireTarget: null, projected, isCoasting: false, gap: null };
+  return { fireTarget, projected, isCoasting: projected >= fireTarget, gap: round2(Math.max(0, fireTarget - projected)) };
+}
+
+// Barista FIRE: the nest egg needed when part-time income covers part of the spending, so the
+// portfolio only has to fund the remainder at the safe withdrawal rate.
+export function baristaFire(annualSpend, partTimeIncome, withdrawalRatePct = 4) {
+  const wr = (+withdrawalRatePct || 0) / 100;
+  if (wr <= 0) return { target: null };
+  const covered = Math.max(0, (+annualSpend || 0) - (+partTimeIncome || 0));
+  return { target: round2(covered / wr) };
+}

@@ -21,6 +21,8 @@ import {
   capRate, cashOnCash, noi, grossRentMultiplier, dscr,
   wacc, breakEvenUnits, contributionMargin, currentRatio, quickRatio, roe, roa,
   decliningBalanceDepreciation, doubleDecliningDepreciation, sumOfYearsDigits, unitsOfProductionDepreciation,
+  netWorth, budget503020, tipSplit, discount, successiveDiscounts, percentageChange, unitPrice,
+  hourlyToSalary, salaryToHourly, afterTaxYield, taxEquivalentYield, coastFire, baristaFire,
 } from "../public/lib/finance-math.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
@@ -582,6 +584,71 @@ export const CALCULATORS = {
     inputSchema: obj({ value: num("Initial cost."), salvage: num("Salvage value."), totalUnits: num("Total expected units over the life."), unitsThisPeriod: num("Units produced this period.") }, ["value", "salvage", "totalUnits", "unitsThisPeriod"]),
     run: (a) => unitsOfProductionDepreciation(a.value, a.salvage, a.totalUnits, a.unitsThisPeriod),
   },
+  "net-worth": {
+    description: "Net worth: assets minus liabilities.",
+    inputSchema: obj({ assets: num("Total assets."), liabilities: num("Total liabilities.") }, ["assets", "liabilities"]),
+    run: (a) => netWorth(a.assets, a.liabilities),
+  },
+  "budget-50-30-20": {
+    description: "The 50/30/20 budget split of monthly income into needs, wants, and savings.",
+    inputSchema: obj({ monthlyIncome: num("Monthly take-home income.") }, ["monthlyIncome"]),
+    run: (a) => budget503020(a.monthlyIncome),
+  },
+  "tip-split": {
+    description: "Tip and split: the tip amount, the total, and the per-person share.",
+    inputSchema: obj({ billAmount: num("Bill amount."), tipPct: num("Tip in percent."), people: num("Number of people (default 1).") }, ["billAmount", "tipPct"]),
+    run: (a) => tipSplit(a.billAmount, a.tipPct, a.people == null ? 1 : a.people),
+  },
+  "discount": {
+    description: "A single percentage discount: the amount off and the final price.",
+    inputSchema: obj({ price: num("Original price."), discountPct: num("Discount in percent.") }, ["price", "discountPct"]),
+    run: (a) => discount(a.price, a.discountPct),
+  },
+  "successive-discounts": {
+    description: "Stacked discounts applied in order: the final price and the effective single discount rate.",
+    inputSchema: obj({ price: num("Original price."), discountsPct: numArray("Discounts in percent, applied in order.") }, ["price", "discountsPct"]),
+    run: (a) => successiveDiscounts(a.price, a.discountsPct),
+  },
+  "percentage-change": {
+    description: "Percentage change from one value to another. Null when the starting value is zero.",
+    inputSchema: obj({ from: num("Starting value."), to: num("Ending value.") }, ["from", "to"]),
+    run: (a) => percentageChange(a.from, a.to),
+  },
+  "unit-price": {
+    description: "Unit price: price divided by quantity (for comparing pack sizes). Null when quantity is zero.",
+    inputSchema: obj({ price: num("Price."), quantity: num("Quantity / size.") }, ["price", "quantity"]),
+    run: (a) => unitPrice(a.price, a.quantity),
+  },
+  "hourly-to-salary": {
+    description: "Annualize an hourly rate (and the monthly equivalent).",
+    inputSchema: obj({ hourlyRate: num("Hourly rate."), hoursPerWeek: num("Hours per week (default 40)."), weeksPerYear: num("Weeks per year (default 52).") }, ["hourlyRate"]),
+    run: (a) => hourlyToSalary(a.hourlyRate, a.hoursPerWeek == null ? 40 : a.hoursPerWeek, a.weeksPerYear == null ? 52 : a.weeksPerYear),
+  },
+  "salary-to-hourly": {
+    description: "Hourly rate implied by an annual salary.",
+    inputSchema: obj({ annualSalary: num("Annual salary."), hoursPerWeek: num("Hours per week (default 40)."), weeksPerYear: num("Weeks per year (default 52).") }, ["annualSalary"]),
+    run: (a) => salaryToHourly(a.annualSalary, a.hoursPerWeek == null ? 40 : a.hoursPerWeek, a.weeksPerYear == null ? 52 : a.weeksPerYear),
+  },
+  "after-tax-yield": {
+    description: "After-tax yield: a yield reduced by the tax rate. Percents in and out.",
+    inputSchema: obj({ yieldPct: num("Pre-tax yield in percent."), taxRatePct: num("Tax rate in percent.") }, ["yieldPct", "taxRatePct"]),
+    run: (a) => afterTaxYield(a.yieldPct, a.taxRatePct),
+  },
+  "tax-equivalent-yield": {
+    description: "Tax-equivalent yield: the taxable yield that matches a tax-free (e.g. muni) yield. Percents in and out.",
+    inputSchema: obj({ taxFreeYieldPct: num("Tax-free yield in percent."), taxRatePct: num("Marginal tax rate in percent.") }, ["taxFreeYieldPct", "taxRatePct"]),
+    run: (a) => taxEquivalentYield(a.taxFreeYieldPct, a.taxRatePct),
+  },
+  "coast-fire": {
+    description: "Coast FIRE: whether the current nest egg, left to grow untouched to retirement, already reaches the FIRE target. Returns the target, the projected balance, whether it coasts, and any shortfall.",
+    inputSchema: obj({ currentNestEgg: num("Amount invested today."), annualRatePct: num("Expected annual growth in percent."), yearsToRetirement: num("Years until retirement."), annualSpend: num("Yearly spending in retirement."), withdrawalRatePct: num("Safe withdrawal rate in percent (default 4).") }, ["currentNestEgg", "annualRatePct", "yearsToRetirement", "annualSpend"]),
+    run: (a) => coastFire(a.currentNestEgg, a.annualRatePct, a.yearsToRetirement, a.annualSpend, a.withdrawalRatePct == null ? 4 : a.withdrawalRatePct),
+  },
+  "barista-fire": {
+    description: "Barista FIRE: the nest egg needed when part-time income covers part of the spending, so the portfolio only funds the remainder at the safe withdrawal rate.",
+    inputSchema: obj({ annualSpend: num("Yearly spending."), partTimeIncome: num("Yearly part-time income."), withdrawalRatePct: num("Safe withdrawal rate in percent (default 4).") }, ["annualSpend", "partTimeIncome"]),
+    run: (a) => baristaFire(a.annualSpend, a.partTimeIncome, a.withdrawalRatePct == null ? 4 : a.withdrawalRatePct),
+  },
 };
 
 // Output schemas — declared so MCP clients get typed results (structuredContent shape) without a
@@ -681,6 +748,19 @@ const OUTPUTS = {
   "double-declining-depreciation": out({ depreciation: onum("Depreciation this year."), bookValue: onum("Book value at year end.") }),
   "sum-of-years-digits": out({ depreciation: onum("Depreciation this year."), bookValue: onum("Book value at year end.") }),
   "units-of-production-depreciation": out({ depreciation: onum("Depreciation this period (null if totalUnits<=0).") }),
+  "net-worth": out({ netWorth: onum("Assets minus liabilities.") }),
+  "budget-50-30-20": out({ needs: onum("50% needs."), wants: onum("30% wants."), savings: onum("20% savings.") }),
+  "tip-split": out({ tip: onum("Tip amount."), total: onum("Total with tip."), perPerson: onum("Per-person share.") }),
+  "discount": out({ discount: onum("Amount off."), finalPrice: onum("Final price.") }),
+  "successive-discounts": out({ finalPrice: onum("Final price."), effectivePct: onum("Effective single discount, percent (null if price=0).") }),
+  "percentage-change": out({ changePct: onum("Percentage change (null if from=0).") }),
+  "unit-price": out({ unitPrice: onum("Price per unit (null if quantity=0).") }),
+  "hourly-to-salary": out({ annual: onum("Annual salary."), monthly: onum("Monthly equivalent.") }),
+  "salary-to-hourly": out({ hourly: onum("Hourly rate (null if hours<=0).") }),
+  "after-tax-yield": out({ afterTaxPct: onum("After-tax yield, percent.") }),
+  "tax-equivalent-yield": out({ taxEquivalentPct: onum("Tax-equivalent yield, percent (null if tax>=100%).") }),
+  "coast-fire": out({ fireTarget: onum("FIRE target."), projected: onum("Projected balance at retirement."), isCoasting: { type: "boolean", description: "True if it already coasts." }, gap: onum("Shortfall in future-value terms.") }),
+  "barista-fire": out({ target: onum("Nest egg needed (null if withdrawal rate<=0).") }),
 };
 
 for (const [name, schema] of Object.entries(OUTPUTS)) CALCULATORS[name].outputSchema = schema;

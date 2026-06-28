@@ -17,9 +17,9 @@ test("initialize advertises the tools capability and server info", async () => {
   assert.ok(j.result.serverInfo.calcVersion);
 });
 
-test("tools/list returns all eighty-one calculators with input schemas and read-only annotations", async () => {
+test("tools/list returns all ninety-four calculators with input schemas and read-only annotations", async () => {
   const j = await (await mcp({ jsonrpc: "2.0", id: 2, method: "tools/list" })).json();
-  assert.equal(j.result.tools.length, 81);
+  assert.equal(j.result.tools.length, 94);
   const names = j.result.tools.map((t) => t.name);
   assert.ok(names.includes("amortization") && names.includes("cagr"));
   assert.ok(["fire-number", "required-contribution", "inflation-adjust", "effective-rate", "npv", "irr", "refi-breakeven", "emergency-fund"].every((n) => names.includes(n)));
@@ -33,6 +33,7 @@ test("tools/list returns all eighty-one calculators with input schemas and read-
   assert.ok(["loan-apr", "interest-only-payment", "balloon-loan", "ltv", "dti", "credit-card-payoff", "points-breakeven", "biweekly-payoff"].every((n) => names.includes(n)));
   assert.ok(["cap-rate", "cash-on-cash", "noi", "gross-rent-multiplier", "dscr", "wacc", "break-even-units", "contribution-margin", "current-ratio", "quick-ratio", "roe", "roa"].every((n) => names.includes(n)));
   assert.ok(["declining-balance-depreciation", "double-declining-depreciation", "sum-of-years-digits", "units-of-production-depreciation"].every((n) => names.includes(n)));
+  assert.ok(["net-worth", "budget-50-30-20", "tip-split", "discount", "successive-discounts", "percentage-change", "unit-price", "hourly-to-salary", "salary-to-hourly", "after-tax-yield", "tax-equivalent-yield", "coast-fire", "barista-fire"].every((n) => names.includes(n)));
   assert.ok(j.result.tools.every((t) => t.inputSchema && t.inputSchema.type === "object"));
   assert.ok(j.result.tools.every((t) => t.annotations && t.annotations.readOnlyHint === true && t.annotations.idempotentHint === true));
 });

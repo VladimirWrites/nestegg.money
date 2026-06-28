@@ -30,3 +30,4 @@ export * from "./finance-math/credit.js";          // loanAPR, interestOnlyPayme
 export * from "./finance-math/realestate.js";      // capRate, cashOnCash, noi, grossRentMultiplier, dscr
 export * from "./finance-math/business.js";        // wacc, breakEvenUnits, contributionMargin, currentRatio, quickRatio, roe, roa
 export * from "./finance-math/depreciation.js";    // decliningBalanceDepreciation, doubleDecliningDepreciation, sumOfYearsDigits, unitsOfProductionDepreciation
+export * from "./finance-math/everyday.js";        // netWorth, budget503020, tipSplit, discount, successiveDiscounts, percentageChange, unitPrice, hourlyToSalary, salaryToHourly, afterTaxYield, taxEquivalentYield
