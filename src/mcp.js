@@ -10,6 +10,22 @@ const DEFAULT_PROTOCOL = "2025-06-18";
 const rpc = (id, result) => ({ jsonrpc: "2.0", id, result });
 const rpcErr = (id, code, message) => ({ jsonrpc: "2.0", id, error: { code, message } });
 
+// Render a calculator result as a one-line human summary for the text content block (clients
+// without structuredContent support, and humans reading a chat). Machines use structuredContent.
+function humanizeResult(result) {
+  if (result == null || typeof result !== "object") return String(result);
+  const parts = [];
+  for (const [k, v] of Object.entries(result)) {
+    let s;
+    if (v instanceof Date) s = v.toISOString().slice(0, 10);
+    else if (Array.isArray(v)) s = `${v.length} rows`;
+    else if (v && typeof v === "object") s = "{…}";
+    else s = `${v}`;
+    parts.push(`${k}: ${s}`);
+  }
+  return parts.join(" · ");
+}
+
 function send(obj, status = 200) {
   return new Response(obj === null ? null : JSON.stringify(obj), {
     status,
@@ -47,7 +63,7 @@ function handle(msg) {
       if (!v.ok) return rpc(id, { content: [{ type: "text", text: "Invalid arguments: " + v.errors.join("; ") }], isError: true });
       try {
         const result = c.run(args);
-        return rpc(id, { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result });
+        return rpc(id, { content: [{ type: "text", text: humanizeResult(result) }], structuredContent: result, _meta: { calcVersion: CALC_VERSION } });
       } catch (e) {
         return rpc(id, { content: [{ type: "text", text: "Calculation failed: " + String((e && e.message) || e) }], isError: true });
       }

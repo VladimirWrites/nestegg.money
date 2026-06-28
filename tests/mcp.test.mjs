@@ -48,7 +48,8 @@ test("tools/call returns the Phase-1 vectors (text + structuredContent)", async 
   let j = await (await mcp({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "amortization", arguments: { amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01" } } })).json();
   assert.equal(j.result.isError, undefined);
   assert.equal(j.result.structuredContent.monthlyPayment, 599.55);
-  assert.ok(JSON.parse(j.result.content[0].text).monthlyPayment === 599.55);
+  assert.ok(j.result.content[0].text.includes("599.55")); // text is now a readable summary, not raw JSON
+  assert.ok(j.result._meta && j.result._meta.calcVersion); // each result is stamped for auditability
 
   j = await (await mcp({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "cagr", arguments: { begin: 100, end: 200, years: 10 } } })).json();
   assert.ok(Math.abs(j.result.structuredContent.value - 0.0717734625) < 1e-9);
@@ -58,6 +59,14 @@ test("tools/call validates inputs — a missing required field is a tool error",
   const j = await (await mcp({ jsonrpc: "2.0", id: 90, method: "tools/call", params: { name: "future-value", arguments: { principal: 1000 } } })).json();
   assert.equal(j.result.isError, true);
   assert.ok(j.result.content[0].text.toLowerCase().includes("required"));
+});
+
+test("tools/call text is a human-readable summary and the result is stamped with calcVersion", async () => {
+  const j = await (await mcp({ jsonrpc: "2.0", id: 92, method: "tools/call", params: { name: "future-value", arguments: { principal: 1000, annualRatePct: 7, years: 10 } } })).json();
+  assert.ok(/value:/.test(j.result.content[0].text));      // readable "value: 1967.15…"
+  assert.ok(!j.result.content[0].text.trim().startsWith("{")); // not raw JSON
+  assert.ok(j.result._meta.calcVersion);
+  assert.ok(j.result.structuredContent.value > 1967 && j.result.structuredContent.value < 1968);
 });
 
 test("tools/call rejects an out-of-enum value naming the allowed set", async () => {
