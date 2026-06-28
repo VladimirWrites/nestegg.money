@@ -4,6 +4,8 @@ Deterministic, pure finance calculators. Every function depends only on its inpu
 
 All money is rounded half-up to two decimals (the app's `round2`: `Math.round((v + 1e-9) * 100) / 100`). Rates are given in percent unless noted (for example `6` means 6% per year). Dates are ISO strings (`YYYY-MM-DD`). The shared implementation is `public/lib/finance-math.js`, used by both the site and the calculator endpoints.
 
+Each calculator below is reachable two ways: as a JSON endpoint (`POST /api/calc/<name>`, with the inputs as the JSON body) and as an MCP tool (Streamable HTTP at `/mcp`, same name and inputs). `GET /api/calc` lists them. Both are stateless, CORS-open, and require no authentication.
+
 ## amortization
 
 Full monthly repayment schedule and summary for a loan.

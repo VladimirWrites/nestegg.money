@@ -1,0 +1,84 @@
+// Shared registry of the calculators, used by both the /api/calc/* JSON endpoints and the
+// MCP server, so the wiring (and the math, via lib/finance-math.js) is defined once.
+// Each entry: { description, inputSchema (JSON Schema), run(args) -> JSON-serializable }.
+import {
+  amortization, loanPayoff, futureValue, futureValueOfContributions, cagr,
+  savingsRate, fxConvert, depreciate, straightLineDepreciation,
+} from "../public/lib/finance-math.js";
+
+// CORS is open: the calculators carry no secrets and read no user data.
+export const CORS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, POST, OPTIONS",
+  "access-control-allow-headers": "content-type, mcp-session-id, mcp-protocol-version",
+  "access-control-max-age": "86400",
+};
+
+const num = (description) => ({ type: "number", description });
+const str = (description) => ({ type: "string", description });
+
+// Shared loan input shape (amortization + loan-payoff).
+const loanProps = {
+  amount: num("Loan principal."),
+  rate: num("Annual interest rate in percent (6 = 6%)."),
+  mode: { type: "string", enum: ["term", "payment"], description: "Fix the term (compute the payment) or fix the payment (compute the term)." },
+  termYears: num("Term in years, used when mode is 'term'."),
+  payment: num("Monthly payment, used when mode is 'payment'."),
+  startDate: str("First payment month as an ISO date (YYYY-MM-DD)."),
+  fixedUntil: str("Optional. Rate is certain until this ISO date; beyond it the schedule is an estimate."),
+  extra: {
+    type: "array",
+    description: "Optional dated extra principal payments.",
+    items: { type: "object", properties: { date: str("ISO date."), amount: num("Extra principal.") } },
+  },
+};
+const loanRequired = ["amount", "rate", "mode", "startDate"];
+const obj = (properties, required) => ({ type: "object", properties, required, additionalProperties: false });
+
+export const CALCULATORS = {
+  "amortization": {
+    description: "Monthly loan amortization schedule and summary. Supports dated extra principal payments and a rate-fixed period. Returns the schedule plus totals; no advice.",
+    inputSchema: obj(loanProps, loanRequired),
+    run: (a) => amortization(a),
+  },
+  "loan-payoff": {
+    description: "Time and interest saved by paying a fixed extra amount every month on a loan, versus the baseline schedule.",
+    inputSchema: obj({ ...loanProps, extraMonthly: num("Extra principal paid each month.") }, [...loanRequired, "extraMonthly"]),
+    run: (a) => loanPayoff(a, a.extraMonthly),
+  },
+  "future-value": {
+    description: "Future value of a single lump sum compounded annually.",
+    inputSchema: obj({ principal: num("Starting amount."), annualRatePct: num("Annual growth rate in percent."), years: num("Number of years.") }, ["principal", "annualRatePct", "years"]),
+    run: (a) => ({ value: futureValue(a.principal, a.annualRatePct, a.years) }),
+  },
+  "contributions": {
+    description: "Future value of a fixed monthly contribution, optionally stepping up each year.",
+    inputSchema: obj({ monthly: num("Monthly contribution."), annualRatePct: num("Annual growth rate in percent."), months: num("Number of months."), contribGrowthPct: num("Optional. Contribution step-up percent per year.") }, ["monthly", "annualRatePct", "months"]),
+    run: (a) => ({ value: futureValueOfContributions(a.monthly, a.annualRatePct, a.months, a.contribGrowthPct || 0) }),
+  },
+  "cagr": {
+    description: "Compound annual growth rate between two values over a number of years. Returns a decimal (0.07 means 7%).",
+    inputSchema: obj({ begin: num("Starting value."), end: num("Ending value."), years: num("Number of years.") }, ["begin", "end", "years"]),
+    run: (a) => ({ value: cagr(a.begin, a.end, a.years) }),
+  },
+  "savings-rate": {
+    description: "Fraction of income saved (savings divided by income). Returns a decimal.",
+    inputSchema: obj({ income: num("Income."), savings: num("Amount saved.") }, ["income", "savings"]),
+    run: (a) => ({ value: savingsRate(a.income, a.savings) }),
+  },
+  "fx-convert": {
+    description: "Convert an amount using a rate supplied by the caller (units of target currency per unit of source). No rate is ever looked up.",
+    inputSchema: obj({ amount: num("Amount to convert."), rate: num("Rate: target units per source unit.") }, ["amount", "rate"]),
+    run: (a) => ({ value: fxConvert(a.amount, a.rate) }),
+  },
+  "depreciate": {
+    description: "Value after compounding down (or up) at a yearly percentage rate over a number of years. This is the method the app uses for long-term assets.",
+    inputSchema: obj({ value: num("Starting value."), annualRatePct: num("Annual rate in percent."), years: num("Number of years."), up: { type: "boolean", description: "false depreciates, true appreciates." } }, ["value", "annualRatePct", "years"]),
+    run: (a) => ({ value: depreciate(a.value, a.annualRatePct, a.years, !!a.up) }),
+  },
+  "straight-line-depreciation": {
+    description: "Straight-line depreciation: value falling evenly to a salvage value over a useful life.",
+    inputSchema: obj({ value: num("Starting value."), salvage: num("Salvage value."), usefulYears: num("Useful life in years."), yearsElapsed: num("Years elapsed.") }, ["value", "salvage", "usefulYears", "yearsElapsed"]),
+    run: (a) => ({ value: straightLineDepreciation(a.value, a.salvage, a.usefulYears, a.yearsElapsed) }),
+  },
+};

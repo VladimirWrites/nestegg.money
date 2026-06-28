@@ -5,12 +5,10 @@
 // where the /api/* routes live. Everything here was migrated 1:1 from the
 // former Pages Functions in functions/api/*.
 //
-// /api/calc/* exposes the shared finance math (lib/finance-math.js) as stateless calculators.
-// They are pure: no storage, no auth, no live prices, no FX lookup (rate is an input).
-import {
-  amortization, loanPayoff, futureValue, futureValueOfContributions, cagr,
-  savingsRate, fxConvert, depreciate, straightLineDepreciation,
-} from "../public/lib/finance-math.js";
+// /api/calc/* and /mcp expose the shared finance math (lib/finance-math.js via the calculator
+// registry) as stateless calculators. Pure: no storage, no auth, no live prices, no FX lookup.
+import { CALCULATORS, CORS } from "./calculators.js";
+import { mcpRoute } from "./mcp.js";
 
 function json(obj, status = 200, ttl = 0) {
   return new Response(JSON.stringify(obj), {
@@ -178,43 +176,25 @@ async function vaultDelete(request, env) {
 // /api/calc/* — stateless calculators over lib/finance-math.js. Pure: no storage,
 // no auth, no live data. CORS-open (they carry no secrets). POST JSON in, JSON out.
 // ---------------------------------------------------------------------------
-const CORS = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, POST, OPTIONS",
-  "access-control-allow-headers": "content-type",
-  "access-control-max-age": "86400",
-};
 function calcJson(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,
     headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...CORS },
   });
 }
-const CALCS = {
-  "amortization": (b) => amortization(b),
-  "loan-payoff": (b) => loanPayoff(b, b.extraMonthly),
-  "future-value": (b) => ({ value: futureValue(b.principal, b.annualRatePct, b.years) }),
-  "contributions": (b) => ({ value: futureValueOfContributions(b.monthly, b.annualRatePct, b.months, b.contribGrowthPct || 0) }),
-  "cagr": (b) => ({ value: cagr(b.begin, b.end, b.years) }),
-  "savings-rate": (b) => ({ value: savingsRate(b.income, b.savings) }),
-  "fx-convert": (b) => ({ value: fxConvert(b.amount, b.rate) }),
-  "depreciate": (b) => ({ value: depreciate(b.value, b.annualRatePct, b.years, !!b.up) }),
-  "straight-line-depreciation": (b) => ({ value: straightLineDepreciation(b.value, b.salvage, b.usefulYears, b.yearsElapsed) }),
-};
 async function calcRoute(request, pathname) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
-  // index: list available calculators
   if (pathname === "/api/calc" || pathname === "/api/calc/") {
-    return calcJson({ calculators: Object.keys(CALCS), docs: "/docs/calculators.md" });
+    return calcJson({ calculators: Object.keys(CALCULATORS), docs: "/docs/calculators.md" });
   }
   if (request.method !== "POST") return calcJson({ error: "method not allowed; POST a JSON body" }, 405);
   const name = pathname.slice("/api/calc/".length);
-  const fn = CALCS[name];
-  if (!fn) return calcJson({ error: "unknown calculator", calculators: Object.keys(CALCS) }, 404);
+  const c = CALCULATORS[name];
+  if (!c) return calcJson({ error: "unknown calculator", calculators: Object.keys(CALCULATORS) }, 404);
   let body;
   try { body = await request.json(); } catch (e) { return calcJson({ error: "invalid JSON body" }, 400); }
   if (!body || typeof body !== "object") return calcJson({ error: "body must be a JSON object" }, 400);
-  try { return calcJson(fn(body)); }
+  try { return calcJson(c.run(body)); }
   catch (e) { return calcJson({ error: "calculation failed", detail: String((e && e.message) || e) }, 400); }
 }
 
@@ -246,6 +226,10 @@ export default {
 
     if (pathname === "/api/calc" || pathname.startsWith("/api/calc/")) {
       return calcRoute(request, pathname);
+    }
+
+    if (pathname === "/mcp" || pathname === "/mcp/") {
+      return mcpRoute(request);
     }
 
     // Host/path routing: marketing landing at the root domain, app at the dashboard

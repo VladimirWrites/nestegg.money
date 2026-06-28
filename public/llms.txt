@@ -8,6 +8,11 @@ nestegg also exposes its deterministic finance math as stateless calculators tha
 
 - [Calculator reference](https://nestegg.money/docs/calculators.md): inputs, outputs, formula, and rounding for each calculator (loan amortization, loan payoff, future value, contributions, CAGR, savings rate, FX conversion, and depreciation).
 
+## API
+
+- JSON endpoints: `POST https://nestegg.money/api/calc/<name>` with a JSON body, JSON out. `GET https://nestegg.money/api/calc` lists the calculators. CORS-open, no auth, no storage.
+- MCP server (Streamable HTTP): `https://nestegg.money/mcp` exposes the same calculators as MCP tools (initialize, tools/list, tools/call).
+
 ## App
 
 - [Live app](https://nestegg.money): the tracker. A no-account demo loads sample data at https://nestegg.money/dashboard#demo.
