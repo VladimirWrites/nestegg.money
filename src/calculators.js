@@ -50,6 +50,11 @@ export const CALCULATORS = {
       detail: { type: "string", enum: ["summary", "yearly", "monthly"], description: "Output size. summary (default): totals + yearly breakdown. monthly: full schedule (use offset/limit to paginate)." },
       offset: num("Monthly schedule start index when detail=monthly (default 0)."),
       limit: num("Max monthly rows when detail=monthly (default all)."),
+      rateSteps: {
+        type: "array",
+        description: "Optional rate changes (e.g. after a Zinsbindung). The installment is held; from each date the outstanding balance continues at the new annual rate.",
+        items: { type: "object", properties: { date: str("ISO date the new rate starts."), rate: num("New annual rate in percent.") }, required: ["date", "rate"] },
+      },
     }, loanRequired),
     run: (a) => amortization(a),
   },

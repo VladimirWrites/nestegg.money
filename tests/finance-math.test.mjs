@@ -21,6 +21,22 @@ test("amortization: €100k at 6% over 30y -> €599.55/mo, 360 payments (round2
   assert.ok(a.payoffDate instanceof Date);
 });
 
+test("amortization rateSteps: a rate rise after the fixed period costs more interest", () => {
+  const flat = amortization({ amount: 300000, rate: 3, mode: "term", termYears: 30, startDate: "2024-01-01" });
+  const stepped = amortization({ amount: 300000, rate: 3, mode: "term", termYears: 30, startDate: "2024-01-01",
+    rateSteps: [{ date: "2034-01-01", rate: 5 }] });
+  assert.ok(stepped.totalInterest > flat.totalInterest);
+  assert.equal(stepped.monthlyPayment, flat.monthlyPayment); // installment held; term/Tilgung adjust
+  assert.ok(Array.isArray(stepped.yearly) && stepped.yearly.length > 0);
+});
+
+test("amortization rateSteps: no steps is identical to a single-rate run", () => {
+  const a = amortization({ amount: 200000, rate: 4, mode: "term", termYears: 20, startDate: "2024-01-01", detail: "monthly" });
+  const b = amortization({ amount: 200000, rate: 4, mode: "term", termYears: 20, startDate: "2024-01-01", detail: "monthly", rateSteps: [] });
+  assert.equal(a.totalInterest, b.totalInterest);
+  assert.equal(a.schedule.length, b.schedule.length);
+});
+
 test("loanPayoff: an extra €200/mo saves time and interest", () => {
   const p = loanPayoff({ amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01" }, 200);
   assert.ok(p.monthsSaved > 0);
