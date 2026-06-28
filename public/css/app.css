@@ -342,7 +342,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 #salImportText:focus{outline:none;border-color:var(--amber)}
 
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
-.ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select,.salccy,.salmccy{
+.ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select,.salccy,.salmccy,.bud-exp select{
   -webkit-appearance:none;-moz-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238a867c' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 9px center;background-size:11px;
@@ -424,3 +424,57 @@ button.act.ghost:hover{border-color:var(--amber)}
 .demobar .act{min-height:32px;padding:6px 12px;font-size:11px}
 .demolink{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
 .demoswitch{margin-top:4px}
+
+/* ---- Budget tab ---- */
+.bud-card{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:22px 16px;margin:8px 0 18px}
+.bud-card .k{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.bud-card .v{font-size:clamp(30px,8vw,44px);font-weight:700;color:var(--green);font-family:var(--mono);line-height:1}
+.bud-card.neg .v{color:var(--red)}
+.bud-card .sub{font-size:12px;color:var(--muted)}
+.bud-card .sub b{color:var(--ink);font-weight:600}
+.bud-rows{margin:0 auto}
+.bud-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
+.bud-row.indent{padding-left:14px}
+.bud-row.total{border-bottom:none;border-top:1px solid var(--line2);font-weight:600}
+.bud-lbl{color:var(--ink);font-size:14px}
+.bud-lbl .hint{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px}
+.bud-val{font-family:var(--mono);font-size:15px;color:var(--ink);white-space:nowrap}
+.bud-input{width:140px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:14px}
+.bud-input:focus{outline:none;border-color:var(--amber)}
+.bud-exp-head{margin:18px 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.bud-exp{display:grid;grid-template-columns:1fr 150px 130px 36px;gap:10px;align-items:center;padding:5px 0}
+.bud-exp input{background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:14px;min-width:0}
+.bud-exp .bud-exp-amt{text-align:right;font-family:var(--mono)}
+.bud-exp .bud-exp-cat{color:var(--muted)}
+.budgetTip .tippct,#budgetTip .tippct{color:var(--muted);font-weight:400}
+@media(max-width:520px){.bud-exp{grid-template-columns:1fr 96px 34px}.bud-exp .bud-exp-cat{grid-column:1 / -1;order:5}}
+.bud-exp input:focus{outline:none;border-color:var(--amber)}
+.bud-exp-del{background:none;border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer;height:36px}
+.bud-exp-del:hover{color:var(--red);border-color:var(--red)}
+.bud-chart{margin:10px 0 16px}
+.bud-chart-main{display:flex;flex-direction:column;align-items:center;gap:14px}
+.bud-chart .legend{width:100%;max-width:340px}
+@media(min-width:640px){
+  .bud-chart-main{flex-direction:row;justify-content:center;align-items:center;gap:30px}
+  .bud-chart .legend{width:auto;min-width:230px;max-width:none}
+}
+.bud-ovr{display:flex;align-items:center;gap:8px}
+.bud-reset{background:var(--field);border:1px solid var(--line2);border-radius:999px;color:var(--muted);cursor:pointer;font:inherit;font-size:11px;padding:5px 10px;white-space:nowrap;line-height:1}
+.bud-reset:hover{color:var(--amber);border-color:var(--amber)}
+.bud-reset.hide{display:none}
+/* budget donut: download button, hover tip, entrance animation (mirrors the allocation donut) */
+.bud-chartwrap{position:relative;width:240px;flex:none}
+.bud-chartwrap .chartdl{top:0;right:0}
+#budgetDonut .dwedge{cursor:pointer;transition:opacity .12s}
+#budgetDonut:hover .dwedge{opacity:.55}
+#budgetDonut .dwedge:hover{opacity:1}
+#budgetDonut.anim .dwedge{stroke-dasharray:1;stroke-dashoffset:1;animation:dwedge-draw .6s ease forwards}
+@keyframes dwedge-draw{to{stroke-dashoffset:0}}
+/* budget category selects + loan rows */
+.bud-exp select{background-color:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 28px 8px 8px;color:var(--ink);font-family:var(--mono);font-size:14px;min-width:0;min-height:40px}
+.bud-exp select:focus{outline:none;border-color:var(--amber)}
+/* loan row reuses the .bud-exp grid (1fr 120px 110px 34px) so its category and amount line up with
+   the expense rows; the 4th (delete) column is left empty. Spans match the inputs' font + height. */
+.bud-loan-name{color:var(--ink);font-family:var(--mono);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bud-loan-amt{text-align:right;font-family:var(--mono);font-size:14px;color:var(--ink);padding:8px 0}
+@media(max-width:520px){.bud-loan{grid-template-columns:1fr 110px}.bud-loan-amt{grid-column:1 / -1;text-align:right;padding-top:0}}

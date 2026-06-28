@@ -1,7 +1,7 @@
 // State shape: defaults, fresh state, loan normalization, and the version migrator.
 // Pure — operates on the plain state object passed in.
 import { nid } from "./ids.js";
-import { FALLBACK_FX, DEL_KINDS, SCHEMA_VERSION } from "./constants.js";
+import { FALLBACK_FX, DEL_KINDS, SCHEMA_VERSION, DEFAULT_BUDGET_CATEGORIES } from "./constants.js";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const thisMonthISO = () => new Date().toISOString().slice(0, 7);
@@ -27,6 +27,7 @@ export function emptyState() {
     categories: [],
     salaries: [],
     snapshots: [{ year: new Date().getFullYear(), entries: [] }],
+    budget: { incomeOverride: null, expenses: [], loanCats: {}, categories: DEFAULT_BUDGET_CATEGORIES.slice() },
   };
 }
 
@@ -78,6 +79,24 @@ function migrateForecast(s) {
   delete f.real;
   delete f.inflation;
   delete f.pension;
+}
+
+function migrateBudget(s) {
+  if (!s.budget || typeof s.budget !== "object") { s.budget = { incomeOverride: null, expenses: [], loanCats: {}, categories: DEFAULT_BUDGET_CATEGORIES.slice() }; return; }
+  const b = s.budget;
+  b.incomeOverride = b.incomeOverride == null ? null : (+b.incomeOverride || 0);
+  if (!b.loanCats || typeof b.loanCats !== "object") b.loanCats = {};
+  // Budget has its own category list (separate from net-worth categories). Seed once for older budgets.
+  if (!Array.isArray(b.categories)) b.categories = DEFAULT_BUDGET_CATEGORIES.slice();
+  if (!Array.isArray(b.expenses)) b.expenses = [];
+  b.expenses.forEach((e) => {
+    if (!e.id) e.id = nid();
+    if (e.name == null) e.name = "Expense";
+    // Expense category lives on .group, matching net-worth entries (was .category in an earlier build).
+    if (e.group == null) e.group = e.category || "";
+    delete e.category;
+    e.amount = +e.amount || 0;
+  });
 }
 
 function migrateRetire(s) {
@@ -204,6 +223,7 @@ export function migrate(s) {
   if (!s.baseCcy) s.baseCcy = "EUR";
   migrateForecast(s);
   migrateRetire(s);
+  migrateBudget(s);
   migrateFx(s);
   migrateAssets(s);
   migrateSalaries(s);
