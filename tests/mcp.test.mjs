@@ -60,6 +60,12 @@ test("tools/call validates inputs — a missing required field is a tool error",
   assert.ok(j.result.content[0].text.toLowerCase().includes("required"));
 });
 
+test("tools/call rejects an out-of-enum value naming the allowed set", async () => {
+  const j = await (await mcp({ jsonrpc: "2.0", id: 91, method: "tools/call", params: { name: "amortization", arguments: { amount: 100000, rate: 6, mode: "bogus", termYears: 30, startDate: "2020-01-01" } } })).json();
+  assert.equal(j.result.isError, true);
+  assert.ok(j.result.content[0].text.includes("term") && j.result.content[0].text.includes("payment"));
+});
+
 test("tools/call on an unknown tool is a tool error, not a transport error", async () => {
   const j = await (await mcp({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "nope", arguments: {} } })).json();
   assert.equal(j.result.isError, true);
