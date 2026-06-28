@@ -1,0 +1,5 @@
+# Serve the agent-facing text files as readable text/plain (consumed by the assets layer).
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+/docs/*.md
+  Content-Type: text/plain; charset=utf-8
