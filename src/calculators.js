@@ -298,3 +298,51 @@ export const CALCULATORS = {
     run: (a) => vat(a.amount, a.ratePct, !!a.inclusive),
   },
 };
+
+// Output schemas — declared so MCP clients get typed results (structuredContent shape) without a
+// trial call. Kept beside the registry and attached below so each tool stays a single entry.
+const out = (properties) => ({ type: "object", properties });
+const onum = (description) => ({ type: "number", description });
+const ostr = (description) => ({ type: "string", description });
+const obool = (description) => ({ type: "boolean", description });
+const oarr = (description) => ({ type: "array", description });
+const oobj = (description) => ({ type: "object", description });
+const VALUE = out({ value: onum("Result value.") });
+
+const OUTPUTS = {
+  "amortization": out({
+    monthlyPayment: onum("Monthly payment."), scheduledMonths: onum("Scheduled months (null if open-ended)."),
+    payments: onum("Number of payments made."), totalInterest: onum("Total interest paid."),
+    totalPaid: onum("Total paid (incl. extras)."), payoffDate: ostr("Payoff date, ISO."),
+    yearly: oarr("Per-year totals: { year, interest, principal, extra, payments, endBalance }."),
+    schedule: oarr("Monthly rows (only when detail=monthly)."),
+    scheduleTotal: onum("Total monthly rows (when detail=monthly)."), nextOffset: onum("Next pagination offset, or null."),
+  }),
+  "loan-payoff": out({
+    baseline: oobj("Baseline { months, totalInterest, payoffDate }."),
+    accelerated: oobj("Accelerated { months, totalInterest, payoffDate }."),
+    monthsSaved: onum("Months saved."), interestSaved: onum("Interest saved."),
+  }),
+  "future-value": VALUE, "contributions": VALUE, "cagr": VALUE, "savings-rate": VALUE,
+  "fx-convert": VALUE, "depreciate": VALUE, "straight-line-depreciation": VALUE,
+  "inflation-adjust": VALUE, "compound-interest": VALUE,
+  "present-value": out({ pv: onum("Present value.") }),
+  "fire-number": out({ target: onum("Target nest egg."), gap: onum("Gap from today."), yearsToFI: onum("Years to FI (null if unreachable).") }),
+  "required-contribution": out({ monthly: onum("Monthly contribution needed (null if horizon<=0).") }),
+  "effective-rate": out({ effectiveRatePct: onum("Effective annual rate (APY), percent."), nominalRatePct: onum("Nominal rate, percent (when toNominal).") }),
+  "npv": out({ npv: onum("Net present value.") }),
+  "irr": out({ irrPct: onum("Internal rate of return, percent (null if none).") }),
+  "required-return": out({ ratePct: onum("Annual rate, percent (null if unreachable).") }),
+  "yield-to-maturity": out({ yieldPct: onum("Nominal annual yield, percent (null if none).") }),
+  "refi-breakeven": out({ monthlySaving: onum("Monthly saving."), breakevenMonths: onum("Whole months to recoup (null if no saving)."), lifetimeSaving: onum("Net lifetime saving (null if no term).") }),
+  "emergency-fund": out({ months: onum("Months of runway (null if expenses<=0).") }),
+  "mortgage-affordability": out({ maxMonthlyPayment: onum("Max payment."), maxLoan: onum("Max loan."), maxHomePrice: onum("Max home price.") }),
+  "debt-payoff": out({ months: onum("Months to debt-free (null if insolvent)."), totalInterest: onum("Total interest (null if insolvent)."), payoffOrder: oarr("Debt names in payoff order."), insolvent: obool("True if the budget can't keep up.") }),
+  "portfolio-longevity": out({ years: onum("Depletion year (null if sustainable)."), sustainable: obool("True if it outlasts 200 years.") }),
+  "tax-from-brackets": out({ tax: onum("Total tax."), effectiveRatePct: onum("Effective rate, percent."), marginalRatePct: onum("Marginal rate, percent.") }),
+  "margin-markup": out({ cost: onum("Cost."), price: onum("Price."), profit: onum("Profit."), marginPct: onum("Margin, percent."), markupPct: onum("Markup, percent.") }),
+  "de-gross-to-net": out({ gross: onum("Gross."), incomeTax: onum("Income tax."), soli: onum("Soli."), churchTax: onum("Church tax."), contributions: oobj("{ pension, unemployment, health, care, total }."), totalDeductions: onum("Total deductions."), net: onum("Net.") }),
+  "vat": out({ net: onum("Net price."), tax: onum("Tax amount."), gross: onum("Gross price.") }),
+};
+
+for (const [name, schema] of Object.entries(OUTPUTS)) CALCULATORS[name].outputSchema = schema;

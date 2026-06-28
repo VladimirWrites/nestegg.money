@@ -33,7 +33,7 @@ function handle(msg) {
       // clients can call freely without confirmation prompts.
       return rpc(id, {
         tools: Object.entries(CALCULATORS).map(([name, c]) => ({
-          name, description: c.description, inputSchema: c.inputSchema,
+          name, description: c.description, inputSchema: c.inputSchema, outputSchema: c.outputSchema,
           annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
         })),
       });

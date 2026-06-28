@@ -29,6 +29,11 @@ test("tools/list returns all twenty-eight calculators with input schemas and rea
   assert.ok(j.result.tools.every((t) => t.annotations && t.annotations.readOnlyHint === true && t.annotations.idempotentHint === true));
 });
 
+test("tools/list advertises an outputSchema for every tool", async () => {
+  const j = await (await mcp({ jsonrpc: "2.0", id: 20, method: "tools/list" })).json();
+  assert.ok(j.result.tools.every((t) => t.outputSchema && t.outputSchema.type === "object" && t.outputSchema.properties));
+});
+
 test("tools/call reaches the new calculators (fire-number, debt-payoff)", async () => {
   let j = await (await mcp({ jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "fire-number", arguments: { annualSpend: 40000 } } })).json();
   assert.equal(j.result.isError, undefined);
