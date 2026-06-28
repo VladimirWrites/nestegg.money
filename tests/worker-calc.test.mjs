@@ -26,6 +26,8 @@ test("POST calculators return the Phase-1 vectors", async () => {
   const a = await r.json();
   assert.equal(a.monthlyPayment, 599.55);
   assert.equal(a.payments, 360);
+  assert.equal(a.schedule, undefined);          // summary by default (no monthly blowup)
+  assert.ok(Array.isArray(a.yearly));
 
   r = await call("POST", "/api/calc/fx-convert", { amount: 100, rate: 1.1 });
   assert.ok(Math.abs((await r.json()).value - 110) < 1e-9);
@@ -63,6 +65,12 @@ test("the new calculators are reachable over /api/calc/* too", async () => {
 
   r = await call("POST", "/api/calc/de-gross-to-net", { gross: 60000, incomeTax: 11000, churchTaxPct: 9, pensionPct: 9.3, unemploymentPct: 1.3, healthPct: 8.15, carePct: 2.3, pensionCeiling: 90600, healthCeiling: 62100 });
   assert.equal((await r.json()).net, 35380);
+});
+
+test("REST validates inputs — 400 with a helpful message on a missing field", async () => {
+  const r = await call("POST", "/api/calc/future-value", { principal: 1000 });
+  assert.equal(r.status, 400);
+  assert.ok(JSON.stringify(await r.json()).toLowerCase().includes("required"));
 });
 
 test("CORS preflight, unknown calc, wrong method, and bad body are handled", async () => {

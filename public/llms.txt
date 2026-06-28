@@ -11,7 +11,7 @@ nestegg also exposes its deterministic finance math as stateless calculators tha
 ## API
 
 - JSON endpoints: `POST https://nestegg.money/api/calc/<name>` with a JSON body, JSON out. `GET https://nestegg.money/api/calc` lists the calculators. CORS-open, no auth, no storage.
-- MCP server (Streamable HTTP): `https://nestegg.money/mcp` exposes the same calculators as MCP tools (initialize, tools/list, tools/call).
+- MCP server (Streamable HTTP): `https://nestegg.money/mcp` exposes the same calculators as MCP tools (initialize, tools/list, tools/call) with typed outputSchema and read-only annotations. It also serves `resources/*` (the calculator docs) and `prompts/*` (mortgage-plan, fire-check, brutto-netto). Large results are compact by default: `amortization` returns a per-year summary unless `detail: "monthly"` is requested (paginated with offset/limit).
 
 ## App
 

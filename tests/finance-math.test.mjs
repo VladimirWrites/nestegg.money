@@ -8,7 +8,7 @@ import {
   mortgageAffordability, debtPayoff, portfolioLongevity, round2,
   presentValue, requiredReturn, yieldToMaturity, taxFromBrackets,
   marginMarkup, compoundInterest,
-  germanNetSalary, vat,
+  germanNetSalary, vat, scheduleByYear,
 } from "../public/lib/finance-math.js";
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps, `${a} !~= ${b}`);
@@ -19,6 +19,22 @@ test("amortization: €100k at 6% over 30y -> €599.55/mo, 360 payments (round2
   assert.equal(a.payments, 360);
   assert.ok(a.totalInterest > 115000 && a.totalInterest < 116000); // ~115,838 minus final-payment rounding
   assert.ok(a.payoffDate instanceof Date);
+});
+
+test("amortization rateSteps: a rate rise after the fixed period costs more interest", () => {
+  const flat = amortization({ amount: 300000, rate: 3, mode: "term", termYears: 30, startDate: "2024-01-01" });
+  const stepped = amortization({ amount: 300000, rate: 3, mode: "term", termYears: 30, startDate: "2024-01-01",
+    rateSteps: [{ date: "2034-01-01", rate: 5 }] });
+  assert.ok(stepped.totalInterest > flat.totalInterest);
+  assert.equal(stepped.monthlyPayment, flat.monthlyPayment); // installment held; term/Tilgung adjust
+  assert.ok(Array.isArray(stepped.yearly) && stepped.yearly.length > 0);
+});
+
+test("amortization rateSteps: no steps is identical to a single-rate run", () => {
+  const a = amortization({ amount: 200000, rate: 4, mode: "term", termYears: 20, startDate: "2024-01-01", detail: "monthly" });
+  const b = amortization({ amount: 200000, rate: 4, mode: "term", termYears: 20, startDate: "2024-01-01", detail: "monthly", rateSteps: [] });
+  assert.equal(a.totalInterest, b.totalInterest);
+  assert.equal(a.schedule.length, b.schedule.length);
 });
 
 test("loanPayoff: an extra €200/mo saves time and interest", () => {
@@ -266,4 +282,34 @@ test("vat: adds tax to a net price, and extracts it from a gross price", () => {
   const extract = vat(119, 19, true);
   assert.equal(extract.net, 100);
   assert.equal(extract.tax, 19);
+});
+
+test("amortization detail: summary (default) omits the monthly schedule but keeps yearly + totals", () => {
+  const a = amortization({ amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01" });
+  assert.equal(a.schedule, undefined);
+  assert.ok(Array.isArray(a.yearly) && a.yearly.length > 0);
+  assert.equal(a.payments, 360);
+  assert.equal(a.monthlyPayment, 599.55);
+});
+
+test("amortization detail: monthly returns the schedule with pagination metadata", () => {
+  const a = amortization({ amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01", detail: "monthly", offset: 0, limit: 12 });
+  assert.equal(a.schedule.length, 12);
+  assert.equal(a.scheduleTotal, 360);
+  assert.equal(a.nextOffset, 12);
+});
+
+test("amortization detail: monthly without a limit returns the whole schedule", () => {
+  const a = amortization({ amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01", detail: "monthly" });
+  assert.equal(a.schedule.length, 360);
+  assert.equal(a.nextOffset, null);
+});
+
+test("scheduleByYear: buckets schedule rows into per-year totals that sum back", () => {
+  const a = amortization({ amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01", detail: "monthly" });
+  const yrs = scheduleByYear(a.schedule);
+  assert.equal(yrs[0].year, 2020);
+  near(yrs.reduce((s, y) => s + y.interest, 0), a.totalInterest, 1); // sums back to total
+  assert.ok(yrs[0].endBalance < 100000);
+  assert.equal(yrs[yrs.length - 1].endBalance, 0); // paid off by the end
 });

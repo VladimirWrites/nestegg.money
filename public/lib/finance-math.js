@@ -426,26 +426,91 @@ export function vat(amount, ratePct, inclusive = false) {
 
 /* ---------- loan summaries (compositions over the existing schedule engine) ---------- */
 
+// Aggregate a monthly schedule into per-calendar-year totals — a compact view for agents and
+// UIs that avoids returning hundreds of monthly rows. endBalance is the balance at year end.
+export function scheduleByYear(schedule) {
+  const out = [];
+  const idx = new Map();
+  for (const row of (schedule || [])) {
+    const year = new Date(row.date).getUTCFullYear();
+    let y = idx.get(year);
+    if (!y) { y = { year, interest: 0, principal: 0, extra: 0, payments: 0, endBalance: 0 }; idx.set(year, y); out.push(y); }
+    y.interest = round2(y.interest + (row.interest || 0));
+    y.principal = round2(y.principal + (row.principal || 0));
+    y.extra = round2(y.extra + (row.extra || 0));
+    if (row.type === "payment") y.payments += 1;
+    y.endBalance = row.balance;
+  }
+  return out;
+}
+
 // Amortization schedule + summary for a loan object:
 // { amount, rate (annual %), mode: "term"|"payment", termYears|payment, startDate,
 //   extra: [{date, amount}], fixedUntil? }.
 export function amortization(loan) {
+  const steps = (loan.rateSteps || [])
+    .map((s) => ({ from: parseDate(s.date || s.from), rate: +s.rate || 0 }))
+    .filter((s) => s.from).sort((a, b) => a.from - b.from);
+  if (steps.length) return amortizationStepped(loan, steps);
   const { M, n } = loanTerms(loan);
   const schedule = buildSchedule(loan);
+  return summarizeSchedule(loan, schedule, M, isFinite(n) ? n : null);
+}
+
+// Build the return object from a schedule. detail controls output size: summary/yearly (default)
+// stay compact (yearly is always present); monthly returns the full row list, paginated with
+// offset/limit. Shared by the single-rate and multi-rate paths.
+function summarizeSchedule(loan, schedule, monthlyPayment, scheduledMonths) {
   const pays = schedule.filter((r) => r.type === "payment");
   const extras = schedule.filter((r) => r.type === "extra");
   const totalInterest = round2(pays.reduce((a, r) => a + (r.interest || 0), 0));
   const totalPaid = round2(pays.reduce((a, r) => a + (r.payment || 0), 0) + extras.reduce((a, r) => a + (r.extra || 0), 0));
   const last = schedule[schedule.length - 1];
-  return {
-    monthlyPayment: round2(M),
-    scheduledMonths: isFinite(n) ? n : null,
+  const base = {
+    monthlyPayment: round2(monthlyPayment),
+    scheduledMonths,
     payments: pays.length,
     totalInterest,
     totalPaid,
     payoffDate: last ? last.date : null,
-    schedule,
+    yearly: scheduleByYear(schedule),
   };
+  if ((loan.detail || "summary") !== "monthly") return base;
+  const total = schedule.length;
+  const offset = Math.max(0, Math.round(+loan.offset || 0));
+  const limit = loan.limit == null ? total : Math.max(0, Math.round(+loan.limit || 0));
+  const slice = schedule.slice(offset, offset + limit);
+  const end = offset + slice.length;
+  return { ...base, schedule: slice, scheduleTotal: total, nextOffset: end < total ? end : null };
+}
+
+// Multi-rate loan (e.g. a German Zinsbindung followed by an Anschlussfinanzierung): the
+// installment from the initial rate/term is held, and at each step date the outstanding balance
+// continues at the new rate. Composed by re-running the shared engine per rate segment — the
+// site engine in loan.js is untouched.
+function amortizationStepped(loan, steps) {
+  const { M } = loanTerms(loan);
+  const payment = round2(M);
+  let segStart = loan.startDate, segRate = +loan.rate || 0, bal = +loan.amount || 0;
+  const rows = [];
+  for (let s = 0; s <= steps.length; s++) {
+    const stopAt = s < steps.length ? steps[s].from : null;
+    const startD = parseDate(segStart);
+    // Only the extras that fall inside this segment, so they aren't double-applied downstream.
+    const extra = (loan.extra || []).filter((e) => {
+      const d = parseDate(e.date);
+      return d && d >= startD && (!stopAt || d < stopAt);
+    });
+    const seg = buildSchedule({ amount: bal, rate: segRate, mode: "payment", payment, startDate: segStart, fixedUntil: loan.fixedUntil, extra });
+    const kept = stopAt ? seg.filter((r) => r.date < stopAt) : seg;
+    rows.push(...kept);
+    const endBalance = kept.length ? kept[kept.length - 1].balance : bal;
+    if (!stopAt || endBalance <= 0.005) break;
+    bal = endBalance;
+    segStart = new Date(stopAt).toISOString().slice(0, 10);
+    segRate = steps[s].rate;
+  }
+  return summarizeSchedule(loan, rows, payment, null);
 }
 
 // Effect of an extra fixed monthly payment: months and interest saved vs the baseline.

@@ -9,6 +9,7 @@
 // registry) as stateless calculators. Pure: no storage, no auth, no live prices, no FX lookup.
 import { CALCULATORS, CORS } from "./calculators.js";
 import { mcpRoute } from "./mcp.js";
+import { validateArgs } from "./validate.js";
 
 function json(obj, status = 200, ttl = 0) {
   return new Response(JSON.stringify(obj), {
@@ -194,6 +195,8 @@ async function calcRoute(request, pathname) {
   let body;
   try { body = await request.json(); } catch (e) { return calcJson({ error: "invalid JSON body" }, 400); }
   if (!body || typeof body !== "object") return calcJson({ error: "body must be a JSON object" }, 400);
+  const v = validateArgs(c.inputSchema, body);
+  if (!v.ok) return calcJson({ error: "invalid arguments", detail: v.errors.join("; ") }, 400);
   try { return calcJson(c.run(body)); }
   catch (e) { return calcJson({ error: "calculation failed", detail: String((e && e.message) || e) }, 400); }
 }
@@ -229,7 +232,7 @@ export default {
     }
 
     if (pathname === "/mcp" || pathname === "/mcp/") {
-      return mcpRoute(request);
+      return mcpRoute(request, env);
     }
 
     // Host/path routing: marketing landing at the root domain, app at the dashboard
