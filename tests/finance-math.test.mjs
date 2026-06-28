@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   amortization, loanPayoff, futureValue, futureValueOfContributions, cagr,
   savingsRate, fxConvert, depreciate, straightLineDepreciation,
+  fireNumber, requiredContribution, inflationAdjust, effectiveRate,
+  npv, irr, refiBreakeven, emergencyFund,
 } from "../public/lib/finance-math.js";
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps, `${a} !~= ${b}`);
@@ -52,4 +54,88 @@ test("depreciate: €20k losing 15%/yr for 3y ~= €12,282.50 (app compounding m
 test("straightLineDepreciation: 20k -> 2k salvage over 10y, 3y in = 14,600", () => {
   assert.equal(straightLineDepreciation(20000, 2000, 10, 3), 14600);
   assert.equal(straightLineDepreciation(20000, 2000, 10, 99), 2000); // floored at salvage
+});
+
+/* ---------- new calculators ---------- */
+
+test("fireNumber: 40k spend at the default 4% rule -> €1,000,000 target (25x)", () => {
+  const f = fireNumber({ annualSpend: 40000 });
+  assert.equal(f.target, 1000000);
+  assert.equal(f.gap, 1000000);
+  assert.equal(f.yearsToFI, null); // no contribution and no growth -> unreachable
+});
+
+test("fireNumber: gap floors at 0 once the nest egg covers the target", () => {
+  const f = fireNumber({ annualSpend: 40000, currentNestEgg: 1200000 });
+  assert.equal(f.gap, 0);
+  assert.equal(f.yearsToFI, 0);
+});
+
+test("fireNumber: €50k/yr with no growth reaches €1M in exactly 20 years", () => {
+  const f = fireNumber({ annualSpend: 40000, annualContribution: 50000, annualRatePct: 0 });
+  assert.equal(f.yearsToFI, 20);
+});
+
+test("fireNumber: growth reaches the target sooner than no growth", () => {
+  const flat = fireNumber({ annualSpend: 40000, annualContribution: 50000, annualRatePct: 0 });
+  const grown = fireNumber({ annualSpend: 40000, annualContribution: 50000, annualRatePct: 7 });
+  assert.ok(grown.yearsToFI < flat.yearsToFI);
+});
+
+test("requiredContribution: inverse of futureValueOfContributions round-trips to €100/mo", () => {
+  near(requiredContribution(1268.250301, 12, 12, 0).monthly, 100, 1e-2);
+});
+
+test("requiredContribution: a starting balance lowers the contribution needed", () => {
+  const none = requiredContribution(1268.250301, 12, 12, 0).monthly;
+  const some = requiredContribution(1268.250301, 12, 12, 500).monthly;
+  assert.ok(some < none);
+});
+
+test("inflationAdjust: €1000 nominal at 3% for 10y ~= €744.09 real", () => {
+  near(inflationAdjust(1000, 3, 10).value, 744.0939, 1e-3);
+});
+
+test("inflationAdjust: toNominal reverses the deflation", () => {
+  near(inflationAdjust(744.0939, 3, 10, true).value, 1000, 1e-3);
+});
+
+test("effectiveRate: 12% nominal compounded monthly ~= 12.6825% APY", () => {
+  near(effectiveRate(12, 12).effectiveRatePct, 12.68250301, 1e-6);
+});
+
+test("effectiveRate: toNominal recovers the nominal rate from the APY", () => {
+  near(effectiveRate(12.68250301, 12, true).nominalRatePct, 12, 1e-6);
+});
+
+test("npv: [-1000, 500, 500, 500] discounted at 10% ~= €243.43", () => {
+  near(npv([-1000, 500, 500, 500], 10).npv, 243.4259954, 1e-3);
+});
+
+test("irr: [-1000, 500, 500, 500] solves to a rate that zeroes the NPV", () => {
+  const r = irr([-1000, 500, 500, 500]).irrPct;
+  assert.ok(r > 23 && r < 24);
+  near(npv([-1000, 500, 500, 500], r).npv, 0, 1e-2);
+});
+
+test("irr: a stream that never crosses zero returns null", () => {
+  assert.equal(irr([100, 200, 300]).irrPct, null);
+});
+
+test("refiBreakeven: €3000 cost, €150/mo saved -> 20 months, €15k lifetime over 120mo", () => {
+  const r = refiBreakeven(3000, 1500, 1350, 120);
+  assert.equal(r.monthlySaving, 150);
+  assert.equal(r.breakevenMonths, 20);
+  assert.equal(r.lifetimeSaving, 15000);
+});
+
+test("refiBreakeven: a costlier new payment never breaks even", () => {
+  const r = refiBreakeven(3000, 1350, 1500);
+  assert.equal(r.monthlySaving, -150);
+  assert.equal(r.breakevenMonths, null);
+});
+
+test("emergencyFund: €12k liquid against €3k/mo expenses = 4 months", () => {
+  assert.equal(emergencyFund(12000, 3000).months, 4);
+  assert.equal(emergencyFund(12000, 0).months, null); // guard
 });

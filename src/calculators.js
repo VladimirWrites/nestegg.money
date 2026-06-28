@@ -4,6 +4,8 @@
 import {
   amortization, loanPayoff, futureValue, futureValueOfContributions, cagr,
   savingsRate, fxConvert, depreciate, straightLineDepreciation,
+  fireNumber, requiredContribution, inflationAdjust, effectiveRate,
+  npv, irr, refiBreakeven, emergencyFund,
 } from "../public/lib/finance-math.js";
 
 // CORS is open: the calculators carry no secrets and read no user data.
@@ -16,6 +18,8 @@ export const CORS = {
 
 const num = (description) => ({ type: "number", description });
 const str = (description) => ({ type: "string", description });
+const bool = (description) => ({ type: "boolean", description });
+const numArray = (description) => ({ type: "array", description, items: { type: "number" } });
 
 // Shared loan input shape (amortization + loan-payoff).
 const loanProps = {
@@ -80,5 +84,78 @@ export const CALCULATORS = {
     description: "Straight-line depreciation: value falling evenly to a salvage value over a useful life.",
     inputSchema: obj({ value: num("Starting value."), salvage: num("Salvage value."), usefulYears: num("Useful life in years."), yearsElapsed: num("Years elapsed.") }, ["value", "salvage", "usefulYears", "yearsElapsed"]),
     run: (a) => ({ value: straightLineDepreciation(a.value, a.salvage, a.usefulYears, a.yearsElapsed) }),
+  },
+  "fire-number": {
+    description: "FIRE target nest egg from annual spend and a safe withdrawal rate (default 4%), plus the gap from today and the years to reach it given optional savings and growth. No advice.",
+    inputSchema: obj({
+      annualSpend: num("Yearly spending the nest egg must cover."),
+      withdrawalRatePct: num("Safe withdrawal rate in percent (default 4 = the 4% rule)."),
+      currentNestEgg: num("Optional. Amount already saved (default 0)."),
+      annualContribution: num("Optional. Amount saved per year (default 0)."),
+      annualRatePct: num("Optional. Annual portfolio growth in percent (default 0)."),
+    }, ["annualSpend"]),
+    run: (a) => fireNumber(a),
+  },
+  "required-contribution": {
+    description: "Inverse of contributions: the fixed monthly amount needed to reach a target future value over a number of months, given an optional starting balance.",
+    inputSchema: obj({
+      targetValue: num("Future value goal."),
+      annualRatePct: num("Annual growth rate in percent."),
+      months: num("Number of months."),
+      presentValue: num("Optional. Starting balance (default 0)."),
+    }, ["targetValue", "annualRatePct", "months"]),
+    run: (a) => requiredContribution(a.targetValue, a.annualRatePct, a.months, a.presentValue || 0),
+  },
+  "inflation-adjust": {
+    description: "Convert a nominal amount to today's purchasing power (real), or with toNominal inflate a real amount forward, at a given annual inflation rate.",
+    inputSchema: obj({
+      amount: num("Amount to adjust."),
+      inflationRatePct: num("Annual inflation rate in percent."),
+      years: num("Number of years."),
+      toNominal: bool("false (default) deflates nominal to real; true inflates real to nominal."),
+    }, ["amount", "inflationRatePct", "years"]),
+    run: (a) => inflationAdjust(a.amount, a.inflationRatePct, a.years, !!a.toNominal),
+  },
+  "effective-rate": {
+    description: "Convert a nominal annual rate to the effective annual rate (APY) for a compounding frequency, or with toNominal recover the nominal rate from an APY.",
+    inputSchema: obj({
+      ratePct: num("The rate in percent (nominal, or effective when toNominal is true)."),
+      periodsPerYear: num("Compounding periods per year (12 monthly, 365 daily)."),
+      toNominal: bool("false (default) returns the effective rate; true returns the nominal rate."),
+    }, ["ratePct", "periodsPerYear"]),
+    run: (a) => effectiveRate(a.ratePct, a.periodsPerYear, !!a.toNominal),
+  },
+  "npv": {
+    description: "Net present value of a cashflow series (index 0 is today; outflows negative) discounted at a per-period rate.",
+    inputSchema: obj({
+      cashflows: numArray("Cashflows by period, starting at period 0. Outflows are negative."),
+      discountRatePct: num("Discount rate per period in percent."),
+    }, ["cashflows", "discountRatePct"]),
+    run: (a) => npv(a.cashflows, a.discountRatePct),
+  },
+  "irr": {
+    description: "Internal rate of return: the per-period rate that zeroes the NPV of a cashflow series. Returns a percent, or null when the series never crosses zero.",
+    inputSchema: obj({
+      cashflows: numArray("Cashflows by period, starting at period 0. Outflows are negative."),
+    }, ["cashflows"]),
+    run: (a) => irr(a.cashflows),
+  },
+  "refi-breakeven": {
+    description: "Refinance break-even: monthly saving, whole months to recoup closing costs, and (if remainingMonths given) the net saving over the remaining term.",
+    inputSchema: obj({
+      closingCosts: num("Upfront cost to refinance."),
+      currentPayment: num("Current monthly payment."),
+      newPayment: num("New monthly payment after refinancing."),
+      remainingMonths: num("Optional. Months left on the loan, for the lifetime saving."),
+    }, ["closingCosts", "currentPayment", "newPayment"]),
+    run: (a) => refiBreakeven(a.closingCosts, a.currentPayment, a.newPayment, a.remainingMonths == null ? null : a.remainingMonths),
+  },
+  "emergency-fund": {
+    description: "Months of runway: liquid savings divided by monthly expenses.",
+    inputSchema: obj({
+      liquidSavings: num("Cash and liquid savings on hand."),
+      monthlyExpenses: num("Total monthly expenses."),
+    }, ["liquidSavings", "monthlyExpenses"]),
+    run: (a) => emergencyFund(a.liquidSavings, a.monthlyExpenses),
   },
 };

@@ -35,6 +35,18 @@ test("POST calculators return the Phase-1 vectors", async () => {
   assert.ok(p.monthsSaved > 0 && p.interestSaved > 0);
 });
 
+test("the new calculators are reachable over /api/calc/* too", async () => {
+  let r = await call("POST", "/api/calc/fire-number", { annualSpend: 40000 });
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).target, 1000000);
+
+  r = await call("POST", "/api/calc/npv", { cashflows: [-1000, 500, 500, 500], discountRatePct: 10 });
+  assert.ok(Math.abs((await r.json()).npv - 243.4259954) < 1e-3);
+
+  r = await call("POST", "/api/calc/emergency-fund", { liquidSavings: 12000, monthlyExpenses: 3000 });
+  assert.equal((await r.json()).months, 4);
+});
+
 test("CORS preflight, unknown calc, wrong method, and bad body are handled", async () => {
   assert.equal((await call("OPTIONS", "/api/calc/cagr")).status, 204);
   assert.equal((await call("POST", "/api/calc/nope", {})).status, 404);

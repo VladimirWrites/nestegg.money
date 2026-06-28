@@ -79,3 +79,68 @@ Value falling evenly from `value` to `salvage` over a useful life.
 - Inputs: `value`, `salvage`, `usefulYears`, `yearsElapsed`.
 - Output: `value - (value - salvage) * min(yearsElapsed, usefulYears) / usefulYears`, floored at `salvage`.
 - Rounding: none.
+
+## fireNumber
+
+FIRE target nest egg and the path to it. Endpoint name `fire-number`.
+
+- Inputs: `annualSpend`, optional `withdrawalRatePct` (default 4, the 4% rule), optional `currentNestEgg` (default 0), optional `annualContribution` (default 0), optional `annualRatePct` (default 0).
+- Outputs: `target` (`annualSpend / (withdrawalRatePct/100)`, e.g. 25× spend at 4%), `gap` (`max(0, target - currentNestEgg)`), `yearsToFI`.
+- Formula: `yearsToFI` solves the ordinary-annuity growth of `currentNestEgg` plus `annualContribution`, `target = currentNestEgg*(1+r)^t + annualContribution*((1+r)^t - 1)/r` with `r = annualRatePct/100`. It is `0` when the gap is already closed, and `null` when the target is unreachable (no contribution and no growth).
+- Rounding: `target` and `gap` to cents; `yearsToFI` to two decimals.
+
+## requiredContribution
+
+Inverse of contributions: the monthly amount needed to reach a target. Endpoint name `required-contribution`.
+
+- Inputs: `targetValue`, `annualRatePct`, `months`, optional `presentValue` (default 0).
+- Output: `monthly`, the fixed end-of-month contribution such that `presentValue*(1+i)^n + monthly*((1+i)^n - 1)/i = targetValue`, with `i = annualRatePct/100/12` and `n = months`. Returns `null` for a non-positive horizon. Same annuity-immediate convention as `futureValueOfContributions`.
+- Rounding: cents.
+
+## inflationAdjust
+
+Nominal-to-real conversion. Endpoint name `inflation-adjust`.
+
+- Inputs: `amount`, `inflationRatePct`, `years`, optional `toNominal` (default false).
+- Output: `value`. Deflating (default): `amount / (1 + inflationRatePct/100)^years`. With `toNominal` true: `amount * (1 + inflationRatePct/100)^years`.
+- Rounding: none (raw, so deflate/inflate round-trips exactly).
+
+## effectiveRate
+
+Nominal annual rate to effective annual rate (APY) and back. Endpoint name `effective-rate`.
+
+- Inputs: `ratePct`, `periodsPerYear`, optional `toNominal` (default false).
+- Output: default `effectiveRatePct = ((1 + ratePct/100/periodsPerYear)^periodsPerYear - 1) * 100`. With `toNominal` true: `nominalRatePct = periodsPerYear * ((1 + ratePct/100)^(1/periodsPerYear) - 1) * 100`.
+- Rounding: none.
+
+## npv
+
+Net present value of a cashflow series.
+
+- Inputs: `cashflows` (array; index 0 is today, outflows negative), `discountRatePct` (per period).
+- Output: `npv = sum over t of cashflows[t] / (1 + discountRatePct/100)^t`.
+- Rounding: none.
+
+## irr
+
+Internal rate of return.
+
+- Inputs: `cashflows` (array; index 0 is today, outflows negative).
+- Output: `irrPct`, the per-period rate that zeroes the NPV, found by bisection over (-99.99%, 1000%). Returns `null` when the NPV never changes sign across that range (for example an all-positive stream).
+- Rounding: none.
+
+## refiBreakeven
+
+Refinance break-even. Endpoint name `refi-breakeven`.
+
+- Inputs: `closingCosts`, `currentPayment`, `newPayment`, optional `remainingMonths`.
+- Outputs: `monthlySaving` (`currentPayment - newPayment`), `breakevenMonths` (`ceil(closingCosts / monthlySaving)`, or `null` when the new payment does not save money), `lifetimeSaving` (`monthlySaving * remainingMonths - closingCosts` when `remainingMonths` is given, else `null`).
+- Rounding: `monthlySaving` and `lifetimeSaving` to cents; `breakevenMonths` is a whole number of months.
+
+## emergencyFund
+
+Months of runway. Endpoint name `emergency-fund`.
+
+- Inputs: `liquidSavings`, `monthlyExpenses`.
+- Output: `months = liquidSavings / monthlyExpenses`. Returns `null` when expenses are not positive.
+- Rounding: two decimals.
