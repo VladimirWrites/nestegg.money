@@ -7,6 +7,8 @@ import {
   fireNumber, requiredContribution, inflationAdjust, effectiveRate,
   npv, irr, refiBreakeven, emergencyFund,
   mortgageAffordability, debtPayoff, portfolioLongevity,
+  presentValue, requiredReturn, yieldToMaturity, taxFromBrackets,
+  marginMarkup, compoundInterest,
 } from "../public/lib/finance-math.js";
 
 // CORS is open: the calculators carry no secrets and read no user data.
@@ -197,5 +199,72 @@ export const CALCULATORS = {
       withdrawalGrowthPct: num("Optional. Yearly step-up of the withdrawal in percent (default 0)."),
     }, ["balance", "annualWithdrawal", "annualRatePct"]),
     run: (a) => portfolioLongevity(a),
+  },
+  "present-value": {
+    description: "Present value of a single future amount discounted annually. The inverse of future-value.",
+    inputSchema: obj({
+      futureAmount: num("Amount received in the future."),
+      annualRatePct: num("Annual discount rate in percent."),
+      years: num("Number of years until the amount is received."),
+    }, ["futureAmount", "annualRatePct", "years"]),
+    run: (a) => presentValue(a.futureAmount, a.annualRatePct, a.years),
+  },
+  "required-return": {
+    description: "Annual return needed to grow a starting value to a target over a number of years, optionally with a fixed annual contribution. With no contribution this equals CAGR. Returns a percent, or null when unreachable.",
+    inputSchema: obj({
+      begin: num("Starting value."),
+      end: num("Target ending value."),
+      years: num("Number of years."),
+      annualContribution: num("Optional. Amount added each year (default 0)."),
+    }, ["begin", "end", "years"]),
+    run: (a) => requiredReturn(a.begin, a.end, a.years, a.annualContribution || 0),
+  },
+  "yield-to-maturity": {
+    description: "Bond yield to maturity: the nominal annual yield that prices a bond at the given price, with periodic coupons and face returned at maturity. Solved numerically. Returns a percent, or null.",
+    inputSchema: obj({
+      price: num("Current bond price."),
+      faceValue: num("Face (par) value repaid at maturity."),
+      couponRatePct: num("Annual coupon rate in percent of face."),
+      years: num("Years to maturity."),
+      periodsPerYear: num("Coupon periods per year (default 2 = semiannual)."),
+    }, ["price", "faceValue", "couponRatePct", "years"]),
+    run: (a) => yieldToMaturity(a.price, a.faceValue, a.couponRatePct, a.years, a.periodsPerYear == null ? 2 : a.periodsPerYear),
+  },
+  "tax-from-brackets": {
+    description: "Progressive tax from caller-supplied brackets. No jurisdiction, year, or rates are baked in: pass the brackets yourself. Returns total tax, effective rate, and marginal rate.",
+    inputSchema: obj({
+      income: num("Taxable income."),
+      brackets: {
+        type: "array",
+        description: "Ordered tax bands. The final band may omit upTo to run to infinity.",
+        items: {
+          type: "object",
+          properties: { upTo: num("Upper bound of this band (omit on the top band)."), ratePct: num("Marginal rate for this band in percent.") },
+          required: ["ratePct"],
+        },
+      },
+    }, ["income", "brackets"]),
+    run: (a) => taxFromBrackets(a.income, a.brackets),
+  },
+  "margin-markup": {
+    description: "Convert between margin and markup. Supply any one of cost/price plus one of marginPct/markupPct (or both cost and price); returns cost, price, profit, marginPct, and markupPct.",
+    inputSchema: obj({
+      cost: num("Unit cost."),
+      price: num("Selling price."),
+      marginPct: num("Profit as a percent of price."),
+      markupPct: num("Profit as a percent of cost."),
+    }, []),
+    run: (a) => marginMarkup(a),
+  },
+  "compound-interest": {
+    description: "Compound growth at any frequency, with an optional contribution each period (paid at period end). Generalizes future-value (periodsPerYear 1) and contributions (periodsPerYear 12).",
+    inputSchema: obj({
+      principal: num("Starting amount."),
+      annualRatePct: num("Annual growth rate in percent."),
+      years: num("Number of years."),
+      periodsPerYear: num("Compounding periods per year (default 1)."),
+      contributionPerPeriod: num("Optional. Amount added each period (default 0)."),
+    }, ["principal", "annualRatePct", "years"]),
+    run: (a) => compoundInterest(a.principal, a.annualRatePct, a.years, a.periodsPerYear == null ? 1 : a.periodsPerYear, a.contributionPerPeriod || 0),
   },
 };

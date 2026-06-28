@@ -272,6 +272,114 @@ export function portfolioLongevity({ balance, annualWithdrawal, annualRatePct, w
   return { years: null, sustainable: true };
 }
 
+/* ---------- discounting, rates, and pricing ---------- */
+
+// Present value of a single future amount discounted annually. The inverse of futureValue.
+// Raw value. Percent in.
+export function presentValue(futureAmount, annualRatePct, years) {
+  const r = (+annualRatePct || 0) / 100;
+  return { pv: (+futureAmount || 0) / Math.pow(1 + r, +years || 0) };
+}
+
+// Annual return needed to grow `begin` to `end` over `years`, optionally with a fixed annual
+// contribution. With no contribution this is exactly CAGR; with one it is solved by bisection
+// over (-99.99%, 1000%). Returns the rate in percent, or null when no rate bridges the two.
+export function requiredReturn(begin, end, years, annualContribution = 0) {
+  const P = +begin || 0, T = +end || 0, y = +years || 0, C = +annualContribution || 0;
+  if (!(y > 0)) return { ratePct: null };
+  if (C === 0) {
+    const g = cagr(P, T, y);
+    return { ratePct: g == null ? null : g * 100 };
+  }
+  const f = (r) => {
+    const g = Math.pow(1 + r, y);
+    const annuity = r === 0 ? C * y : C * (g - 1) / r;
+    return P * g + annuity - T;
+  };
+  let lo = -0.9999, hi = 10, flo = f(lo), fhi = f(hi);
+  if (!isFinite(flo) || !isFinite(fhi) || flo * fhi > 0) return { ratePct: null };
+  for (let k = 0; k < 200; k++) {
+    const mid = (lo + hi) / 2, fmid = f(mid);
+    if (fmid === 0) { lo = hi = mid; break; }
+    if (flo * fmid < 0) { hi = mid; fhi = fmid; } else { lo = mid; flo = fmid; }
+  }
+  return { ratePct: ((lo + hi) / 2) * 100 };
+}
+
+// Bond yield to maturity: the nominal annual yield (per-period rate times periodsPerYear) that
+// prices the bond at `price`. Coupons are faceValue*couponRatePct/periodsPerYear each period,
+// face is returned at maturity. Solved by bisection. Null when no yield prices it. Percents.
+export function yieldToMaturity(price, faceValue, couponRatePct, years, periodsPerYear = 2) {
+  const F = +faceValue || 0, m = +periodsPerYear || 0, n = Math.round((+years || 0) * m), pr = +price || 0;
+  if (m <= 0 || n <= 0) return { yieldPct: null };
+  const coupon = F * (+couponRatePct || 0) / 100 / m;
+  const f = (rp) => {
+    let v = -pr;
+    for (let t = 1; t <= n; t++) v += coupon / Math.pow(1 + rp, t);
+    v += F / Math.pow(1 + rp, n);
+    return v;
+  };
+  let lo = -0.9999, hi = 10, flo = f(lo), fhi = f(hi);
+  if (!isFinite(flo) || !isFinite(fhi) || flo * fhi > 0) return { yieldPct: null };
+  for (let k = 0; k < 200; k++) {
+    const mid = (lo + hi) / 2, fmid = f(mid);
+    if (fmid === 0) { lo = hi = mid; break; }
+    if (flo * fmid < 0) { hi = mid; fhi = fmid; } else { lo = mid; flo = fmid; }
+  }
+  return { yieldPct: ((lo + hi) / 2) * m * 100 };
+}
+
+// Progressive tax from caller-supplied brackets (no jurisdiction or year baked in). Each bracket
+// is { upTo, ratePct }; the final bracket may omit upTo (or set it null) to run to infinity.
+// Returns total tax, effective rate, and the marginal rate the income lands in. Percents.
+export function taxFromBrackets(income, brackets) {
+  const inc = +income || 0;
+  const bands = (Array.isArray(brackets) ? brackets : [])
+    .map((b) => ({ upTo: b && b.upTo != null ? +b.upTo : Infinity, ratePct: +(b && b.ratePct) || 0 }))
+    .sort((a, b) => a.upTo - b.upTo);
+  let tax = 0, lower = 0, marginalRatePct = 0;
+  for (const band of bands) {
+    if (inc <= lower) break;
+    const taxable = Math.min(inc, band.upTo) - lower;
+    if (taxable > 0) { tax += taxable * band.ratePct / 100; marginalRatePct = band.ratePct; }
+    lower = band.upTo;
+  }
+  tax = round2(tax);
+  return { tax, effectiveRatePct: inc > 0 ? tax / inc * 100 : 0, marginalRatePct };
+}
+
+// Margin/markup converter. Supply any one of {cost, price} plus one of {marginPct, markupPct}
+// (or both of cost+price) and it fills in the rest. margin = profit/price; markup = profit/cost.
+// Money via round2; percentages raw.
+export function marginMarkup({ cost, price, marginPct, markupPct } = {}) {
+  let c = cost != null ? +cost : null, p = price != null ? +price : null;
+  if (c != null && p == null) {
+    if (markupPct != null) p = c * (1 + (+markupPct) / 100);
+    else if (marginPct != null) p = c / (1 - (+marginPct) / 100);
+  } else if (p != null && c == null) {
+    if (markupPct != null) c = p / (1 + (+markupPct) / 100);
+    else if (marginPct != null) c = p * (1 - (+marginPct) / 100);
+  }
+  if (c == null || p == null) return { cost: null, price: null, marginPct: null, markupPct: null, profit: null };
+  const profit = p - c;
+  return {
+    cost: round2(c), price: round2(p), profit: round2(profit),
+    marginPct: p !== 0 ? profit / p * 100 : null,
+    markupPct: c !== 0 ? profit / c * 100 : null,
+  };
+}
+
+// Compound growth at an arbitrary frequency, with an optional contribution each period (paid at
+// period end, like fvContributionsCore). Generalizes futureValue (periodsPerYear=1) and
+// futureValueOfContributions (periodsPerYear=12). Raw value. Percent in.
+export function compoundInterest(principal, annualRatePct, years, periodsPerYear = 1, contributionPerPeriod = 0) {
+  const m = +periodsPerYear || 0, n = Math.round((+years || 0) * m), i = m > 0 ? (+annualRatePct || 0) / 100 / m : 0;
+  const P = +principal || 0, C = +contributionPerPeriod || 0;
+  const g = Math.pow(1 + i, n);
+  const annuity = i === 0 ? C * n : C * (g - 1) / i;
+  return { value: P * g + annuity };
+}
+
 /* ---------- loan summaries (compositions over the existing schedule engine) ---------- */
 
 // Amortization schedule + summary for a loan object:

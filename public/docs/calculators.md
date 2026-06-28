@@ -169,3 +169,51 @@ How long a balance lasts under withdrawals. Endpoint name `portfolio-longevity`.
 - Inputs: `balance`, `annualWithdrawal` (first-year amount), `annualRatePct`, optional `withdrawalGrowthPct` (default 0, steps the withdrawal up each year).
 - Output: `years` (the year the balance is exhausted) and `sustainable`. Each year `balance = balance*(1 + annualRatePct/100) - withdrawal`, then the withdrawal grows. If the balance still stands after 200 years, `sustainable` is `true` and `years` is `null`.
 - Rounding: none (year count is an integer).
+
+## presentValue
+
+Present value of a single future amount. Endpoint name `present-value`. The inverse of `futureValue`.
+
+- Inputs: `futureAmount`, `annualRatePct`, `years`.
+- Output: `pv = futureAmount / (1 + annualRatePct/100)^years`.
+- Rounding: none.
+
+## requiredReturn
+
+Annual return needed to reach a target. Endpoint name `required-return`.
+
+- Inputs: `begin`, `end`, `years`, optional `annualContribution` (default 0).
+- Output: `ratePct`, the annual rate (percent) solving `begin*(1+r)^years + annualContribution*((1+r)^years - 1)/r = end`. With no contribution this equals `cagr * 100`. Solved by bisection over (-99.99%, 1000%); `null` when no rate bridges the values.
+- Rounding: none.
+
+## yieldToMaturity
+
+Bond yield to maturity. Endpoint name `yield-to-maturity`.
+
+- Inputs: `price`, `faceValue`, `couponRatePct` (annual, percent of face), `years`, optional `periodsPerYear` (default 2 = semiannual).
+- Output: `yieldPct`, the nominal annual yield (`per-period rate * periodsPerYear`) that prices the bond. Coupons are `faceValue*couponRatePct/100/periodsPerYear` per period, face returned at maturity; solved by bisection. `null` when no yield prices it.
+- Rounding: none.
+
+## taxFromBrackets
+
+Progressive tax from caller-supplied brackets. Endpoint name `tax-from-brackets`. No jurisdiction, year, or rates are baked in — pass the brackets yourself, the same way `fxConvert` takes the rate.
+
+- Inputs: `income`, `brackets` (ordered array of `{ upTo, ratePct }`; the final band may omit `upTo` to run to infinity).
+- Outputs: `tax` (sum over bands of the in-band amount times its rate), `effectiveRatePct` (`tax/income*100`), `marginalRatePct` (the rate of the band the income lands in).
+- Rounding: `tax` to cents.
+
+## marginMarkup
+
+Convert between margin and markup. Endpoint name `margin-markup`.
+
+- Inputs: any one of `cost`/`price` plus one of `marginPct`/`markupPct` (or both `cost` and `price`).
+- Outputs: `cost`, `price`, `profit` (`price - cost`), `marginPct` (`profit/price*100`), `markupPct` (`profit/cost*100`). Returns nulls when the inputs underdetermine the pair.
+- Rounding: money to cents; percentages raw.
+
+## compoundInterest
+
+Compound growth at any frequency. Endpoint name `compound-interest`. Generalizes `futureValue` (periodsPerYear 1) and `futureValueOfContributions` (periodsPerYear 12).
+
+- Inputs: `principal`, `annualRatePct`, `years`, optional `periodsPerYear` (default 1), optional `contributionPerPeriod` (default 0, paid at period end).
+- Output: `value = principal*(1+i)^n + contributionPerPeriod*((1+i)^n - 1)/i` with `i = annualRatePct/100/periodsPerYear` and `n = years*periodsPerYear`.
+- Rounding: none.

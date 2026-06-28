@@ -6,7 +6,7 @@ nestegg also exposes its deterministic finance math as stateless calculators tha
 
 ## Calculators
 
-- [Calculator reference](https://nestegg.money/docs/calculators.md): inputs, outputs, formula, and rounding for each calculator (loan amortization, loan payoff, future value, contributions, CAGR, savings rate, FX conversion, depreciation, FIRE number, required contribution, inflation adjustment, effective rate, NPV, IRR, refinance break-even, emergency fund, mortgage affordability, debt payoff, and portfolio longevity).
+- [Calculator reference](https://nestegg.money/docs/calculators.md): inputs, outputs, formula, and rounding for each calculator (loan amortization, loan payoff, future value, contributions, CAGR, savings rate, FX conversion, depreciation, FIRE number, required contribution, inflation adjustment, effective rate, NPV, IRR, refinance break-even, emergency fund, mortgage affordability, debt payoff, portfolio longevity, present value, required return, bond yield to maturity, progressive tax from brackets, margin/markup, and general compound interest).
 
 ## API
 

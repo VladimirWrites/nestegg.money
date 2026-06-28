@@ -51,6 +51,12 @@ test("the new calculators are reachable over /api/calc/* too", async () => {
 
   r = await call("POST", "/api/calc/mortgage-affordability", { annualIncome: 120000, dtiPct: 36, rate: 6, termYears: 30 });
   assert.equal((await r.json()).maxMonthlyPayment, 3600);
+
+  r = await call("POST", "/api/calc/tax-from-brackets", { income: 50000, brackets: [{ upTo: 10000, ratePct: 0 }, { upTo: 30000, ratePct: 20 }, { ratePct: 40 }] });
+  assert.equal((await r.json()).tax, 12000);
+
+  r = await call("POST", "/api/calc/present-value", { futureAmount: 1967.151357, annualRatePct: 7, years: 10 });
+  assert.ok(Math.abs((await r.json()).pv - 1000) < 1e-3);
 });
 
 test("CORS preflight, unknown calc, wrong method, and bad body are handled", async () => {

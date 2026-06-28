@@ -6,6 +6,8 @@ import {
   fireNumber, requiredContribution, inflationAdjust, effectiveRate,
   npv, irr, refiBreakeven, emergencyFund,
   mortgageAffordability, debtPayoff, portfolioLongevity, round2,
+  presentValue, requiredReturn, yieldToMaturity, taxFromBrackets,
+  marginMarkup, compoundInterest,
 } from "../public/lib/finance-math.js";
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps, `${a} !~= ${b}`);
@@ -191,4 +193,49 @@ test("portfolioLongevity: a rising withdrawal depletes no later than a flat one"
   const flat = portfolioLongevity({ balance: 1000000, annualWithdrawal: 100000, annualRatePct: 4 });
   const rising = portfolioLongevity({ balance: 1000000, annualWithdrawal: 100000, annualRatePct: 4, withdrawalGrowthPct: 5 });
   assert.ok(rising.years <= flat.years);
+});
+
+test("presentValue: the inverse of futureValue round-trips €1000", () => {
+  near(presentValue(futureValue(1000, 7, 10), 7, 10).pv, 1000, 1e-6);
+});
+
+test("requiredReturn: no contributions matches CAGR; contributions lower the bar", () => {
+  near(requiredReturn(1000, 2000, 10).ratePct, cagr(1000, 2000, 10) * 100, 1e-3);
+  const none = requiredReturn(1000, 2000, 10).ratePct;
+  const some = requiredReturn(1000, 2000, 10, 50).ratePct;
+  assert.ok(some < none);
+});
+
+test("yieldToMaturity: a par-priced bond yields its coupon; a discount bond yields more", () => {
+  near(yieldToMaturity(1000, 1000, 5, 10, 2).yieldPct, 5, 1e-2);
+  assert.ok(yieldToMaturity(900, 1000, 5, 10, 2).yieldPct > 5);
+});
+
+test("taxFromBrackets: progressive brackets on €50k -> €12k, 24% effective, 40% marginal", () => {
+  const t = taxFromBrackets(50000, [
+    { upTo: 10000, ratePct: 0 },
+    { upTo: 30000, ratePct: 20 },
+    { ratePct: 40 },
+  ]);
+  assert.equal(t.tax, 12000);
+  near(t.effectiveRatePct, 24, 1e-9);
+  assert.equal(t.marginalRatePct, 40);
+});
+
+test("marginMarkup: 50% markup on €100 cost -> €150 price, ~33.33% margin", () => {
+  const m = marginMarkup({ cost: 100, markupPct: 50 });
+  assert.equal(m.price, 150);
+  near(m.marginPct, 33.33, 1e-2);
+  assert.equal(m.profit, 50);
+});
+
+test("marginMarkup: a target margin implies cost and price", () => {
+  const m = marginMarkup({ cost: 100, marginPct: 20 });
+  assert.equal(m.price, 125);
+  near(m.markupPct, 25, 1e-9);
+});
+
+test("compoundInterest: annual matches futureValue; monthly contributions match the annuity", () => {
+  near(compoundInterest(1000, 7, 10, 1).value, futureValue(1000, 7, 10), 1e-6);
+  near(compoundInterest(0, 12, 1, 12, 100).value, futureValueOfContributions(100, 12, 12), 1e-6);
 });
