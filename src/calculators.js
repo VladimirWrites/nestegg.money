@@ -26,7 +26,7 @@ import {
 } from "../public/lib/finance-math.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.7.0";
+export const CALC_VERSION = "1.3.0";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
