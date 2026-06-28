@@ -110,8 +110,9 @@ no browser needed).
 
 The finance math is also exposed as **stateless calculators** any client — including AI
 agents — can call. They are pure functions of their inputs: no user data, no live prices, no
-FX or tax lookups (you pass the rate / statutory figures in), no auth, no storage. Nothing
-leaves the device that the agent runs on.
+FX or tax lookups (you pass the rate / statutory figures in), no auth. This is a remote
+service, so your inputs are sent to the server — but it stores nothing and logs no request
+bodies: each call is computed in memory and discarded.
 
 - **JSON API:** `POST https://nestegg.money/api/calc/<name>` (JSON in, JSON out).
   `GET /api/calc` lists them. See [`public/docs/calculators.md`](public/docs/calculators.md).

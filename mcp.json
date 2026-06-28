@@ -1,7 +1,7 @@
 {
   "name": "nestegg-calculators",
-  "description": "Deterministic personal-finance calculators (pure, no data leaves the device, no auth). Loan amortization, FIRE, DCF (NPV/IRR/YTM), German payroll, VAT, and more.",
-  "version": "1.1.0",
+  "description": "94 deterministic personal-finance calculators (pure, stateless, no auth, nothing stored): loans & mortgages, time value of money, investing & risk, bonds, options, retirement, real estate, business, tax, and everyday money.",
+  "version": "1.3.1",
   "homepage": "https://nestegg.money",
   "transport": { "type": "http", "url": "https://nestegg.money/mcp" }
 }
