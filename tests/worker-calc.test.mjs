@@ -26,6 +26,8 @@ test("POST calculators return the Phase-1 vectors", async () => {
   const a = await r.json();
   assert.equal(a.monthlyPayment, 599.55);
   assert.equal(a.payments, 360);
+  assert.equal(a.schedule, undefined);          // summary by default (no monthly blowup)
+  assert.ok(Array.isArray(a.yearly));
 
   r = await call("POST", "/api/calc/fx-convert", { amount: 100, rate: 1.1 });
   assert.ok(Math.abs((await r.json()).value - 110) < 1e-9);

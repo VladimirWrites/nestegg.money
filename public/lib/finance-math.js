@@ -455,15 +455,24 @@ export function amortization(loan) {
   const totalInterest = round2(pays.reduce((a, r) => a + (r.interest || 0), 0));
   const totalPaid = round2(pays.reduce((a, r) => a + (r.payment || 0), 0) + extras.reduce((a, r) => a + (r.extra || 0), 0));
   const last = schedule[schedule.length - 1];
-  return {
+  const base = {
     monthlyPayment: round2(M),
     scheduledMonths: isFinite(n) ? n : null,
     payments: pays.length,
     totalInterest,
     totalPaid,
     payoffDate: last ? last.date : null,
-    schedule,
+    yearly: scheduleByYear(schedule),
   };
+  // detail controls output size. summary/yearly (default) stay compact (yearly is always
+  // present); monthly returns the full row list, paginated with offset/limit.
+  if ((loan.detail || "summary") !== "monthly") return base;
+  const total = schedule.length;
+  const offset = Math.max(0, Math.round(+loan.offset || 0));
+  const limit = loan.limit == null ? total : Math.max(0, Math.round(+loan.limit || 0));
+  const slice = schedule.slice(offset, offset + limit);
+  const end = offset + slice.length;
+  return { ...base, schedule: slice, scheduleTotal: total, nextOffset: end < total ? end : null };
 }
 
 // Effect of an extra fixed monthly payment: months and interest saved vs the baseline.

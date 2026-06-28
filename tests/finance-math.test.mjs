@@ -268,6 +268,27 @@ test("vat: adds tax to a net price, and extracts it from a gross price", () => {
   assert.equal(extract.tax, 19);
 });
 
+test("amortization detail: summary (default) omits the monthly schedule but keeps yearly + totals", () => {
+  const a = amortization({ amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01" });
+  assert.equal(a.schedule, undefined);
+  assert.ok(Array.isArray(a.yearly) && a.yearly.length > 0);
+  assert.equal(a.payments, 360);
+  assert.equal(a.monthlyPayment, 599.55);
+});
+
+test("amortization detail: monthly returns the schedule with pagination metadata", () => {
+  const a = amortization({ amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01", detail: "monthly", offset: 0, limit: 12 });
+  assert.equal(a.schedule.length, 12);
+  assert.equal(a.scheduleTotal, 360);
+  assert.equal(a.nextOffset, 12);
+});
+
+test("amortization detail: monthly without a limit returns the whole schedule", () => {
+  const a = amortization({ amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01", detail: "monthly" });
+  assert.equal(a.schedule.length, 360);
+  assert.equal(a.nextOffset, null);
+});
+
 test("scheduleByYear: buckets schedule rows into per-year totals that sum back", () => {
   const a = amortization({ amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01", detail: "monthly" });
   const yrs = scheduleByYear(a.schedule);

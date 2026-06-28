@@ -45,8 +45,12 @@ const obj = (properties, required) => ({ type: "object", properties, required, a
 
 export const CALCULATORS = {
   "amortization": {
-    description: "Monthly loan amortization schedule and summary. Supports dated extra principal payments and a rate-fixed period. Returns the schedule plus totals; no advice.",
-    inputSchema: obj(loanProps, loanRequired),
+    description: "Monthly loan amortization schedule and summary. Supports dated extra principal payments and a rate-fixed period. detail controls output size: 'summary' (default) returns totals plus a per-year breakdown; 'monthly' returns the full schedule (paginate with offset/limit). Returns numbers and schedules; no advice.",
+    inputSchema: obj({ ...loanProps,
+      detail: { type: "string", enum: ["summary", "yearly", "monthly"], description: "Output size. summary (default): totals + yearly breakdown. monthly: full schedule (use offset/limit to paginate)." },
+      offset: num("Monthly schedule start index when detail=monthly (default 0)."),
+      limit: num("Max monthly rows when detail=monthly (default all)."),
+    }, loanRequired),
     run: (a) => amortization(a),
   },
   "loan-payoff": {
