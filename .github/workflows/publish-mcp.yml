@@ -33,4 +33,14 @@ jobs:
         run: ./mcp-publisher login github-oidc
 
       - name: Publish
-        run: ./mcp-publisher publish
+        run: |
+          set +e
+          out=$(./mcp-publisher publish 2>&1)
+          echo "$out"
+          if echo "$out" | grep -q "Successfully published"; then exit 0; fi
+          # A re-run without a version bump is expected — treat it as a no-op, not a failure.
+          if echo "$out" | grep -q "duplicate version"; then
+            echo "::notice::server.json version already published — nothing to do. Bump version to publish a new one."
+            exit 0
+          fi
+          exit 1
