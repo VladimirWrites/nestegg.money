@@ -2,7 +2,7 @@
 // sessions, no storage. Each calculator is one tool; logic lives in lib/finance-math.js via
 // the shared registry, so nothing is duplicated. A POST carries one JSON-RPC message (or a
 // batch) and gets a single JSON response; notifications get a 202 with no body.
-import { CALCULATORS, CORS } from "./calculators.js";
+import { CALCULATORS, CORS, CALC_VERSION } from "./calculators.js";
 import { validateArgs } from "./validate.js";
 import { RESOURCES, PROMPTS } from "./resources.js";
 
@@ -24,7 +24,7 @@ function handle(msg) {
       return rpc(id, {
         protocolVersion: (params && params.protocolVersion) || DEFAULT_PROTOCOL,
         capabilities: { tools: {}, resources: {}, prompts: {} },
-        serverInfo: { name: "nestegg-calculators", version: "1.0.0" },
+        serverInfo: { name: "nestegg-calculators", version: "1.0.0", calcVersion: CALC_VERSION },
         instructions: "Deterministic personal-finance calculators. Each tool is a pure function of its inputs: no user data, no live prices, no FX lookup (pass the rate as input). Returns numbers and schedules, never financial advice.",
       });
     case "ping":

@@ -14,6 +14,7 @@ test("initialize advertises the tools capability and server info", async () => {
   assert.equal(j.result.protocolVersion, "2025-06-18");
   assert.ok(j.result.capabilities.tools);
   assert.equal(j.result.serverInfo.name, "nestegg-calculators");
+  assert.ok(j.result.serverInfo.calcVersion);
 });
 
 test("tools/list returns all twenty-eight calculators with input schemas and read-only annotations", async () => {
