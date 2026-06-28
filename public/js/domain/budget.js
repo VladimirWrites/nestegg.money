@@ -22,18 +22,23 @@ export function salaryIncome() {
   return round2(sum);
 }
 
-// Sum of the monthly payment on every loan that still has a balance today, in the base currency.
-// Paid-off loans contribute nothing. Zero when there are no active loans.
-export function monthlyLoanOutflow() {
+// The monthly payment on each loan that still has a balance today, named by its asset, in the base
+// currency. Paid-off loans are omitted. Used to break the fixed outflow down by loan.
+export function loanOutflows() {
   const today = new Date();
-  let sum = 0;
+  const out = [];
   for (const a of (state.assets || [])) {
     if (!a.loan) continue;
     if (outstandingAt(a.loan, today) <= 0) continue;
     const { M } = loanTerms(a.loan);
-    if (M > 0) sum += convTo(M, a.loan.ccy || a.ccy || state.baseCcy, state.baseCcy);
+    if (M > 0) out.push({ id: a.id, name: a.name || "Loan", monthly: round2(convTo(M, a.loan.ccy || a.ccy || state.baseCcy, state.baseCcy)) });
   }
-  return round2(sum);
+  return out;
+}
+
+// Total monthly loan outflow (sum of the per-loan payments). Zero when there are no active loans.
+export function monthlyLoanOutflow() {
+  return round2(loanOutflows().reduce((s, l) => s + l.monthly, 0));
 }
 
 // The monthly budget summary: income (override or salary-derived), fixed loan outflow, total entered
@@ -45,5 +50,5 @@ export function budgetSummary() {
   const expenses = round2((b.expenses || []).reduce((s, e) => s + (+e.amount || 0), 0));
   const leftover = round2(income - fixed - expenses);
   const savingsRatePct = income > 0 ? leftover / income * 100 : null;
-  return { income, fixed, expenses, leftover, savingsRatePct };
+  return { income, fixed, expenses, leftover, savingsRatePct, loans: loanOutflows() };
 }

@@ -448,3 +448,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .bud-exp input:focus{outline:none;border-color:var(--amber)}
 .bud-exp-del{background:none;border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer;height:36px}
 .bud-exp-del:hover{color:var(--red);border-color:var(--red)}
+.bud-chart{display:flex;flex-direction:column;align-items:center;gap:10px;margin:6px 0 16px}
+.bud-chart svg{max-width:240px}
+.bud-reset{background:none;border:none;color:var(--amber);cursor:pointer;font:inherit;font-size:11px;text-decoration:underline;padding:0 2px}
+.bud-reset:hover{color:var(--amber2)}

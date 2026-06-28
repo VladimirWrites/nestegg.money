@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { setState } from "../public/js/domain/store.js";
-import { salaryIncome, monthlyLoanOutflow, budgetSummary } from "../public/js/domain/budget.js";
+import { salaryIncome, monthlyLoanOutflow, loanOutflows, budgetSummary } from "../public/js/domain/budget.js";
 
 const near = (a, b, eps = 1e-2) => assert.ok(Math.abs(a - b) <= eps, `${a} !~= ${b}`);
 
@@ -44,6 +44,15 @@ test("monthlyLoanOutflow: sums active loans' monthly payment, ignoring paid-off 
   near(monthlyLoanOutflow(), 1199.10, 1e-2); // paid-off loan adds nothing
   setState(base());
   assert.equal(monthlyLoanOutflow(), 0);
+});
+
+test("loanOutflows: one named entry per active loan, paid-off ones omitted", () => {
+  setState(base({ assets: [activeMortgage, paidOff] }));
+  const ls = loanOutflows();
+  assert.equal(ls.length, 1);
+  assert.equal(ls[0].name, "Home");
+  near(ls[0].monthly, 1199.10, 1e-2);
+  assert.equal(budgetSummary().loans.length, 1); // surfaced on the summary too
 });
 
 test("budgetSummary: leftover = income - fixed - expenses, with savings rate", () => {

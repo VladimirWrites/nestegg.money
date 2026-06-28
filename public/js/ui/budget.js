@@ -4,9 +4,50 @@
 import { $ } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
+import { PALETTE } from "../domain/constants.js";
 import { money, esc } from "../domain/money.js";
 import { budgetSummary, salaryIncome } from "../domain/budget.js";
+import { C, refreshPalette } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
+
+// Where the income goes: each loan, each expense, and the leftover — for the breakdown doughnut.
+function breakdownSegments(s) {
+  const segs = [];
+  (s.loans || []).forEach((l, i) => { if (l.monthly > 0) segs.push({ name: l.name || "Loan", v: l.monthly, color: PALETTE[(i + 1) % PALETTE.length] }); });
+  (state.budget && state.budget.expenses || []).forEach((e, i) => { const v = +e.amount || 0; if (v > 0) segs.push({ name: e.name || "Expense", v, color: PALETTE[(i + 4) % PALETTE.length] }); });
+  if (s.leftover > 0) segs.push({ name: "Left over", v: s.leftover, color: C.green });
+  return segs;
+}
+
+// Draw the breakdown as an SVG doughnut plus a legend. Redrawn on every change (cheap).
+function drawBudgetDonut(s) {
+  const svg = $("budgetDonut"); if (!svg) return;
+  refreshPalette();
+  svg.innerHTML = "";
+  const segs = breakdownSegments(s);
+  const total = segs.reduce((a, x) => a + x.v, 0);
+  const NS = "http://www.w3.org/2000/svg";
+  if (total > 0) {
+    const cx = 120, cy = 120, r = 82, sw = 30; let a = -Math.PI / 2;
+    segs.forEach((seg) => {
+      const f = seg.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0;
+      const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+      const p = document.createElementNS(NS, "path");
+      p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`);
+      p.setAttribute("fill", "none"); p.setAttribute("stroke", seg.color); p.setAttribute("stroke-width", sw);
+      svg.appendChild(p);
+      a = a2;
+    });
+    const t1 = document.createElementNS(NS, "text"); t1.setAttribute("x", cx); t1.setAttribute("y", cy - 4); t1.setAttribute("text-anchor", "middle"); t1.setAttribute("font-size", "10"); t1.setAttribute("fill", C.axis); t1.setAttribute("letter-spacing", "2"); t1.textContent = "MONTHLY";
+    const t2 = document.createElementNS(NS, "text"); t2.setAttribute("x", cx); t2.setAttribute("y", cy + 18); t2.setAttribute("text-anchor", "middle"); t2.setAttribute("font-size", "16"); t2.setAttribute("font-weight", "600"); t2.setAttribute("fill", C.ink); t2.textContent = money(total);
+    svg.appendChild(t1); svg.appendChild(t2);
+  }
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", total > 0 ? "Budget breakdown: " + segs.map((x) => x.name + " " + Math.round(x.v / total * 100) + "%").join(", ") : "Budget breakdown — add income or expenses to see it.");
+  const leg = $("budgetLegend"); if (leg) {
+    leg.innerHTML = segs.map((x) => `<div class="legrow"><span class="swatch" style="background:${x.color}"></span><span>${esc(x.name)}</span><span class="pct">${total > 0 ? (x.v / total * 100).toFixed(0) : 0}%</span><span class="amt num">${money(x.v)}</span></div>`).join("");
+  }
+}
 
 const bud = () => (state.budget || (state.budget = { incomeOverride: null, expenses: [] }));
 
@@ -20,6 +61,7 @@ function refreshTotals() {
   if (lo) lo.textContent = money(s.leftover);
   if (sv) sv.textContent = s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%";
   if (card) card.classList.toggle("neg", s.leftover < 0);
+  drawBudgetDonut(s);
 }
 
 function expenseRow(e) {
@@ -45,15 +87,22 @@ export function renderBudget() {
         <span class="v" id="budLeftover">${money(s.leftover)}</span>
         <span class="sub">savings rate <b id="budSavings">${s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%"}</b></span>
       </div>
+      <div class="bud-chart">
+        <svg id="budgetDonut" viewBox="0 0 240 240" width="220" height="220" aria-label="Budget breakdown"></svg>
+        <div class="chiplegend" id="budgetLegend"></div>
+      </div>
     </section>
 
     <div class="bud-rows">
       <div class="bud-row"><span class="bud-lbl">Income <span class="hint">latest salary month: ${money(auto)}</span></span><span class="bud-val" id="budIncome">${money(s.income)}</span></div>
       <div class="bud-row indent">
-        <span class="bud-lbl">Override monthly income</span>
+        <span class="bud-lbl">Override monthly income <button id="budUseSalary" class="bud-reset" type="button" title="Use the salary figure again">↺ use salary</button></span>
         <input id="budOverride" class="bud-input" type="number" inputmode="decimal" value="${b.incomeOverride == null ? "" : b.incomeOverride}" placeholder="auto (${money(auto)})" aria-label="Override monthly income">
       </div>
-      <div class="bud-row"><span class="bud-lbl">Loan payments <span class="hint">from your loans</span></span><span class="bud-val">− ${money(s.fixed)}</span></div>
+      ${(s.loans || []).length > 1
+        ? `<div class="bud-row"><span class="bud-lbl">Loan payments <span class="hint">from your loans</span></span><span class="bud-val">− ${money(s.fixed)}</span></div>`
+          + s.loans.map((l) => `<div class="bud-row indent"><span class="bud-lbl">${esc(l.name)}</span><span class="bud-val">− ${money(l.monthly)}</span></div>`).join("")
+        : `<div class="bud-row"><span class="bud-lbl">${(s.loans || []).length === 1 ? esc(s.loans[0].name) : "Loan payments"} <span class="hint">from your loans</span></span><span class="bud-val">− ${money(s.fixed)}</span></div>`}
 
       <div class="bud-exp-head">Monthly expenses</div>
       <div id="budExpList">${(b.expenses || []).map(expenseRow).join("") || `<div class="exhint">No expenses yet — add a few recurring ones below.</div>`}</div>
@@ -63,10 +112,16 @@ export function renderBudget() {
     <div class="controls"><button class="act ghost" id="budAddExp">+ Add expense</button></div>
   `;
 
-  // Override income: live, no rebuild.
+  // Override income: live, no rebuild (keeps focus while typing). Empty field = use salary.
   $("budOverride").oninput = (ev) => {
     const v = ev.target.value.trim();
     b.incomeOverride = v === "" ? null : (parseFloat(v) || 0);
+    scheduleSync(); refreshTotals();
+  };
+  // Explicit "use salary": clear the override and revert the field to auto, in place.
+  $("budUseSalary").onclick = () => {
+    b.incomeOverride = null;
+    const inp = $("budOverride"); if (inp) inp.value = "";
     scheduleSync(); refreshTotals();
   };
 
@@ -88,4 +143,6 @@ export function renderBudget() {
     const rows = document.querySelectorAll(".bud-exp-name");
     if (rows.length) rows[rows.length - 1].focus();
   };
+
+  drawBudgetDonut(s);
 }
