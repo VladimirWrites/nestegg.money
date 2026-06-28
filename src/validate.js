@@ -21,8 +21,12 @@ export function validateArgs(inputSchema, args) {
     if (a[key] === undefined || a[key] === null) errors.push(`missing required field: ${key}`);
   }
   for (const [key, spec] of Object.entries(props)) {
-    if (a[key] === undefined || a[key] === null) continue;
-    if (spec && spec.type && !typeOk(a[key], spec.type)) errors.push(`field ${key} must be ${spec.type}`);
+    const val = a[key];
+    if (val === undefined || val === null) continue;
+    if (!spec) continue;
+    if (spec.type && !typeOk(val, spec.type)) { errors.push(`field ${key} must be ${spec.type}`); continue; }
+    if (Array.isArray(spec.enum) && !spec.enum.includes(val)) errors.push(`field ${key} must be one of: ${spec.enum.join(", ")}`);
+    if (typeof spec.minimum === "number" && typeof val === "number" && val < spec.minimum) errors.push(`field ${key} must be >= ${spec.minimum}`);
   }
   return { ok: errors.length === 0, errors };
 }
