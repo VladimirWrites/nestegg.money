@@ -17,7 +17,7 @@
 <div class="legal">
   <a class="back" href="index.html">← Back to app</a>
   <h1>Privacy Policy</h1>
-  <div class="updated">Last updated: 20 June 2026</div>
+  <div class="updated">Last updated: 28 June 2026</div>
 
   <p>nestegg ("the app") is a personal net-worth tracker built to keep
   your financial data private. This policy explains exactly what is and isn't
@@ -70,6 +70,19 @@
       never your identity, holdings, or account.</li>
     <li><strong>Hosting</strong> is provided by Cloudflare (Workers + D1).</li>
   </ul>
+
+  <h2>Calculators &amp; the MCP API</h2>
+  <p>nestegg also exposes its finance math as public calculators — JSON endpoints
+  at <code>/api/calc/*</code> and a Model Context Protocol server at <code>/mcp</code>
+  that AI agents can call. These are a <strong>stateless, remote</strong> service:
+  because the computation runs on the server, the values you send (amounts, rates,
+  dates) <em>are</em> transmitted to it over the network. The server uses them only
+  to compute a result and then discards them — they are <strong>not written to any
+  database, not linked to you</strong> (there is no account or login on these
+  endpoints), and request bodies are <strong>not logged</strong>. As with any web
+  request, standard metadata (your IP address and a timestamp) can appear in
+  Cloudflare's logs. The calculators look nothing up about you and return numbers
+  only, never financial advice.</p>
 
   <h2>No tracking</h2>
   <p>No cookies, no analytics, no advertising, no third-party trackers.</p>
