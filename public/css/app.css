@@ -448,14 +448,20 @@ button.act.ghost:hover{border-color:var(--amber)}
 .bud-exp input:focus{outline:none;border-color:var(--amber)}
 .bud-exp-del{background:none;border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer;height:36px}
 .bud-exp-del:hover{color:var(--red);border-color:var(--red)}
-.bud-chart{display:flex;flex-direction:column;align-items:center;gap:10px;margin:6px 0 16px}
-.bud-chart svg{max-width:240px}
+.bud-chart{margin:10px 0 16px}
+.bud-chart-main{display:flex;flex-direction:column;align-items:center;gap:14px}
+.bud-chart .legend{width:100%;max-width:340px}
+@media(min-width:640px){
+  .bud-chart-main{flex-direction:row;justify-content:center;align-items:center;gap:30px}
+  .bud-chart .legend{width:auto;min-width:230px;max-width:none}
+}
 .bud-ovr{display:flex;align-items:center;gap:8px}
 .bud-reset{background:var(--field);border:1px solid var(--line2);border-radius:999px;color:var(--muted);cursor:pointer;font:inherit;font-size:11px;padding:5px 10px;white-space:nowrap;line-height:1}
 .bud-reset:hover{color:var(--amber);border-color:var(--amber)}
 .bud-reset.hide{display:none}
 /* budget donut: download button, hover tip, entrance animation (mirrors the allocation donut) */
-.bud-chartwrap{position:relative;display:flex;justify-content:center}
+.bud-chartwrap{position:relative;width:240px;flex:none}
+.bud-chartwrap .chartdl{top:0;right:0}
 #budgetDonut .dwedge{cursor:pointer;transition:opacity .12s}
 #budgetDonut:hover .dwedge{opacity:.55}
 #budgetDonut .dwedge:hover{opacity:1}

@@ -47,9 +47,10 @@ function drawBudgetDonut(s, animate = false) {
       svg.appendChild(p);
       a = a2;
     });
-    const t1 = document.createElementNS(NS, "text"); t1.setAttribute("x", cx); t1.setAttribute("y", cy - 4); t1.setAttribute("text-anchor", "middle"); t1.setAttribute("font-size", "10"); t1.setAttribute("fill", C.axis); t1.setAttribute("letter-spacing", "2"); t1.textContent = "MONTHLY";
-    const t2 = document.createElementNS(NS, "text"); t2.setAttribute("x", cx); t2.setAttribute("y", cy + 18); t2.setAttribute("text-anchor", "middle"); t2.setAttribute("font-size", "16"); t2.setAttribute("font-weight", "600"); t2.setAttribute("fill", C.ink); t2.textContent = money(total);
-    svg.appendChild(t1); svg.appendChild(t2);
+    // Centre shows income (the money coming in) — never the outgoings total, which would read as
+    // "expenses in the centre" when overspending. Red when spending exceeds income.
+    const t2 = document.createElementNS(NS, "text"); t2.setAttribute("x", cx); t2.setAttribute("y", cy + 6); t2.setAttribute("text-anchor", "middle"); t2.setAttribute("font-size", "17"); t2.setAttribute("font-weight", "600"); t2.setAttribute("fill", s.leftover < 0 ? C.red : C.ink); t2.textContent = money(s.income);
+    svg.appendChild(t2);
   }
   svg.classList.toggle("anim", !!animate && total > 0);
   svg.setAttribute("role", "img");
@@ -68,14 +69,16 @@ function budgetTipShow(path) {
 }
 function budgetTipHide() { const t = $("budgetTip"); if (t) t.classList.add("hide"); }
 let _tipWired = false;
+// Delegate from document (stable) so the listeners survive every re-render — renderBudget()
+// rebuilds the SVG element, which would orphan listeners bound directly to it.
 function wireBudgetTip() {
   if (_tipWired) return;
-  const svg = $("budgetDonut"); if (!svg) return;
-  svg.addEventListener("mouseover", (e) => { const p = e.target.closest(".dwedge"); if (p) budgetTipShow(p); });
-  svg.addEventListener("mouseout", (e) => { if (e.target.closest(".dwedge")) budgetTipHide(); });
-  svg.addEventListener("click", (e) => { const p = e.target.closest(".dwedge"); if (p) budgetTipShow(p); else budgetTipHide(); });
-  document.addEventListener("pointerdown", (e) => { if (!e.target.closest("#budgetDonut")) budgetTipHide(); });
   _tipWired = true;
+  const wedge = (e) => { const p = e.target.closest && e.target.closest(".dwedge"); return p && p.closest("#budgetDonut") ? p : null; };
+  document.addEventListener("mouseover", (e) => { const p = wedge(e); if (p) budgetTipShow(p); });
+  document.addEventListener("mouseout", (e) => { if (wedge(e)) budgetTipHide(); });
+  document.addEventListener("click", (e) => { const p = wedge(e); if (p) budgetTipShow(p); else if (e.target.closest("#budgetDonut")) budgetTipHide(); });
+  document.addEventListener("pointerdown", (e) => { if (!e.target.closest("#budgetDonut")) budgetTipHide(); });
 }
 
 // Export the doughnut as a framed PNG, like the other charts.
@@ -130,10 +133,15 @@ export function renderBudget() {
         <span class="v" id="budLeftover">${money(s.leftover)}</span>
         <span class="sub">savings rate <b id="budSavings">${s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%"}</b></span>
       </div>
-      <button class="chartdl" id="dlBudget" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
       <div class="bud-chart">
-        <div class="bud-chartwrap"><svg id="budgetDonut" viewBox="0 0 240 240" width="220" height="220" aria-label="Budget breakdown"></svg><div id="budgetTip" class="salflag hide"></div></div>
-        <div class="chiplegend" id="budgetLegend"></div>
+        <div class="bud-chart-main">
+          <div class="bud-chartwrap">
+            <svg id="budgetDonut" viewBox="0 0 240 240" width="240" height="240" aria-label="Budget breakdown"></svg>
+            <div id="budgetTip" class="salflag hide"></div>
+            <button class="chartdl" id="dlBudget" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+          </div>
+          <div class="legend" id="budgetLegend"></div>
+        </div>
       </div>
     </section>
 
