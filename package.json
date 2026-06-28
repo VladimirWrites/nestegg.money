@@ -1,6 +1,6 @@
 {
   "name": "nestegg-money",
-  "version": "1.2.15",
+  "version": "1.2.16",
   "description": "A private, zero-knowledge net worth & salary tracker. Encrypted in the browser; no email, no password.",
   "license": "Apache-2.0",
   "author": "Vladimir Jovanovic",
