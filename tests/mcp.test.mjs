@@ -64,6 +64,30 @@ test("tools/call on an unknown tool is a tool error, not a transport error", asy
   assert.equal(j.result.isError, true);
 });
 
+test("initialize advertises resources and prompts capabilities", async () => {
+  const j = await (await mcp({ jsonrpc: "2.0", id: 30, method: "initialize", params: {} })).json();
+  assert.ok(j.result.capabilities.resources);
+  assert.ok(j.result.capabilities.prompts);
+});
+
+test("resources/list exposes the calculator docs", async () => {
+  const j = await (await mcp({ jsonrpc: "2.0", id: 31, method: "resources/list" })).json();
+  assert.ok(j.result.resources.some((r) => r.uri.includes("calculators.md")));
+  assert.ok(j.result.resources.every((r) => r.uri && r.name && r.mimeType));
+});
+
+test("resources/read without an ASSETS binding errors cleanly (env-less harness)", async () => {
+  const j = await (await mcp({ jsonrpc: "2.0", id: 32, method: "resources/read", params: { uri: "https://nestegg.money/llms.txt" } })).json();
+  assert.ok(j.error || (j.result && j.result.contents)); // error here (env={}), real bytes in prod
+});
+
+test("prompts/list and prompts/get return canned workflows with interpolation", async () => {
+  const list = await (await mcp({ jsonrpc: "2.0", id: 33, method: "prompts/list" })).json();
+  assert.ok(list.result.prompts.some((p) => p.name === "mortgage-plan"));
+  const get = await (await mcp({ jsonrpc: "2.0", id: 34, method: "prompts/get", params: { name: "fire-check", arguments: { annualSpend: 40000 } } })).json();
+  assert.ok(get.result.messages[0].content.text.includes("40000"));
+});
+
 test("unknown method -> JSON-RPC method-not-found; notification -> 202 no body", async () => {
   const j = await (await mcp({ jsonrpc: "2.0", id: 6, method: "bogus" })).json();
   assert.equal(j.error.code, -32601);

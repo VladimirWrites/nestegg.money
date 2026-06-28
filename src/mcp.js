@@ -4,6 +4,7 @@
 // batch) and gets a single JSON response; notifications get a 202 with no body.
 import { CALCULATORS, CORS } from "./calculators.js";
 import { validateArgs } from "./validate.js";
+import { RESOURCES, PROMPTS } from "./resources.js";
 
 const DEFAULT_PROTOCOL = "2025-06-18";
 const rpc = (id, result) => ({ jsonrpc: "2.0", id, result });
@@ -22,7 +23,7 @@ function handle(msg) {
     case "initialize":
       return rpc(id, {
         protocolVersion: (params && params.protocolVersion) || DEFAULT_PROTOCOL,
-        capabilities: { tools: {} },
+        capabilities: { tools: {}, resources: {}, prompts: {} },
         serverInfo: { name: "nestegg-calculators", version: "1.0.0" },
         instructions: "Deterministic personal-finance calculators. Each tool is a pure function of its inputs: no user data, no live prices, no FX lookup (pass the rate as input). Returns numbers and schedules, never financial advice.",
       });
@@ -51,19 +52,47 @@ function handle(msg) {
         return rpc(id, { content: [{ type: "text", text: "Calculation failed: " + String((e && e.message) || e) }], isError: true });
       }
     }
+    case "resources/list":
+      return rpc(id, { resources: RESOURCES.map(({ uri, name, mimeType, description }) => ({ uri, name, mimeType, description })) });
+    case "prompts/list":
+      return rpc(id, { prompts: PROMPTS.map(({ name, description, arguments: args }) => ({ name, description, arguments: args })) });
+    case "prompts/get": {
+      const p = PROMPTS.find((x) => x.name === (params && params.name));
+      if (!p) return rpcErr(id, -32602, "Unknown prompt: " + (params && params.name));
+      const args = (params && params.arguments) || {};
+      const text = p.template.replace(/\{(\w+)\}/g, (_, k) => (args[k] != null ? String(args[k]) : `{${k}}`));
+      return rpc(id, { description: p.description, messages: [{ role: "user", content: { type: "text", text } }] });
+    }
     default:
       return rpcErr(id, -32601, "Method not found: " + method);
   }
 }
 
+// resources/read needs async access to the ASSETS binding, so it is handled in mcpRoute (which
+// is async) rather than in the sync handle() dispatch.
+async function readResource(id, params, env) {
+  const uri = params && params.uri;
+  const res = RESOURCES.find((r) => r.uri === uri);
+  if (!res) return rpcErr(id, -32602, "Unknown resource: " + uri);
+  if (!env || !env.ASSETS) return rpcErr(id, -32000, "Resource reading unavailable (no ASSETS binding)");
+  const r = await env.ASSETS.fetch(new Request(new URL(res.path, "https://nestegg.money")));
+  const text = await r.text();
+  return rpc(id, { contents: [{ uri, mimeType: res.mimeType, text }] });
+}
+
 // A JSON-RPC notification has no id (and is not a response we must answer).
 const isNotification = (m) => m && m.id === undefined && typeof m.method === "string";
 
-export async function mcpRoute(request) {
+export async function mcpRoute(request, env) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   if (request.method !== "POST") return send(rpcErr(null, -32000, "Use POST for MCP messages."), 405);
   let body;
   try { body = await request.json(); } catch (e) { return send(rpcErr(null, -32700, "Parse error"), 400); }
+
+  // resources/read is async (reads the ASSETS binding) — handle it before the sync dispatch.
+  if (!Array.isArray(body) && body && body.method === "resources/read") {
+    return send(await readResource(body.id, body.params, env));
+  }
 
   if (Array.isArray(body)) {
     const responses = body.filter((m) => !isNotification(m)).map(handle);

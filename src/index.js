@@ -232,7 +232,7 @@ export default {
     }
 
     if (pathname === "/mcp" || pathname === "/mcp/") {
-      return mcpRoute(request);
+      return mcpRoute(request, env);
     }
 
     // Host/path routing: marketing landing at the root domain, app at the dashboard
