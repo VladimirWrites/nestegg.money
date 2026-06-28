@@ -6,20 +6,26 @@ import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { PALETTE } from "../domain/constants.js";
 import { money, esc } from "../domain/money.js";
-import { budgetSummary, salaryIncome } from "../domain/budget.js";
+import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, renameBudgetCategory, removeBudgetCategory, budgetCategoryUsage } from "../domain/budget.js";
 import { C, refreshPalette, legendSVG, frameSVG, svgToPng, positionTip } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
 
 // Cache the latest segments so the tooltip and the PNG export can read them.
 let _segs = [];
 
-// Where the income goes: each loan, each expense, and the leftover — for the breakdown doughnut.
+// Where the income goes, at the top level: one wedge per category (expenses + loans grouped by the
+// domain) plus the leftover. Each carries its `items` so the tooltip can break it down on hover.
 function breakdownSegments(s) {
   const segs = [];
-  (s.loans || []).forEach((l, i) => { if (l.monthly > 0) segs.push({ name: l.name || "Loan", v: l.monthly, color: PALETTE[(i + 1) % PALETTE.length] }); });
-  (state.budget && state.budget.expenses || []).forEach((e, i) => { const v = +e.amount || 0; if (v > 0) segs.push({ name: e.name || "Expense", v, color: PALETTE[(i + 4) % PALETTE.length] }); });
-  if (s.leftover > 0) segs.push({ name: "Left over", v: s.leftover, color: C.green });
+  (s.categories || []).forEach((c, i) => { if (c.total > 0) segs.push({ name: c.category, v: c.total, color: PALETTE[i % PALETTE.length], items: c.items }); });
+  if (s.leftover > 0) segs.push({ name: "Left over", v: s.leftover, color: C.green, items: [] });
   return segs;
+}
+
+// A category <select> matching the net-worth picker: the global category list plus "— no category —".
+function catSelect(cls, dataAttr, current) {
+  const cats = budgetCategoryNames();
+  return `<select class="${cls}" ${dataAttr} aria-label="Category"><option value="" ${!current ? "selected" : ""}>— no category —</option>${cats.map((g) => `<option ${g === current ? "selected" : ""}>${esc(g)}</option>`).join("")}</select>`;
 }
 
 const NS = "http://www.w3.org/2000/svg";
@@ -42,7 +48,7 @@ function drawBudgetDonut(s, animate = false) {
       p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`);
       p.setAttribute("fill", "none"); p.setAttribute("stroke", seg.color); p.setAttribute("stroke-width", sw);
       p.setAttribute("pathLength", "1"); p.setAttribute("class", "dwedge");
-      p.setAttribute("data-name", seg.name); p.setAttribute("data-amt", money(seg.v)); p.setAttribute("data-pct", Math.round(f * 100) + "%");
+      p.setAttribute("data-idx", String(segs.indexOf(seg)));
       p.setAttribute("data-mx", (cx + r * Math.cos(am)).toFixed(1)); p.setAttribute("data-my", (cy + r * Math.sin(am)).toFixed(1));
       svg.appendChild(p);
       a = a2;
@@ -60,10 +66,22 @@ function drawBudgetDonut(s, animate = false) {
   }
 }
 
-// Hover/tap a wedge to see its share. Wired once; reads the live wedge under the pointer.
+// Hover/tap a wedge to break it down (the expenses in a category, or each loan). Reads the live
+// segment by index so it survives re-renders.
 function budgetTipShow(path) {
   const tip = $("budgetTip"); if (!tip) return;
-  tip.innerHTML = `<div class="tiph">${esc(path.getAttribute("data-name"))}</div><div class="tipr"><span class="tipn">${path.getAttribute("data-amt")}</span><span class="tipv">${path.getAttribute("data-pct")}</span></div>`;
+  const seg = _segs[+path.getAttribute("data-idx")]; if (!seg) return;
+  const total = _segs.reduce((a, x) => a + x.v, 0);
+  const pct = total > 0 ? Math.round(seg.v / total * 100) : 0;
+  let html = `<div class="tiph">${esc(seg.name)} <span class="tippct">${pct}%</span></div>`;
+  const items = (seg.items || []).slice().sort((a, b) => b.amount - a.amount);
+  if (items.length) {
+    items.forEach((it) => { html += `<div class="tipr"><span class="tipn">${esc(it.name)}</span><span class="tipv">${money(it.amount)}</span></div>`; });
+    if (items.length > 1) html += `<div class="tipnet">Total <b>${money(seg.v)}</b></div>`;
+  } else {
+    html += `<div class="tipr"><span class="tipn">&nbsp;</span><span class="tipv">${money(seg.v)}</span></div>`;
+  }
+  tip.innerHTML = html;
   tip.classList.remove("hide");
   positionTip(tip, +path.getAttribute("data-mx"), +path.getAttribute("data-my"), 240);
 }
@@ -93,18 +111,29 @@ export function downloadBudgetDonut() {
   svgToPng(f.svg, f.W, f.H, 2, "nestegg-budget.png");
 }
 
-const bud = () => (state.budget || (state.budget = { incomeOverride: null, expenses: [] }));
+const bud = () => {
+  const b = (state.budget || (state.budget = { incomeOverride: null, expenses: [], loanCats: {}, categories: [] }));
+  if (!b.loanCats) b.loanCats = {};
+  if (!b.expenses) b.expenses = [];
+  if (!b.categories) b.categories = [];
+  return b;
+};
 
 // Update only the live totals (leftover, savings rate, income, expense total) without rebuilding
 // the rows — so an input keeps focus and its caret while you type.
 function refreshTotals() {
   const s = budgetSummary();
-  const lo = $("budLeftover"), sv = $("budSavings"), inc = $("budIncome"), et = $("budExpTotal"), card = $("budCard");
+  const lo = $("budLeftover"), sv = $("budSavings"), inc = $("budIncome"), ot = $("budOutTotal"), card = $("budCard");
   if (inc) inc.textContent = money(s.income);
-  if (et) et.textContent = "− " + money(s.expenses);
+  if (ot) ot.textContent = money(s.fixed + s.expenses);
   if (lo) lo.textContent = money(s.leftover);
   if (sv) sv.textContent = s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%";
   if (card) card.classList.toggle("neg", s.leftover < 0);
+  // live category subtotals (no row rebuild → focus kept while typing an amount)
+  document.querySelectorAll("[data-grpsub]").forEach((el) => {
+    const c = s.categories.find((x) => x.category === el.getAttribute("data-grpsub"));
+    el.textContent = money(c ? c.total : 0);
+  });
   const ub = $("budUseSalary");
   if (ub) ub.classList.toggle("hide", !(state.budget && state.budget.incomeOverride != null));
   drawBudgetDonut(s);
@@ -113,9 +142,50 @@ function refreshTotals() {
 function expenseRow(e) {
   return `<div class="bud-exp" data-id="${e.id}">
     <input class="bud-exp-name" data-id="${e.id}" type="text" value="${esc(e.name || "")}" placeholder="Expense" aria-label="Expense name">
+    ${catSelect("bud-exp-cat", `data-id="${e.id}"`, e.group)}
     <input class="bud-exp-amt" data-id="${e.id}" type="number" inputmode="decimal" value="${e.amount || ""}" placeholder="0" aria-label="Monthly amount">
     <button class="bud-exp-del" data-id="${e.id}" title="Remove" aria-label="Remove">✕</button>
   </div>`;
+}
+
+// A loan row: the loan name (from your assets), a category picker, and its monthly payment (fixed).
+function loanRow(l, loanCats) {
+  return `<div class="bud-exp bud-loan" data-lid="${l.id}">
+    <span class="bud-loan-name" title="Loan payment (from your assets)">${esc(l.name)}</span>
+    ${catSelect("bud-loan-cat", `data-lid="${l.id}"`, loanCats[l.id])}
+    <span class="bud-loan-amt">${money(l.monthly)}</span>
+  </div>`;
+}
+
+// Colour a category to match its doughnut wedge (same index/palette).
+function catColor(name, cats) {
+  const i = (cats || []).findIndex((c) => c.category === name);
+  return i >= 0 ? PALETTE[i % PALETTE.length] : "var(--muted)";
+}
+
+// The outgoings list, grouped by category exactly like the net-worth editor: ungrouped items first,
+// then a section per category with an inline-rename name, its subtotal, and a delete (×).
+function itemsHTML(s, b) {
+  const order = [...(b.categories || [])];
+  b.expenses.forEach((e) => { if (e.group && order.indexOf(e.group) < 0) order.push(e.group); });
+  Object.values(b.loanCats || {}).forEach((g) => { if (g && order.indexOf(g) < 0) order.push(g); });
+  const loans = s.loans || [], lc = b.loanCats || {};
+  const expRow = (e) => expenseRow(e), loanRowH = (l) => loanRow(l, lc);
+
+  let html = "";
+  const ungEx = b.expenses.filter((e) => !e.group), ungLo = loans.filter((l) => !lc[l.id]);
+  if (ungEx.length || ungLo.length) html += `<div class="grpcards">${ungLo.map(loanRowH).join("")}${ungEx.map(expRow).join("")}</div>`;
+
+  order.forEach((g) => {
+    const ex = b.expenses.filter((e) => e.group === g), lo = loans.filter((l) => lc[l.id] === g);
+    const sub = ex.reduce((a, e) => a + (+e.amount || 0), 0) + lo.reduce((a, l) => a + l.monthly, 0);
+    html += `<div class="grp"><div class="grphead"><span class="dot" style="background:${catColor(g, s.categories)}"></span>`
+      + `<input class="grpname" data-grp="${esc(g)}" value="${esc(g)}" title="Category name" placeholder="Category name">`
+      + `<span class="grpsub num" data-grpsub="${esc(g)}">${money(sub)}</span>`
+      + `<button class="grpdel" data-grpdel="${esc(g)}" title="Delete category">×</button></div>`
+      + `<div class="grpcards">${lo.map(loanRowH).join("")}${ex.map(expRow).join("") || `<div class="exhint">Empty — set an item's category to this.</div>`}</div></div>`;
+  });
+  return html;
 }
 
 export function renderBudget() {
@@ -154,17 +224,12 @@ export function renderBudget() {
           <input id="budOverride" class="bud-input" type="number" inputmode="decimal" value="${b.incomeOverride == null ? "" : b.incomeOverride}" placeholder="auto (${money(auto)})" aria-label="Override monthly income">
         </span>
       </div>
-      ${(s.loans || []).length > 1
-        ? `<div class="bud-row"><span class="bud-lbl">Loan payments <span class="hint">from your loans</span></span><span class="bud-val">− ${money(s.fixed)}</span></div>`
-          + s.loans.map((l) => `<div class="bud-row indent"><span class="bud-lbl">${esc(l.name)}</span><span class="bud-val">− ${money(l.monthly)}</span></div>`).join("")
-        : `<div class="bud-row"><span class="bud-lbl">${(s.loans || []).length === 1 ? esc(s.loans[0].name) : "Loan payments"} <span class="hint">from your loans</span></span><span class="bud-val">− ${money(s.fixed)}</span></div>`}
-
-      <div class="bud-exp-head">Monthly expenses</div>
-      <div id="budExpList">${(b.expenses || []).map(expenseRow).join("") || `<div class="exhint">No expenses yet — add a few recurring ones below.</div>`}</div>
-      <div class="bud-row total"><span class="bud-lbl">Total expenses</span><span class="bud-val" id="budExpTotal">− ${money(s.expenses)}</span></div>
+      <div class="bud-exp-head">Outgoings <span class="hint">tag loans &amp; expenses into categories</span></div>
+      <div id="budItems">${itemsHTML(s, b)}</div>
+      <div class="bud-row total"><span class="bud-lbl">Total outgoings</span><span class="bud-val" id="budOutTotal">${money(s.fixed + s.expenses)}</span></div>
     </div>
 
-    <div class="controls"><button class="act ghost" id="budAddExp">+ Add expense</button></div>
+    <div class="controls"><button class="act ghost" id="budAddExp">+ Add expense</button><button class="act ghost" id="budAddCat">+ Add category</button></div>
   `;
 
   // Override income: live, no rebuild (keeps focus while typing). Empty field = use salary.
@@ -184,20 +249,43 @@ export function renderBudget() {
   host.querySelectorAll(".bud-exp-name").forEach((el) => {
     el.oninput = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { e.name = ev.target.value; scheduleSync(); } };
   });
+  // Amount edits update in place (focus kept); category changes move the card → full re-render.
   host.querySelectorAll(".bud-exp-amt").forEach((el) => {
     el.oninput = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { e.amount = parseFloat(ev.target.value) || 0; scheduleSync(); refreshTotals(); } };
   });
-  host.querySelectorAll(".bud-exp-del").forEach((el) => {
-    el.onclick = (ev) => { const id = ev.target.dataset.id; b.expenses = (b.expenses || []).filter((x) => x.id !== id); scheduleSync(); renderBudget(); };
+  host.querySelectorAll(".bud-exp-cat").forEach((el) => {
+    el.onchange = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { e.group = ev.target.value; scheduleSync(); renderBudget(); } };
+  });
+  host.querySelectorAll(".bud-loan-cat").forEach((el) => {
+    el.onchange = (ev) => { const id = ev.target.dataset.lid; if (ev.target.value) b.loanCats[id] = ev.target.value; else delete b.loanCats[id]; scheduleSync(); renderBudget(); };
+  });
+
+  // Inline rename + delete on the category section headers (same as net worth).
+  const items = $("budItems");
+  items.addEventListener("change", (ev) => {
+    if (!ev.target.classList.contains("grpname")) return;
+    const old = ev.target.dataset.grp, nw = ev.target.value.trim();
+    if (nw && nw !== old) { renameBudgetCategory(old, nw); scheduleSync(); renderBudget(); }
+  });
+  items.addEventListener("click", (ev) => {
+    const gd = ev.target.closest("[data-grpdel]");
+    if (gd) {
+      const g = gd.dataset.grpdel, n = budgetCategoryUsage(g);
+      if (n === 0 || confirm(`Remove the "${g}" category? Its ${n} tagged item${n === 1 ? "" : "s"} lose the category — nothing is deleted.`)) { removeBudgetCategory(g); scheduleSync(); renderBudget(); }
+      return;
+    }
+    const del = ev.target.closest(".bud-exp-del");
+    if (del) { b.expenses = b.expenses.filter((x) => x.id !== del.dataset.id); scheduleSync(); renderBudget(); }
   });
 
   $("budAddExp").onclick = () => {
-    if (!Array.isArray(b.expenses)) b.expenses = [];
-    b.expenses.push({ id: nid(), name: "", amount: 0 });
+    b.expenses.push({ id: nid(), name: "", group: "", amount: 0 });
     scheduleSync(); renderBudget();
     const rows = document.querySelectorAll(".bud-exp-name");
     if (rows.length) rows[rows.length - 1].focus();
   };
+  // "+ Add category" — same as net worth: adds a category you then rename inline.
+  $("budAddCat").onclick = () => { addBudgetCategory(); scheduleSync(); renderBudget(); };
 
   const dl = $("dlBudget"); if (dl) dl.onclick = downloadBudgetDonut;
   drawBudgetDonut(s, true);   // animate on tab entry

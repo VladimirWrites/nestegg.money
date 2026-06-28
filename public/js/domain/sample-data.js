@@ -95,5 +95,25 @@ export function sampleState() {
     // Retirement drawdown is shown (on:true). Pension via the German Rentenpunkte method:
     // points x point-value = monthly state pension, which kicks in at pensionStart.
     retire: { on: true, retireYear: 2046, spending: 60000, pmode: "de", pension: 0, points: 42, ptsPerYear: 1, ptValue: 39.32, pensionStart: 2057, inflation: 0.025, untilYear: 2071 },
+    // Budget: its own spending categories (separate from the net-worth ones above). The mortgage on
+    // the flat is filed under Housing; a handful of recurring expenses fill out the categories.
+    budget: {
+      incomeOverride: null,
+      categories: ["Housing", "Food", "Transport", "Utilities", "Health", "Leisure", "Savings"],
+      loanCats: { "demo-flat": "Housing" },
+      expenses: [
+        { id: "be1", name: "Service charge", group: "Housing", amount: 250 },
+        { id: "be2", name: "Home insurance", group: "Housing", amount: 60 },
+        { id: "be3", name: "Groceries", group: "Food", amount: 600 },
+        { id: "be4", name: "Restaurants", group: "Food", amount: 180 },
+        { id: "be5", name: "Fuel", group: "Transport", amount: 160 },
+        { id: "be6", name: "Public transport", group: "Transport", amount: 90 },
+        { id: "be7", name: "Electricity", group: "Utilities", amount: 110 },
+        { id: "be8", name: "Internet & phone", group: "Utilities", amount: 70 },
+        { id: "be9", name: "Gym", group: "Health", amount: 45 },
+        { id: "be10", name: "Subscriptions", group: "Leisure", amount: 55 },
+        { id: "be11", name: "Hobbies", group: "Leisure", amount: 120 },
+      ],
+    },
   };
 }
