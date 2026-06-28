@@ -426,6 +426,24 @@ export function vat(amount, ratePct, inclusive = false) {
 
 /* ---------- loan summaries (compositions over the existing schedule engine) ---------- */
 
+// Aggregate a monthly schedule into per-calendar-year totals — a compact view for agents and
+// UIs that avoids returning hundreds of monthly rows. endBalance is the balance at year end.
+export function scheduleByYear(schedule) {
+  const out = [];
+  const idx = new Map();
+  for (const row of (schedule || [])) {
+    const year = new Date(row.date).getUTCFullYear();
+    let y = idx.get(year);
+    if (!y) { y = { year, interest: 0, principal: 0, extra: 0, payments: 0, endBalance: 0 }; idx.set(year, y); out.push(y); }
+    y.interest = round2(y.interest + (row.interest || 0));
+    y.principal = round2(y.principal + (row.principal || 0));
+    y.extra = round2(y.extra + (row.extra || 0));
+    if (row.type === "payment") y.payments += 1;
+    y.endBalance = row.balance;
+  }
+  return out;
+}
+
 // Amortization schedule + summary for a loan object:
 // { amount, rate (annual %), mode: "term"|"payment", termYears|payment, startDate,
 //   extra: [{date, amount}], fixedUntil? }.

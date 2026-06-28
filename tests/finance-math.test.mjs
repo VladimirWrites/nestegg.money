@@ -8,7 +8,7 @@ import {
   mortgageAffordability, debtPayoff, portfolioLongevity, round2,
   presentValue, requiredReturn, yieldToMaturity, taxFromBrackets,
   marginMarkup, compoundInterest,
-  germanNetSalary, vat,
+  germanNetSalary, vat, scheduleByYear,
 } from "../public/lib/finance-math.js";
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps, `${a} !~= ${b}`);
@@ -266,4 +266,13 @@ test("vat: adds tax to a net price, and extracts it from a gross price", () => {
   const extract = vat(119, 19, true);
   assert.equal(extract.net, 100);
   assert.equal(extract.tax, 19);
+});
+
+test("scheduleByYear: buckets schedule rows into per-year totals that sum back", () => {
+  const a = amortization({ amount: 100000, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01", detail: "monthly" });
+  const yrs = scheduleByYear(a.schedule);
+  assert.equal(yrs[0].year, 2020);
+  near(yrs.reduce((s, y) => s + y.interest, 0), a.totalInterest, 1); // sums back to total
+  assert.ok(yrs[0].endBalance < 100000);
+  assert.equal(yrs[yrs.length - 1].endBalance, 0); // paid off by the end
 });
