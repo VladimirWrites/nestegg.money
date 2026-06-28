@@ -27,6 +27,7 @@ export function emptyState() {
     categories: [],
     salaries: [],
     snapshots: [{ year: new Date().getFullYear(), entries: [] }],
+    budget: { incomeOverride: null, expenses: [] },
   };
 }
 
@@ -78,6 +79,18 @@ function migrateForecast(s) {
   delete f.real;
   delete f.inflation;
   delete f.pension;
+}
+
+function migrateBudget(s) {
+  if (!s.budget || typeof s.budget !== "object") { s.budget = { incomeOverride: null, expenses: [] }; return; }
+  const b = s.budget;
+  b.incomeOverride = b.incomeOverride == null ? null : (+b.incomeOverride || 0);
+  if (!Array.isArray(b.expenses)) b.expenses = [];
+  b.expenses.forEach((e) => {
+    if (!e.id) e.id = nid();
+    if (e.name == null) e.name = "Expense";
+    e.amount = +e.amount || 0;
+  });
 }
 
 function migrateRetire(s) {
@@ -204,6 +217,7 @@ export function migrate(s) {
   if (!s.baseCcy) s.baseCcy = "EUR";
   migrateForecast(s);
   migrateRetire(s);
+  migrateBudget(s);
   migrateFx(s);
   migrateAssets(s);
   migrateSalaries(s);
