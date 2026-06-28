@@ -424,3 +424,27 @@ button.act.ghost:hover{border-color:var(--amber)}
 .demobar .act{min-height:32px;padding:6px 12px;font-size:11px}
 .demolink{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
 .demoswitch{margin-top:4px}
+
+/* ---- Budget tab ---- */
+.bud-card{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:22px 16px;margin:8px 0 18px}
+.bud-card .k{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.bud-card .v{font-size:clamp(30px,8vw,44px);font-weight:700;color:var(--green);font-family:var(--mono);line-height:1}
+.bud-card.neg .v{color:var(--red)}
+.bud-card .sub{font-size:12px;color:var(--muted)}
+.bud-card .sub b{color:var(--ink);font-weight:600}
+.bud-rows{max-width:560px;margin:0 auto}
+.bud-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
+.bud-row.indent{padding-left:14px}
+.bud-row.total{border-bottom:none;border-top:1px solid var(--line2);font-weight:600}
+.bud-lbl{color:var(--ink);font-size:14px}
+.bud-lbl .hint{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px}
+.bud-val{font-family:var(--mono);font-size:15px;color:var(--ink);white-space:nowrap}
+.bud-input{width:140px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:14px}
+.bud-input:focus{outline:none;border-color:var(--amber)}
+.bud-exp-head{margin:18px 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.bud-exp{display:grid;grid-template-columns:1fr 130px 34px;gap:8px;align-items:center;padding:5px 0}
+.bud-exp input{background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--ink);font-size:14px}
+.bud-exp .bud-exp-amt{text-align:right;font-family:var(--mono)}
+.bud-exp input:focus{outline:none;border-color:var(--amber)}
+.bud-exp-del{background:none;border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer;height:36px}
+.bud-exp-del:hover{color:var(--red);border-color:var(--red)}

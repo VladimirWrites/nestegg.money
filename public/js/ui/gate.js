@@ -11,6 +11,7 @@ import { generateToken, validToken, canonToken, normTok, deriveKeys, copyText } 
 import { LS, syncedAt, setDemo, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
 import { renderAll, repaintCharts, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut, armChartAnim } from "./charts.js";
 import { renderSalary, armSalaryAnim } from "./salary.js";
+import { renderBudget } from "./budget.js";
 
 // Render an account number with digits and letters coloured differently, kept on one line —
 // shrinking the font only if the screen is too narrow.
@@ -150,26 +151,41 @@ if (themeSel) themeSel.addEventListener("change", () => {
   try { LS.set("nw_theme", themeSel.value); } catch (err) {}
   // recolour the SVG charts (they read theme CSS vars) by re-rendering the visible view.
   // renderAll() would no-op here (state unchanged), so force a repaint for the net view.
-  if ($("viewSalary") && !$("viewSalary").classList.contains("hide")) renderSalary(); else repaintCharts();
+  if ($("viewSalary") && !$("viewSalary").classList.contains("hide")) renderSalary();
+  else if ($("viewBudget") && !$("viewBudget").classList.contains("hide")) renderBudget();
+  else repaintCharts();
 });
 applyTheme(currentTheme()); // sync the browser UI colour to the theme set by the head script
 $("profCopyAcct").onclick = async () => { const t = LS.get("nw_token") || ""; toast((await copyText(t)) ? "Account number copied" : "Couldn't copy — use the eye to reveal it"); };
 $("profSyncNow").onclick = () => pushServer(true);
 $("syncNowHome").onclick = () => pushServer(true);
 
-// Net worth / Salary are tabs within the home page — switch the visible view in place.
+// Net worth / Salary / Budget are tabs within the home page — switch the visible view in place.
 export function showView(name) {
-  const net = name !== "salary";
-  $("viewNet").classList.toggle("hide", !net);
-  $("viewSalary").classList.toggle("hide", net);
-  $("navNet").classList.toggle("on", net);
-  $("salaryBtn").classList.toggle("on", !net);
-  $("mastTitle").textContent = net ? "Net Worth" : "Salary";
-  $("mastSub").textContent = net ? "A quiet accounting of what you hold." : "What you and yours bring home, month by month.";
-  if (net) { armChartAnim(); renderAll(); } else { armSalaryAnim(); renderSalary(); }
+  const view = name === "salary" ? "salary" : name === "budget" ? "budget" : "net";
+  $("viewNet").classList.toggle("hide", view !== "net");
+  $("viewSalary").classList.toggle("hide", view !== "salary");
+  $("viewBudget").classList.toggle("hide", view !== "budget");
+  $("navNet").classList.toggle("on", view === "net");
+  $("salaryBtn").classList.toggle("on", view === "salary");
+  $("navBudget").classList.toggle("on", view === "budget");
+  if (view === "net") {
+    $("mastTitle").textContent = "Net Worth";
+    $("mastSub").textContent = "A quiet accounting of what you hold.";
+    armChartAnim(); renderAll();
+  } else if (view === "salary") {
+    $("mastTitle").textContent = "Salary";
+    $("mastSub").textContent = "What you and yours bring home, month by month.";
+    armSalaryAnim(); renderSalary();
+  } else {
+    $("mastTitle").textContent = "Budget";
+    $("mastSub").textContent = "Roughly what's left each month.";
+    renderBudget();
+  }
   window.scrollTo(0, 0);
 }
 $("navNet").onclick = () => showView("net");
+$("navBudget").onclick = () => showView("budget");
 $("profLogout").onclick = () => { if (confirm("Log out on this device? Make sure your account number is saved — it's the only way back in.")) { LS.rem("nw_token"); LS.rem("nw_state"); LS.rem("nw_state_bak"); location.reload(); } };
 $("ccySel").onchange = (e) => { state.baseCcy = e.target.value; scheduleSync(); renderAll(); };
 $("pricesBtn").onclick = refreshPrices;
