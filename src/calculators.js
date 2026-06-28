@@ -16,10 +16,12 @@ import {
   blackScholes, optionGreeks, putCallParity, optionBreakeven, intrinsicTimeValue,
   annuityPV, annuityFV, annuityPayment, perpetuity, ruleOf72,
   paybackPeriod, discountedPayback, mirr, xnpv, xirr,
+  loanAPR, interestOnlyPayment, balloonLoan, ltv, dti,
+  creditCardPayoff, pointsBreakeven, biweeklyPayoff,
 } from "../public/lib/finance-math.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.5.0";
+export const CALC_VERSION = "1.6.0";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
@@ -457,6 +459,46 @@ export const CALCULATORS = {
     inputSchema: obj({ cashflows: datedFlows("Dated cashflows; the first date is the valuation date.") }, ["cashflows"]),
     run: (a) => xirr(a.cashflows),
   },
+  "loan-apr": {
+    description: "Effective APR including upfront fees: the note-rate payment priced against the net proceeds (amount - fees). Annual percent.",
+    inputSchema: obj({ amount: num("Loan amount."), ratePct: num("Note (nominal) annual rate in percent."), termMonths: num("Term in months."), fees: num("Optional. Upfront fees / points in currency (default 0).") }, ["amount", "ratePct", "termMonths"]),
+    run: (a) => loanAPR(a.amount, a.ratePct, a.termMonths, a.fees || 0),
+  },
+  "interest-only-payment": {
+    description: "Interest-only monthly payment on a balance.",
+    inputSchema: obj({ amount: num("Outstanding balance."), ratePct: num("Annual rate in percent.") }, ["amount", "ratePct"]),
+    run: (a) => interestOnlyPayment(a.amount, a.ratePct),
+  },
+  "balloon-loan": {
+    description: "Balloon loan: payment based on a long amortization, with the balloon being the balance still due after the shorter balloon term.",
+    inputSchema: obj({ amount: num("Loan amount."), ratePct: num("Annual rate in percent."), balloonMonths: num("Months until the balloon is due."), amortMonths: num("Amortization basis in months.") }, ["amount", "ratePct", "balloonMonths", "amortMonths"]),
+    run: (a) => balloonLoan(a.amount, a.ratePct, a.balloonMonths, a.amortMonths),
+  },
+  "ltv": {
+    description: "Loan-to-value ratio, percent (loan / property value).",
+    inputSchema: obj({ loanAmount: num("Loan amount."), propertyValue: num("Property value.") }, ["loanAmount", "propertyValue"]),
+    run: (a) => ltv(a.loanAmount, a.propertyValue),
+  },
+  "dti": {
+    description: "Debt-to-income ratio, percent (monthly debt / gross monthly income).",
+    inputSchema: obj({ monthlyDebt: num("Total monthly debt payments."), grossMonthlyIncome: num("Gross monthly income.") }, ["monthlyDebt", "grossMonthlyIncome"]),
+    run: (a) => dti(a.monthlyDebt, a.grossMonthlyIncome),
+  },
+  "credit-card-payoff": {
+    description: "Months to clear a credit-card balance at a fixed monthly payment, plus interest paid. Null when the payment can't cover the first month's interest.",
+    inputSchema: obj({ balance: num("Current balance."), aprPct: num("Annual percentage rate in percent."), monthlyPayment: num("Fixed monthly payment.") }, ["balance", "aprPct", "monthlyPayment"]),
+    run: (a) => creditCardPayoff(a.balance, a.aprPct, a.monthlyPayment),
+  },
+  "points-breakeven": {
+    description: "Mortgage points break-even: the upfront cost to buy down the rate, the monthly payment saving, and the whole months to recoup it.",
+    inputSchema: obj({ loanAmount: num("Loan amount."), ratePct: num("Base annual rate in percent."), termMonths: num("Term in months."), pointsPct: num("Points paid, percent of the loan."), reducedRatePct: num("Reduced annual rate after buying points.") }, ["loanAmount", "ratePct", "termMonths", "pointsPct", "reducedRatePct"]),
+    run: (a) => pointsBreakeven(a.loanAmount, a.ratePct, a.termMonths, a.pointsPct, a.reducedRatePct),
+  },
+  "biweekly-payoff": {
+    description: "Biweekly mortgage acceleration: paying half the monthly payment every two weeks. Returns the biweekly payment and the months and interest saved.",
+    inputSchema: obj({ amount: num("Loan amount."), ratePct: num("Annual rate in percent."), termMonths: num("Original term in months.") }, ["amount", "ratePct", "termMonths"]),
+    run: (a) => biweeklyPayoff(a.amount, a.ratePct, a.termMonths),
+  },
 };
 
 // Output schemas — declared so MCP clients get typed results (structuredContent shape) without a
@@ -532,6 +574,14 @@ const OUTPUTS = {
   "mirr": out({ mirrPct: onum("Modified IRR, percent (null if degenerate).") }),
   "xnpv": out({ npv: onum("Date-aware net present value.") }),
   "xirr": out({ xirrPct: onum("Date-aware IRR, percent (null if none).") }),
+  "loan-apr": out({ aprPct: onum("Effective APR, percent (null if degenerate).") }),
+  "interest-only-payment": out({ payment: onum("Monthly interest payment.") }),
+  "balloon-loan": out({ payment: onum("Monthly payment."), balloon: onum("Balloon balance due.") }),
+  "ltv": out({ ltvPct: onum("Loan-to-value, percent (null if value<=0).") }),
+  "dti": out({ dtiPct: onum("Debt-to-income, percent (null if income<=0).") }),
+  "credit-card-payoff": out({ months: onum("Months to clear (null if never)."), totalInterest: onum("Total interest (null if never)."), totalPaid: onum("Total paid (null if never).") }),
+  "points-breakeven": out({ cost: onum("Upfront cost of points."), monthlySaving: onum("Monthly payment saving."), breakevenMonths: onum("Whole months to recoup (null if no saving).") }),
+  "biweekly-payoff": out({ biweeklyPayment: onum("Biweekly payment."), monthsSaved: onum("Months saved."), interestSaved: onum("Interest saved.") }),
 };
 
 for (const [name, schema] of Object.entries(OUTPUTS)) CALCULATORS[name].outputSchema = schema;

@@ -26,3 +26,4 @@ export * from "./finance-math/tax.js";             // fxConvert, taxFromBrackets
 export * from "./finance-math/bonds.js";           // bondPrice, currentYield, bondDuration, convexity, zeroCouponPrice, accruedInterest
 export * from "./finance-math/options.js";         // blackScholes, optionGreeks, putCallParity, optionBreakeven, intrinsicTimeValue
 export * from "./finance-math/tvm.js";             // annuityPV, annuityFV, annuityPayment, perpetuity, ruleOf72, paybackPeriod, discountedPayback, mirr, xnpv, xirr
+export * from "./finance-math/credit.js";          // loanAPR, interestOnlyPayment, balloonLoan, ltv, dti, creditCardPayoff, pointsBreakeven, biweeklyPayoff
