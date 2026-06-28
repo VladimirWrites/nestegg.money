@@ -12,6 +12,7 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "gen-docs": "node scripts/gen-calculator-docs.mjs",
     "sync-version": "node scripts/sync-version.mjs",
     "version": "node scripts/sync-version.mjs && git add public/sw.js"
   }
