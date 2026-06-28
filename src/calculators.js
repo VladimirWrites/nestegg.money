@@ -6,6 +6,7 @@ import {
   savingsRate, fxConvert, depreciate, straightLineDepreciation,
   fireNumber, requiredContribution, inflationAdjust, effectiveRate,
   npv, irr, refiBreakeven, emergencyFund,
+  mortgageAffordability, debtPayoff, portfolioLongevity,
 } from "../public/lib/finance-math.js";
 
 // CORS is open: the calculators carry no secrets and read no user data.
@@ -157,5 +158,44 @@ export const CALCULATORS = {
       monthlyExpenses: num("Total monthly expenses."),
     }, ["liquidSavings", "monthlyExpenses"]),
     run: (a) => emergencyFund(a.liquidSavings, a.monthlyExpenses),
+  },
+  "mortgage-affordability": {
+    description: "Maximum loan and home price the income supports: the DTI cap on gross monthly income (less existing debts) sets the payment, whose present value at the rate and term is the loan.",
+    inputSchema: obj({
+      annualIncome: num("Gross annual income."),
+      dtiPct: num("Max share of gross monthly income for the payment, in percent (e.g. 36)."),
+      rate: num("Annual interest rate in percent."),
+      termYears: num("Loan term in years."),
+      monthlyDebts: num("Optional. Existing monthly debt payments (default 0)."),
+      downPayment: num("Optional. Cash down payment, added to the loan for the home price (default 0)."),
+    }, ["annualIncome", "dtiPct", "rate", "termYears"]),
+    run: (a) => mortgageAffordability(a),
+  },
+  "debt-payoff": {
+    description: "Multi-debt payoff plan under a fixed monthly budget. method 'avalanche' (highest rate first) minimizes interest; 'snowball' (smallest balance first) clears accounts soonest. Returns months, total interest, and payoff order; flags insolvent budgets.",
+    inputSchema: obj({
+      debts: {
+        type: "array",
+        description: "The debts to pay off.",
+        items: {
+          type: "object",
+          properties: { name: str("Optional label."), balance: num("Current balance."), rate: num("Annual interest rate in percent."), minPayment: num("Minimum monthly payment.") },
+          required: ["balance", "rate", "minPayment"],
+        },
+      },
+      monthlyBudget: num("Total amount available across all debts each month."),
+      method: { type: "string", enum: ["avalanche", "snowball"], description: "Payoff strategy (default avalanche)." },
+    }, ["debts", "monthlyBudget"]),
+    run: (a) => debtPayoff(a.debts, a.monthlyBudget, a.method || "avalanche"),
+  },
+  "portfolio-longevity": {
+    description: "How many years a balance lasts while withdrawing from it: the balance grows each year, then the withdrawal (optionally stepping up) is taken. Returns the depletion year, or sustainable=true when it outlasts 200 years.",
+    inputSchema: obj({
+      balance: num("Starting balance."),
+      annualWithdrawal: num("Amount withdrawn in the first year."),
+      annualRatePct: num("Annual portfolio growth in percent."),
+      withdrawalGrowthPct: num("Optional. Yearly step-up of the withdrawal in percent (default 0)."),
+    }, ["balance", "annualWithdrawal", "annualRatePct"]),
+    run: (a) => portfolioLongevity(a),
   },
 };

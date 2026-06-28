@@ -5,6 +5,7 @@ import {
   savingsRate, fxConvert, depreciate, straightLineDepreciation,
   fireNumber, requiredContribution, inflationAdjust, effectiveRate,
   npv, irr, refiBreakeven, emergencyFund,
+  mortgageAffordability, debtPayoff, portfolioLongevity, round2,
 } from "../public/lib/finance-math.js";
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps, `${a} !~= ${b}`);
@@ -138,4 +139,56 @@ test("refiBreakeven: a costlier new payment never breaks even", () => {
 test("emergencyFund: €12k liquid against €3k/mo expenses = 4 months", () => {
   assert.equal(emergencyFund(12000, 3000).months, 4);
   assert.equal(emergencyFund(12000, 0).months, null); // guard
+});
+
+test("mortgageAffordability: the max loan amortizes back to the max monthly payment", () => {
+  const m = mortgageAffordability({ annualIncome: 120000, dtiPct: 36, rate: 6, termYears: 30, downPayment: 50000 });
+  assert.equal(m.maxMonthlyPayment, 3600); // 10k/mo * 36%
+  const a = amortization({ amount: m.maxLoan, rate: 6, mode: "term", termYears: 30, startDate: "2020-01-01" });
+  near(a.monthlyPayment, 3600, 1); // round-trips within a euro
+  assert.equal(m.maxHomePrice, round2(m.maxLoan + 50000));
+});
+
+test("mortgageAffordability: existing monthly debts shrink the budget and the loan", () => {
+  const clean = mortgageAffordability({ annualIncome: 120000, dtiPct: 36, rate: 6, termYears: 30 });
+  const burdened = mortgageAffordability({ annualIncome: 120000, dtiPct: 36, rate: 6, termYears: 30, monthlyDebts: 600 });
+  assert.equal(burdened.maxMonthlyPayment, 3000);
+  assert.ok(burdened.maxLoan < clean.maxLoan);
+});
+
+test("debtPayoff: avalanche attacks the highest rate first, snowball the smallest balance", () => {
+  const debts = [
+    { name: "A", balance: 1000, rate: 5, minPayment: 25 },
+    { name: "B", balance: 2000, rate: 20, minPayment: 25 },
+  ];
+  const ava = debtPayoff(debts, 200, "avalanche");
+  const snow = debtPayoff(debts, 200, "snowball");
+  assert.equal(ava.payoffOrder[0], "B");
+  assert.equal(snow.payoffOrder[0], "A");
+  assert.ok(ava.months > 0 && snow.months > 0);
+  assert.ok(ava.totalInterest <= snow.totalInterest); // avalanche minimizes interest
+});
+
+test("debtPayoff: a budget that cannot cover the minimums is insolvent", () => {
+  const r = debtPayoff([{ balance: 1000, rate: 5, minPayment: 25 }, { balance: 2000, rate: 20, minPayment: 25 }], 10);
+  assert.equal(r.insolvent, true);
+  assert.equal(r.months, null);
+});
+
+test("portfolioLongevity: withdrawing exactly the real return lasts indefinitely", () => {
+  const r = portfolioLongevity({ balance: 1000000, annualWithdrawal: 40000, annualRatePct: 4 });
+  assert.equal(r.sustainable, true);
+  assert.equal(r.years, null);
+});
+
+test("portfolioLongevity: over-withdrawing depletes the balance in finite years", () => {
+  const r = portfolioLongevity({ balance: 1000000, annualWithdrawal: 100000, annualRatePct: 4 });
+  assert.equal(r.sustainable, false);
+  assert.ok(r.years > 0 && r.years < 20);
+});
+
+test("portfolioLongevity: a rising withdrawal depletes no later than a flat one", () => {
+  const flat = portfolioLongevity({ balance: 1000000, annualWithdrawal: 100000, annualRatePct: 4 });
+  const rising = portfolioLongevity({ balance: 1000000, annualWithdrawal: 100000, annualRatePct: 4, withdrawalGrowthPct: 5 });
+  assert.ok(rising.years <= flat.years);
 });

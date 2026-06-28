@@ -45,6 +45,12 @@ test("the new calculators are reachable over /api/calc/* too", async () => {
 
   r = await call("POST", "/api/calc/emergency-fund", { liquidSavings: 12000, monthlyExpenses: 3000 });
   assert.equal((await r.json()).months, 4);
+
+  r = await call("POST", "/api/calc/portfolio-longevity", { balance: 1000000, annualWithdrawal: 40000, annualRatePct: 4 });
+  assert.equal((await r.json()).sustainable, true);
+
+  r = await call("POST", "/api/calc/mortgage-affordability", { annualIncome: 120000, dtiPct: 36, rate: 6, termYears: 30 });
+  assert.equal((await r.json()).maxMonthlyPayment, 3600);
 });
 
 test("CORS preflight, unknown calc, wrong method, and bad body are handled", async () => {

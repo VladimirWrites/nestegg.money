@@ -144,3 +144,28 @@ Months of runway. Endpoint name `emergency-fund`.
 - Inputs: `liquidSavings`, `monthlyExpenses`.
 - Output: `months = liquidSavings / monthlyExpenses`. Returns `null` when expenses are not positive.
 - Rounding: two decimals.
+
+## mortgageAffordability
+
+Maximum loan and home price an income supports. Endpoint name `mortgage-affordability`.
+
+- Inputs: `annualIncome`, `dtiPct` (max share of gross monthly income for the payment), `rate` (annual %), `termYears`, optional `monthlyDebts` (default 0), optional `downPayment` (default 0).
+- Outputs: `maxMonthlyPayment` (`annualIncome/12 * dtiPct/100 - monthlyDebts`, floored at 0), `maxLoan` (present value of that payment, `maxMonthlyPayment * (1 - (1+i)^-n)/i` with `i = rate/100/12`, `n = termYears*12`), `maxHomePrice` (`maxLoan + downPayment`).
+- Rounding: cents.
+
+## debtPayoff
+
+Multi-debt payoff plan under a fixed monthly budget. Endpoint name `debt-payoff`.
+
+- Inputs: `debts` (array of `{ balance, rate (annual %), minPayment, name? }`), `monthlyBudget` (total across all debts), optional `method` (`"avalanche"` highest rate first, default; or `"snowball"` smallest balance first).
+- Outputs: `months` to debt-free, `totalInterest`, `payoffOrder` (debt names/indices in the order cleared). When the budget cannot keep up with the minimums and interest, `insolvent` is `true` and `months`/`totalInterest` are `null`.
+- Formula: month by month, each balance accrues `round2(balance * rate/100/12)`, minimums are paid, then the leftover budget attacks the method's target debt until cleared and rolls onward. Capped at 1200 months (then treated as insolvent).
+- Rounding: cents per step.
+
+## portfolioLongevity
+
+How long a balance lasts under withdrawals. Endpoint name `portfolio-longevity`.
+
+- Inputs: `balance`, `annualWithdrawal` (first-year amount), `annualRatePct`, optional `withdrawalGrowthPct` (default 0, steps the withdrawal up each year).
+- Output: `years` (the year the balance is exhausted) and `sustainable`. Each year `balance = balance*(1 + annualRatePct/100) - withdrawal`, then the withdrawal grows. If the balance still stands after 200 years, `sustainable` is `true` and `years` is `null`.
+- Rounding: none (year count is an integer).

@@ -192,6 +192,86 @@ export function emergencyFund(liquidSavings, monthlyExpenses) {
   return { months: round2((+liquidSavings || 0) / exp) };
 }
 
+// How much house the income supports. The DTI cap on gross monthly income (less existing
+// monthly debts) is the most you can put toward the payment; the present value of that annuity
+// at the given rate and term is the max loan, and adding the down payment gives the max price.
+// Percents in; money via round2.
+export function mortgageAffordability({ annualIncome, dtiPct, rate, termYears, monthlyDebts = 0, downPayment = 0 } = {}) {
+  const monthlyIncome = (+annualIncome || 0) / 12;
+  const maxMonthlyPayment = round2(Math.max(0, monthlyIncome * (+dtiPct || 0) / 100 - (+monthlyDebts || 0)));
+  const i = (+rate || 0) / 100 / 12, n = Math.round((+termYears || 0) * 12);
+  const factor = n <= 0 ? 0 : (i === 0 ? n : (1 - Math.pow(1 + i, -n)) / i);
+  const maxLoan = round2(maxMonthlyPayment * factor);
+  return { maxMonthlyPayment, maxLoan, maxHomePrice: round2(maxLoan + (+downPayment || 0)) };
+}
+
+// Debt payoff plan across several debts under a fixed total monthly budget. Each month every
+// balance accrues interest, the minimums are paid, then the leftover attacks one debt by the
+// chosen method: "avalanche" (highest rate first) minimizes interest, "snowball" (smallest
+// balance first) clears accounts soonest. Returns months to debt-free, total interest, and the
+// order debts were cleared. insolvent (months/totalInterest null) when the budget cannot keep
+// up with the minimums and interest. Percents in; money via round2.
+export function debtPayoff(debts, monthlyBudget, method = "avalanche") {
+  const list = (Array.isArray(debts) ? debts : []).map((d, idx) => ({
+    name: d && d.name != null ? d.name : String(idx + 1),
+    balance: +(d && d.balance) || 0,
+    rate: +(d && d.rate) || 0,
+    min: +(d && d.minPayment) || 0,
+  }));
+  const budget = +monthlyBudget || 0;
+  const active = () => list.filter((d) => d.balance > 0.005);
+  if (!list.length) return { months: 0, totalInterest: 0, payoffOrder: [] };
+  if (budget <= 0) return { months: null, totalInterest: null, payoffOrder: [], insolvent: true };
+
+  const payoffOrder = [];
+  let totalInterest = 0, months = 0;
+  const MAX_MONTHS = 1200; // 100 years: a budget that never gets ahead is treated as insolvent
+  while (active().length && months < MAX_MONTHS) {
+    months++;
+    for (const d of active()) {
+      const interest = round2(d.balance * d.rate / 100 / 12);
+      d.balance = round2(d.balance + interest);
+      totalInterest += interest;
+    }
+    let pool = budget;
+    for (const d of active()) {
+      const pay = Math.min(d.min, d.balance);
+      d.balance = round2(d.balance - pay);
+      pool = round2(pool - pay);
+    }
+    if (pool < -0.005) return { months: null, totalInterest: null, payoffOrder, insolvent: true };
+    const targets = active().slice().sort((a, b) => method === "snowball" ? a.balance - b.balance : b.rate - a.rate);
+    for (const d of targets) {
+      if (pool <= 0.005) break;
+      const pay = Math.min(pool, d.balance);
+      d.balance = round2(d.balance - pay);
+      pool = round2(pool - pay);
+    }
+    for (const d of list) {
+      if (d.balance <= 0.005 && !payoffOrder.includes(d.name)) payoffOrder.push(d.name);
+    }
+  }
+  if (active().length) return { months: null, totalInterest: null, payoffOrder, insolvent: true };
+  return { months, totalInterest: round2(totalInterest), payoffOrder };
+}
+
+// How long a balance lasts while withdrawing from it. Each year the balance grows at
+// annualRatePct, then the withdrawal (stepping up by withdrawalGrowthPct annually) is taken.
+// Returns the year the balance is exhausted; { years: null, sustainable: true } when it still
+// stands after 200 years (the withdrawal never outpaces the growth). Percents in.
+export function portfolioLongevity({ balance, annualWithdrawal, annualRatePct, withdrawalGrowthPct = 0 } = {}) {
+  let bal = +balance || 0, w = +annualWithdrawal || 0;
+  const r = (+annualRatePct || 0) / 100, g = (+withdrawalGrowthPct || 0) / 100;
+  if (bal <= 0) return { years: 0, sustainable: false };
+  const MAX_YEARS = 200;
+  for (let y = 1; y <= MAX_YEARS; y++) {
+    bal = bal * (1 + r) - w;
+    if (bal <= 0) return { years: y, sustainable: false };
+    w *= 1 + g;
+  }
+  return { years: null, sustainable: true };
+}
+
 /* ---------- loan summaries (compositions over the existing schedule engine) ---------- */
 
 // Amortization schedule + summary for a loan object:
