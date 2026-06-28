@@ -10,10 +10,23 @@ import {
   presentValue, requiredReturn, yieldToMaturity, taxFromBrackets,
   marginMarkup, compoundInterest,
   germanNetSalary, vat,
+  roi, realReturn, returnStats, sharpeRatio, maxDrawdown,
+  holdingPeriodReturn, feeDrag, dollarCostAveraging,
+  bondPrice, currentYield, bondDuration, convexity, zeroCouponPrice, accruedInterest,
+  blackScholes, optionGreeks, putCallParity, optionBreakeven, intrinsicTimeValue,
+  annuityPV, annuityFV, annuityPayment, perpetuity, ruleOf72,
+  paybackPeriod, discountedPayback, mirr, xnpv, xirr,
+  loanAPR, interestOnlyPayment, balloonLoan, ltv, dti,
+  creditCardPayoff, pointsBreakeven, biweeklyPayoff,
+  capRate, cashOnCash, noi, grossRentMultiplier, dscr,
+  wacc, breakEvenUnits, contributionMargin, currentRatio, quickRatio, roe, roa,
+  decliningBalanceDepreciation, doubleDecliningDepreciation, sumOfYearsDigits, unitsOfProductionDepreciation,
+  netWorth, budget503020, tipSplit, discount, successiveDiscounts, percentageChange, unitPrice,
+  hourlyToSalary, salaryToHourly, afterTaxYield, taxEquivalentYield, coastFire, baristaFire,
 } from "../public/lib/finance-math.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.2.0";
+export const CALC_VERSION = "1.3.0";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
@@ -27,6 +40,7 @@ const num = (description) => ({ type: "number", description });
 const str = (description) => ({ type: "string", description });
 const bool = (description) => ({ type: "boolean", description });
 const numArray = (description) => ({ type: "array", description, items: { type: "number" } });
+const datedFlows = (description) => ({ type: "array", description, items: { type: "object", properties: { date: { type: "string", description: "ISO date." }, amount: { type: "number", description: "Cashflow amount (outflows negative)." } }, required: ["date", "amount"] } });
 
 // Shared loan input shape (amortization + loan-payoff).
 const loanProps = {
@@ -305,6 +319,336 @@ export const CALCULATORS = {
     }, ["amount", "ratePct"]),
     run: (a) => vat(a.amount, a.ratePct, !!a.inclusive),
   },
+  "roi": {
+    description: "Return on investment: total percent gain, plus the annualized rate when a holding period in years is given.",
+    inputSchema: obj({ initial: num("Amount invested."), finalValue: num("Ending value."), years: num("Optional. Holding period in years, for the annualized rate.") }, ["initial", "finalValue"]),
+    run: (a) => roi(a.initial, a.finalValue, a.years),
+  },
+  "real-return": {
+    description: "Real (inflation-adjusted) return from a nominal rate via the Fisher relation: (1+nominal)/(1+inflation) - 1.",
+    inputSchema: obj({ nominalRatePct: num("Nominal annual rate in percent."), inflationRatePct: num("Annual inflation in percent.") }, ["nominalRatePct", "inflationRatePct"]),
+    run: (a) => realReturn(a.nominalRatePct, a.inflationRatePct),
+  },
+  "return-stats": {
+    description: "Mean, sample variance, and sample standard deviation (n-1) of a series of returns. Pass percents to get a percent stdev (volatility).",
+    inputSchema: obj({ returns: numArray("The return series (e.g. yearly percents).") }, ["returns"]),
+    run: (a) => returnStats(a.returns),
+  },
+  "sharpe-ratio": {
+    description: "Sharpe ratio: excess mean return per unit of volatility, (mean - riskFree) / stdev. Null when volatility is undefined or zero.",
+    inputSchema: obj({ returns: numArray("The return series (percents)."), riskFreePct: num("Risk-free rate in the same unit (default 0).") }, ["returns"]),
+    run: (a) => sharpeRatio(a.returns, a.riskFreePct || 0),
+  },
+  "max-drawdown": {
+    description: "Maximum drawdown of a value series: the largest peak-to-trough decline, as a positive percent.",
+    inputSchema: obj({ series: numArray("Sequence of values (e.g. portfolio levels).") }, ["series"]),
+    run: (a) => maxDrawdown(a.series),
+  },
+  "holding-period-return": {
+    description: "Holding-period return: (income + capital gain) / starting value, in percent.",
+    inputSchema: obj({ income: num("Income received over the period."), endValue: num("Ending value."), beginValue: num("Starting value.") }, ["income", "endValue", "beginValue"]),
+    run: (a) => holdingPeriodReturn(a.income, a.endValue, a.beginValue),
+  },
+  "fee-drag": {
+    description: "Effect of an annual fee: the compounded balance at the gross rate vs net of the fee, and the amount lost to fees.",
+    inputSchema: obj({ principal: num("Starting amount."), grossAnnualPct: num("Gross annual return in percent."), feePct: num("Annual fee in percent."), years: num("Number of years.") }, ["principal", "grossAnnualPct", "feePct", "years"]),
+    run: (a) => feeDrag(a.principal, a.grossAnnualPct, a.feePct, a.years),
+  },
+  "dollar-cost-averaging": {
+    description: "Dollar-cost averaging: buying a fixed amount each period at the given prices. Returns units accumulated, total invested, average cost, and final value at the last price.",
+    inputSchema: obj({ prices: numArray("Price at each purchase period."), periodicInvestment: num("Fixed amount invested each period.") }, ["prices", "periodicInvestment"]),
+    run: (a) => dollarCostAveraging(a.prices, a.periodicInvestment),
+  },
+  "bond-price": {
+    description: "Price of a coupon bond given a yield: present value of the coupons plus the face at maturity.",
+    inputSchema: obj({ faceValue: num("Face (par) value."), couponRatePct: num("Annual coupon rate in percent of face."), years: num("Years to maturity."), yieldPct: num("Annual yield in percent."), periodsPerYear: num("Coupon periods per year (default 2).") }, ["faceValue", "couponRatePct", "years", "yieldPct"]),
+    run: (a) => bondPrice(a.faceValue, a.couponRatePct, a.years, a.yieldPct, a.periodsPerYear == null ? 2 : a.periodsPerYear),
+  },
+  "current-yield": {
+    description: "Current yield: the annual coupon as a percent of the bond's current price.",
+    inputSchema: obj({ price: num("Current bond price."), faceValue: num("Face value."), couponRatePct: num("Annual coupon rate in percent of face.") }, ["price", "faceValue", "couponRatePct"]),
+    run: (a) => currentYield(a.price, a.faceValue, a.couponRatePct),
+  },
+  "bond-duration": {
+    description: "Macaulay duration (PV-weighted average time of cashflows, in years) and modified duration (price sensitivity to yield).",
+    inputSchema: obj({ faceValue: num("Face value."), couponRatePct: num("Annual coupon rate in percent."), years: num("Years to maturity."), yieldPct: num("Annual yield in percent."), periodsPerYear: num("Coupon periods per year (default 2).") }, ["faceValue", "couponRatePct", "years", "yieldPct"]),
+    run: (a) => bondDuration(a.faceValue, a.couponRatePct, a.years, a.yieldPct, a.periodsPerYear == null ? 2 : a.periodsPerYear),
+  },
+  "convexity": {
+    description: "Bond convexity (years^2): the curvature of price with respect to yield, used alongside duration.",
+    inputSchema: obj({ faceValue: num("Face value."), couponRatePct: num("Annual coupon rate in percent."), years: num("Years to maturity."), yieldPct: num("Annual yield in percent."), periodsPerYear: num("Coupon periods per year (default 2).") }, ["faceValue", "couponRatePct", "years", "yieldPct"]),
+    run: (a) => convexity(a.faceValue, a.couponRatePct, a.years, a.yieldPct, a.periodsPerYear == null ? 2 : a.periodsPerYear),
+  },
+  "zero-coupon-price": {
+    description: "Price of a zero-coupon bond: face value discounted to today at the yield.",
+    inputSchema: obj({ faceValue: num("Face value."), years: num("Years to maturity."), yieldPct: num("Annual yield in percent."), compoundingPerYear: num("Compounding periods per year (default 1).") }, ["faceValue", "years", "yieldPct"]),
+    run: (a) => zeroCouponPrice(a.faceValue, a.years, a.yieldPct, a.compoundingPerYear == null ? 1 : a.compoundingPerYear),
+  },
+  "accrued-interest": {
+    description: "Accrued interest since the last coupon: the annual coupon pro-rated by days elapsed over the day-count basis.",
+    inputSchema: obj({ faceValue: num("Face value."), couponRatePct: num("Annual coupon rate in percent."), daysSinceLastCoupon: num("Days since the last coupon."), dayCountBasis: num("Day-count basis (default 360).") }, ["faceValue", "couponRatePct", "daysSinceLastCoupon"]),
+    run: (a) => accruedInterest(a.faceValue, a.couponRatePct, a.daysSinceLastCoupon, a.dayCountBasis == null ? 360 : a.dayCountBasis),
+  },
+  "black-scholes": {
+    description: "Black-Scholes price of a European call or put option, plus d1/d2. Volatility and rates in percent; optional continuous dividend yield.",
+    inputSchema: obj({ spot: num("Current underlying price."), strike: num("Strike price."), years: num("Time to expiry in years."), volatilityPct: num("Annualized volatility in percent."), riskFreePct: num("Risk-free rate in percent."), dividendYieldPct: num("Continuous dividend yield in percent (default 0)."), type: { type: "string", enum: ["call", "put"], description: "Option type (default call)." } }, ["spot", "strike", "years", "volatilityPct", "riskFreePct"]),
+    run: (a) => blackScholes(a.spot, a.strike, a.years, a.volatilityPct, a.riskFreePct, a.dividendYieldPct || 0, a.type || "call"),
+  },
+  "option-greeks": {
+    description: "Black-Scholes greeks for a European option: delta, gamma, vega (per 1% vol), theta (per day), rho (per 1% rate).",
+    inputSchema: obj({ spot: num("Current underlying price."), strike: num("Strike price."), years: num("Time to expiry in years."), volatilityPct: num("Annualized volatility in percent."), riskFreePct: num("Risk-free rate in percent."), dividendYieldPct: num("Continuous dividend yield in percent (default 0)."), type: { type: "string", enum: ["call", "put"], description: "Option type (default call)." } }, ["spot", "strike", "years", "volatilityPct", "riskFreePct"]),
+    run: (a) => optionGreeks(a.spot, a.strike, a.years, a.volatilityPct, a.riskFreePct, a.dividendYieldPct || 0, a.type || "call"),
+  },
+  "put-call-parity": {
+    description: "Put-call parity: given one option price, returns both. Provide call or put, plus spot, strike, years, and the rate.",
+    inputSchema: obj({ call: num("Call price (provide call or put)."), put: num("Put price (provide call or put)."), spot: num("Underlying price."), strike: num("Strike price."), years: num("Time to expiry in years."), riskFreePct: num("Risk-free rate in percent."), dividendYieldPct: num("Continuous dividend yield in percent (default 0).") }, ["spot", "strike", "years", "riskFreePct"]),
+    run: (a) => putCallParity(a),
+  },
+  "option-breakeven": {
+    description: "Break-even underlying price at expiry: strike + premium for a call, strike - premium for a put.",
+    inputSchema: obj({ strike: num("Strike price."), premium: num("Option premium paid."), type: { type: "string", enum: ["call", "put"], description: "Option type (default call)." } }, ["strike", "premium"]),
+    run: (a) => optionBreakeven(a.strike, a.premium, a.type || "call"),
+  },
+  "intrinsic-time-value": {
+    description: "Split an option premium into intrinsic value (in-the-money amount) and time value.",
+    inputSchema: obj({ spot: num("Underlying price."), strike: num("Strike price."), premium: num("Option premium."), type: { type: "string", enum: ["call", "put"], description: "Option type (default call)." } }, ["spot", "strike", "premium"]),
+    run: (a) => intrinsicTimeValue(a.spot, a.strike, a.premium, a.type || "call"),
+  },
+  "annuity-pv": {
+    description: "Present value of an ordinary annuity (level payment at each period end). rate is the per-period rate in percent.",
+    inputSchema: obj({ payment: num("Payment per period."), ratePct: num("Rate per period in percent."), periods: num("Number of periods.") }, ["payment", "ratePct", "periods"]),
+    run: (a) => annuityPV(a.payment, a.ratePct, a.periods),
+  },
+  "annuity-fv": {
+    description: "Future value of an ordinary annuity. rate is the per-period rate in percent.",
+    inputSchema: obj({ payment: num("Payment per period."), ratePct: num("Rate per period in percent."), periods: num("Number of periods.") }, ["payment", "ratePct", "periods"]),
+    run: (a) => annuityFV(a.payment, a.ratePct, a.periods),
+  },
+  "annuity-payment": {
+    description: "The level payment that amortizes a present value over n periods (the loan-payment formula). rate is per period.",
+    inputSchema: obj({ presentValue: num("Present value / principal."), ratePct: num("Rate per period in percent."), periods: num("Number of periods.") }, ["presentValue", "ratePct", "periods"]),
+    run: (a) => annuityPayment(a.presentValue, a.ratePct, a.periods),
+  },
+  "perpetuity": {
+    description: "Present value of a level or growing perpetuity: payment / (rate - growth). Null when growth is not below the rate.",
+    inputSchema: obj({ payment: num("Periodic payment."), ratePct: num("Discount rate in percent."), growthPct: num("Optional. Payment growth rate in percent (default 0).") }, ["payment", "ratePct"]),
+    run: (a) => perpetuity(a.payment, a.ratePct, a.growthPct || 0),
+  },
+  "rule-of-72": {
+    description: "Years to double: the rule-of-72 estimate (72/rate) and the exact figure (ln2 / ln(1+rate)).",
+    inputSchema: obj({ ratePct: num("Growth rate in percent.") }, ["ratePct"]),
+    run: (a) => ruleOf72(a.ratePct),
+  },
+  "payback-period": {
+    description: "Simple payback period: periods until cumulative cashflows recover the initial cost, interpolated within the crossing period. Null if never.",
+    inputSchema: obj({ initialCost: num("Upfront cost."), cashflows: numArray("Inflow each period.") }, ["initialCost", "cashflows"]),
+    run: (a) => paybackPeriod(a.initialCost, a.cashflows),
+  },
+  "discounted-payback": {
+    description: "Discounted payback period: like payback-period but each cashflow is discounted at the per-period rate.",
+    inputSchema: obj({ initialCost: num("Upfront cost."), cashflows: numArray("Inflow each period."), ratePct: num("Discount rate per period in percent.") }, ["initialCost", "cashflows", "ratePct"]),
+    run: (a) => discountedPayback(a.initialCost, a.cashflows, a.ratePct),
+  },
+  "mirr": {
+    description: "Modified internal rate of return: negatives financed at financeRate, positives reinvested at reinvestRate. Percents in and out.",
+    inputSchema: obj({ cashflows: numArray("Cashflows by period (index 0 today; outflows negative)."), financeRatePct: num("Finance rate in percent."), reinvestRatePct: num("Reinvestment rate in percent.") }, ["cashflows", "financeRatePct", "reinvestRatePct"]),
+    run: (a) => mirr(a.cashflows, a.financeRatePct, a.reinvestRatePct),
+  },
+  "xnpv": {
+    description: "Date-aware net present value: each amount discounted by its fractional years (act/365) from the first cashflow's date. Annual rate in percent.",
+    inputSchema: obj({ cashflows: datedFlows("Dated cashflows; the first date is the valuation date."), annualRatePct: num("Annual discount rate in percent.") }, ["cashflows", "annualRatePct"]),
+    run: (a) => xnpv(a.cashflows, a.annualRatePct),
+  },
+  "xirr": {
+    description: "Date-aware internal rate of return: the annual rate that zeroes the XNPV of irregular dated cashflows. Null if no rate fits.",
+    inputSchema: obj({ cashflows: datedFlows("Dated cashflows; the first date is the valuation date.") }, ["cashflows"]),
+    run: (a) => xirr(a.cashflows),
+  },
+  "loan-apr": {
+    description: "Effective APR including upfront fees: the note-rate payment priced against the net proceeds (amount - fees). Annual percent.",
+    inputSchema: obj({ amount: num("Loan amount."), ratePct: num("Note (nominal) annual rate in percent."), termMonths: num("Term in months."), fees: num("Optional. Upfront fees / points in currency (default 0).") }, ["amount", "ratePct", "termMonths"]),
+    run: (a) => loanAPR(a.amount, a.ratePct, a.termMonths, a.fees || 0),
+  },
+  "interest-only-payment": {
+    description: "Interest-only monthly payment on a balance.",
+    inputSchema: obj({ amount: num("Outstanding balance."), ratePct: num("Annual rate in percent.") }, ["amount", "ratePct"]),
+    run: (a) => interestOnlyPayment(a.amount, a.ratePct),
+  },
+  "balloon-loan": {
+    description: "Balloon loan: payment based on a long amortization, with the balloon being the balance still due after the shorter balloon term.",
+    inputSchema: obj({ amount: num("Loan amount."), ratePct: num("Annual rate in percent."), balloonMonths: num("Months until the balloon is due."), amortMonths: num("Amortization basis in months.") }, ["amount", "ratePct", "balloonMonths", "amortMonths"]),
+    run: (a) => balloonLoan(a.amount, a.ratePct, a.balloonMonths, a.amortMonths),
+  },
+  "ltv": {
+    description: "Loan-to-value ratio, percent (loan / property value).",
+    inputSchema: obj({ loanAmount: num("Loan amount."), propertyValue: num("Property value.") }, ["loanAmount", "propertyValue"]),
+    run: (a) => ltv(a.loanAmount, a.propertyValue),
+  },
+  "dti": {
+    description: "Debt-to-income ratio, percent (monthly debt / gross monthly income).",
+    inputSchema: obj({ monthlyDebt: num("Total monthly debt payments."), grossMonthlyIncome: num("Gross monthly income.") }, ["monthlyDebt", "grossMonthlyIncome"]),
+    run: (a) => dti(a.monthlyDebt, a.grossMonthlyIncome),
+  },
+  "credit-card-payoff": {
+    description: "Months to clear a credit-card balance at a fixed monthly payment, plus interest paid. Null when the payment can't cover the first month's interest.",
+    inputSchema: obj({ balance: num("Current balance."), aprPct: num("Annual percentage rate in percent."), monthlyPayment: num("Fixed monthly payment.") }, ["balance", "aprPct", "monthlyPayment"]),
+    run: (a) => creditCardPayoff(a.balance, a.aprPct, a.monthlyPayment),
+  },
+  "points-breakeven": {
+    description: "Mortgage points break-even: the upfront cost to buy down the rate, the monthly payment saving, and the whole months to recoup it.",
+    inputSchema: obj({ loanAmount: num("Loan amount."), ratePct: num("Base annual rate in percent."), termMonths: num("Term in months."), pointsPct: num("Points paid, percent of the loan."), reducedRatePct: num("Reduced annual rate after buying points.") }, ["loanAmount", "ratePct", "termMonths", "pointsPct", "reducedRatePct"]),
+    run: (a) => pointsBreakeven(a.loanAmount, a.ratePct, a.termMonths, a.pointsPct, a.reducedRatePct),
+  },
+  "biweekly-payoff": {
+    description: "Biweekly mortgage acceleration: paying half the monthly payment every two weeks. Returns the biweekly payment and the months and interest saved.",
+    inputSchema: obj({ amount: num("Loan amount."), ratePct: num("Annual rate in percent."), termMonths: num("Original term in months.") }, ["amount", "ratePct", "termMonths"]),
+    run: (a) => biweeklyPayoff(a.amount, a.ratePct, a.termMonths),
+  },
+  "cap-rate": {
+    description: "Capitalization rate: net operating income as a percent of property value.",
+    inputSchema: obj({ noi: num("Net operating income."), propertyValue: num("Property value.") }, ["noi", "propertyValue"]),
+    run: (a) => capRate(a.noi, a.propertyValue),
+  },
+  "cash-on-cash": {
+    description: "Cash-on-cash return: annual pre-tax cash flow as a percent of the cash invested.",
+    inputSchema: obj({ annualCashFlow: num("Annual pre-tax cash flow."), cashInvested: num("Cash invested.") }, ["annualCashFlow", "cashInvested"]),
+    run: (a) => cashOnCash(a.annualCashFlow, a.cashInvested),
+  },
+  "noi": {
+    description: "Net operating income: gross rental income less vacancy and operating expenses.",
+    inputSchema: obj({ grossRentalIncome: num("Gross annual rental income."), vacancyPct: num("Vacancy rate in percent."), operatingExpenses: num("Annual operating expenses.") }, ["grossRentalIncome", "vacancyPct", "operatingExpenses"]),
+    run: (a) => noi(a.grossRentalIncome, a.vacancyPct, a.operatingExpenses),
+  },
+  "gross-rent-multiplier": {
+    description: "Gross rent multiplier: price divided by gross annual rent.",
+    inputSchema: obj({ price: num("Purchase price."), grossAnnualRent: num("Gross annual rent.") }, ["price", "grossAnnualRent"]),
+    run: (a) => grossRentMultiplier(a.price, a.grossAnnualRent),
+  },
+  "dscr": {
+    description: "Debt service coverage ratio: net operating income divided by annual debt service.",
+    inputSchema: obj({ noi: num("Net operating income."), annualDebtService: num("Annual debt service.") }, ["noi", "annualDebtService"]),
+    run: (a) => dscr(a.noi, a.annualDebtService),
+  },
+  "wacc": {
+    description: "Weighted average cost of capital: equity and after-tax debt weighted by the capital structure. Percents in and out.",
+    inputSchema: obj({ equity: num("Market value of equity."), debt: num("Market value of debt."), costEquityPct: num("Cost of equity in percent."), costDebtPct: num("Cost of debt in percent."), taxRatePct: num("Tax rate in percent.") }, ["equity", "debt", "costEquityPct", "costDebtPct", "taxRatePct"]),
+    run: (a) => wacc(a.equity, a.debt, a.costEquityPct, a.costDebtPct, a.taxRatePct),
+  },
+  "break-even-units": {
+    description: "Break-even volume: fixed costs divided by the per-unit contribution (price - variable cost), plus the revenue at that volume.",
+    inputSchema: obj({ fixedCosts: num("Total fixed costs."), pricePerUnit: num("Selling price per unit."), variableCostPerUnit: num("Variable cost per unit.") }, ["fixedCosts", "pricePerUnit", "variableCostPerUnit"]),
+    run: (a) => breakEvenUnits(a.fixedCosts, a.pricePerUnit, a.variableCostPerUnit),
+  },
+  "contribution-margin": {
+    description: "Contribution margin per unit and as a percent of price.",
+    inputSchema: obj({ pricePerUnit: num("Selling price per unit."), variableCostPerUnit: num("Variable cost per unit.") }, ["pricePerUnit", "variableCostPerUnit"]),
+    run: (a) => contributionMargin(a.pricePerUnit, a.variableCostPerUnit),
+  },
+  "current-ratio": {
+    description: "Current ratio: current assets over current liabilities.",
+    inputSchema: obj({ currentAssets: num("Current assets."), currentLiabilities: num("Current liabilities.") }, ["currentAssets", "currentLiabilities"]),
+    run: (a) => currentRatio(a.currentAssets, a.currentLiabilities),
+  },
+  "quick-ratio": {
+    description: "Quick (acid-test) ratio: (current assets - inventory) over current liabilities.",
+    inputSchema: obj({ currentAssets: num("Current assets."), inventory: num("Inventory."), currentLiabilities: num("Current liabilities.") }, ["currentAssets", "inventory", "currentLiabilities"]),
+    run: (a) => quickRatio(a.currentAssets, a.inventory, a.currentLiabilities),
+  },
+  "roe": {
+    description: "Return on equity, percent: net income over shareholders' equity.",
+    inputSchema: obj({ netIncome: num("Net income."), equity: num("Shareholders' equity.") }, ["netIncome", "equity"]),
+    run: (a) => roe(a.netIncome, a.equity),
+  },
+  "roa": {
+    description: "Return on assets, percent: net income over total assets.",
+    inputSchema: obj({ netIncome: num("Net income."), totalAssets: num("Total assets.") }, ["netIncome", "totalAssets"]),
+    run: (a) => roa(a.netIncome, a.totalAssets),
+  },
+  "declining-balance-depreciation": {
+    description: "Declining-balance depreciation: a fixed percent of the reducing book value, for a given year. Returns that year's depreciation and the remaining book value.",
+    inputSchema: obj({ value: num("Initial cost."), ratePct: num("Annual depreciation rate in percent."), year: num("Year (1-based).") }, ["value", "ratePct", "year"]),
+    run: (a) => decliningBalanceDepreciation(a.value, a.ratePct, a.year),
+  },
+  "double-declining-depreciation": {
+    description: "Double-declining-balance depreciation: 2/usefulYears of the book value each year, not falling below salvage.",
+    inputSchema: obj({ value: num("Initial cost."), usefulYears: num("Useful life in years."), year: num("Year (1-based)."), salvage: num("Salvage value (default 0).") }, ["value", "usefulYears", "year"]),
+    run: (a) => doubleDecliningDepreciation(a.value, a.usefulYears, a.year, a.salvage || 0),
+  },
+  "sum-of-years-digits": {
+    description: "Sum-of-the-years'-digits depreciation: the depreciable base weighted toward the early years.",
+    inputSchema: obj({ value: num("Initial cost."), salvage: num("Salvage value."), usefulYears: num("Useful life in years."), year: num("Year (1-based).") }, ["value", "salvage", "usefulYears", "year"]),
+    run: (a) => sumOfYearsDigits(a.value, a.salvage, a.usefulYears, a.year),
+  },
+  "units-of-production-depreciation": {
+    description: "Units-of-production depreciation: the depreciable base spread over total expected units, charged by the units used this period.",
+    inputSchema: obj({ value: num("Initial cost."), salvage: num("Salvage value."), totalUnits: num("Total expected units over the life."), unitsThisPeriod: num("Units produced this period.") }, ["value", "salvage", "totalUnits", "unitsThisPeriod"]),
+    run: (a) => unitsOfProductionDepreciation(a.value, a.salvage, a.totalUnits, a.unitsThisPeriod),
+  },
+  "net-worth": {
+    description: "Net worth: assets minus liabilities.",
+    inputSchema: obj({ assets: num("Total assets."), liabilities: num("Total liabilities.") }, ["assets", "liabilities"]),
+    run: (a) => netWorth(a.assets, a.liabilities),
+  },
+  "budget-50-30-20": {
+    description: "The 50/30/20 budget split of monthly income into needs, wants, and savings.",
+    inputSchema: obj({ monthlyIncome: num("Monthly take-home income.") }, ["monthlyIncome"]),
+    run: (a) => budget503020(a.monthlyIncome),
+  },
+  "tip-split": {
+    description: "Tip and split: the tip amount, the total, and the per-person share.",
+    inputSchema: obj({ billAmount: num("Bill amount."), tipPct: num("Tip in percent."), people: num("Number of people (default 1).") }, ["billAmount", "tipPct"]),
+    run: (a) => tipSplit(a.billAmount, a.tipPct, a.people == null ? 1 : a.people),
+  },
+  "discount": {
+    description: "A single percentage discount: the amount off and the final price.",
+    inputSchema: obj({ price: num("Original price."), discountPct: num("Discount in percent.") }, ["price", "discountPct"]),
+    run: (a) => discount(a.price, a.discountPct),
+  },
+  "successive-discounts": {
+    description: "Stacked discounts applied in order: the final price and the effective single discount rate.",
+    inputSchema: obj({ price: num("Original price."), discountsPct: numArray("Discounts in percent, applied in order.") }, ["price", "discountsPct"]),
+    run: (a) => successiveDiscounts(a.price, a.discountsPct),
+  },
+  "percentage-change": {
+    description: "Percentage change from one value to another. Null when the starting value is zero.",
+    inputSchema: obj({ from: num("Starting value."), to: num("Ending value.") }, ["from", "to"]),
+    run: (a) => percentageChange(a.from, a.to),
+  },
+  "unit-price": {
+    description: "Unit price: price divided by quantity (for comparing pack sizes). Null when quantity is zero.",
+    inputSchema: obj({ price: num("Price."), quantity: num("Quantity / size.") }, ["price", "quantity"]),
+    run: (a) => unitPrice(a.price, a.quantity),
+  },
+  "hourly-to-salary": {
+    description: "Annualize an hourly rate (and the monthly equivalent).",
+    inputSchema: obj({ hourlyRate: num("Hourly rate."), hoursPerWeek: num("Hours per week (default 40)."), weeksPerYear: num("Weeks per year (default 52).") }, ["hourlyRate"]),
+    run: (a) => hourlyToSalary(a.hourlyRate, a.hoursPerWeek == null ? 40 : a.hoursPerWeek, a.weeksPerYear == null ? 52 : a.weeksPerYear),
+  },
+  "salary-to-hourly": {
+    description: "Hourly rate implied by an annual salary.",
+    inputSchema: obj({ annualSalary: num("Annual salary."), hoursPerWeek: num("Hours per week (default 40)."), weeksPerYear: num("Weeks per year (default 52).") }, ["annualSalary"]),
+    run: (a) => salaryToHourly(a.annualSalary, a.hoursPerWeek == null ? 40 : a.hoursPerWeek, a.weeksPerYear == null ? 52 : a.weeksPerYear),
+  },
+  "after-tax-yield": {
+    description: "After-tax yield: a yield reduced by the tax rate. Percents in and out.",
+    inputSchema: obj({ yieldPct: num("Pre-tax yield in percent."), taxRatePct: num("Tax rate in percent.") }, ["yieldPct", "taxRatePct"]),
+    run: (a) => afterTaxYield(a.yieldPct, a.taxRatePct),
+  },
+  "tax-equivalent-yield": {
+    description: "Tax-equivalent yield: the taxable yield that matches a tax-free (e.g. muni) yield. Percents in and out.",
+    inputSchema: obj({ taxFreeYieldPct: num("Tax-free yield in percent."), taxRatePct: num("Marginal tax rate in percent.") }, ["taxFreeYieldPct", "taxRatePct"]),
+    run: (a) => taxEquivalentYield(a.taxFreeYieldPct, a.taxRatePct),
+  },
+  "coast-fire": {
+    description: "Coast FIRE: whether the current nest egg, left to grow untouched to retirement, already reaches the FIRE target. Returns the target, the projected balance, whether it coasts, and any shortfall.",
+    inputSchema: obj({ currentNestEgg: num("Amount invested today."), annualRatePct: num("Expected annual growth in percent."), yearsToRetirement: num("Years until retirement."), annualSpend: num("Yearly spending in retirement."), withdrawalRatePct: num("Safe withdrawal rate in percent (default 4).") }, ["currentNestEgg", "annualRatePct", "yearsToRetirement", "annualSpend"]),
+    run: (a) => coastFire(a.currentNestEgg, a.annualRatePct, a.yearsToRetirement, a.annualSpend, a.withdrawalRatePct == null ? 4 : a.withdrawalRatePct),
+  },
+  "barista-fire": {
+    description: "Barista FIRE: the nest egg needed when part-time income covers part of the spending, so the portfolio only funds the remainder at the safe withdrawal rate.",
+    inputSchema: obj({ annualSpend: num("Yearly spending."), partTimeIncome: num("Yearly part-time income."), withdrawalRatePct: num("Safe withdrawal rate in percent (default 4).") }, ["annualSpend", "partTimeIncome"]),
+    run: (a) => baristaFire(a.annualSpend, a.partTimeIncome, a.withdrawalRatePct == null ? 4 : a.withdrawalRatePct),
+  },
 };
 
 // Output schemas — declared so MCP clients get typed results (structuredContent shape) without a
@@ -351,6 +695,72 @@ const OUTPUTS = {
   "margin-markup": out({ cost: onum("Cost."), price: onum("Price."), profit: onum("Profit."), marginPct: onum("Margin, percent."), markupPct: onum("Markup, percent.") }),
   "de-gross-to-net": out({ gross: onum("Gross."), incomeTax: onum("Income tax."), soli: onum("Soli."), churchTax: onum("Church tax."), contributions: oobj("{ pension, unemployment, health, care, total }."), totalDeductions: onum("Total deductions."), net: onum("Net.") }),
   "vat": out({ net: onum("Net price."), tax: onum("Tax amount."), gross: onum("Gross price.") }),
+  "roi": out({ roiPct: onum("Total return, percent."), annualizedPct: onum("Annualized return, percent (null if no years).") }),
+  "real-return": out({ realPct: onum("Real return, percent.") }),
+  "return-stats": out({ count: onum("Number of returns."), mean: onum("Mean return."), variance: onum("Sample variance (null if <2)."), stdev: onum("Sample stdev / volatility (null if <2).") }),
+  "sharpe-ratio": out({ sharpe: onum("Sharpe ratio (null if no volatility)."), meanPct: onum("Mean return."), stdevPct: onum("Volatility.") }),
+  "max-drawdown": out({ maxDrawdownPct: onum("Largest peak-to-trough decline, percent.") }),
+  "holding-period-return": out({ hprPct: onum("Holding-period return, percent (null if begin=0).") }),
+  "fee-drag": out({ gross: onum("Gross balance."), net: onum("Net of fees."), lostToFees: onum("Amount lost to fees.") }),
+  "dollar-cost-averaging": out({ units: onum("Units accumulated."), invested: onum("Total invested."), avgCost: onum("Average cost per unit (null if none)."), finalValue: onum("Value at the last price.") }),
+  "bond-price": out({ price: onum("Bond price (null if degenerate).") }),
+  "current-yield": out({ currentYieldPct: onum("Current yield, percent (null if price<=0).") }),
+  "bond-duration": out({ macaulay: onum("Macaulay duration, years."), modified: onum("Modified duration.") }),
+  "convexity": out({ convexity: onum("Convexity, years^2.") }),
+  "zero-coupon-price": out({ price: onum("Zero-coupon price.") }),
+  "accrued-interest": out({ accrued: onum("Accrued interest.") }),
+  "black-scholes": out({ price: onum("Option price (null if degenerate)."), d1: onum("d1."), d2: onum("d2.") }),
+  "option-greeks": out({ delta: onum("Delta."), gamma: onum("Gamma."), vega: onum("Vega per 1% vol."), theta: onum("Theta per day."), rho: onum("Rho per 1% rate.") }),
+  "put-call-parity": out({ call: onum("Call price."), put: onum("Put price.") }),
+  "option-breakeven": out({ breakeven: onum("Break-even underlying price.") }),
+  "intrinsic-time-value": out({ intrinsic: onum("Intrinsic value."), timeValue: onum("Time value.") }),
+  "annuity-pv": out({ pv: onum("Present value.") }),
+  "annuity-fv": out({ fv: onum("Future value.") }),
+  "annuity-payment": out({ payment: onum("Level payment (null if periods<=0).") }),
+  "perpetuity": out({ pv: onum("Present value (null if growth>=rate).") }),
+  "rule-of-72": out({ years72: onum("72/rate estimate."), exactYears: onum("Exact doubling time.") }),
+  "payback-period": out({ years: onum("Payback in periods (null if never).") }),
+  "discounted-payback": out({ years: onum("Discounted payback in periods (null if never).") }),
+  "mirr": out({ mirrPct: onum("Modified IRR, percent (null if degenerate).") }),
+  "xnpv": out({ npv: onum("Date-aware net present value.") }),
+  "xirr": out({ xirrPct: onum("Date-aware IRR, percent (null if none).") }),
+  "loan-apr": out({ aprPct: onum("Effective APR, percent (null if degenerate).") }),
+  "interest-only-payment": out({ payment: onum("Monthly interest payment.") }),
+  "balloon-loan": out({ payment: onum("Monthly payment."), balloon: onum("Balloon balance due.") }),
+  "ltv": out({ ltvPct: onum("Loan-to-value, percent (null if value<=0).") }),
+  "dti": out({ dtiPct: onum("Debt-to-income, percent (null if income<=0).") }),
+  "credit-card-payoff": out({ months: onum("Months to clear (null if never)."), totalInterest: onum("Total interest (null if never)."), totalPaid: onum("Total paid (null if never).") }),
+  "points-breakeven": out({ cost: onum("Upfront cost of points."), monthlySaving: onum("Monthly payment saving."), breakevenMonths: onum("Whole months to recoup (null if no saving).") }),
+  "biweekly-payoff": out({ biweeklyPayment: onum("Biweekly payment."), monthsSaved: onum("Months saved."), interestSaved: onum("Interest saved.") }),
+  "cap-rate": out({ capRatePct: onum("Cap rate, percent (null if value<=0).") }),
+  "cash-on-cash": out({ cashOnCashPct: onum("Cash-on-cash return, percent (null if invested<=0).") }),
+  "noi": out({ noi: onum("Net operating income.") }),
+  "gross-rent-multiplier": out({ grm: onum("Gross rent multiplier (null if rent<=0).") }),
+  "dscr": out({ dscr: onum("Debt service coverage ratio (null if debt<=0).") }),
+  "wacc": out({ waccPct: onum("WACC, percent (null if no capital).") }),
+  "break-even-units": out({ units: onum("Break-even units (null if no contribution)."), revenue: onum("Revenue at break-even (null if none).") }),
+  "contribution-margin": out({ contributionMargin: onum("Contribution per unit."), ratioPct: onum("Contribution margin ratio, percent (null if price=0).") }),
+  "current-ratio": out({ currentRatio: onum("Current ratio (null if liabilities<=0).") }),
+  "quick-ratio": out({ quickRatio: onum("Quick ratio (null if liabilities<=0).") }),
+  "roe": out({ roePct: onum("Return on equity, percent (null if equity<=0).") }),
+  "roa": out({ roaPct: onum("Return on assets, percent (null if assets<=0).") }),
+  "declining-balance-depreciation": out({ depreciation: onum("Depreciation this year."), bookValue: onum("Book value at year end.") }),
+  "double-declining-depreciation": out({ depreciation: onum("Depreciation this year."), bookValue: onum("Book value at year end.") }),
+  "sum-of-years-digits": out({ depreciation: onum("Depreciation this year."), bookValue: onum("Book value at year end.") }),
+  "units-of-production-depreciation": out({ depreciation: onum("Depreciation this period (null if totalUnits<=0).") }),
+  "net-worth": out({ netWorth: onum("Assets minus liabilities.") }),
+  "budget-50-30-20": out({ needs: onum("50% needs."), wants: onum("30% wants."), savings: onum("20% savings.") }),
+  "tip-split": out({ tip: onum("Tip amount."), total: onum("Total with tip."), perPerson: onum("Per-person share.") }),
+  "discount": out({ discount: onum("Amount off."), finalPrice: onum("Final price.") }),
+  "successive-discounts": out({ finalPrice: onum("Final price."), effectivePct: onum("Effective single discount, percent (null if price=0).") }),
+  "percentage-change": out({ changePct: onum("Percentage change (null if from=0).") }),
+  "unit-price": out({ unitPrice: onum("Price per unit (null if quantity=0).") }),
+  "hourly-to-salary": out({ annual: onum("Annual salary."), monthly: onum("Monthly equivalent.") }),
+  "salary-to-hourly": out({ hourly: onum("Hourly rate (null if hours<=0).") }),
+  "after-tax-yield": out({ afterTaxPct: onum("After-tax yield, percent.") }),
+  "tax-equivalent-yield": out({ taxEquivalentPct: onum("Tax-equivalent yield, percent (null if tax>=100%).") }),
+  "coast-fire": out({ fireTarget: onum("FIRE target."), projected: onum("Projected balance at retirement."), isCoasting: { type: "boolean", description: "True if it already coasts." }, gap: onum("Shortfall in future-value terms.") }),
+  "barista-fire": out({ target: onum("Nest egg needed (null if withdrawal rate<=0).") }),
 };
 
 for (const [name, schema] of Object.entries(OUTPUTS)) CALCULATORS[name].outputSchema = schema;

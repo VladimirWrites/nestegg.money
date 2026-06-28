@@ -65,6 +65,15 @@ test("the new calculators are reachable over /api/calc/* too", async () => {
 
   r = await call("POST", "/api/calc/de-gross-to-net", { gross: 60000, incomeTax: 11000, churchTaxPct: 9, pensionPct: 9.3, unemploymentPct: 1.3, healthPct: 8.15, carePct: 2.3, pensionCeiling: 90600, healthCeiling: 62100 });
   assert.equal((await r.json()).net, 35380);
+
+  r = await call("POST", "/api/calc/roi", { initial: 1000, finalValue: 1500 });
+  assert.equal((await r.json()).roiPct, 50);
+
+  r = await call("POST", "/api/calc/sharpe-ratio", { returns: [10, -5, 15, 0], riskFreePct: 1 });
+  assert.ok(Math.abs((await r.json()).sharpe - (5 - 1) / Math.sqrt(250 / 3)) < 1e-6);
+
+  r = await call("POST", "/api/calc/black-scholes", { spot: 100, strike: 100, years: 1, volatilityPct: 20, riskFreePct: 5 });
+  assert.ok(Math.abs((await r.json()).price - 10.4506) < 1e-2);
 });
 
 test("REST validates inputs — 400 with a helpful message on a missing field", async () => {
