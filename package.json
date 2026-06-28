@@ -11,7 +11,7 @@
   },
   "private": true,
   "scripts": {
-    "test": "node --test tests/*.mjs",
+    "test": "node --test tests/*.test.mjs",
     "sync-version": "node scripts/sync-version.mjs",
     "version": "node scripts/sync-version.mjs && git add public/sw.js"
   }
