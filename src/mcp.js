@@ -3,6 +3,7 @@
 // the shared registry, so nothing is duplicated. A POST carries one JSON-RPC message (or a
 // batch) and gets a single JSON response; notifications get a 202 with no body.
 import { CALCULATORS, CORS } from "./calculators.js";
+import { validateArgs } from "./validate.js";
 
 const DEFAULT_PROTOCOL = "2025-06-18";
 const rpc = (id, result) => ({ jsonrpc: "2.0", id, result });
@@ -41,6 +42,8 @@ function handle(msg) {
       const args = (params && params.arguments) || {};
       const c = CALCULATORS[name];
       if (!c) return rpc(id, { content: [{ type: "text", text: `Unknown tool: ${name}` }], isError: true });
+      const v = validateArgs(c.inputSchema, args);
+      if (!v.ok) return rpc(id, { content: [{ type: "text", text: "Invalid arguments: " + v.errors.join("; ") }], isError: true });
       try {
         const result = c.run(args);
         return rpc(id, { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result });

@@ -48,6 +48,12 @@ test("tools/call returns the Phase-1 vectors (text + structuredContent)", async 
   assert.ok(Math.abs(j.result.structuredContent.value - 0.0717734625) < 1e-9);
 });
 
+test("tools/call validates inputs — a missing required field is a tool error", async () => {
+  const j = await (await mcp({ jsonrpc: "2.0", id: 90, method: "tools/call", params: { name: "future-value", arguments: { principal: 1000 } } })).json();
+  assert.equal(j.result.isError, true);
+  assert.ok(j.result.content[0].text.toLowerCase().includes("required"));
+});
+
 test("tools/call on an unknown tool is a tool error, not a transport error", async () => {
   const j = await (await mcp({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "nope", arguments: {} } })).json();
   assert.equal(j.result.isError, true);

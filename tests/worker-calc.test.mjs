@@ -67,6 +67,12 @@ test("the new calculators are reachable over /api/calc/* too", async () => {
   assert.equal((await r.json()).net, 35380);
 });
 
+test("REST validates inputs — 400 with a helpful message on a missing field", async () => {
+  const r = await call("POST", "/api/calc/future-value", { principal: 1000 });
+  assert.equal(r.status, 400);
+  assert.ok(JSON.stringify(await r.json()).toLowerCase().includes("required"));
+});
+
 test("CORS preflight, unknown calc, wrong method, and bad body are handled", async () => {
   assert.equal((await call("OPTIONS", "/api/calc/cagr")).status, 204);
   assert.equal((await call("POST", "/api/calc/nope", {})).status, 404);
