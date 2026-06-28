@@ -14,10 +14,12 @@ import {
   holdingPeriodReturn, feeDrag, dollarCostAveraging,
   bondPrice, currentYield, bondDuration, convexity, zeroCouponPrice, accruedInterest,
   blackScholes, optionGreeks, putCallParity, optionBreakeven, intrinsicTimeValue,
+  annuityPV, annuityFV, annuityPayment, perpetuity, ruleOf72,
+  paybackPeriod, discountedPayback, mirr, xnpv, xirr,
 } from "../public/lib/finance-math.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.4.0";
+export const CALC_VERSION = "1.5.0";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
@@ -31,6 +33,7 @@ const num = (description) => ({ type: "number", description });
 const str = (description) => ({ type: "string", description });
 const bool = (description) => ({ type: "boolean", description });
 const numArray = (description) => ({ type: "array", description, items: { type: "number" } });
+const datedFlows = (description) => ({ type: "array", description, items: { type: "object", properties: { date: { type: "string", description: "ISO date." }, amount: { type: "number", description: "Cashflow amount (outflows negative)." } }, required: ["date", "amount"] } });
 
 // Shared loan input shape (amortization + loan-payoff).
 const loanProps = {
@@ -404,6 +407,56 @@ export const CALCULATORS = {
     inputSchema: obj({ spot: num("Underlying price."), strike: num("Strike price."), premium: num("Option premium."), type: { type: "string", enum: ["call", "put"], description: "Option type (default call)." } }, ["spot", "strike", "premium"]),
     run: (a) => intrinsicTimeValue(a.spot, a.strike, a.premium, a.type || "call"),
   },
+  "annuity-pv": {
+    description: "Present value of an ordinary annuity (level payment at each period end). rate is the per-period rate in percent.",
+    inputSchema: obj({ payment: num("Payment per period."), ratePct: num("Rate per period in percent."), periods: num("Number of periods.") }, ["payment", "ratePct", "periods"]),
+    run: (a) => annuityPV(a.payment, a.ratePct, a.periods),
+  },
+  "annuity-fv": {
+    description: "Future value of an ordinary annuity. rate is the per-period rate in percent.",
+    inputSchema: obj({ payment: num("Payment per period."), ratePct: num("Rate per period in percent."), periods: num("Number of periods.") }, ["payment", "ratePct", "periods"]),
+    run: (a) => annuityFV(a.payment, a.ratePct, a.periods),
+  },
+  "annuity-payment": {
+    description: "The level payment that amortizes a present value over n periods (the loan-payment formula). rate is per period.",
+    inputSchema: obj({ presentValue: num("Present value / principal."), ratePct: num("Rate per period in percent."), periods: num("Number of periods.") }, ["presentValue", "ratePct", "periods"]),
+    run: (a) => annuityPayment(a.presentValue, a.ratePct, a.periods),
+  },
+  "perpetuity": {
+    description: "Present value of a level or growing perpetuity: payment / (rate - growth). Null when growth is not below the rate.",
+    inputSchema: obj({ payment: num("Periodic payment."), ratePct: num("Discount rate in percent."), growthPct: num("Optional. Payment growth rate in percent (default 0).") }, ["payment", "ratePct"]),
+    run: (a) => perpetuity(a.payment, a.ratePct, a.growthPct || 0),
+  },
+  "rule-of-72": {
+    description: "Years to double: the rule-of-72 estimate (72/rate) and the exact figure (ln2 / ln(1+rate)).",
+    inputSchema: obj({ ratePct: num("Growth rate in percent.") }, ["ratePct"]),
+    run: (a) => ruleOf72(a.ratePct),
+  },
+  "payback-period": {
+    description: "Simple payback period: periods until cumulative cashflows recover the initial cost, interpolated within the crossing period. Null if never.",
+    inputSchema: obj({ initialCost: num("Upfront cost."), cashflows: numArray("Inflow each period.") }, ["initialCost", "cashflows"]),
+    run: (a) => paybackPeriod(a.initialCost, a.cashflows),
+  },
+  "discounted-payback": {
+    description: "Discounted payback period: like payback-period but each cashflow is discounted at the per-period rate.",
+    inputSchema: obj({ initialCost: num("Upfront cost."), cashflows: numArray("Inflow each period."), ratePct: num("Discount rate per period in percent.") }, ["initialCost", "cashflows", "ratePct"]),
+    run: (a) => discountedPayback(a.initialCost, a.cashflows, a.ratePct),
+  },
+  "mirr": {
+    description: "Modified internal rate of return: negatives financed at financeRate, positives reinvested at reinvestRate. Percents in and out.",
+    inputSchema: obj({ cashflows: numArray("Cashflows by period (index 0 today; outflows negative)."), financeRatePct: num("Finance rate in percent."), reinvestRatePct: num("Reinvestment rate in percent.") }, ["cashflows", "financeRatePct", "reinvestRatePct"]),
+    run: (a) => mirr(a.cashflows, a.financeRatePct, a.reinvestRatePct),
+  },
+  "xnpv": {
+    description: "Date-aware net present value: each amount discounted by its fractional years (act/365) from the first cashflow's date. Annual rate in percent.",
+    inputSchema: obj({ cashflows: datedFlows("Dated cashflows; the first date is the valuation date."), annualRatePct: num("Annual discount rate in percent.") }, ["cashflows", "annualRatePct"]),
+    run: (a) => xnpv(a.cashflows, a.annualRatePct),
+  },
+  "xirr": {
+    description: "Date-aware internal rate of return: the annual rate that zeroes the XNPV of irregular dated cashflows. Null if no rate fits.",
+    inputSchema: obj({ cashflows: datedFlows("Dated cashflows; the first date is the valuation date.") }, ["cashflows"]),
+    run: (a) => xirr(a.cashflows),
+  },
 };
 
 // Output schemas — declared so MCP clients get typed results (structuredContent shape) without a
@@ -469,6 +522,16 @@ const OUTPUTS = {
   "put-call-parity": out({ call: onum("Call price."), put: onum("Put price.") }),
   "option-breakeven": out({ breakeven: onum("Break-even underlying price.") }),
   "intrinsic-time-value": out({ intrinsic: onum("Intrinsic value."), timeValue: onum("Time value.") }),
+  "annuity-pv": out({ pv: onum("Present value.") }),
+  "annuity-fv": out({ fv: onum("Future value.") }),
+  "annuity-payment": out({ payment: onum("Level payment (null if periods<=0).") }),
+  "perpetuity": out({ pv: onum("Present value (null if growth>=rate).") }),
+  "rule-of-72": out({ years72: onum("72/rate estimate."), exactYears: onum("Exact doubling time.") }),
+  "payback-period": out({ years: onum("Payback in periods (null if never).") }),
+  "discounted-payback": out({ years: onum("Discounted payback in periods (null if never).") }),
+  "mirr": out({ mirrPct: onum("Modified IRR, percent (null if degenerate).") }),
+  "xnpv": out({ npv: onum("Date-aware net present value.") }),
+  "xirr": out({ xirrPct: onum("Date-aware IRR, percent (null if none).") }),
 };
 
 for (const [name, schema] of Object.entries(OUTPUTS)) CALCULATORS[name].outputSchema = schema;
