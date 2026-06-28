@@ -9,6 +9,9 @@ export const FALLBACK_FX = { EUR: 1, USD: 1.08, GBP: 0.85, CHF: 0.96, JPY: 170, 
 // Chart series colour cycle.
 export const PALETTE = ["#4aa3ff", "#ff8c1a", "#3ad17a", "#ffd23a", "#ff4d6d", "#9b8cff", "#2fd0c8", "#ffb000", "#7aa0ff", "#e06be0", "#9ad13a", "#ff7847"];
 
+// Starter categories for a fresh budget (separate from net-worth categories — spending, not assets).
+export const DEFAULT_BUDGET_CATEGORIES = ["Housing", "Food", "Transport", "Utilities", "Health", "Leisure", "Savings"];
+
 // Schema version written by migrate().
 export const SCHEMA_VERSION = 6;
 

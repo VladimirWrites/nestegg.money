@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { setState } from "../public/js/domain/store.js";
-import { salaryIncome, monthlyLoanOutflow, loanOutflows, budgetSummary } from "../public/js/domain/budget.js";
+import { salaryIncome, monthlyLoanOutflow, loanOutflows, budgetCategories, budgetSummary } from "../public/js/domain/budget.js";
 
 const near = (a, b, eps = 1e-2) => assert.ok(Math.abs(a - b) <= eps, `${a} !~= ${b}`);
 
@@ -67,6 +67,28 @@ test("budgetSummary: leftover = income - fixed - expenses, with savings rate", (
   assert.equal(s.expenses, 2500);
   near(s.leftover, 5600 - 1199.10 - 2500, 1e-2);
   near(s.savingsRatePct, s.leftover / s.income * 100, 1e-6);
+});
+
+test("budgetCategories: expenses (by group) and loans (by loanCats) grouped together", () => {
+  setState(base({
+    assets: [activeMortgage], // "Home" loan, ~1199.10/mo
+    budget: {
+      incomeOverride: null,
+      loanCats: { m1: "Housing" }, // put the mortgage under Housing
+      expenses: [
+        { id: "x1", name: "Rent help", group: "Housing", amount: 300 },
+        { id: "x2", name: "Groceries", group: "Food", amount: 600 },
+        { id: "x3", name: "Misc", amount: 50 }, // no group -> Uncategorized
+      ],
+    },
+  }));
+  const cats = budgetCategories();
+  const housing = cats.find((c) => c.category === "Housing");
+  near(housing.total, 300 + 1199.10, 1e-2);      // expense + the mortgage loan
+  assert.equal(housing.items.length, 2);          // Rent help (expense) + Home (loan)
+  assert.ok(housing.items.some((i) => i.kind === "loan" && i.name === "Home"));
+  assert.ok(cats.some((c) => c.category === "Uncategorized")); // the un-grouped Misc
+  assert.equal(budgetSummary().categories.length, 3); // Housing, Food, Uncategorized
 });
 
 test("budgetSummary: income override replaces the salary-derived income", () => {
