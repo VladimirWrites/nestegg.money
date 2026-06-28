@@ -10,10 +10,12 @@ import {
   presentValue, requiredReturn, yieldToMaturity, taxFromBrackets,
   marginMarkup, compoundInterest,
   germanNetSalary, vat,
+  roi, realReturn, returnStats, sharpeRatio, maxDrawdown,
+  holdingPeriodReturn, feeDrag, dollarCostAveraging,
 } from "../public/lib/finance-math.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.2.0";
+export const CALC_VERSION = "1.3.0";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
@@ -305,6 +307,46 @@ export const CALCULATORS = {
     }, ["amount", "ratePct"]),
     run: (a) => vat(a.amount, a.ratePct, !!a.inclusive),
   },
+  "roi": {
+    description: "Return on investment: total percent gain, plus the annualized rate when a holding period in years is given.",
+    inputSchema: obj({ initial: num("Amount invested."), finalValue: num("Ending value."), years: num("Optional. Holding period in years, for the annualized rate.") }, ["initial", "finalValue"]),
+    run: (a) => roi(a.initial, a.finalValue, a.years),
+  },
+  "real-return": {
+    description: "Real (inflation-adjusted) return from a nominal rate via the Fisher relation: (1+nominal)/(1+inflation) - 1.",
+    inputSchema: obj({ nominalRatePct: num("Nominal annual rate in percent."), inflationRatePct: num("Annual inflation in percent.") }, ["nominalRatePct", "inflationRatePct"]),
+    run: (a) => realReturn(a.nominalRatePct, a.inflationRatePct),
+  },
+  "return-stats": {
+    description: "Mean, sample variance, and sample standard deviation (n-1) of a series of returns. Pass percents to get a percent stdev (volatility).",
+    inputSchema: obj({ returns: numArray("The return series (e.g. yearly percents).") }, ["returns"]),
+    run: (a) => returnStats(a.returns),
+  },
+  "sharpe-ratio": {
+    description: "Sharpe ratio: excess mean return per unit of volatility, (mean - riskFree) / stdev. Null when volatility is undefined or zero.",
+    inputSchema: obj({ returns: numArray("The return series (percents)."), riskFreePct: num("Risk-free rate in the same unit (default 0).") }, ["returns"]),
+    run: (a) => sharpeRatio(a.returns, a.riskFreePct || 0),
+  },
+  "max-drawdown": {
+    description: "Maximum drawdown of a value series: the largest peak-to-trough decline, as a positive percent.",
+    inputSchema: obj({ series: numArray("Sequence of values (e.g. portfolio levels).") }, ["series"]),
+    run: (a) => maxDrawdown(a.series),
+  },
+  "holding-period-return": {
+    description: "Holding-period return: (income + capital gain) / starting value, in percent.",
+    inputSchema: obj({ income: num("Income received over the period."), endValue: num("Ending value."), beginValue: num("Starting value.") }, ["income", "endValue", "beginValue"]),
+    run: (a) => holdingPeriodReturn(a.income, a.endValue, a.beginValue),
+  },
+  "fee-drag": {
+    description: "Effect of an annual fee: the compounded balance at the gross rate vs net of the fee, and the amount lost to fees.",
+    inputSchema: obj({ principal: num("Starting amount."), grossAnnualPct: num("Gross annual return in percent."), feePct: num("Annual fee in percent."), years: num("Number of years.") }, ["principal", "grossAnnualPct", "feePct", "years"]),
+    run: (a) => feeDrag(a.principal, a.grossAnnualPct, a.feePct, a.years),
+  },
+  "dollar-cost-averaging": {
+    description: "Dollar-cost averaging: buying a fixed amount each period at the given prices. Returns units accumulated, total invested, average cost, and final value at the last price.",
+    inputSchema: obj({ prices: numArray("Price at each purchase period."), periodicInvestment: num("Fixed amount invested each period.") }, ["prices", "periodicInvestment"]),
+    run: (a) => dollarCostAveraging(a.prices, a.periodicInvestment),
+  },
 };
 
 // Output schemas — declared so MCP clients get typed results (structuredContent shape) without a
@@ -351,6 +393,14 @@ const OUTPUTS = {
   "margin-markup": out({ cost: onum("Cost."), price: onum("Price."), profit: onum("Profit."), marginPct: onum("Margin, percent."), markupPct: onum("Markup, percent.") }),
   "de-gross-to-net": out({ gross: onum("Gross."), incomeTax: onum("Income tax."), soli: onum("Soli."), churchTax: onum("Church tax."), contributions: oobj("{ pension, unemployment, health, care, total }."), totalDeductions: onum("Total deductions."), net: onum("Net.") }),
   "vat": out({ net: onum("Net price."), tax: onum("Tax amount."), gross: onum("Gross price.") }),
+  "roi": out({ roiPct: onum("Total return, percent."), annualizedPct: onum("Annualized return, percent (null if no years).") }),
+  "real-return": out({ realPct: onum("Real return, percent.") }),
+  "return-stats": out({ count: onum("Number of returns."), mean: onum("Mean return."), variance: onum("Sample variance (null if <2)."), stdev: onum("Sample stdev / volatility (null if <2).") }),
+  "sharpe-ratio": out({ sharpe: onum("Sharpe ratio (null if no volatility)."), meanPct: onum("Mean return."), stdevPct: onum("Volatility.") }),
+  "max-drawdown": out({ maxDrawdownPct: onum("Largest peak-to-trough decline, percent.") }),
+  "holding-period-return": out({ hprPct: onum("Holding-period return, percent (null if begin=0).") }),
+  "fee-drag": out({ gross: onum("Gross balance."), net: onum("Net of fees."), lostToFees: onum("Amount lost to fees.") }),
+  "dollar-cost-averaging": out({ units: onum("Units accumulated."), invested: onum("Total invested."), avgCost: onum("Average cost per unit (null if none)."), finalValue: onum("Value at the last price.") }),
 };
 
 for (const [name, schema] of Object.entries(OUTPUTS)) CALCULATORS[name].outputSchema = schema;
