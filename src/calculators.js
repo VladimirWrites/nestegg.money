@@ -18,10 +18,13 @@ import {
   paybackPeriod, discountedPayback, mirr, xnpv, xirr,
   loanAPR, interestOnlyPayment, balloonLoan, ltv, dti,
   creditCardPayoff, pointsBreakeven, biweeklyPayoff,
+  capRate, cashOnCash, noi, grossRentMultiplier, dscr,
+  wacc, breakEvenUnits, contributionMargin, currentRatio, quickRatio, roe, roa,
+  decliningBalanceDepreciation, doubleDecliningDepreciation, sumOfYearsDigits, unitsOfProductionDepreciation,
 } from "../public/lib/finance-math.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.6.0";
+export const CALC_VERSION = "1.7.0";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
@@ -499,6 +502,86 @@ export const CALCULATORS = {
     inputSchema: obj({ amount: num("Loan amount."), ratePct: num("Annual rate in percent."), termMonths: num("Original term in months.") }, ["amount", "ratePct", "termMonths"]),
     run: (a) => biweeklyPayoff(a.amount, a.ratePct, a.termMonths),
   },
+  "cap-rate": {
+    description: "Capitalization rate: net operating income as a percent of property value.",
+    inputSchema: obj({ noi: num("Net operating income."), propertyValue: num("Property value.") }, ["noi", "propertyValue"]),
+    run: (a) => capRate(a.noi, a.propertyValue),
+  },
+  "cash-on-cash": {
+    description: "Cash-on-cash return: annual pre-tax cash flow as a percent of the cash invested.",
+    inputSchema: obj({ annualCashFlow: num("Annual pre-tax cash flow."), cashInvested: num("Cash invested.") }, ["annualCashFlow", "cashInvested"]),
+    run: (a) => cashOnCash(a.annualCashFlow, a.cashInvested),
+  },
+  "noi": {
+    description: "Net operating income: gross rental income less vacancy and operating expenses.",
+    inputSchema: obj({ grossRentalIncome: num("Gross annual rental income."), vacancyPct: num("Vacancy rate in percent."), operatingExpenses: num("Annual operating expenses.") }, ["grossRentalIncome", "vacancyPct", "operatingExpenses"]),
+    run: (a) => noi(a.grossRentalIncome, a.vacancyPct, a.operatingExpenses),
+  },
+  "gross-rent-multiplier": {
+    description: "Gross rent multiplier: price divided by gross annual rent.",
+    inputSchema: obj({ price: num("Purchase price."), grossAnnualRent: num("Gross annual rent.") }, ["price", "grossAnnualRent"]),
+    run: (a) => grossRentMultiplier(a.price, a.grossAnnualRent),
+  },
+  "dscr": {
+    description: "Debt service coverage ratio: net operating income divided by annual debt service.",
+    inputSchema: obj({ noi: num("Net operating income."), annualDebtService: num("Annual debt service.") }, ["noi", "annualDebtService"]),
+    run: (a) => dscr(a.noi, a.annualDebtService),
+  },
+  "wacc": {
+    description: "Weighted average cost of capital: equity and after-tax debt weighted by the capital structure. Percents in and out.",
+    inputSchema: obj({ equity: num("Market value of equity."), debt: num("Market value of debt."), costEquityPct: num("Cost of equity in percent."), costDebtPct: num("Cost of debt in percent."), taxRatePct: num("Tax rate in percent.") }, ["equity", "debt", "costEquityPct", "costDebtPct", "taxRatePct"]),
+    run: (a) => wacc(a.equity, a.debt, a.costEquityPct, a.costDebtPct, a.taxRatePct),
+  },
+  "break-even-units": {
+    description: "Break-even volume: fixed costs divided by the per-unit contribution (price - variable cost), plus the revenue at that volume.",
+    inputSchema: obj({ fixedCosts: num("Total fixed costs."), pricePerUnit: num("Selling price per unit."), variableCostPerUnit: num("Variable cost per unit.") }, ["fixedCosts", "pricePerUnit", "variableCostPerUnit"]),
+    run: (a) => breakEvenUnits(a.fixedCosts, a.pricePerUnit, a.variableCostPerUnit),
+  },
+  "contribution-margin": {
+    description: "Contribution margin per unit and as a percent of price.",
+    inputSchema: obj({ pricePerUnit: num("Selling price per unit."), variableCostPerUnit: num("Variable cost per unit.") }, ["pricePerUnit", "variableCostPerUnit"]),
+    run: (a) => contributionMargin(a.pricePerUnit, a.variableCostPerUnit),
+  },
+  "current-ratio": {
+    description: "Current ratio: current assets over current liabilities.",
+    inputSchema: obj({ currentAssets: num("Current assets."), currentLiabilities: num("Current liabilities.") }, ["currentAssets", "currentLiabilities"]),
+    run: (a) => currentRatio(a.currentAssets, a.currentLiabilities),
+  },
+  "quick-ratio": {
+    description: "Quick (acid-test) ratio: (current assets - inventory) over current liabilities.",
+    inputSchema: obj({ currentAssets: num("Current assets."), inventory: num("Inventory."), currentLiabilities: num("Current liabilities.") }, ["currentAssets", "inventory", "currentLiabilities"]),
+    run: (a) => quickRatio(a.currentAssets, a.inventory, a.currentLiabilities),
+  },
+  "roe": {
+    description: "Return on equity, percent: net income over shareholders' equity.",
+    inputSchema: obj({ netIncome: num("Net income."), equity: num("Shareholders' equity.") }, ["netIncome", "equity"]),
+    run: (a) => roe(a.netIncome, a.equity),
+  },
+  "roa": {
+    description: "Return on assets, percent: net income over total assets.",
+    inputSchema: obj({ netIncome: num("Net income."), totalAssets: num("Total assets.") }, ["netIncome", "totalAssets"]),
+    run: (a) => roa(a.netIncome, a.totalAssets),
+  },
+  "declining-balance-depreciation": {
+    description: "Declining-balance depreciation: a fixed percent of the reducing book value, for a given year. Returns that year's depreciation and the remaining book value.",
+    inputSchema: obj({ value: num("Initial cost."), ratePct: num("Annual depreciation rate in percent."), year: num("Year (1-based).") }, ["value", "ratePct", "year"]),
+    run: (a) => decliningBalanceDepreciation(a.value, a.ratePct, a.year),
+  },
+  "double-declining-depreciation": {
+    description: "Double-declining-balance depreciation: 2/usefulYears of the book value each year, not falling below salvage.",
+    inputSchema: obj({ value: num("Initial cost."), usefulYears: num("Useful life in years."), year: num("Year (1-based)."), salvage: num("Salvage value (default 0).") }, ["value", "usefulYears", "year"]),
+    run: (a) => doubleDecliningDepreciation(a.value, a.usefulYears, a.year, a.salvage || 0),
+  },
+  "sum-of-years-digits": {
+    description: "Sum-of-the-years'-digits depreciation: the depreciable base weighted toward the early years.",
+    inputSchema: obj({ value: num("Initial cost."), salvage: num("Salvage value."), usefulYears: num("Useful life in years."), year: num("Year (1-based).") }, ["value", "salvage", "usefulYears", "year"]),
+    run: (a) => sumOfYearsDigits(a.value, a.salvage, a.usefulYears, a.year),
+  },
+  "units-of-production-depreciation": {
+    description: "Units-of-production depreciation: the depreciable base spread over total expected units, charged by the units used this period.",
+    inputSchema: obj({ value: num("Initial cost."), salvage: num("Salvage value."), totalUnits: num("Total expected units over the life."), unitsThisPeriod: num("Units produced this period.") }, ["value", "salvage", "totalUnits", "unitsThisPeriod"]),
+    run: (a) => unitsOfProductionDepreciation(a.value, a.salvage, a.totalUnits, a.unitsThisPeriod),
+  },
 };
 
 // Output schemas — declared so MCP clients get typed results (structuredContent shape) without a
@@ -582,6 +665,22 @@ const OUTPUTS = {
   "credit-card-payoff": out({ months: onum("Months to clear (null if never)."), totalInterest: onum("Total interest (null if never)."), totalPaid: onum("Total paid (null if never).") }),
   "points-breakeven": out({ cost: onum("Upfront cost of points."), monthlySaving: onum("Monthly payment saving."), breakevenMonths: onum("Whole months to recoup (null if no saving).") }),
   "biweekly-payoff": out({ biweeklyPayment: onum("Biweekly payment."), monthsSaved: onum("Months saved."), interestSaved: onum("Interest saved.") }),
+  "cap-rate": out({ capRatePct: onum("Cap rate, percent (null if value<=0).") }),
+  "cash-on-cash": out({ cashOnCashPct: onum("Cash-on-cash return, percent (null if invested<=0).") }),
+  "noi": out({ noi: onum("Net operating income.") }),
+  "gross-rent-multiplier": out({ grm: onum("Gross rent multiplier (null if rent<=0).") }),
+  "dscr": out({ dscr: onum("Debt service coverage ratio (null if debt<=0).") }),
+  "wacc": out({ waccPct: onum("WACC, percent (null if no capital).") }),
+  "break-even-units": out({ units: onum("Break-even units (null if no contribution)."), revenue: onum("Revenue at break-even (null if none).") }),
+  "contribution-margin": out({ contributionMargin: onum("Contribution per unit."), ratioPct: onum("Contribution margin ratio, percent (null if price=0).") }),
+  "current-ratio": out({ currentRatio: onum("Current ratio (null if liabilities<=0).") }),
+  "quick-ratio": out({ quickRatio: onum("Quick ratio (null if liabilities<=0).") }),
+  "roe": out({ roePct: onum("Return on equity, percent (null if equity<=0).") }),
+  "roa": out({ roaPct: onum("Return on assets, percent (null if assets<=0).") }),
+  "declining-balance-depreciation": out({ depreciation: onum("Depreciation this year."), bookValue: onum("Book value at year end.") }),
+  "double-declining-depreciation": out({ depreciation: onum("Depreciation this year."), bookValue: onum("Book value at year end.") }),
+  "sum-of-years-digits": out({ depreciation: onum("Depreciation this year."), bookValue: onum("Book value at year end.") }),
+  "units-of-production-depreciation": out({ depreciation: onum("Depreciation this period (null if totalUnits<=0).") }),
 };
 
 for (const [name, schema] of Object.entries(OUTPUTS)) CALCULATORS[name].outputSchema = schema;

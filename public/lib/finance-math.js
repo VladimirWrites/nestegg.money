@@ -27,3 +27,6 @@ export * from "./finance-math/bonds.js";           // bondPrice, currentYield, b
 export * from "./finance-math/options.js";         // blackScholes, optionGreeks, putCallParity, optionBreakeven, intrinsicTimeValue
 export * from "./finance-math/tvm.js";             // annuityPV, annuityFV, annuityPayment, perpetuity, ruleOf72, paybackPeriod, discountedPayback, mirr, xnpv, xirr
 export * from "./finance-math/credit.js";          // loanAPR, interestOnlyPayment, balloonLoan, ltv, dti, creditCardPayoff, pointsBreakeven, biweeklyPayoff
+export * from "./finance-math/realestate.js";      // capRate, cashOnCash, noi, grossRentMultiplier, dscr
+export * from "./finance-math/business.js";        // wacc, breakEvenUnits, contributionMargin, currentRatio, quickRatio, roe, roa
+export * from "./finance-math/depreciation.js";    // decliningBalanceDepreciation, doubleDecliningDepreciation, sumOfYearsDigits, unitsOfProductionDepreciation
