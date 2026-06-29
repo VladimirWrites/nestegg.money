@@ -3,6 +3,7 @@
 // refinance break-even, affordability, and multi-debt payoff. Money via round2.
 import { round2, parseDate } from "../../js/domain/dates.js";
 import { loanTerms, buildSchedule } from "../../js/domain/loan.js";
+import { annuityFactorPV } from "./annuity.js";
 
 // Aggregate a monthly schedule into per-calendar-year totals — a compact view for agents and
 // UIs that avoids returning hundreds of monthly rows. endBalance is the balance at year end.
@@ -120,7 +121,7 @@ export function mortgageAffordability({ annualIncome, dtiPct, rate, termYears, m
   const monthlyIncome = (+annualIncome || 0) / 12;
   const maxMonthlyPayment = round2(Math.max(0, monthlyIncome * (+dtiPct || 0) / 100 - (+monthlyDebts || 0)));
   const i = (+rate || 0) / 100 / 12, n = Math.round((+termYears || 0) * 12);
-  const factor = n <= 0 ? 0 : (i === 0 ? n : (1 - Math.pow(1 + i, -n)) / i);
+  const factor = n <= 0 ? 0 : annuityFactorPV(i, n);
   const maxLoan = round2(maxMonthlyPayment * factor);
   return { maxMonthlyPayment, maxLoan, maxHomePrice: round2(maxLoan + (+downPayment || 0)) };
 }

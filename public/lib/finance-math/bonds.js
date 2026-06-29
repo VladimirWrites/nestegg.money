@@ -11,14 +11,24 @@ function bondFlows(faceValue, couponRatePct, years, yieldPct, periodsPerYear) {
   return { F, m, n, c, y };
 }
 
+// One pass over a bond's cashflows (coupon each period, face at maturity): present value (= price),
+// the PV-weighted period sum (for duration), and the PV-weighted t(t+1) sum (for convexity).
+function bondMoments(F, n, c, y) {
+  let price = 0, weighted = 0, csum = 0;
+  for (let t = 1; t <= n; t++) {
+    const pv = (c + (t === n ? F : 0)) / Math.pow(1 + y, t);
+    price += pv;
+    weighted += t * pv;
+    csum += t * (t + 1) * pv;
+  }
+  return { price, weighted, csum };
+}
+
 // Price of a coupon bond given a yield: PV of the coupons plus the face at maturity.
 export function bondPrice(faceValue, couponRatePct, years, yieldPct, periodsPerYear = 2) {
   const { F, m, n, c, y } = bondFlows(faceValue, couponRatePct, years, yieldPct, periodsPerYear);
   if (m <= 0 || n <= 0) return { price: null };
-  let pv = 0;
-  for (let t = 1; t <= n; t++) pv += c / Math.pow(1 + y, t);
-  pv += F / Math.pow(1 + y, n);
-  return { price: round2(pv) };
+  return { price: round2(bondMoments(F, n, c, y).price) };
 }
 
 // Current yield: the annual coupon as a percent of the current price.
@@ -34,12 +44,7 @@ export function currentYield(price, faceValue, couponRatePct) {
 export function bondDuration(faceValue, couponRatePct, years, yieldPct, periodsPerYear = 2) {
   const { F, m, n, c, y } = bondFlows(faceValue, couponRatePct, years, yieldPct, periodsPerYear);
   if (m <= 0 || n <= 0) return { macaulay: null, modified: null };
-  let price = 0, weighted = 0;
-  for (let t = 1; t <= n; t++) {
-    const pv = (c + (t === n ? F : 0)) / Math.pow(1 + y, t);
-    price += pv;
-    weighted += t * pv;
-  }
+  const { price, weighted } = bondMoments(F, n, c, y);
   if (price <= 0) return { macaulay: null, modified: null };
   const macaulay = weighted / price / m; // periods -> years
   return { macaulay, modified: macaulay / (1 + y) };
@@ -49,12 +54,7 @@ export function bondDuration(faceValue, couponRatePct, years, yieldPct, periodsP
 export function convexity(faceValue, couponRatePct, years, yieldPct, periodsPerYear = 2) {
   const { F, m, n, c, y } = bondFlows(faceValue, couponRatePct, years, yieldPct, periodsPerYear);
   if (m <= 0 || n <= 0) return { convexity: null };
-  let price = 0, csum = 0;
-  for (let t = 1; t <= n; t++) {
-    const pv = (c + (t === n ? F : 0)) / Math.pow(1 + y, t);
-    price += pv;
-    csum += t * (t + 1) * pv;
-  }
+  const { price, csum } = bondMoments(F, n, c, y);
   if (price <= 0) return { convexity: null };
   return { convexity: csum / (price * Math.pow(1 + y, 2)) / (m * m) };
 }

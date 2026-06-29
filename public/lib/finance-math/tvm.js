@@ -2,18 +2,20 @@
 // rule of 72, simple and discounted payback, MIRR, and date-aware XNPV/XIRR. Rates are per-period
 // percents unless the function says annual. Money via round2; rates raw.
 import { round2 } from "../../js/domain/dates.js";
+import { bisectRate } from "./roots.js";
+import { annuityFactorPV, annuityFactorFV } from "./annuity.js";
 
 // Present value of an ordinary annuity (payment at period end). i = ratePct/100 per period.
 export function annuityPV(payment, ratePct, periods) {
   const pmt = +payment || 0, i = (+ratePct || 0) / 100, n = Math.max(0, Math.round(+periods || 0));
-  const factor = i === 0 ? n : (1 - Math.pow(1 + i, -n)) / i;
+  const factor = annuityFactorPV(i, n);
   return { pv: round2(pmt * factor) };
 }
 
 // Future value of an ordinary annuity.
 export function annuityFV(payment, ratePct, periods) {
   const pmt = +payment || 0, i = (+ratePct || 0) / 100, n = Math.max(0, Math.round(+periods || 0));
-  const factor = i === 0 ? n : (Math.pow(1 + i, n) - 1) / i;
+  const factor = annuityFactorFV(i, n);
   return { fv: round2(pmt * factor) };
 }
 
@@ -21,7 +23,7 @@ export function annuityFV(payment, ratePct, periods) {
 export function annuityPayment(presentValue, ratePct, periods) {
   const pv = +presentValue || 0, i = (+ratePct || 0) / 100, n = Math.max(0, Math.round(+periods || 0));
   if (n <= 0) return { payment: null };
-  const payment = i === 0 ? pv / n : pv * i / (1 - Math.pow(1 + i, -n));
+  const payment = pv / annuityFactorPV(i, n);
   return { payment: round2(payment) };
 }
 
@@ -99,13 +101,6 @@ export function xirr(cashflows) {
   const cf = Array.isArray(cashflows) ? cashflows : [];
   if (cf.length < 2) return { xirrPct: null };
   const d0 = cf[0].date;
-  const f = (r) => cf.reduce((acc, c) => acc + (+c.amount || 0) / Math.pow(1 + r, daysBetween(d0, c.date) / 365), 0);
-  let lo = -0.9999, hi = 10, flo = f(lo), fhi = f(hi);
-  if (!isFinite(flo) || !isFinite(fhi) || flo * fhi > 0) return { xirrPct: null };
-  for (let k = 0; k < 200; k++) {
-    const mid = (lo + hi) / 2, fmid = f(mid);
-    if (fmid === 0) { lo = hi = mid; break; }
-    if (flo * fmid < 0) { hi = mid; fhi = fmid; } else { lo = mid; flo = fmid; }
-  }
-  return { xirrPct: ((lo + hi) / 2) * 100 };
+  const r = bisectRate((rr) => cf.reduce((acc, c) => acc + (+c.amount || 0) / Math.pow(1 + rr, daysBetween(d0, c.date) / 365), 0));
+  return { xirrPct: r == null ? null : r * 100 };
 }
