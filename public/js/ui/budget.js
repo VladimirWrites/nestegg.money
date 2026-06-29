@@ -7,7 +7,8 @@ import { nid } from "../domain/ids.js";
 import { PALETTE } from "../domain/constants.js";
 import { money, esc } from "../domain/money.js";
 import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, renameBudgetCategory, removeBudgetCategory, budgetCategoryUsage } from "../domain/budget.js";
-import { C, refreshPalette, legendSVG, frameSVG, svgToPng, positionTip } from "./chart-kit.js";
+import { C, refreshPalette, donutArcs, exportChart, positionTip } from "./chart-kit.js";
+import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
 import { scheduleSync } from "../io/storage.js";
 
 // Cache the latest segments so the tooltip and the PNG export can read them.
@@ -22,10 +23,9 @@ function breakdownSegments(s) {
   return segs;
 }
 
-// A category <select> matching the net-worth picker: the global category list plus "— no category —".
+// A category <select> matching the net-worth picker (shared markup), over the budget's own categories.
 function catSelect(cls, dataAttr, current) {
-  const cats = budgetCategoryNames();
-  return `<select class="${cls}" ${dataAttr} aria-label="Category"><option value="" ${!current ? "selected" : ""}>— no category —</option>${cats.map((g) => `<option ${g === current ? "selected" : ""}>${esc(g)}</option>`).join("")}</select>`;
+  return categorySelectHTML(cls, dataAttr, current, budgetCategoryNames());
 }
 
 const NS = "http://www.w3.org/2000/svg";
@@ -38,24 +38,11 @@ function drawBudgetDonut(s, animate = false) {
   svg.innerHTML = "";
   const segs = breakdownSegments(s);
   _segs = segs;
-  const total = segs.reduce((a, x) => a + x.v, 0);
+  const total = donutArcs(svg, segs, (p, seg, i) => p.setAttribute("data-idx", String(i)));
   if (total > 0) {
-    const cx = 120, cy = 120, r = 82, sw = 30; let a = -Math.PI / 2;
-    segs.forEach((seg) => {
-      const f = seg.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0, am = (a + a2) / 2;
-      const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
-      const p = document.createElementNS(NS, "path");
-      p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`);
-      p.setAttribute("fill", "none"); p.setAttribute("stroke", seg.color); p.setAttribute("stroke-width", sw);
-      p.setAttribute("pathLength", "1"); p.setAttribute("class", "dwedge");
-      p.setAttribute("data-idx", String(segs.indexOf(seg)));
-      p.setAttribute("data-mx", (cx + r * Math.cos(am)).toFixed(1)); p.setAttribute("data-my", (cy + r * Math.sin(am)).toFixed(1));
-      svg.appendChild(p);
-      a = a2;
-    });
     // Centre shows income (the money coming in) — never the outgoings total, which would read as
     // "expenses in the centre" when overspending. Red when spending exceeds income.
-    const t2 = document.createElementNS(NS, "text"); t2.setAttribute("x", cx); t2.setAttribute("y", cy + 6); t2.setAttribute("text-anchor", "middle"); t2.setAttribute("font-size", "17"); t2.setAttribute("font-weight", "600"); t2.setAttribute("fill", s.leftover < 0 ? C.red : C.ink); t2.textContent = money(s.income);
+    const t2 = document.createElementNS(NS, "text"); t2.setAttribute("x", 120); t2.setAttribute("y", 126); t2.setAttribute("text-anchor", "middle"); t2.setAttribute("font-size", "17"); t2.setAttribute("font-weight", "600"); t2.setAttribute("fill", s.leftover < 0 ? C.red : C.ink); t2.textContent = money(s.income);
     svg.appendChild(t2);
   }
   svg.classList.toggle("anim", !!animate && total > 0);
@@ -109,10 +96,7 @@ function downloadBudgetDonut() {
   if (!src || !_segs.length) { toast("Nothing to save"); return; }
   const total = _segs.reduce((a, x) => a + x.v, 0);
   const items = _segs.map((x) => ({ color: x.color, label: x.name + "   " + Math.round(x.v / total * 100) + "%   " + money(x.v) }));
-  const pad = 24, titleH = 52, size = 240;
-  const leg = legendSVG(items, pad, titleH + size + 16, 13);
-  const f = frameSVG("Budget · monthly breakdown", src.innerHTML, size, size, leg, pad, titleH);
-  svgToPng(f.svg, f.W, f.H, 2, "nestegg-budget.png");
+  exportChart({ src, title: "Budget · monthly breakdown", items, width: 240, height: 240, filename: "nestegg-budget.png" });
 }
 
 const bud = () => {
@@ -183,11 +167,8 @@ function itemsHTML(s, b) {
   order.forEach((g) => {
     const ex = b.expenses.filter((e) => e.group === g), lo = loans.filter((l) => lc[l.id] === g);
     const sub = ex.reduce((a, e) => a + (+e.amount || 0), 0) + lo.reduce((a, l) => a + l.monthly, 0);
-    html += `<div class="grp"><div class="grphead"><span class="dot" style="background:${catColor(g, s.categories)}"></span>`
-      + `<input class="grpname" data-grp="${esc(g)}" value="${esc(g)}" title="Category name" placeholder="Category name">`
-      + `<span class="grpsub num" data-grpsub="${esc(g)}">${money(sub)}</span>`
-      + `<button class="grpdel" data-grpdel="${esc(g)}" title="Delete category">×</button></div>`
-      + `<div class="grpcards">${lo.map(loanRowH).join("")}${ex.map(expRow).join("") || `<div class="exhint">Empty — set an item's category to this.</div>`}</div></div>`;
+    const cards = lo.map(loanRowH).join("") + ex.map(expRow).join("");
+    html += groupSectionHTML(g, catColor(g, s.categories), money(sub), cards);
   });
   return html;
 }

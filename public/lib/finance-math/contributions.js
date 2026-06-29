@@ -1,6 +1,7 @@
 // Recurring-contribution math: the shared monthly recurrence, its forward future value, and the
 // inverse (the contribution needed to hit a target). Percents in.
 import { round2 } from "../../js/domain/dates.js";
+import { annuityFactorFV } from "./annuity.js";
 
 // Core monthly-contribution recurrence (decimals): each month the balance compounds at
 // `monthlyRate`, then the contribution (which steps up by `contribGrowth` every 12 months)
@@ -30,7 +31,7 @@ export function requiredContribution(targetValue, annualRatePct, months, present
   const i = (+annualRatePct || 0) / 100 / 12, n = Math.max(0, Math.round(+months || 0));
   if (n <= 0) return { monthly: null };
   const g = Math.pow(1 + i, n);
-  const factor = i === 0 ? n : (g - 1) / i;
+  const factor = annuityFactorFV(i, n);
   const fromPV = (+presentValue || 0) * g;
   return { monthly: round2(((+targetValue || 0) - fromPV) / factor) };
 }

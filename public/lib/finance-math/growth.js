@@ -1,6 +1,7 @@
 // Growth, discounting, and depreciation — single lump sums and rate conversions.
 // Pure functions of their inputs; percents in unless noted; raw (unrounded) values out.
 import { compoundOver } from "../../js/domain/asset-value.js";
+import { annuityFactorFV } from "./annuity.js";
 
 // Future value of a lump sum compounded annually. rate is a percent (7 = 7%/yr).
 export function futureValue(principal, annualRatePct, years) {
@@ -20,7 +21,7 @@ export function compoundInterest(principal, annualRatePct, years, periodsPerYear
   const m = +periodsPerYear || 0, n = Math.round((+years || 0) * m), i = m > 0 ? (+annualRatePct || 0) / 100 / m : 0;
   const P = +principal || 0, C = +contributionPerPeriod || 0;
   const g = Math.pow(1 + i, n);
-  const annuity = i === 0 ? C * n : C * (g - 1) / i;
+  const annuity = C * annuityFactorFV(i, n);
   return { value: P * g + annuity };
 }
 

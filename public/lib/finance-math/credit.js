@@ -1,6 +1,7 @@
 // Loans & credit: APR with fees, interest-only payment, balloon loans, LTV/DTI ratios, credit-card
 // payoff time, mortgage-points break-even, and biweekly acceleration. Percents in; money via round2.
 import { round2 } from "../../js/domain/dates.js";
+import { bisectRate } from "./roots.js";
 
 // Level monthly payment that amortizes `principal` at per-period rate `iPer` over n periods.
 const pmt = (principal, iPer, n) => (n <= 0 ? 0 : (iPer === 0 ? principal / n : principal * iPer / (1 - Math.pow(1 + iPer, -n))));
@@ -15,13 +16,9 @@ export function loanAPR(amount, ratePct, termMonths, fees = 0) {
   const net = A - (+fees || 0);
   if (net <= 0 || payment <= 0) return { aprPct: null };
   const f = (r) => (r === 0 ? payment * n : payment * (1 - Math.pow(1 + r, -n)) / r) - net;
-  let lo = 1e-9, hi = 1, flo = f(lo), fhi = f(hi);
-  if (flo * fhi > 0) return { aprPct: +ratePct || 0 };
-  for (let k = 0; k < 200; k++) {
-    const mid = (lo + hi) / 2, fmid = f(mid);
-    if (flo * fmid < 0) { hi = mid; } else { lo = mid; flo = fmid; }
-  }
-  return { aprPct: ((lo + hi) / 2) * 12 * 100 };
+  // No bracket (e.g. zero fees) → the APR is just the note rate.
+  const r = bisectRate(f, { lo: 1e-9, hi: 1 });
+  return { aprPct: r == null ? (+ratePct || 0) : r * 12 * 100 };
 }
 
 // Interest-only monthly payment on a balance.

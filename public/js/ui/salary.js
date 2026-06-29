@@ -6,7 +6,7 @@ import { nid } from "../domain/ids.js";
 import { CCYS, PALETTE } from "../domain/constants.js";
 import { money, moneyIn, esc, convToY, ccySym, shortK } from "../domain/money.js";
 import { fmtMY } from "../domain/dates.js";
-import { yGrid, C, refreshPalette, legendSVG, frameSVG, svgToPng, scrollToNewest, positionTip } from "./chart-kit.js";
+import { yGrid, C, refreshPalette, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
 import { showView } from "./gate.js";
 
@@ -89,10 +89,8 @@ export function drawSalaryChart() {
 
 function downloadSalary() {
   const src = $("salaryChart"); if (!src.innerHTML) { toast("Nothing to save"); return; }
-  const cW = +src.getAttribute("width"), cH = +src.getAttribute("height"), pad = 24, titleH = 52;
-  const leg = legendSVG(state.salaries.map((p, pi) => ({ color: salColor(pi), label: p.name })).concat([{ color: SAL_COMB, label: "Combined yearly salary" }]), pad, titleH + cH + 16, 13);
-  const f = frameSVG("Our Salary History", src.innerHTML, cW, cH, leg, pad, titleH);
-  svgToPng(f.svg, f.W, f.H, 2, "nestegg-salary.png");
+  exportChart({ src, title: "Our Salary History", width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-salary.png",
+    items: state.salaries.map((p, pi) => ({ color: salColor(pi), label: p.name })).concat([{ color: SAL_COMB, label: "Combined yearly salary" }]) });
 }
 
 // Shared month axis across all people, and per-(person,month) lookup/creation.

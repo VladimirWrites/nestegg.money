@@ -65,6 +65,30 @@ export function legendSVG(items, x, y, fs) {
   return { svg: s, height: items.length * rowH, width: maxW };
 }
 
+// Draw a doughnut's arc wedges into `svg` from segments [{v, color}]. Each becomes a `.dwedge`
+// path carrying data-mx/data-my (its midpoint, for tooltip anchoring); `tag(path, seg, i)` lets the
+// caller stamp its own identity attribute (data-name / data-idx). Returns the total (0 → nothing
+// drawn). The centre label and legend stay with the caller — only the shared arc geometry lives here.
+export function donutArcs(svg, segs, tag) {
+  const cx = 120, cy = 120, r = 82, sw = 30;
+  const total = segs.reduce((acc, s) => acc + s.v, 0);
+  if (total <= 0) return 0;
+  let a = -Math.PI / 2;
+  segs.forEach((seg, i) => {
+    const f = seg.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0, am = (a + a2) / 2;
+    const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`);
+    p.setAttribute("fill", "none"); p.setAttribute("stroke", seg.color); p.setAttribute("stroke-width", sw);
+    p.setAttribute("pathLength", "1"); p.setAttribute("class", "dwedge");
+    p.setAttribute("data-mx", (cx + r * Math.cos(am)).toFixed(1)); p.setAttribute("data-my", (cy + r * Math.sin(am)).toFixed(1));
+    if (tag) tag(p, seg, i);
+    svg.appendChild(p);
+    a = a2;
+  });
+  return total;
+}
+
 export function frameSVG(title, inner, innerW, innerH, leg, pad, titleH) {
   const footH = 34, W = Math.max(innerW + pad * 2, (leg ? leg.width : 0) + pad * 2, 520), H = titleH + innerH + 16 + (leg ? leg.height : 0) + footH, dx = (W - innerW) / 2;
   return {
@@ -85,6 +109,15 @@ export function svgToPng(svgString, w, h, scale, filename) {
   };
   img.onerror = () => { URL.revokeObjectURL(url); toast("Could not render image"); };
   img.src = url;
+}
+
+// Wrap a chart's current SVG in the titled, branded frame and save it as a 2x PNG. The caller
+// supplies the source <svg>, a title, legend items, the inner content size, and a filename — the
+// legend layout, framing, and rasterization (duplicated across every chart before) live here.
+export function exportChart({ src, title, items, width, height, filename, pad = 24, titleH = 52 }) {
+  const leg = legendSVG(items, pad, titleH + height + 16, 13);
+  const f = frameSVG(title, src.innerHTML, width, height, leg, pad, titleH);
+  svgToPng(f.svg, f.W, f.H, 2, filename);
 }
 
 // When a chart overflows its .histscroll container, jump to the right edge (newest data).

@@ -9,6 +9,7 @@ import { scheduleSync, ensureHist, fetchPrice, fetchPriceYear } from "../io/stor
 import { renderAll } from "./charts.js";
 import { openAssetEditor, newAsset, newLiability } from "./assets.js";
 import { groupNames, addCategory, renameCategory, categoryUsage, removeCategory } from "../domain/categories.js";
+import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
 
 let edIdx = -1;
 let edYearPrev = null;
@@ -46,7 +47,7 @@ function cardHTML(en, i, names, year) {
     <span class="rconv${liab ? " liab" : ""}">${liab ? "− " + money(Math.abs(baseV)) : en.ccy !== state.baseCcy ? "= " + money(baseV) : ""}</span>`;
   }
   const cats = groupNames();
-  const catSel = cats.length ? `<select class="rcat" data-i="${i}" data-f="group" title="Category"><option value="" ${!en.group ? "selected" : ""}>— no category —</option>${cats.map((g) => `<option ${g === en.group ? "selected" : ""}>${esc(g)}</option>`).join("")}</select>` : "";
+  const catSel = cats.length ? categorySelectHTML("rcat", `data-i="${i}" data-f="group"`, en.group, cats) : "";
   return `<div class="rcard${liab ? " liabcard" : ""}"><span class="dot" style="background:${liab ? "var(--red)" : colorOf(seriesKey(en), names)}"></span>
     <input class="rname" value="${esc(en.name)}" data-i="${i}" data-f="name" placeholder="${liab ? "Liability name" : "Asset name"}">
     <select class="rkind" data-i="${i}" data-f="kind"><option value="fixed" ${!priced && !liab ? "selected" : ""}>Value</option><option value="ticker" ${en.kind === "ticker" ? "selected" : ""}>Ticker</option><option value="crypto" ${en.kind === "crypto" ? "selected" : ""}>Crypto</option><option value="liability" ${liab ? "selected" : ""}>Liability</option></select>
@@ -83,11 +84,7 @@ export function renderEntries() {
     let sub = 0, cards = "";
     sn.entries.forEach((en, i) => { if (en.group === g) { sub += entryBase(en, sn.year); cards += cardHTML(en, i, names, sn.year); } });
     autos.forEach((en) => { if (en.group === g) { sub += entryBase(en, sn.year); cards += autoCardHTML(en, names, sn.year); } });
-    html += `<div class="grp"><div class="grphead"><span class="dot" style="background:${colorOf(g, names)}"></span>` +
-      `<input class="grpname" data-grp="${esc(g)}" value="${esc(g)}" title="Category name" placeholder="Category name">` +
-      `<span class="grpsub num">${money(sub)}</span>` +
-      `<button class="grpdel" data-grpdel="${esc(g)}" title="Delete category">×</button></div>` +
-      `<div class="grpcards">${cards || '<div class="exhint">Empty — set an item\'s Category to this to file it here.</div>'}</div></div>`;
+    html += groupSectionHTML(g, colorOf(g, names), money(sub), cards, "Empty — set an item's Category to this to file it here.");
   });
   wrap.innerHTML = html;
   $("edTotal").textContent = money(snapTotalBase(sn));
