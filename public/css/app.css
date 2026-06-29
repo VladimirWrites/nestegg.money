@@ -181,7 +181,6 @@ button.act.ghost:hover{border-color:var(--amber)}
 .grpdel:hover{color:var(--red)}
 .grpcards{display:flex;flex-direction:column;gap:6px;padding:11px 13px}
 .grpcards .rcard{background:var(--panel)}
-.grpadd{margin:0 13px 13px;padding:8px 13px;min-height:34px;font-size:10px}
 
 .foot{max-width:var(--maxw);margin:22px auto 0;padding:0 18px;color:var(--muted);font-size:11.5px;line-height:1.6}
 .foot a{color:var(--amber);text-decoration:underline}
@@ -446,7 +445,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .bud-exp input{background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:14px;min-width:0}
 .bud-exp .bud-exp-amt{text-align:right;font-family:var(--mono)}
 .bud-exp .bud-exp-cat{color:var(--muted)}
-.budgetTip .tippct,#budgetTip .tippct{color:var(--muted);font-weight:400}
+#budgetTip .tippct{color:var(--muted);font-weight:400}
 @media(max-width:520px){.bud-exp{grid-template-columns:1fr 96px 34px}.bud-exp .bud-exp-cat{grid-column:1 / -1;order:5}}
 .bud-exp input:focus{outline:none;border-color:var(--amber)}
 .bud-exp-del{background:none;border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer;height:36px}
@@ -473,7 +472,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 /* budget category selects + loan rows */
 .bud-exp select{background-color:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 28px 8px 8px;color:var(--ink);font-family:var(--mono);font-size:14px;min-width:0;min-height:40px}
 .bud-exp select:focus{outline:none;border-color:var(--amber)}
-/* loan row reuses the .bud-exp grid (1fr 120px 110px 34px) so its category and amount line up with
+/* loan row reuses the .bud-exp grid so its category and amount line up with
    the expense rows; the 4th (delete) column is left empty. Spans match the inputs' font + height. */
 .bud-loan-name{color:var(--ink);font-family:var(--mono);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bud-loan-amt{text-align:right;font-family:var(--mono);font-size:14px;color:var(--ink);padding:8px 0}

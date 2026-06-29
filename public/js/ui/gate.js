@@ -115,7 +115,7 @@ function enterApp(skipRefresh) {
 
 // No-account tour: load sample data, flag demo mode (no persistence, no sync), show the app.
 // The sample data module is large, so it's only fetched when the demo is actually started.
-export async function startDemo() {
+async function startDemo() {
   setDemo(true);
   const { sampleState } = await import("../domain/sample-data.js");
   setState(migrate(sampleState()));

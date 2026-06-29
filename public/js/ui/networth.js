@@ -13,7 +13,7 @@ import { groupNames, addCategory, renameCategory, categoryUsage, removeCategory 
 let edIdx = -1;
 let edYearPrev = null;
 
-export function openYearEditor(ri) {
+function openYearEditor(ri) {
   edIdx = ri;
   edYearPrev = state.snapshots[ri].year;
   $("edYear").value = state.snapshots[ri].year;

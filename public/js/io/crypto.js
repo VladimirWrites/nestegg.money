@@ -12,7 +12,7 @@ export const keysReady = () => !!(accountId && cryptoKey);
 
 // Two-character Fletcher-style checksum over the base32 body: rejects typos and any string
 // that isn't a genuine generated account number.
-export function tokChecksum(body) {
+function tokChecksum(body) {
   let a = 1;
   let b = 0;
   for (const ch of body) {

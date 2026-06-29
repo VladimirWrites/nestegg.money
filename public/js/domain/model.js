@@ -43,7 +43,7 @@ export function tickerPx(en, year) {
 
 // Was the stored price from today's trade? Suppresses a stale "today" change on days the
 // market is closed (weekends/holidays). Crypto trades 24/7 so it stays fresh.
-export function priceIsToday(p) {
+function priceIsToday(p) {
   if (!p || p.asOf == null) return true;
   const d = new Date(p.asOf * 1000);
   const n = new Date();
@@ -63,7 +63,6 @@ export function entryNative(en, year) {
   return { v: parseFloat(en.value) || 0, ccy: en.ccy || "EUR" };
 }
 
-export const entryEUR = (en, year) => { const n = entryNative(en, year); return convToY(n.v, n.ccy, "EUR", year); };
 export const entryBase = (en, year) => { const n = entryNative(en, year); return convToY(n.v, n.ccy, state.baseCcy, year); };
 
 // Today's change in base currency across priced holdings (skips frozen + stale-market prices).
@@ -107,7 +106,6 @@ export function autoEntriesFor(year) {
 
 /* ---- snapshot aggregates ---- */
 export const effEntries = (sn) => (sn.entries || []).concat(autoEntriesFor(sn.year));
-export const snapTotalEUR = (sn) => effEntries(sn).reduce((a, e) => a + entryEUR(e, sn.year), 0);
 export const snapTotalBase = (sn) => effEntries(sn).reduce((a, e) => a + entryBase(e, sn.year), 0);
 // Assets only (for bar stacks / axis scaling): positive contributions.
 export const snapGrossBase = (sn) => effEntries(sn).reduce((a, e) => { const v = entryBase(e, sn.year); return a + (v > 0 ? v : 0); }, 0);

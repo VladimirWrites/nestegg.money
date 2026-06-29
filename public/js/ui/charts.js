@@ -197,7 +197,7 @@ export function renderRetire() {
   stEl.innerHTML = eggStat + pensStat + spendStat + verdict;
 }
 
-export function updNote() {
+function updNote() {
   const px = state.lastPx ? "prices " + new Date(state.lastPx).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) : "";
   const fxd = state.fxDate ? "FX " + state.fxDate : "";
   $("updNote").textContent = [px, fxd].filter(Boolean).join(" · ");
