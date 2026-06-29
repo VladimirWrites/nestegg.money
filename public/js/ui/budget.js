@@ -8,6 +8,7 @@ import { PALETTE } from "../domain/constants.js";
 import { money, esc } from "../domain/money.js";
 import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, renameBudgetCategory, removeBudgetCategory, budgetCategoryUsage } from "../domain/budget.js";
 import { C, refreshPalette, legendSVG, frameSVG, svgToPng, positionTip } from "./chart-kit.js";
+import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
 import { scheduleSync } from "../io/storage.js";
 
 // Cache the latest segments so the tooltip and the PNG export can read them.
@@ -22,10 +23,9 @@ function breakdownSegments(s) {
   return segs;
 }
 
-// A category <select> matching the net-worth picker: the global category list plus "— no category —".
+// A category <select> matching the net-worth picker (shared markup), over the budget's own categories.
 function catSelect(cls, dataAttr, current) {
-  const cats = budgetCategoryNames();
-  return `<select class="${cls}" ${dataAttr} aria-label="Category"><option value="" ${!current ? "selected" : ""}>— no category —</option>${cats.map((g) => `<option ${g === current ? "selected" : ""}>${esc(g)}</option>`).join("")}</select>`;
+  return categorySelectHTML(cls, dataAttr, current, budgetCategoryNames());
 }
 
 const NS = "http://www.w3.org/2000/svg";
@@ -183,11 +183,8 @@ function itemsHTML(s, b) {
   order.forEach((g) => {
     const ex = b.expenses.filter((e) => e.group === g), lo = loans.filter((l) => lc[l.id] === g);
     const sub = ex.reduce((a, e) => a + (+e.amount || 0), 0) + lo.reduce((a, l) => a + l.monthly, 0);
-    html += `<div class="grp"><div class="grphead"><span class="dot" style="background:${catColor(g, s.categories)}"></span>`
-      + `<input class="grpname" data-grp="${esc(g)}" value="${esc(g)}" title="Category name" placeholder="Category name">`
-      + `<span class="grpsub num" data-grpsub="${esc(g)}">${money(sub)}</span>`
-      + `<button class="grpdel" data-grpdel="${esc(g)}" title="Delete category">×</button></div>`
-      + `<div class="grpcards">${lo.map(loanRowH).join("")}${ex.map(expRow).join("") || `<div class="exhint">Empty — set an item's category to this.</div>`}</div></div>`;
+    const cards = lo.map(loanRowH).join("") + ex.map(expRow).join("");
+    html += groupSectionHTML(g, catColor(g, s.categories), money(sub), cards);
   });
   return html;
 }

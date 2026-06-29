@@ -10,6 +10,7 @@ import { buildSchedule, loanTerms, outstandingAt } from "../domain/loan.js";
 import { assetGrossAt, assetNetAt } from "../domain/asset-value.js";
 import { normLoan } from "../domain/schema.js";
 import { groupNames } from "../domain/categories.js";
+import { categorySelectHTML } from "./categories-ui.js";
 import { renderAll } from "./charts.js";
 import { renderEntries } from "./networth.js";
 import { scheduleSync } from "../io/storage.js";
@@ -100,7 +101,7 @@ function assetCardHTML(a) {
     </div>`;
   }
   const ccySel = `<select data-aid="${a.id}" data-f="ccy">${CCYS.map((x) => `<option ${x === a.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>`;
-  const catSel = `<select data-aid="${a.id}" data-f="group"><option value="" ${!a.group ? "selected" : ""}>— none —</option>${groupNames().map((g) => `<option ${g === a.group ? "selected" : ""}>${esc(g)}</option>`).join("")}</select>`;
+  const catSel = categorySelectHTML("", `data-aid="${a.id}" data-f="group"`, a.group, groupNames());
   if (a.liability) {
     return `<div class="rcard acard liabcard" id="acard-${a.id}" data-aid="${a.id}">
       <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="Liability name">
