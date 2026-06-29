@@ -36,5 +36,6 @@ body.lp{padding-bottom:0}
 
 /* tertiary "explore a live demo" link under the hero CTAs */
 .lp-demo{margin-top:14px;font-size:13px;color:var(--muted)}
-.lp-demo a{color:var(--amber);text-decoration:none;border-bottom:1px solid transparent}
-.lp-demo a:hover{border-bottom-color:var(--amber)}
+/* In-text links carry a visible underline (not colour alone) for colour-blind users / a11y. */
+.lp-demo a{color:var(--amber);text-decoration:underline;text-underline-offset:2px}
+.lp-footlinks a{color:var(--amber);text-decoration:underline;text-underline-offset:2px}
