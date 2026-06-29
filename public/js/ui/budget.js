@@ -279,10 +279,12 @@ export function renderBudget() {
   });
 
   $("budAddExp").onclick = () => {
-    b.expenses.push({ id: nid(), name: "", group: "", amount: 0 });
+    const id = nid();
+    b.expenses.push({ id, name: "", group: "", amount: 0 });
     scheduleSync(); renderBudget();
-    const rows = document.querySelectorAll(".bud-exp-name");
-    if (rows.length) rows[rows.length - 1].focus();
+    // Focus the new row by id — it renders in the ungrouped section (top), not last in the DOM.
+    const el = document.querySelector(`.bud-exp-name[data-id="${id}"]`);
+    if (el) el.focus();
   };
   // "+ Add category" — same as net worth: adds a category you then rename inline.
   $("budAddCat").onclick = () => { addBudgetCategory(); scheduleSync(); renderBudget(); };
