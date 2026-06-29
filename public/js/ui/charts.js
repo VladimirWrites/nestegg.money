@@ -10,7 +10,7 @@ import {
 import { fmtMY } from "../domain/dates.js";
 import { fcCfg, forecastNetAt, fcTarget, fcBandRates, debtSummary } from "../domain/forecast.js";
 import { retCfg, retSim, pensionPts } from "../domain/retirement.js";
-import { C, refreshPalette, niceCeil, chartDims, yGrid, txt, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
+import { C, refreshPalette, niceCeil, chartDims, yGrid, txt, donutArcs, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
 
 // Entrance animations play only on view-entry (boot / tab switch), never on the many
 // live re-renders (keystrokes, background refresh) — gated by this one-shot arm flag.
@@ -324,11 +324,10 @@ function drawDonut() {
   $("allocYear").textContent = ls ? "— " + ls.year : "";
   const names = allNames();
   const rows = allocationRows(ls);
-  const total = rows.reduce((a, r) => a + r.v, 0);
+  const segs = rows.map((row) => ({ v: row.v, color: colorOf(row.name, names), name: row.name }));
+  const total = donutArcs(svg, segs, (p, s) => p.setAttribute("data-name", s.name));
   if (total > 0) {
-    const cx = 120, cy = 120, r = 82, sw = 30; let a = -Math.PI / 2;
-    rows.forEach((row) => { const f = row.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0; const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2); const am = (a + a2) / 2; const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`); p.setAttribute("fill", "none"); p.setAttribute("stroke", colorOf(row.name, names)); p.setAttribute("stroke-width", sw); p.setAttribute("pathLength", "1"); p.setAttribute("class", "dwedge"); p.setAttribute("data-name", row.name); p.setAttribute("data-mx", (cx + r * Math.cos(am)).toFixed(1)); p.setAttribute("data-my", (cy + r * Math.sin(am)).toFixed(1)); svg.appendChild(p); a = a2; });
-    txt(svg, cx, cy - 4, "TOTAL", 10, C.axis, 2, 400); txt(svg, cx, cy + 18, money(total), 16, C.ink, 0, 600);
+    txt(svg, 120, 116, "TOTAL", 10, C.axis, 2, 400); txt(svg, 120, 138, money(total), 16, C.ink, 0, 600);
   }
   svg.classList.toggle("anim", _animOn);
   svg.setAttribute("role", "img");

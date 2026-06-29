@@ -7,7 +7,7 @@ import { nid } from "../domain/ids.js";
 import { PALETTE } from "../domain/constants.js";
 import { money, esc } from "../domain/money.js";
 import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, renameBudgetCategory, removeBudgetCategory, budgetCategoryUsage } from "../domain/budget.js";
-import { C, refreshPalette, exportChart, positionTip } from "./chart-kit.js";
+import { C, refreshPalette, donutArcs, exportChart, positionTip } from "./chart-kit.js";
 import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
 import { scheduleSync } from "../io/storage.js";
 
@@ -38,24 +38,11 @@ function drawBudgetDonut(s, animate = false) {
   svg.innerHTML = "";
   const segs = breakdownSegments(s);
   _segs = segs;
-  const total = segs.reduce((a, x) => a + x.v, 0);
+  const total = donutArcs(svg, segs, (p, seg, i) => p.setAttribute("data-idx", String(i)));
   if (total > 0) {
-    const cx = 120, cy = 120, r = 82, sw = 30; let a = -Math.PI / 2;
-    segs.forEach((seg) => {
-      const f = seg.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0, am = (a + a2) / 2;
-      const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
-      const p = document.createElementNS(NS, "path");
-      p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`);
-      p.setAttribute("fill", "none"); p.setAttribute("stroke", seg.color); p.setAttribute("stroke-width", sw);
-      p.setAttribute("pathLength", "1"); p.setAttribute("class", "dwedge");
-      p.setAttribute("data-idx", String(segs.indexOf(seg)));
-      p.setAttribute("data-mx", (cx + r * Math.cos(am)).toFixed(1)); p.setAttribute("data-my", (cy + r * Math.sin(am)).toFixed(1));
-      svg.appendChild(p);
-      a = a2;
-    });
     // Centre shows income (the money coming in) — never the outgoings total, which would read as
     // "expenses in the centre" when overspending. Red when spending exceeds income.
-    const t2 = document.createElementNS(NS, "text"); t2.setAttribute("x", cx); t2.setAttribute("y", cy + 6); t2.setAttribute("text-anchor", "middle"); t2.setAttribute("font-size", "17"); t2.setAttribute("font-weight", "600"); t2.setAttribute("fill", s.leftover < 0 ? C.red : C.ink); t2.textContent = money(s.income);
+    const t2 = document.createElementNS(NS, "text"); t2.setAttribute("x", 120); t2.setAttribute("y", 126); t2.setAttribute("text-anchor", "middle"); t2.setAttribute("font-size", "17"); t2.setAttribute("font-weight", "600"); t2.setAttribute("fill", s.leftover < 0 ? C.red : C.ink); t2.textContent = money(s.income);
     svg.appendChild(t2);
   }
   svg.classList.toggle("anim", !!animate && total > 0);
