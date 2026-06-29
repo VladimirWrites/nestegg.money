@@ -16,7 +16,7 @@ export function fcCfg() {
 }
 
 // Net of all long-term assets/liabilities (base ccy) on an arbitrary date.
-export function ltNetBaseAt(date) {
+function ltNetBaseAt(date) {
   return (state.assets || []).reduce((s, a) => {
     const from = assetOwnedFrom(a);
     if (from && from > date) return s;
@@ -34,7 +34,7 @@ export function manualNetBase() {
 
 // When "reinvest after payoff" is on, each future loan payoff frees its monthly payment
 // into the contribution stream from that month on: [{ month, amt(base) }].
-export function redirectStreams() {
+function redirectStreams() {
   const fc = fcCfg();
   if (!fc.redirectLoans) return [];
   const now = new Date();

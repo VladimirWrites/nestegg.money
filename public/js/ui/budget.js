@@ -100,7 +100,7 @@ function wireBudgetTip() {
 }
 
 // Export the doughnut as a framed PNG, like the other charts.
-export function downloadBudgetDonut() {
+function downloadBudgetDonut() {
   const src = $("budgetDonut");
   if (!src || !_segs.length) { toast("Nothing to save"); return; }
   const total = _segs.reduce((a, x) => a + x.v, 0);

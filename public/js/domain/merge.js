@@ -7,7 +7,7 @@ import { DEL_KINDS } from "./constants.js";
 import { ensureDel } from "./schema.js";
 import { state } from "./store.js";
 
-export const cloneState = (s) => JSON.parse(JSON.stringify(s));
+const cloneState = (s) => JSON.parse(JSON.stringify(s));
 
 // Snapshot of the last-synced state, used as the diff baseline by stampMtimes().
 let baseline = null;
@@ -86,7 +86,7 @@ export function stampMtimes() {
 }
 
 // Merge two tombstone stores, keeping the latest time per id in each bucket.
-export function mergeDel(a, b) {
+function mergeDel(a, b) {
   a = a || {};
   b = b || {};
   const out = {};
@@ -100,7 +100,7 @@ export function mergeDel(a, b) {
 }
 
 // Merge a flat keyed collection: newest m wins; a tombstone beats any equal-or-older edit.
-export function mergeArr(la, ra, keyOf, tomb) {
+function mergeArr(la, ra, keyOf, tomb) {
   const m = new Map();
   const add = (r) => {
     const id = keyOf(r);
@@ -145,11 +145,11 @@ function mergeParented(la, ra, parentKey, childKey, parentTombs, childTombKey, c
   return out;
 }
 
-export function mergeSnaps(la, ra, del) {
+function mergeSnaps(la, ra, del) {
   return mergeParented(la, ra, (s) => String(s.year), (e) => e.id, del.snap, (_k, e) => e.id, del.yent, snapM);
 }
 
-export function mergeSal(la, ra, del) {
+function mergeSal(la, ra, del) {
   return mergeParented(la, ra, (p) => p.id, (e) => e.ym, del.sper, (k, e) => k + "|" + e.ym, del.sent, (p) => +p.m || 0);
 }
 

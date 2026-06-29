@@ -13,14 +13,14 @@ export function retCfg() {
 }
 
 // Inflation discount from a future year back to today's money.
-export function retDeflator(year) {
+function retDeflator(year) {
   const infl = +retCfg().inflation || 0;
   const t = Math.max(0, year - new Date().getFullYear());
   return 1 / Math.pow(1 + infl, t);
 }
 
 // Investable nest egg only (liquid + contributions, grown) — excludes property/loans.
-export function forecastLiquidAt(date, gOverride) {
+function forecastLiquidAt(date, gOverride) {
   const fc = fcCfg();
   const g = gOverride != null ? gOverride : +fc.growth || 0;
   let t = (date - new Date()) / YEAR_MS;
@@ -46,7 +46,7 @@ export function pensionAnnual() {
 }
 
 // Investable nest egg at the retirement year, in today's money.
-export function retNestEggReal() {
+function retNestEggReal() {
   const y = +retCfg().retireYear || new Date().getFullYear();
   return forecastLiquidAt(new Date(y, 11, 31)) * retDeflator(y);
 }

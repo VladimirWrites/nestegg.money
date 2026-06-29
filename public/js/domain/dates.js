@@ -1,6 +1,6 @@
 // Date / time helpers. Pure — no DOM, no globals.
 
-export const DAY_MS = 86400000;
+const DAY_MS = 86400000;
 export const YEAR_MS = 365.25 * DAY_MS;
 export const MONTH_MS = YEAR_MS / 12;
 

@@ -20,7 +20,6 @@ export const syncedAt = () => +LS.get("nw_synced_at") || 0;
 
 // Demo/tour mode: sample data, never persisted to localStorage and never synced to the server.
 let demoMode = false;
-export const isDemo = () => demoMode;
 export function setDemo(on) { demoMode = !!on; }
 
 // Keep a one-deep backup of the previous local state, so a bad save/clobber is recoverable.
@@ -121,7 +120,7 @@ export async function fetchFx() {
   return false;
 }
 // Year-end (Dec 31) ECB rates for a year — used to value past-year holdings at the rate then.
-export async function fetchFxYear(year) {
+async function fetchFxYear(year) {
   try {
     const r = await fetch("/api/fx?date=" + year + "-12-31");
     if (!r.ok) return null;
@@ -155,7 +154,7 @@ export async function fetchPrice(t) {
   } catch (e) {}
   return false;
 }
-export function tickersInUse() {
+function tickersInUse() {
   return [...new Set(state.snapshots.flatMap((s) => s.entries).filter((e) => (e.kind === "ticker" || e.kind === "crypto") && e.ticker).map((e) => e.ticker))];
 }
 // Year-end close for a ticker, used to value holdings held in a past year.
