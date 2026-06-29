@@ -10,6 +10,7 @@
 import { CALCULATORS, CORS } from "./calculators.js";
 import { mcpRoute } from "./mcp.js";
 import { validateArgs } from "./validate.js";
+import { MAX_BLOB } from "../public/lib/limits.js";
 
 function json(obj, status = 200, ttl = 0) {
   return new Response(JSON.stringify(obj), {
@@ -116,7 +117,6 @@ async function priceGet(request) {
 // DELETE [X-Vault-Id: <hash>]  -> { ok: true }
 // ---------------------------------------------------------------------------
 const ID_RE = /^[a-f0-9]{64}$/;          // SHA-256 hex
-const MAX_BLOB = 256_000;                // ceiling; real blobs are ~1 KB avg, ~11 KB max (gzipped) — this is generous
 const CREATE_WINDOW_MS = 86_400_000;     // 24h rate-limit window for new-vault creation
 const CREATE_LIMIT = 20;                 // max new vaults one IP can create per window
 

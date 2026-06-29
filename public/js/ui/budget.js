@@ -1,7 +1,7 @@
 // Budget tab: a rough monthly "what's left" view. Income comes from your latest salary month
 // (auto, with an override), loan payments are pulled from your loans, and you enter recurring
 // expenses as a short list. All math lives in domain/budget.js; this only renders and edits state.
-import { $, toast } from "./dom.js";
+import { $, toast, debounce } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { PALETTE } from "../domain/constants.js";
@@ -85,6 +85,10 @@ function budgetTipShow(path) {
   tip.classList.remove("hide");
   positionTip(tip, +path.getAttribute("data-mx"), +path.getAttribute("data-my"), 240);
 }
+// Redrawing the SVG doughnut on every keystroke is wasteful — debounce it (the numeric totals
+// still update immediately in refreshTotals). Mirrors the salary chart's debounced redraw.
+const drawDonutSoon = debounce((s) => drawBudgetDonut(s), 100);
+
 function budgetTipHide() { const t = $("budgetTip"); if (t) t.classList.add("hide"); }
 let _tipWired = false;
 // Delegate from document (stable) so the listeners survive every re-render — renderBudget()
@@ -136,7 +140,7 @@ function refreshTotals() {
   });
   const ub = $("budUseSalary");
   if (ub) ub.classList.toggle("hide", !(state.budget && state.budget.incomeOverride != null));
-  drawBudgetDonut(s);
+  drawDonutSoon(s);
 }
 
 function expenseRow(e) {

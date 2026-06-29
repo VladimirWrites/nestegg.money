@@ -4,6 +4,7 @@ import { state } from "../domain/store.js";
 import { stampMtimes, setBaseline } from "../domain/merge.js";
 import { encS, decS, keysReady, getAccountId } from "./crypto.js";
 import { toast, setSync } from "../ui/dom.js";
+import { MAX_BLOB } from "../../lib/limits.js";
 
 // The UI registers how to re-render after background data lands (it decides which view).
 let onDataChanged = () => {};
@@ -55,7 +56,7 @@ export async function pushServer(manual, keepalive = false) {
   try {
     stampMtimes();
     const blob = await encS();
-    if (blob.length > 256000) { // keep in sync with MAX_BLOB in src/index.js
+    if (blob.length > MAX_BLOB) {
       setSync("off", "Too big to sync");
       toast("Data too large to sync — Export JSON to back up");
       return;
@@ -132,12 +133,10 @@ async function fetchFxYear(year) {
 export async function refreshHistFx() {
   const cy = new Date().getFullYear();
   state.fxHist = state.fxHist || {};
+  const years = [...new Set(state.snapshots.map((s) => s.year))].filter((y) => y < cy && !state.fxHist[y]);
+  const fetched = await Promise.all(years.map((y) => fetchFxYear(y).then((h) => [y, h]))); // independent → parallel
   let changed = false;
-  for (const y of [...new Set(state.snapshots.map((s) => s.year))]) {
-    if (y >= cy || state.fxHist[y]) continue;
-    const h = await fetchFxYear(y);
-    if (h) { state.fxHist[y] = h; changed = true; }
-  }
+  for (const [y, h] of fetched) if (h) { state.fxHist[y] = h; changed = true; }
   return changed;
 }
 
@@ -173,6 +172,7 @@ const _histMiss = new Set(); // (ticker@year) with no historical price — don't
 export async function refreshHistPrices() {
   const cy = new Date().getFullYear();
   let changed = false;
+  const toFetch = [];
   for (const sn of state.snapshots) {
     const past = sn.year < cy;
     for (const en of sn.entries || []) {
@@ -181,13 +181,17 @@ export async function refreshHistPrices() {
         const key = en.ticker + "@" + sn.year;
         if (en.px != null && en.pxKey === key) continue;
         if (_histMiss.has(key)) continue; // already known to have no year-end price
-        const r = await fetchPriceYear(en.ticker, sn.year);
-        if (r) { en.px = r.price; en.pxCcy = r.currency; en.pxKey = key; changed = true; }
-        else _histMiss.add(key);
+        toFetch.push({ en, year: sn.year, key });
       } else if (en.px != null) {
         delete en.px; delete en.pxCcy; delete en.pxKey; changed = true;
       }
     }
+  }
+  // Each year-end lookup is independent → fetch them in parallel, then apply the results.
+  const fetched = await Promise.all(toFetch.map((x) => fetchPriceYear(x.en.ticker, x.year).then((r) => [x, r])));
+  for (const [x, r] of fetched) {
+    if (r) { x.en.px = r.price; x.en.pxCcy = r.currency; x.en.pxKey = x.key; changed = true; }
+    else _histMiss.add(x.key);
   }
   return changed;
 }
@@ -200,7 +204,9 @@ export async function autoRefresh() {
   try {
     if (!state.prices) state.prices = {};
     const ts = tickersInUse();
-    for (const t of ts) { const old = state.prices[t] && state.prices[t].price; if ((await fetchPrice(t)) && state.prices[t].price !== old) changed = true; }
+    const olds = ts.map((t) => state.prices[t] && state.prices[t].price);
+    const oks = await Promise.all(ts.map((t) => fetchPrice(t)));   // independent → parallel
+    ts.forEach((t, i) => { if (oks[i] && state.prices[t].price !== olds[i]) changed = true; });
     if (ts.length) state.lastPx = Date.now();
   } catch (e) {}
   try { if (await refreshHistFx()) changed = true; } catch (e) {}
@@ -223,8 +229,8 @@ export async function refreshPrices() {
   const ts = tickersInUse();
   if (!ts.length) { toast("No ticker holdings to refresh"); return; }
   toast("Fetching prices…");
-  let n = 0;
-  for (const t of ts) if (await fetchPrice(t)) n++;
+  const oks = await Promise.all(ts.map((t) => fetchPrice(t)));   // independent → parallel
+  const n = oks.filter(Boolean).length;
   await refreshHistPrices();
   state.lastPx = Date.now();
   scheduleSync();
