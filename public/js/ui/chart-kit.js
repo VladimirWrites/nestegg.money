@@ -87,6 +87,15 @@ export function svgToPng(svgString, w, h, scale, filename) {
   img.src = url;
 }
 
+// Wrap a chart's current SVG in the titled, branded frame and save it as a 2x PNG. The caller
+// supplies the source <svg>, a title, legend items, the inner content size, and a filename — the
+// legend layout, framing, and rasterization (duplicated across every chart before) live here.
+export function exportChart({ src, title, items, width, height, filename, pad = 24, titleH = 52 }) {
+  const leg = legendSVG(items, pad, titleH + height + 16, 13);
+  const f = frameSVG(title, src.innerHTML, width, height, leg, pad, titleH);
+  svgToPng(f.svg, f.W, f.H, 2, filename);
+}
+
 // When a chart overflows its .histscroll container, jump to the right edge (newest data).
 export function scrollToNewest(svg) {
   const sc = svg && svg.closest(".histscroll");

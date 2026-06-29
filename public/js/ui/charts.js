@@ -10,7 +10,7 @@ import {
 import { fmtMY } from "../domain/dates.js";
 import { fcCfg, forecastNetAt, fcTarget, fcBandRates, debtSummary } from "../domain/forecast.js";
 import { retCfg, retSim, pensionPts } from "../domain/retirement.js";
-import { C, refreshPalette, niceCeil, chartDims, yGrid, txt, legendSVG, frameSVG, svgToPng, scrollToNewest, positionTip } from "./chart-kit.js";
+import { C, refreshPalette, niceCeil, chartDims, yGrid, txt, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
 
 // Entrance animations play only on view-entry (boot / tab switch), never on the many
 // live re-renders (keystrokes, background refresh) — gated by this one-shot arm flag.
@@ -339,17 +339,14 @@ function drawDonut() {
 
 export function downloadForecast() {
   const src = $("fcChart"); if (!src || !src.innerHTML) { toast("Nothing to save"); return; }
-  const cW = +src.getAttribute("width"), cH = +src.getAttribute("height"), pad = 24, titleH = 52;
-  const leg = legendSVG([{ color: C.amber, label: "Actual / Projected" }, { color: C.green, label: "Goal" }], pad, titleH + cH + 16, 13);
-  const f = frameSVG("Net Worth · forecast", src.innerHTML, cW, cH, leg, pad, titleH);
-  svgToPng(f.svg, f.W, f.H, 2, "nestegg-forecast.png");
+  exportChart({ src, title: "Net Worth · forecast", width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-forecast.png",
+    items: [{ color: C.amber, label: "Actual / Projected" }, { color: C.green, label: "Goal" }] });
 }
 export function downloadHist() {
   const src = $("histChart"); if (!src.innerHTML) { toast("Nothing to save"); return; }
-  const cW = +src.getAttribute("width"), cH = +src.getAttribute("height"), names = allNames(), pad = 24, titleH = 52;
-  const leg = legendSVG(names.map((n) => ({ color: colorOf(n, names), label: n })), pad, titleH + cH + 16, 13);
-  const f = frameSVG("Net Worth · over time", src.innerHTML, cW, cH, leg, pad, titleH);
-  svgToPng(f.svg, f.W, f.H, 2, "nestegg-over-time.png");
+  const names = allNames();
+  exportChart({ src, title: "Net Worth · over time", width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-over-time.png",
+    items: names.map((n) => ({ color: colorOf(n, names), label: n })) });
 }
 export function downloadDonut() {
   const ls = latestSnap(), src = $("donut"), names = allNames();
@@ -357,10 +354,7 @@ export function downloadDonut() {
   if (!rows.length) { toast("No allocation to save"); return; }
   const total = rows.reduce((a, r) => a + r.v, 0);
   const items = rows.map((r) => ({ color: colorOf(r.name, names), label: r.name + "   " + Math.round((r.v / total) * 100) + "%   " + money(r.v) }));
-  const pad = 24, titleH = 52, size = 240;
-  const leg = legendSVG(items, pad, titleH + size + 16, 13);
-  const f = frameSVG("Allocation · " + (ls ? ls.year : ""), src.innerHTML, size, size, leg, pad, titleH);
-  svgToPng(f.svg, f.W, f.H, 2, "nestegg-allocation.png");
+  exportChart({ src, title: "Allocation · " + (ls ? ls.year : ""), items, width: 240, height: 240, filename: "nestegg-allocation.png" });
 }
 
 /* ---- year list ---- */

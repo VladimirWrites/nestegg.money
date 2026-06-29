@@ -7,7 +7,7 @@ import { nid } from "../domain/ids.js";
 import { PALETTE } from "../domain/constants.js";
 import { money, esc } from "../domain/money.js";
 import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, renameBudgetCategory, removeBudgetCategory, budgetCategoryUsage } from "../domain/budget.js";
-import { C, refreshPalette, legendSVG, frameSVG, svgToPng, positionTip } from "./chart-kit.js";
+import { C, refreshPalette, exportChart, positionTip } from "./chart-kit.js";
 import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
 import { scheduleSync } from "../io/storage.js";
 
@@ -109,10 +109,7 @@ function downloadBudgetDonut() {
   if (!src || !_segs.length) { toast("Nothing to save"); return; }
   const total = _segs.reduce((a, x) => a + x.v, 0);
   const items = _segs.map((x) => ({ color: x.color, label: x.name + "   " + Math.round(x.v / total * 100) + "%   " + money(x.v) }));
-  const pad = 24, titleH = 52, size = 240;
-  const leg = legendSVG(items, pad, titleH + size + 16, 13);
-  const f = frameSVG("Budget · monthly breakdown", src.innerHTML, size, size, leg, pad, titleH);
-  svgToPng(f.svg, f.W, f.H, 2, "nestegg-budget.png");
+  exportChart({ src, title: "Budget · monthly breakdown", items, width: 240, height: 240, filename: "nestegg-budget.png" });
 }
 
 const bud = () => {
