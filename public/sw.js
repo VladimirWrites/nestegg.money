@@ -1,7 +1,7 @@
 /* nestegg — service worker. Offline app shell only.
    /api/* is never cached: the vault must always be live (sync correctness),
    and fx/price already have client-side fallbacks when the network is gone. */
-const CACHE = "nestegg-v1.2.20";
+const CACHE = "nestegg-v1.2.21";
 const SHELL = [
   "/dashboard.html",
   "/css/base.css", "/css/app.css",
@@ -10,9 +10,10 @@ const SHELL = [
   "/js/domain/ids.js", "/js/domain/dates.js", "/js/domain/constants.js", "/js/domain/store.js",
   "/js/domain/money.js", "/js/domain/schema.js", "/js/domain/loan.js", "/js/domain/asset-value.js",
   "/js/domain/model.js", "/js/domain/forecast.js", "/js/domain/retirement.js", "/js/domain/merge.js",
-  "/js/io/crypto.js", "/js/io/storage.js",
+  "/js/domain/snapshot.js",
+  "/js/io/crypto.js", "/js/io/storage.js", "/js/io/share.js",
   "/js/ui/dom.js", "/js/ui/chart-kit.js", "/js/ui/charts.js", "/js/ui/networth.js",
-  "/js/ui/assets.js", "/js/ui/salary.js", "/js/ui/gate.js",
+  "/js/ui/assets.js", "/js/ui/salary.js", "/js/ui/gate.js", "/js/ui/share.js",
   "/assets/favicon.svg", "/assets/favicon-32.png",
   "/assets/icon-192.png", "/assets/icon-512.png", "/assets/apple-touch-icon.png",
   "/site.webmanifest",

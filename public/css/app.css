@@ -477,3 +477,48 @@ button.act.ghost:hover{border-color:var(--amber)}
 .bud-loan-name{color:var(--ink);font-family:var(--mono);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bud-loan-amt{text-align:right;font-family:var(--mono);font-size:14px;color:var(--ink);padding:8px 0}
 @media(max-width:520px){.bud-loan{grid-template-columns:1fr 110px}.bud-loan-amt{grid-column:1 / -1;text-align:right;padding-top:0}}
+
+/* ---- share dialog (profile → Share) ---- */
+.share-secs{display:flex;flex-wrap:wrap;gap:10px 18px;margin:14px 0}
+.share-sec{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.share-lbl{display:block;font-size:14px;color:var(--muted);margin:8px 0 14px}
+.share-lbl input{display:block;width:100%;margin-top:6px;background:var(--field);color:var(--ink);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:14px}
+.share-hint{color:var(--muted)}
+.share-result{margin-top:18px}
+.share-result .acctnum{flex:1;background:var(--field);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.share-list{margin-top:8px}
+.share-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.share-row:last-child{border-bottom:0}
+.share-row-name{font-size:14px;color:var(--ink)}
+
+/* ---- read-only shared snapshot (/s/) ---- */
+/* Hide every editing affordance. Nothing persists in share mode anyway (demo plumbing),
+   so this is about a clean read-only presentation, not a security boundary. */
+body.share .acctbar,
+body.share #addYear,
+body.share #pricesBtn,
+body.share #ratesBtn,
+body.share #salEdit,
+body.share #salNext,
+body.share .fcswitch,
+body.share .forecast .fcrow,
+body.share .forecast .fccheck,
+body.share .forecast .fchint,
+body.share #budAddExp,
+body.share #budAddCat,
+body.share #budUseSalary,
+body.share .bud-exp-del,
+body.share .foot,
+body.share section.over > .sectitle .tin { display: none !important; }
+/* Year chips open the year editor on click — inert here. */
+body.share #years { pointer-events: none; }
+/* Budget expense fields become static read-outs; edit-oriented hints are dropped. */
+body.share #budgetBody input,
+body.share #budgetBody select { pointer-events: none; }
+body.share #budgetBody .hint { display: none; }
+
+.sharemsg { max-width: 520px; margin: 80px auto; padding: 0 20px; text-align: center; }
+.sharemsg h1 { font-size: 20px; margin-bottom: 10px; }
+.sharemsg p { color: var(--muted); }
+.sharemsg-foot { margin-top: 18px; }
+.sharemsg-foot a { color: var(--amber); }

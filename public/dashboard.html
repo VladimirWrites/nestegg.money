@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Root base so relative asset URLs resolve from / regardless of path (served at /, /dashboard, and /s/). -->
+<base href="/">
 <!-- apply the saved theme before first paint, so there's no flash -->
 <script>try{var t=localStorage.getItem("nw_theme");if(t==="light")document.documentElement.setAttribute("data-theme","light");}catch(e){}</script>
 <title>nestegg — private net worth tracker</title>
@@ -63,6 +65,10 @@
   <div id="demoBanner" class="demobar hide" role="status">
     <span>Demo — sample data, nothing is saved.</span>
     <span class="demobtns"><button type="button" class="act" id="demoCreate">Create an account</button><button type="button" class="demolink" id="demoExit">Leave</button></span>
+  </div>
+  <div id="shareBanner" class="demobar hide" role="status">
+    <span>Read-only shared snapshot — a point-in-time copy. Nothing here can be edited.</span>
+    <span class="demobtns"><a class="demolink" href="https://nestegg.money" rel="noopener">What is nestegg?</a></span>
   </div>
   <div class="acctbar">
     <button class="who syncbtn" id="syncNowHome" title="Sync now"><span class="syncdot" id="syncDot"></span><span id="syncTxt">Local</span></button>
@@ -234,6 +240,10 @@
     <div class="controls"><label class="ccypick">Show amounts in <select id="ccySel"></select></label></div>
     <div class="sectitle" style="margin-top:28px">Theme</div>
     <div class="controls"><label class="ccypick">Appearance <select id="themeSel"><option value="dark">Dark</option><option value="light">Light</option></select></label></div>
+    <div class="sectitle" style="margin-top:28px">Share</div>
+    <div class="controls"><button class="act ghost" id="shareBtn">Share a read-only link</button></div>
+    <div class="synced">Publish a frozen, read-only snapshot for an advisor. It expires in 30 days and you can revoke it any time. The link's key never reaches the server.</div>
+
     <div class="sectitle" style="margin-top:28px">Data</div>
     <div class="controls">
       <button class="act ghost hide" id="installBtn">Install app</button>
@@ -246,6 +256,25 @@
   </div>
 </div>
 
+<div id="shareModal" class="infomodal hide"><div class="infobox">
+  <button class="infoclose" id="shareClose" aria-label="Close">×</button>
+  <div id="shareBody">
+    <h3>Share a read-only link</h3>
+    <p>Pick what to include. The person you share with sees a frozen, read-only snapshot — they can't edit your data, and the link expires in 30 days.</p>
+    <div id="shareSecs" class="share-secs"></div>
+    <label class="share-lbl">Who's it for? <span class="share-hint">(optional, for your list)</span>
+      <input type="text" id="shareLabel" maxlength="60" placeholder="e.g. My advisor" autocomplete="off">
+    </label>
+    <div class="controls"><button class="act" id="shareCreate">Create link</button></div>
+    <div id="shareResult" class="share-result hide">
+      <div class="sectitle">Your link</div>
+      <div class="acctrow"><input type="text" id="shareLinkOut" class="acctnum" readonly><button class="act ghost" id="shareCopy">Copy</button></div>
+      <div class="synced">Anyone with this link can view the snapshot until it expires. Copy it now — the key is only in this link and isn't stored anywhere.</div>
+    </div>
+    <div class="sectitle" style="margin-top:28px">Active links</div>
+    <div id="shareList" class="share-list"></div>
+  </div>
+</div></div>
 <div id="infoModal" class="infomodal hide"><div class="infobox"><button class="infoclose" id="infoClose" aria-label="Close">×</button><div id="infoBody"></div></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

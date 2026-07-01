@@ -7,7 +7,7 @@ import { mergeStates, setBaseline } from "../domain/merge.js";
 import { CCYS } from "../domain/constants.js";
 import { fcCfg } from "../domain/forecast.js";
 import { retCfg } from "../domain/retirement.js";
-import { generateToken, validToken, canonToken, normTok, deriveKeys, copyText } from "../io/crypto.js";
+import { generateToken, validToken, canonToken, normTok, deriveKeys, copyText, decWith, importShareKey } from "../io/crypto.js";
 import { LS, syncedAt, setDemo, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
 import { renderAll, repaintCharts, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut, armChartAnim } from "./charts.js";
 import { renderSalary, armSalaryAnim } from "./salary.js";
@@ -70,6 +70,7 @@ $("gateSignin").addEventListener("submit", async (e) => {
 
 export async function boot() {
   try {
+    if (location.pathname === "/s" || location.pathname === "/s/") { await bootShare(); return; } // read-only shared snapshot
     if (location.hash === "#demo") { startDemo(); return; } // no-account tour with sample data
     const tok = LS.get("nw_token");
     if (!tok) { if (location.hash === "#signin") showSignin(); else showCreate(); return; }
@@ -121,6 +122,56 @@ async function startDemo() {
   setState(migrate(sampleState()));
   const b = $("demoBanner"); if (b) b.classList.remove("hide");
   enterApp(true);
+}
+
+// Read-only shared snapshot. Boots the same dashboard, but from a share link instead of an
+// account: no gate, no sync, no persistence (demo plumbing), and editing chrome hidden via the
+// `share` body class. The snapshot's `_include` decides which sections/tabs are shown.
+async function bootShare() {
+  document.body.classList.add("share");
+  const frag = location.hash.replace(/^#/, "");
+  const dot = frag.indexOf(".");
+  const id = dot > 0 ? frag.slice(0, dot) : "";
+  const keyStr = dot > 0 ? frag.slice(dot + 1) : "";
+  if (!/^[a-f0-9]{32}$/.test(id) || !keyStr) return shareError("Invalid link", "This share link is incomplete or malformed. Ask for a fresh one.");
+  setDemo(true); // no persistence, no sync
+  let blob;
+  try {
+    const r = await fetch("/api/share", { headers: { "X-Share-Id": id } });
+    if (r.status === 404 || r.status === 410) return shareError("Link no longer available", "This shared snapshot has expired or been revoked by its owner.");
+    if (!r.ok) return shareError("Couldn't load", "Something went wrong fetching this snapshot. Try again later.");
+    blob = (await r.json()).blob;
+  } catch (e) { return shareError("Couldn't load", "Network error fetching this snapshot. Check your connection and retry."); }
+  try {
+    const key = await importShareKey(keyStr);
+    const snap = await decWith(blob, key);
+    const inc = snap._include || {};
+    setState(migrate(snap));
+    applyShareVisibility(inc);
+    $("shareBanner").classList.remove("hide");
+    enterApp(true); // frozen snapshot — skip the live FX/price refresh
+    // Net worth may not be shared, so land on the first included section.
+    const order = [["networth", "net"], ["salaries", "salary"], ["budget", "budget"]];
+    const first = order.find(([k]) => inc[k]);
+    if (first) showView(first[1]);
+  } catch (e) { return shareError("Couldn't open", "The link's key didn't match this snapshot — it may be truncated."); }
+}
+
+// Hide tabs/sections the sharer didn't include. Net worth, Salary and Budget are top-level
+// tabs; Forecast and Retirement are sub-sections of the net-worth page.
+function applyShareVisibility(inc) {
+  const tabs = { networth: "navNet", salaries: "salaryBtn", budget: "navBudget" };
+  for (const k in tabs) { const el = $(tabs[k]); if (el) el.classList.toggle("hide", !inc[k]); }
+  const fc = document.querySelector(".forecast:not(.retire)"); if (fc) fc.classList.toggle("hide", !inc.forecast);
+  const rt = document.querySelector(".forecast.retire"); if (rt) rt.classList.toggle("hide", !inc.retirement);
+}
+
+function shareError(title, body) {
+  document.body.classList.add("share");
+  $("gate").classList.add("hide");
+  const app = $("app");
+  app.classList.remove("hide");
+  app.innerHTML = `<div class="sharemsg"><h1>${title}</h1><p>${body}</p><p class="sharemsg-foot"><a href="https://nestegg.money" rel="noopener">nestegg — private net-worth tracker</a></p></div>`;
 }
 
 let profShown = false;

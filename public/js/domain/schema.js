@@ -28,6 +28,7 @@ export function emptyState() {
     salaries: [],
     snapshots: [{ year: new Date().getFullYear(), entries: [] }],
     budget: { incomeOverride: null, expenses: [], loanCats: {}, categories: DEFAULT_BUDGET_CATEGORIES.slice() },
+    shares: [],
   };
 }
 
@@ -198,6 +199,20 @@ function migrateSnapshots(s) {
   });
 }
 
+// Active read-only shares the user has published: the local record of each link (id, label,
+// timestamps). The share KEY is never stored here — it exists only in the link the user copied.
+// This list rides inside the encrypted vault, so it syncs across devices and the server learns
+// nothing about it. It's a record, not a transactional mirror of the server's rows.
+function migrateShares(s) {
+  if (!Array.isArray(s.shares)) { s.shares = []; return; }
+  s.shares = s.shares.filter((sh) => sh && typeof sh.id === "string").map((sh) => ({
+    id: sh.id,
+    label: typeof sh.label === "string" ? sh.label : "",
+    created: +sh.created || 0,
+    expires: +sh.expires || 0,
+  }));
+}
+
 // Categories are a global tag list. Backfill from any group still in use.
 function rebuildCategories(s) {
   if (!Array.isArray(s.categories)) s.categories = [];
@@ -228,6 +243,7 @@ export function migrate(s) {
   migrateAssets(s);
   migrateSalaries(s);
   migrateSnapshots(s);
+  migrateShares(s);
   rebuildCategories(s);
   pruneTombstones(s);
   delete s.items;
