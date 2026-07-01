@@ -10,6 +10,7 @@ import { renderEntries } from "./ui/networth.js";
 import { drawSalaryChart } from "./ui/salary.js";
 import { boot } from "./ui/gate.js";
 import "./ui/assets.js"; // side-effect: wire its editor listeners
+import "./ui/share.js"; // side-effect: wire the share dialog
 
 // After background data lands (FX/prices), re-render whichever view is active.
 setDataListener(() => {

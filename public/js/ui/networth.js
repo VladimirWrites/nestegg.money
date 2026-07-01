@@ -28,7 +28,35 @@ function closeYearEditor() {
   renderAll();
 }
 
+// Read-only mode (shared snapshot viewer): the year drill-down renders static cards instead of
+// the editable ones, so every value is formatted and right-aligned with no inert edit controls.
+let RO = false;
+export const setEntriesReadOnly = (v) => { RO = !!v; };
+
+// A clean read-only entry row: name · (shares + ticker for holdings) · formatted value, right-aligned.
+function roCardHTML(en, i, names, year) {
+  const liab = en.kind === "liability", priced = en.kind === "ticker" || en.kind === "crypto";
+  const v = entryBase(en, year);
+  const p = priced ? tickerPx(en, year) : null;
+  const dot = `<span class="dot" style="background:${liab ? "var(--red)" : colorOf(seriesKey(en), names)}"></span>`;
+  const mid = priced
+    ? `<span class="ro-mid"><span class="ro-sh num">${en.shares != null ? en.shares : 0}</span><span class="ro-tk">${esc(en.ticker || "")}</span></span>`
+    : "";
+  const valTxt = liab ? "− " + money(Math.abs(v)) : (priced && !p ? "—" : money(v));
+  return `<div class="rcard ro${liab ? " liabcard" : ""}">${dot}<span class="ro-name">${esc(en.name)}</span>${mid}<span class="ro-val${liab ? " liab" : ""}">${valTxt}</span></div>`;
+}
+
+// Read-only long-term-asset row: name · tag (loan/depreciating) · formatted value. No edit pencil.
+function roAutoCardHTML(en, names, year) {
+  const a = (state.assets || []).find((x) => x.id === en.assetId) || {}, liab = en.kind === "liability";
+  const tags = liab ? "liability" : [a.depreciates ? (a.up ? "appreciating" : "depreciating") : "", a.loan ? "loan" : ""].filter(Boolean).join(" · ") || "asset";
+  const v = entryBase(en, year);
+  const dot = `<span class="dot" style="background:${liab ? "var(--red)" : colorOf(seriesKey(en), names)}"></span>`;
+  return `<div class="rcard ro auto${liab ? " liabcard" : ""}">${dot}<span class="ro-name">${esc(en.name)}</span><span class="autotag">${tags}</span><span class="ro-val${liab ? " liab" : ""}">${liab ? "− " + money(Math.abs(v)) : money(v)}</span></div>`;
+}
+
 function cardHTML(en, i, names, year) {
+  if (RO) return roCardHTML(en, i, names, year);
   const baseV = entryBase(en, year), liab = en.kind === "liability", priced = en.kind === "ticker" || en.kind === "crypto";
   let valuePart;
   let priceNote = "";
@@ -58,6 +86,7 @@ function cardHTML(en, i, names, year) {
 
 // Read-only card for a long-term asset (tap to edit in the focused asset editor).
 function autoCardHTML(en, names, year) {
+  if (RO) return roAutoCardHTML(en, names, year);
   const a = (state.assets || []).find((x) => x.id === en.assetId) || {}, liab = en.kind === "liability";
   const tags = liab ? "liability" : [a.depreciates ? (a.up ? "appreciating" : "depreciating") : "", a.loan ? "loan" : ""].filter(Boolean).join(" · ") || "asset";
   const v = entryBase(en, year);
