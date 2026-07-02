@@ -14,6 +14,22 @@ import { scheduleSync } from "../io/storage.js";
 // Cache the latest segments so the tooltip and the PNG export can read them.
 let _segs = [];
 
+// Read-only mode (share viewer): plain text rows instead of inputs/selects, no empty categories,
+// no override row, no add/delete controls. Mirrors setEntriesReadOnly in networth.js.
+let RO = false;
+export const setBudgetReadOnly = (v) => { RO = !!v; };
+
+// A read-only outgoing row: just the name and the formatted amount (the category is already
+// conveyed by the section the row sits in).
+function roItemRow(name, amount) {
+  return `<div class="bud-exp ro"><span class="bud-loan-name">${esc(name)}</span><span class="bud-loan-amt">${money(amount)}</span></div>`;
+}
+
+// A read-only category section: static header (no rename input, no delete ×).
+function roGroupSection(name, color, subtotalHTML, cardsHTML) {
+  return `<div class="grp"><div class="grphead"><span class="dot" style="background:${color}"></span><span class="grpname">${esc(name)}</span><span class="grpsub num">${subtotalHTML}</span></div><div class="grpcards">${cardsHTML}</div></div>`;
+}
+
 // Where the income goes, at the top level: one wedge per category (expenses + loans grouped by the
 // domain) plus the leftover. Each carries its `items` so the tooltip can break it down on hover.
 function breakdownSegments(s) {
@@ -128,6 +144,7 @@ function refreshTotals() {
 }
 
 function expenseRow(e) {
+  if (RO) return roItemRow(e.name || "Expense", +e.amount || 0);
   return `<div class="bud-exp" data-id="${e.id}">
     <input class="bud-exp-name" data-id="${e.id}" type="text" value="${esc(e.name || "")}" placeholder="Expense" aria-label="Expense name">
     ${catSelect("bud-exp-cat", `data-id="${e.id}"`, e.group)}
@@ -138,6 +155,7 @@ function expenseRow(e) {
 
 // A loan row: the loan name (from your assets), a category picker, and its monthly payment (fixed).
 function loanRow(l, loanCats) {
+  if (RO) return roItemRow(l.name, l.monthly);
   return `<div class="bud-exp bud-loan" data-lid="${l.id}">
     <span class="bud-loan-name" title="Loan payment (from your assets)">${esc(l.name)}</span>
     ${catSelect("bud-loan-cat", `data-lid="${l.id}"`, loanCats[l.id])}
@@ -168,7 +186,9 @@ function itemsHTML(s, b) {
     const ex = b.expenses.filter((e) => e.group === g), lo = loans.filter((l) => lc[l.id] === g);
     const sub = ex.reduce((a, e) => a + (+e.amount || 0), 0) + lo.reduce((a, l) => a + l.monthly, 0);
     const cards = lo.map(loanRowH).join("") + ex.map(expRow).join("");
-    html += groupSectionHTML(g, catColor(g, s.categories), money(sub), cards);
+    if (RO && !cards) return;   // a category with nothing in it is editor scaffolding, not data
+    html += RO ? roGroupSection(g, catColor(g, s.categories), money(sub), cards)
+               : groupSectionHTML(g, catColor(g, s.categories), money(sub), cards);
   });
   return html;
 }
@@ -202,20 +222,25 @@ export function renderBudget() {
 
     <div class="bud-rows">
       <div class="bud-row"><span class="bud-lbl">Income <span class="hint">latest salary month: ${money(auto)}</span></span><span class="bud-val" id="budIncome">${money(s.income)}</span></div>
-      <div class="bud-row indent">
+      ${RO ? "" : `<div class="bud-row indent">
         <span class="bud-lbl">Override monthly income</span>
         <span class="bud-ovr">
           <button id="budUseSalary" class="bud-reset${b.incomeOverride == null ? " hide" : ""}" type="button" title="Use the salary figure again">↺ use salary</button>
           <input id="budOverride" class="bud-input" type="number" inputmode="decimal" value="${b.incomeOverride == null ? "" : b.incomeOverride}" placeholder="auto (${money(auto)})" aria-label="Override monthly income">
         </span>
-      </div>
+      </div>`}
       <div class="bud-exp-head">Outgoings <span class="hint">tag loans &amp; expenses into categories</span></div>
       <div id="budItems">${itemsHTML(s, b)}</div>
       <div class="bud-row total"><span class="bud-lbl">Total outgoings</span><span class="bud-val" id="budOutTotal">${money(s.fixed + s.expenses)}</span></div>
     </div>
 
-    <div class="controls"><button class="act ghost" id="budAddExp">+ Add expense</button><button class="act ghost" id="budAddCat">+ Add category</button></div>
+    ${RO ? "" : `<div class="controls"><button class="act ghost" id="budAddExp">+ Add expense</button><button class="act ghost" id="budAddCat">+ Add category</button></div>`}
   `;
+
+  const dl = $("dlBudget"); if (dl) dl.onclick = downloadBudgetDonut;
+  drawBudgetDonut(s, true);   // animate on tab entry
+  wireBudgetTip();
+  if (RO) return;             // read-only viewer: nothing below exists to wire
 
   // Override income: live, no rebuild (keeps focus while typing). Empty field = use salary.
   $("budOverride").oninput = (ev) => {
@@ -273,8 +298,4 @@ export function renderBudget() {
   };
   // "+ Add category" — same as net worth: adds a category you then rename inline.
   $("budAddCat").onclick = () => { addBudgetCategory(); scheduleSync(); renderBudget(); };
-
-  const dl = $("dlBudget"); if (dl) dl.onclick = downloadBudgetDonut;
-  drawBudgetDonut(s, true);   // animate on tab entry
-  wireBudgetTip();
 }

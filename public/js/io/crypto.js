@@ -98,22 +98,48 @@ async function gunzip(bytes) {
   return new Uint8Array(await new Response(s).arrayBuffer());
 }
 
-// Encrypt the live state: "<iv>.<ciphertext>" (base64), gzipped first when possible.
-export async function encS() {
+// Encrypt any object under any AES-GCM key: "<iv>.<ciphertext>" (base64), gzipped first when
+// possible. Used by the vault (state under the account key) and by shares (a snapshot under a
+// fresh per-share key).
+export async function encWith(obj, key) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  let data = new TextEncoder().encode(JSON.stringify(state));
+  let data = new TextEncoder().encode(JSON.stringify(obj));
   const gz = await gzip(data);
   if (gz) data = gz;
-  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, cryptoKey, data);
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
   return b64(iv) + "." + b64(ct);
 }
 
-export async function decS(blob) {
+export async function decWith(blob, key) {
   const [i, c] = blob.split(".");
-  const buf = await crypto.subtle.decrypt({ name: "AES-GCM", iv: new Uint8Array(unb64(i)) }, cryptoKey, unb64(c));
+  const buf = await crypto.subtle.decrypt({ name: "AES-GCM", iv: new Uint8Array(unb64(i)) }, key, unb64(c));
   let pt = new Uint8Array(buf);
   if (pt[0] === 0x1f && pt[1] === 0x8b) pt = await gunzip(pt);
   return JSON.parse(new TextDecoder().decode(pt));
+}
+
+// Encrypt/decrypt the live state under the account-derived vault key.
+export const encS = () => encWith(state, cryptoKey);
+export const decS = (blob) => decWith(blob, cryptoKey);
+
+/* ---- share keys ----
+   A share gets its OWN random AES-GCM key, independent of the account number, so publishing a
+   snapshot never exposes the credential and revoking a share never touches the vault. The key is
+   carried base64url in the viewer link's fragment; the server only ever sees the ciphertext. */
+
+// base64url (URL-fragment-safe: no +/= that would need escaping).
+const b64url = (buf) => b64(buf).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64url = (s) => unb64(s.replace(/-/g, "+").replace(/_/g, "/"));
+
+export const genShareKey = () => crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+export async function exportShareKey(key) {
+  return b64url(await crypto.subtle.exportKey("raw", key));
+}
+export const importShareKey = (s) => crypto.subtle.importKey("raw", unb64url(s), { name: "AES-GCM" }, false, ["decrypt"]);
+
+// Random 128-bit share id as hex — the storage key and the unguessable capability to view/revoke.
+export function randShareId() {
+  return hex(crypto.getRandomValues(new Uint8Array(16)));
 }
 
 // Copy to clipboard, reporting whether it actually worked (needs a secure context).

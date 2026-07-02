@@ -174,6 +174,79 @@ async function vaultDelete(request, env) {
 }
 
 // ---------------------------------------------------------------------------
+// /api/share — read-only snapshot store. A share is a frozen, client-encrypted copy of a
+// subset of a user's data, keyed by a random id with no link to any account. The decryption
+// key never reaches the server (it lives in the viewer link's URL fragment), so — like vaults —
+// the server only ever holds ciphertext. Shares self-expire after 30 days.
+// The id travels in the X-Share-Id header (GET/DELETE) or the body (POST), never the URL, so it
+// can't leak via access logs / Referer, matching the vault convention.
+// POST   { id, blob }          -> { ok: true, expires_at }
+// GET    [X-Share-Id: <id>]    -> { blob, expires_at } | 404 | 410 (expired)
+// DELETE [X-Share-Id: <id>]    -> { ok: true }   (revoke)
+// ---------------------------------------------------------------------------
+const SHARE_ID_RE = /^[a-f0-9]{32}$/;    // random 128-bit id, hex
+const SHARE_TTL_MS = 30 * 86_400_000;    // shares live 30 days, then lazy-purged
+
+const shareId = (request) => request.headers.get("X-Share-Id");
+
+async function shareGet(request, env) {
+  const id = shareId(request);
+  if (!id || !SHARE_ID_RE.test(id)) return json({ error: "bad id" }, 400);
+  const row = await env.DB.prepare(
+    "SELECT blob, expires_at FROM shares WHERE share_id = ?"
+  ).bind(id).first();
+  if (!row) return json({ error: "not found" }, 404);
+  if (row.expires_at <= Date.now()) {
+    // Expired: purge on read so a dead link stops resolving and the row doesn't linger.
+    await env.DB.prepare("DELETE FROM shares WHERE share_id = ?").bind(id).run();
+    return json({ error: "expired" }, 410);
+  }
+  return json({ blob: row.blob, expires_at: row.expires_at });
+}
+
+async function sharePost(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return json({ error: "bad json" }, 400); }
+
+  const { id, blob } = body || {};
+  if (!id || !SHARE_ID_RE.test(id)) return json({ error: "bad id" }, 400);
+  if (typeof blob !== "string" || blob.length === 0 || blob.length > MAX_BLOB) {
+    return json({ error: "bad blob" }, 400);
+  }
+
+  const now = Date.now();
+  // Opportunistic cleanup: drop any expired shares so the table can't grow without bound
+  // (no cron needed — every publish sweeps the backlog).
+  await env.DB.prepare("DELETE FROM shares WHERE expires_at < ?").bind(now).run();
+
+  // Rate-limit share creation per IP with the same window/table as new-vault creation, so a
+  // single network can't stuff the table with snapshots.
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const since = now - CREATE_WINDOW_MS;
+  await env.DB.prepare("DELETE FROM create_log WHERE ts < ?").bind(since).run();
+  const c = await env.DB.prepare("SELECT COUNT(*) AS n FROM create_log WHERE ip = ? AND ts > ?").bind(ip, since).first();
+  if ((c && c.n ? c.n : 0) >= CREATE_LIMIT) return json({ error: "rate limited" }, 429);
+  await env.DB.prepare("INSERT INTO create_log (ip, ts) VALUES (?1, ?2)").bind(ip, now).run();
+
+  const expires_at = now + SHARE_TTL_MS;  // server owns the TTL; client input is ignored
+  await env.DB.prepare(
+    `INSERT INTO shares (share_id, blob, expires_at, created_at)
+     VALUES (?1, ?2, ?3, ?4)
+     ON CONFLICT(share_id) DO UPDATE SET blob = ?2, expires_at = ?3, created_at = ?4`
+  ).bind(id, blob, expires_at, now).run();
+
+  return json({ ok: true, expires_at });
+}
+
+async function shareDelete(request, env) {
+  const id = shareId(request);
+  if (!id || !SHARE_ID_RE.test(id)) return json({ error: "bad id" }, 400);
+  await env.DB.prepare("DELETE FROM shares WHERE share_id = ?").bind(id).run();
+  return json({ ok: true });
+}
+
+// ---------------------------------------------------------------------------
 // /api/calc/* — stateless calculators over lib/finance-math.js. Pure: no storage,
 // no auth, no live data. CORS-open (they carry no secrets). POST JSON in, JSON out.
 // ---------------------------------------------------------------------------
@@ -227,6 +300,17 @@ export default {
       }
     }
 
+    if (pathname === "/api/share") {
+      try {
+        if (method === "GET") return await shareGet(request, env);
+        if (method === "POST") return await sharePost(request, env);
+        if (method === "DELETE") return await shareDelete(request, env);
+        return json({ error: "method not allowed" }, 405);
+      } catch (e) {
+        return json({ error: "storage error" }, 500);
+      }
+    }
+
     if (pathname === "/api/calc" || pathname.startsWith("/api/calc/")) {
       return calcRoute(request, pathname);
     }
@@ -243,6 +327,10 @@ export default {
     const appHost = host.startsWith("dashboard.") || host.endsWith(".workers.dev") || host === "localhost" || host === "127.0.0.1";
     const serve = (file) => env.ASSETS.fetch(new Request(new URL(file, url.origin), request));
     if (pathname === "/dashboard" || pathname === "/dashboard/") return serve("/dashboard.html");
+    // Read-only share viewer: the same dashboard app, booted in "share" mode (main.js detects
+    // the /s/ path). The id + key ride in the URL fragment (never sent here), so the path is a
+    // bare /s/ regardless of which share is being viewed.
+    if (pathname === "/s" || pathname === "/s/") return serve("/dashboard.html");
     if (pathname === "/landing") return serve("/index.html");
     if (pathname === "/" || pathname === "") return serve(appHost ? "/dashboard.html" : "/index.html");
     // Everything else: serve the static asset by path (404 if missing).
