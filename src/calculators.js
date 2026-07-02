@@ -24,9 +24,12 @@ import {
   netWorth, budget503020, tipSplit, discount, successiveDiscounts, percentageChange, unitPrice,
   hourlyToSalary, salaryToHourly, afterTaxYield, taxEquivalentYield, coastFire, baristaFire,
 } from "../public/lib/finance-math.js";
+// Direct import (not via the barrel): the browser also loads the barrel, and the generated
+// per-year PAP engines are worker-only weight.
+import { deNetSalary } from "../public/lib/finance-math/de/net.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.3.1";
+export const CALC_VERSION = "1.4.0";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
@@ -309,6 +312,23 @@ export const CALCULATORS = {
       healthCeiling: num("Contribution ceiling for health and care."),
     }, ["gross"]),
     run: (a) => germanNetSalary(a),
+  },
+  "de-net-salary": {
+    description: "Exact German net (Netto) salary from annual gross (Brutto) for tax years 2023-2026. Income tax and Soli follow the official BMF Programmablaufplan for the year (to the euro; 2024 uses the retroactive December tariff), church tax comes from the PAP's Kirchensteuer base, and employee social insurance uses that year's ceilings and rates (KV Zusatzbeitrag defaults to the year's average). Earlier years are rejected - use de-gross-to-net with self-supplied figures instead.",
+    inputSchema: obj({
+      year: num("Tax year: 2023, 2024, 2025 or 2026."),
+      grossAnnual: num("Annual gross salary (Brutto) in EUR."),
+      taxClass: num("Steuerklasse 1-6 (default 1)."),
+      children: num("Kinderfreibetrag counter (ZKF), halves allowed (default 0). Also drives the care-insurance child discounts."),
+      childrenUnder25: num("Optional. Children under 25 for the care-insurance discounts, when it differs from `children`."),
+      churchTaxPct: num("Church tax rate: 8, 9, or 0 for none (default 0)."),
+      bundesland: str("Optional. State code (BW, BY, BE, ... SN, TH). Drives the Saxony care-insurance split and the pre-2025 East pension ceiling."),
+      kvZusatzPct: num("Optional. Your Krankenkasse's Zusatzbeitrag in percent; defaults to the year's official average."),
+      privateHealth: obj({ premiumAnnual: num("Annual private health+care premium in EUR.") }, ["premiumAnnual"]),
+      age: num("Optional. Age in years - under 23 skips the childless care surcharge."),
+      faktor: num("Optional. Steuerklasse-4 Faktorverfahren factor (e.g. 0.921)."),
+    }, ["year", "grossAnnual"]),
+    run: (a) => deNetSalary(a),
   },
   "vat": {
     description: "Value-added tax (MwSt/USt, sales tax) on a price. By default adds the tax to a net price; with inclusive=true treats the amount as gross and extracts the tax. The rate is always an input (19 or 7 for Germany, etc.).",
@@ -694,6 +714,7 @@ const OUTPUTS = {
   "tax-from-brackets": out({ tax: onum("Total tax."), effectiveRatePct: onum("Effective rate, percent."), marginalRatePct: onum("Marginal rate, percent.") }),
   "margin-markup": out({ cost: onum("Cost."), price: onum("Price."), profit: onum("Profit."), marginPct: onum("Margin, percent."), markupPct: onum("Markup, percent.") }),
   "de-gross-to-net": out({ gross: onum("Gross."), incomeTax: onum("Income tax."), soli: onum("Soli."), churchTax: onum("Church tax."), contributions: oobj("{ pension, unemployment, health, care, total }."), totalDeductions: onum("Total deductions."), net: onum("Net.") }),
+  "de-net-salary": out({ year: onum("Tax year."), gross: oobj("{ annual, monthly }."), incomeTax: onum("Lohnsteuer (annual)."), soli: onum("Solidaritätszuschlag."), churchTax: onum("Kirchensteuer."), totalTax: onum("All taxes."), contributions: oobj("{ pension, unemployment, health, care, total, rates, ceilingsApplied }."), totalDeductions: onum("Taxes + contributions."), net: oobj("{ annual, monthly }."), assumptions: oobj("Inputs as applied (tax class, Zusatzbeitrag, PAP basis, ...).") }),
   "vat": out({ net: onum("Net price."), tax: onum("Tax amount."), gross: onum("Gross price.") }),
   "roi": out({ roiPct: onum("Total return, percent."), annualizedPct: onum("Annualized return, percent (null if no years).") }),
   "real-return": out({ realPct: onum("Real return, percent.") }),

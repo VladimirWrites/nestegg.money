@@ -17,15 +17,15 @@ test("initialize advertises the tools capability and server info", async () => {
   assert.ok(j.result.serverInfo.calcVersion);
 });
 
-test("tools/list returns all ninety-four calculators with input schemas and read-only annotations", async () => {
+test("tools/list returns all ninety-five calculators with input schemas and read-only annotations", async () => {
   const j = await (await mcp({ jsonrpc: "2.0", id: 2, method: "tools/list" })).json();
-  assert.equal(j.result.tools.length, 94);
+  assert.equal(j.result.tools.length, 95);
   const names = j.result.tools.map((t) => t.name);
   assert.ok(names.includes("amortization") && names.includes("cagr"));
   assert.ok(["fire-number", "required-contribution", "inflation-adjust", "effective-rate", "npv", "irr", "refi-breakeven", "emergency-fund"].every((n) => names.includes(n)));
   assert.ok(["mortgage-affordability", "debt-payoff", "portfolio-longevity"].every((n) => names.includes(n)));
   assert.ok(["present-value", "required-return", "yield-to-maturity", "tax-from-brackets", "margin-markup", "compound-interest"].every((n) => names.includes(n)));
-  assert.ok(["de-gross-to-net", "vat"].every((n) => names.includes(n)));
+  assert.ok(["de-gross-to-net", "de-net-salary", "vat"].every((n) => names.includes(n)));
   assert.ok(["roi", "real-return", "return-stats", "sharpe-ratio", "max-drawdown", "holding-period-return", "fee-drag", "dollar-cost-averaging"].every((n) => names.includes(n)));
   assert.ok(["bond-price", "current-yield", "bond-duration", "convexity", "zero-coupon-price", "accrued-interest"].every((n) => names.includes(n)));
   assert.ok(["black-scholes", "option-greeks", "put-call-parity", "option-breakeven", "intrinsic-time-value"].every((n) => names.includes(n)));
@@ -50,6 +50,17 @@ test("tools/call reaches the new calculators (fire-number, debt-payoff)", async 
 
   j = await (await mcp({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "debt-payoff", arguments: { debts: [{ name: "A", balance: 1000, rate: 5, minPayment: 25 }, { name: "B", balance: 2000, rate: 20, minPayment: 25 }], monthlyBudget: 200, method: "avalanche" } } })).json();
   assert.equal(j.result.structuredContent.payoffOrder[0], "B");
+});
+
+test("tools/call de-net-salary: exact 2026 value and a clear error for unsupported years", async () => {
+  let j = await (await mcp({ jsonrpc: "2.0", id: 30, method: "tools/call", params: { name: "de-net-salary", arguments: { year: 2026, grossAnnual: 60000, taxClass: 1 } } })).json();
+  assert.equal(j.result.isError, undefined);
+  assert.equal(j.result.structuredContent.incomeTax, 9389); // official BMF Prüftabelle value
+  assert.equal(j.result.structuredContent.net.annual, 37561);
+
+  j = await (await mcp({ jsonrpc: "2.0", id: 31, method: "tools/call", params: { name: "de-net-salary", arguments: { year: 2010, grossAnnual: 60000 } } })).json();
+  assert.equal(j.result.isError, true);
+  assert.ok(j.result.content[0].text.includes("2023, 2024, 2025, 2026"));
 });
 
 test("tools/call returns the Phase-1 vectors (text + structuredContent)", async () => {
