@@ -31,3 +31,6 @@ export * from "./finance-math/realestate.js";      // capRate, cashOnCash, noi, 
 export * from "./finance-math/business.js";        // wacc, breakEvenUnits, contributionMargin, currentRatio, quickRatio, roe, roa
 export * from "./finance-math/depreciation.js";    // decliningBalanceDepreciation, doubleDecliningDepreciation, sumOfYearsDigits, unitsOfProductionDepreciation
 export * from "./finance-math/everyday.js";        // netWorth, budget503020, tipSplit, discount, successiveDiscounts, percentageChange, unitPrice, hourlyToSalary, salaryToHourly, afterTaxYield, taxEquivalentYield
+// deNetSalary (finance-math/de/) is deliberately NOT re-exported here: the dashboard loads this
+// barrel in the browser, and the generated PAP engines would add ~130 KB it never uses. The
+// worker imports finance-math/de/net.js directly.

@@ -1,6 +1,6 @@
 # nestegg calculators
 
-Deterministic, pure finance calculators (version 1.3.0). Every function depends only on
+Deterministic, pure finance calculators (version 1.4.0). Every function depends only on
 its inputs: none read user data, fetch live prices, or look up exchange rates or tax tables. Where
 current statutory figures are needed (e.g. German payroll), they are passed in as arguments. Money
 is rounded half-up to two decimals (the app's `round2`); rates are in percent unless noted; dates
@@ -11,7 +11,7 @@ as the JSON body) and as an MCP tool (Streamable HTTP at `/mcp`, same name and i
 `outputSchema`). `GET /api/calc` lists them. Both are stateless, CORS-open, and need no auth.
 
 > This file is generated from the registry by `scripts/gen-calculator-docs.mjs` — do not edit by
-> hand; run `npm run gen-docs` after changing a calculator. 94 calculators.
+> hand; run `npm run gen-docs` after changing a calculator. 95 calculators.
 
 ## amortization
 
@@ -512,6 +512,39 @@ Outputs:
 - `contributions` — { pension, unemployment, health, care, total }.
 - `totalDeductions` — Total deductions.
 - `net` — Net.
+
+## de-net-salary
+
+Exact German net (Netto) salary from annual gross (Brutto) for tax years 2023-2026. Income tax and Soli follow the official BMF Programmablaufplan for the year (to the euro; 2024 uses the retroactive December tariff), church tax comes from the PAP's Kirchensteuer base, and employee social insurance uses that year's ceilings and rates (KV Zusatzbeitrag defaults to the year's average). Earlier years are rejected - use de-gross-to-net with self-supplied figures instead.
+
+**Endpoint:** `POST /api/calc/de-net-salary` · **MCP tool:** `de-net-salary`
+
+Inputs:
+
+- `year` *(required)* — number: Tax year: 2023, 2024, 2025 or 2026.
+- `grossAnnual` *(required)* — number: Annual gross salary (Brutto) in EUR.
+- `taxClass` — number: Steuerklasse 1-6 (default 1).
+- `children` — number: Kinderfreibetrag counter (ZKF), halves allowed (default 0). Also drives the care-insurance child discounts.
+- `childrenUnder25` — number: Optional. Children under 25 for the care-insurance discounts, when it differs from `children`.
+- `churchTaxPct` — number: Church tax rate: 8, 9, or 0 for none (default 0).
+- `bundesland` — string: Optional. State code (BW, BY, BE, ... SN, TH). Drives the Saxony care-insurance split and the pre-2025 East pension ceiling.
+- `kvZusatzPct` — number: Optional. Your Krankenkasse's Zusatzbeitrag in percent; defaults to the year's official average.
+- `privateHealth` — object
+- `age` — number: Optional. Age in years - under 23 skips the childless care surcharge.
+- `faktor` — number: Optional. Steuerklasse-4 Faktorverfahren factor (e.g. 0.921).
+
+Outputs:
+
+- `year` — Tax year.
+- `gross` — { annual, monthly }.
+- `incomeTax` — Lohnsteuer (annual).
+- `soli` — Solidaritätszuschlag.
+- `churchTax` — Kirchensteuer.
+- `totalTax` — All taxes.
+- `contributions` — { pension, unemployment, health, care, total, rates, ceilingsApplied }.
+- `totalDeductions` — Taxes + contributions.
+- `net` — { annual, monthly }.
+- `assumptions` — Inputs as applied (tax class, Zusatzbeitrag, PAP basis, ...).
 
 ## vat
 
