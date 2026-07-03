@@ -1,7 +1,10 @@
 {
   "name": "nestegg-calculators",
-  "description": "95 deterministic personal-finance calculators (pure, stateless, no auth, nothing stored): loans & mortgages, time value of money, investing & risk, bonds, options, retirement, real estate, business, tax, and everyday money.",
-  "version": "1.4.0",
+  "description": "95 exact, auditable finance calculators. German net salary 2023-2026 via the official BMF Programmablaufplan, verified against all 1,008 published test values; plus loans, TVM, investing, bonds, options, FIRE, VAT. Stateless, no auth, stores nothing.",
+  "version": "1.4.1",
   "homepage": "https://nestegg.money",
-  "transport": { "type": "http", "url": "https://nestegg.money/mcp" }
+  "transport": {
+    "type": "http",
+    "url": "https://nestegg.money/mcp"
+  }
 }
