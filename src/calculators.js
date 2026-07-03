@@ -33,7 +33,7 @@ import { deMidijob } from "../public/lib/finance-math/de/midijob.js";
 import { deRentenpunkte } from "../public/lib/finance-math/de/rentenpunkte.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.5.0";
+export const CALC_VERSION = "1.5.1";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
