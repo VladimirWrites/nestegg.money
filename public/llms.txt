@@ -18,8 +18,9 @@ nestegg also exposes its deterministic finance math as stateless calculators tha
 
 ## Brutto-Netto-Rechner
 
-- [Public net-salary calculator](https://nestegg.money/brutto-netto-rechner): the de-net-salary
-  engine as a bilingual (DE/EN) browser page — exact per the official BMF Programmablaufplan for
+- [Public net-salary calculator](https://nestegg.money/brutto-netto-rechner) (German; English
+  version at [/en/german-net-salary-calculator](https://nestegg.money/en/german-net-salary-calculator)): the
+  de-net-salary engine as a browser page — exact per the official BMF Programmablaufplan for
   2023-2026, fully client-side (the salary never leaves the device), free, no account.
 
 ## App

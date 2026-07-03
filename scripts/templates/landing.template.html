@@ -1,15 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{lang}}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>try{var t=localStorage.getItem("nw_theme");if(t==="light")document.documentElement.setAttribute("data-theme","light");}catch(e){}</script>
-<title>nestegg — private net worth tracker</title>
-<meta name="description" content="Track your net worth privately — log your assets each year and watch your wealth over time and by allocation. Encrypted in your browser; no email, no password, just an account number.">
-<link rel="canonical" href="https://nestegg.money/">
-<link rel="alternate" hreflang="en" href="https://nestegg.money/">
-<link rel="alternate" hreflang="de" href="https://nestegg.money/de/">
-<link rel="alternate" hreflang="x-default" href="https://nestegg.money/">
+<title>{{title}}</title>
+<meta name="description" content="{{metaDescription}}">
+<link rel="canonical" href="{{canonical}}">
+{{alternatesHtml}}
 <meta name="theme-color" content="#0a0a0b">
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
@@ -27,31 +25,31 @@
 <header class="lp-nav">
   <a class="lp-brand" href="/">nestegg</a>
   <nav class="lp-navlinks">
-    <a href="/en/german-net-salary-calculator">Net salary calculator</a>
-    <a href="/privacy.html">Privacy</a>
-    <a href="/terms.html">Terms</a>
-    <a id="lpLang" href="/de/" rel="alternate" hreflang="de">Deutsch</a>
-    <button id="lpTheme" type="button" data-light="Light" data-dark="Dark" style="background:none;border:none;color:var(--muted);cursor:pointer;font:inherit"></button>
-    <a id="lpNavAuth" class="lp-btn lp-btn-ghost" href="/dashboard#signin">Sign in</a>
+    <a href="{{navCalcHref}}">{{navCalc}}</a>
+    <a href="{{privacyHref}}">{{navPrivacy}}</a>
+    <a href="{{termsHref}}">{{navTerms}}</a>
+    <a id="lpLang" href="{{langLinkHref}}" rel="alternate" hreflang="{{langLinkHreflang}}">{{langLinkLabel}}</a>
+    <button id="lpTheme" type="button" data-light="{{themeLight}}" data-dark="{{themeDark}}" style="background:none;border:none;color:var(--muted);cursor:pointer;font:inherit"></button>
+    <a id="lpNavAuth" class="lp-btn lp-btn-ghost" href="/dashboard#signin">{{navSignin}}</a>
   </nav>
 </header>
 
-<div id="lpLangHint" class="lp-langhint hide">Diese Seite gibt es auch auf Deutsch. <a id="lpLangHintLink" href="/de/">Zur deutschen Version</a></div>
+<div id="lpLangHint" class="lp-langhint hide">{{hintText}} <a id="lpLangHintLink" href="{{langLinkHref}}">{{hintCta}}</a></div>
 
 <main class="lp-main">
   <section class="lp-hero">
-    <div class="lp-kick">Personal ledger</div>
-    <h1>Your net worth and salary,<br><span>privately.</span></h1>
-    <p class="lp-sub">A quiet accounting of what you hold and what you earn — encrypted in your browser before it ever leaves. No email, no password. Just an account number only you know.</p>
+    <div class="lp-kick">{{kick}}</div>
+    <h1>{{h1}}</h1>
+    <p class="lp-sub">{{sub}}</p>
     <div class="lp-cta" id="lpCtaOut">
-      <a class="lp-btn lp-btn-primary" href="/dashboard">Create your account</a>
-      <a class="lp-btn lp-btn-ghost" href="/dashboard#signin">I already have one</a>
+      <a class="lp-btn lp-btn-primary" href="/dashboard">{{ctaCreate}}</a>
+      <a class="lp-btn lp-btn-ghost" href="/dashboard#signin">{{ctaHave}}</a>
     </div>
     <div class="lp-cta hide" id="lpCtaIn">
-      <a class="lp-btn lp-btn-primary" href="/dashboard">Open dashboard</a>
+      <a class="lp-btn lp-btn-primary" href="/dashboard">{{ctaOpen}}</a>
     </div>
-    <div class="lp-demo" id="lpDemo">Just looking? <a href="/dashboard#demo">Explore a live demo</a> — no account needed.</div>
-    <div class="lp-note" id="lpNote">Free · no sign-up form · works on every device</div>
+    <div class="lp-demo" id="lpDemo">{{demo}}</div>
+    <div class="lp-note" id="lpNote">{{note}}</div>
   </section>
 
   <section class="lp-features">
@@ -59,67 +57,67 @@
       <div class="lp-ficon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
       </div>
-      <h2>Encrypted in your browser</h2>
-      <p>Your figures are encrypted on your device with a key derived from your account number. The server only ever stores ciphertext — it can't read a thing.</p>
+      <h2>{{f1h}}</h2>
+      <p>{{f1p}}</p>
     </div>
     <div class="lp-feat">
       <div class="lp-ficon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v16a2 2 0 0 0 2 2h14"/><path d="M19 7l-5 5-3-3-4 4"/></svg>
       </div>
-      <h2>Net worth over time</h2>
-      <p>Log your assets each year and watch your wealth grow, broken down by allocation. Stocks priced live, foreign currencies converted at the right historical rate.</p>
+      <h2>{{f2h}}</h2>
+      <p>{{f2p}}</p>
     </div>
     <div class="lp-feat">
       <div class="lp-ficon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-5 3 3 4-6"/></svg>
       </div>
-      <h2>Salary history</h2>
-      <p>Track every month's net pay for you and your partner side by side, with raises and job changes marked, and a combined yearly trend.</p>
+      <h2>{{f3h}}</h2>
+      <p>{{f3p}}</p>
     </div>
     <div class="lp-feat">
       <div class="lp-ficon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
       </div>
-      <h2>Property & loans, done right</h2>
-      <p>Mortgages and car loans with real amortization — extra payments, rate-fixed periods, depreciation — so the equity in your net worth is always accurate.</p>
+      <h2>{{f4h}}</h2>
+      <p>{{f4p}}</p>
     </div>
     <div class="lp-feat">
       <div class="lp-ficon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg>
       </div>
-      <h2>Synced, but yours</h2>
-      <p>Pick up where you left off on any device. Everything syncs end-to-end encrypted — and Export JSON gives you a backup that's truly your own.</p>
+      <h2>{{f5h}}</h2>
+      <p>{{f5p}}</p>
     </div>
     <div class="lp-feat">
       <div class="lp-ficon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
       </div>
-      <h2>No account, no tracking</h2>
-      <p>No email, no password, no profile. We never see who you are — just an opaque hash and an encrypted blob. Nothing to harvest, nothing to sell.</p>
+      <h2>{{f6h}}</h2>
+      <p>{{f6p}}</p>
     </div>
   </section>
 
   <section class="lp-final">
-    <div class="lp-kick">For developers & AI agents</div>
-    <h2>99 finance calculators, as an MCP server</h2>
-    <p>The same money math powers a free, open <strong>Model Context Protocol</strong> server and JSON API — loans &amp; mortgages, time value of money, investing &amp; risk, bonds, options, retirement, real estate, business, tax, and everyday money. Exact German net-salary math for 2023–2026 is built in, verified against the official BMF test tables. It's a stateless remote service — your inputs are used to compute a result and then discarded, never stored.</p>
+    <div class="lp-kick">{{mcpKick}}</div>
+    <h2>{{mcpH}}</h2>
+    <p>{{mcpP}}</p>
     <p><code>claude mcp add --transport http nestegg https://nestegg.money/mcp</code></p>
     <div class="lp-cta">
-      <a class="lp-btn lp-btn-ghost" href="/docs/calculators.md">Calculator reference</a>
-      <a class="lp-btn lp-btn-ghost" href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener">Source on GitHub</a>
+      <a class="lp-btn lp-btn-ghost" href="/docs/calculators.md">{{mcpDocs}}</a>
+      <a class="lp-btn lp-btn-ghost" href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener">{{mcpSource}}</a>
     </div>
   </section>
 
   <section class="lp-final">
-    <h2>Start your ledger in seconds.</h2>
-    <p>You'll get an account number — write it down, it's the only way back in. Then watch your wealth take shape.</p>
-    <a class="lp-btn lp-btn-primary" href="/dashboard">Open nestegg</a>
+    <h2>{{finalH}}</h2>
+    <p>{{finalP}}</p>
+    <a class="lp-btn lp-btn-primary" href="/dashboard">{{finalCta}}</a>
   </section>
 </main>
 
 <footer class="lp-foot">
-  <div>© nestegg · your wealth, privately</div>
-  <div class="lp-footlinks"><a href="/privacy.html">Privacy Policy</a> · <a href="/terms.html">Terms & Conditions</a> · <a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener">Source on GitHub</a></div>
+  <div>{{footTag}}</div>
+  <div class="lp-footlinks"><a href="{{privacyHref}}">{{footPrivacy}}</a> · <a href="{{termsHref}}">{{footTerms}}</a> · <a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener">{{footSource}}</a></div>
 </footer>
 
 <script>

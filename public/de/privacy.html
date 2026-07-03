@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>try{var t=localStorage.getItem("nw_theme");if(t==="light")document.documentElement.setAttribute("data-theme","light");}catch(e){}</script>
+<title>Datenschutzerklärung — nestegg</title>
+<meta name="description" content="Wie nestegg mit Ihren Daten umgeht: Zero-Knowledge-Verschlüsselung, keine E-Mail, kein Passwort, kein Tracking. Der Server speichert nur Geheimtext, den er nicht lesen kann.">
+<link rel="canonical" href="https://nestegg.money/de/privacy.html">
+<link rel="alternate" hreflang="en" href="https://nestegg.money/privacy.html">
+<link rel="alternate" hreflang="de" href="https://nestegg.money/de/privacy.html">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="legal">
+  <a class="back" href="/de/">← Zurück</a>
+  <h1>Datenschutzerklärung</h1>
+  <div class="updated">Zuletzt aktualisiert: 28. Juni 2026 · <a href="/privacy.html">English version</a></div>
+
+  <p>nestegg („die App") ist ein persönlicher Vermögens-Tracker, gebaut, um Ihre
+  Finanzdaten privat zu halten. Diese Erklärung beschreibt genau, was erhoben wird
+  und was nicht. Die Kurzfassung: Wir können Ihre Daten nicht lesen — und wollen
+  es auch nicht.</p>
+
+  <h2>Kein Konto, keine Identität</h2>
+  <p>Es gibt keine E-Mail, keinen Namen, keine Telefonnummer, kein Passwort. Ihr
+  einziges Zugangsmerkmal ist eine zufällig erzeugte <strong>Kontonummer</strong>,
+  erstellt in Ihrem Browser. Wir fragen nichts ab und erhalten nichts, was Sie
+  persönlich identifiziert.</p>
+
+  <h2>Was der Server speichert</h2>
+  <ul>
+    <li>Einen <strong>Konto-Hash</strong> (Einwegfunktion) aus Ihrer Kontonummer —
+      nur als Speicheretikett verwendet; er lässt sich nicht in Ihre Nummer
+      zurückrechnen.</li>
+    <li>Einen <strong>verschlüsselten Datenblock</strong> Ihres Kontobuchs, den der
+      Server nicht entschlüsseln kann.</li>
+    <li>Den Zeitstempel Ihrer letzten Synchronisation.</li>
+  </ul>
+
+  <h2>Wie Ihre Daten verschlüsselt werden</h2>
+  <p>Ihr Kontobuch wird in Ihrem Browser mit <strong>AES-256-GCM</strong>
+  verschlüsselt. Der Schlüssel wird per PBKDF2 aus Ihrer Kontonummer abgeleitet und
+  <strong>verlässt Ihr Gerät nie</strong>. Der Server hält ausschließlich
+  Geheimtext und kann Ihre Anlagen, Werte oder Summen nicht sehen.</p>
+
+  <h2>Was der Server dennoch sieht</h2>
+  <p>Zero-Knowledge gilt für den <em>Inhalt</em> Ihres Kontobuchs, nicht für alle
+  Metadaten. Wie bei jedem Webdienst können der Server (und unser Hoster,
+  Cloudflare) die <strong>Größe Ihrer verschlüsselten Daten</strong>, den
+  <strong>Zeitpunkt der Synchronisation</strong> und Ihre <strong>IP-Adresse</strong>
+  in üblichen Zugriffsprotokollen sehen. Ihre Zahlen lassen sich daraus nicht
+  ablesen.</p>
+  <p>Beim <strong>erstmaligen Anlegen eines Kontos</strong> speichern wir kurzzeitig
+  die anlegende <strong>IP-Adresse</strong> (bis zu 24 Stunden), ausschließlich zur
+  Begrenzung von Registrierungen und zum Schutz vor Missbrauch. Sie wird nicht mit
+  Ihrem Konto oder Ihren Daten verknüpft und nach Ablauf des Zeitfensters
+  automatisch gelöscht.</p>
+
+  <h2>Eine Anmerkung zum Vertrauen</h2>
+  <p>Da die Verschlüsselung in Code läuft, den Ihr Browser von uns lädt, hängt die
+  Datenschutzgarantie davon ab, dass dieser Code nicht manipuliert ist. Wir liefern
+  die App als statische Dateien aus und halten sie prüfbar. Für maximale Sicherheit
+  können Sie den <a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener">Quellcode auf GitHub</a>
+  einsehen und mit <strong>Export JSON</strong> ein unabhängiges Backup führen.</p>
+
+  <h2>Daten von Dritten</h2>
+  <ul>
+    <li><strong>Wechselkurse</strong> stammen von der Frankfurter-API
+      (Referenzkurse der Europäischen Zentralbank). Es werden keine persönlichen
+      Daten übertragen.</li>
+    <li><strong>Wertpapierkurse</strong> werden über einen serverseitigen Proxy bei
+      Yahoo Finance abgefragt. Übertragen wird nur das <em>öffentliche
+      Tickersymbol</em> — nie Ihre Identität, Ihre Bestände oder Ihr Konto.</li>
+    <li><strong>Hosting</strong> durch Cloudflare (Workers + D1).</li>
+  </ul>
+
+  <h2>Rechner &amp; MCP-API</h2>
+  <p>nestegg stellt seine Finanzmathematik auch als öffentliche Rechner bereit —
+  JSON-Endpunkte unter <code>/api/calc/*</code> und einen
+  Model-Context-Protocol-Server unter <code>/mcp</code>, den KI-Agenten aufrufen
+  können. Das ist ein <strong>zustandsloser, entfernter</strong> Dienst: Da die
+  Berechnung auf dem Server läuft, <em>werden</em> die von Ihnen gesendeten Werte
+  (Beträge, Sätze, Daten) über das Netz übertragen. Der Server verwendet sie nur
+  zur Berechnung des Ergebnisses und verwirft sie dann — sie werden <strong>in
+  keine Datenbank geschrieben und nicht mit Ihnen verknüpft</strong> (es gibt auf
+  diesen Endpunkten kein Konto und keinen Login), und Anfrageinhalte werden
+  <strong>nicht protokolliert</strong>. Wie bei jeder Webanfrage können übliche
+  Metadaten (IP-Adresse, Zeitstempel) in den Protokollen von Cloudflare erscheinen.
+  Die Rechner schlagen nichts über Sie nach und liefern ausschließlich Zahlen,
+  nie Finanzberatung.</p>
+
+  <h2>Kein Tracking</h2>
+  <p>Keine Cookies, keine Analyse-Tools, keine Werbung, keine Tracker von Dritten.</p>
+
+  <h2>Daten auf Ihrem Gerät</h2>
+  <p>Aus Komfortgründen bleiben Ihre Kontonummer und eine entschlüsselte Kopie
+  Ihres Kontobuchs im lokalen Speicher Ihres Browsers, damit Sie angemeldet
+  bleiben. Abmelden oder das Löschen der Browserdaten entfernt sie von diesem
+  Gerät.</p>
+
+  <h2>Keine Wiederherstellung</h2>
+  <p>Wenn Sie Ihre Kontonummer verlieren, können Ihre synchronisierten Daten von
+  niemandem <strong>wiederhergestellt</strong> werden — auch nicht von uns. Das ist
+  eine direkte Folge des Verschlüsselungsdesigns. Bewahren Sie Ihre Nummer sicher
+  auf und exportieren Sie Backups.</p>
+
+  <h2>Löschen Ihrer Daten</h2>
+  <p>Auf Ihrem Gerät löschen Sie alles über „Reset" oder „Log out". Ihr
+  verschlüsselter Datenblock kann auf Anforderung Ihres Clients vom Server
+  entfernt werden.</p>
+
+  <h2>Änderungen &amp; Kontakt</h2>
+  <p>Wir können diese Erklärung aktualisieren; wesentliche Änderungen erkennen Sie
+  am Datum oben. Fragen: <a href="mailto:write@vladimirj.dev">write@vladimirj.dev</a>.</p>
+
+  <div class="note">Diese deutsche Fassung ist eine Übersetzung zu
+  Informationszwecken; maßgeblich ist die <a href="/privacy.html">englische
+  Fassung</a>. Dieses Dokument ist eine allgemeinverständliche Vorlage und keine
+  Rechtsberatung. Lassen Sie es von einer qualifizierten Anwältin oder einem
+  qualifizierten Anwalt prüfen, bevor Sie sich für einen öffentlichen Dienst
+  darauf verlassen.</div>
+</div>
+</body>
+</html>

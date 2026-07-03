@@ -1,15 +1,13 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="{{lang}}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>try{var t=localStorage.getItem("nw_theme");if(t==="light")document.documentElement.setAttribute("data-theme","light");}catch(e){}</script>
-<title>Brutto-Netto-Rechner 2023–2026 — exakt & privat | nestegg</title>
-<meta name="description" content="Kostenloser Brutto-Netto-Rechner für 2023, 2024, 2025 und 2026. Exakt nach dem amtlichen BMF-Programmablaufplan — auf den Euro genau, geprüft gegen alle 1.008 amtlichen Prüftabellenwerte. Läuft komplett im Browser: Ihr Gehalt verlässt Ihr Gerät nicht.">
-<link rel="canonical" href="https://nestegg.money/brutto-netto-rechner">
-<link rel="alternate" hreflang="de" href="https://nestegg.money/brutto-netto-rechner">
-<link rel="alternate" hreflang="en" href="https://nestegg.money/en/german-net-salary-calculator">
-<link rel="alternate" hreflang="x-default" href="https://nestegg.money/en/german-net-salary-calculator">
+<title>{{title}}</title>
+<meta name="description" content="{{metaDescription}}">
+<link rel="canonical" href="{{canonical}}">
+{{alternatesHtml}}
 <meta name="theme-color" content="#0a0a0b">
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <link rel="stylesheet" href="/css/base.css">
@@ -51,45 +49,45 @@
 <header class="lp-nav">
   <a class="lp-brand" href="/">nestegg</a>
   <nav class="lp-navlinks">
-    <a href="/de/">Startseite</a>
-    <a href="/dashboard">Dashboard</a>
-    <a id="langLink" href="/en/german-net-salary-calculator" rel="alternate" hreflang="en">English</a>
-    <button id="themeBtn" type="button" style="background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;padding:0">Hell</button>
+    <a href="{{navHomeHref}}">{{navHome}}</a>
+    <a href="/dashboard">{{navApp}}</a>
+    <a id="langLink" href="{{langLinkHref}}" rel="alternate" hreflang="{{langLinkHreflang}}">{{langLinkLabel}}</a>
+    <button id="themeBtn" type="button" style="background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;padding:0">{{themeInitial}}</button>
   </nav>
 </header>
 
 <main class="bnr-wrap">
   <div class="bnr-head">
     <div>
-      <h1 style="margin:0 0 6px">Brutto-Netto-Rechner</h1>
-      <p class="lp-sub" style="margin:0">Exakt nach dem amtlichen Programmablaufplan des Bundesfinanzministeriums — auf den Euro genau, für die Steuerjahre 2023 bis 2026. Ihr Gehalt verlässt Ihren Browser nicht.</p>
+      <h1 style="margin:0 0 6px">{{h1}}</h1>
+      <p class="lp-sub" style="margin:0">{{sub}}</p>
     </div>
   </div>
 
   <form class="bnr-form" id="bnrForm">
-    <label><span>Steuerjahr</span>
+    <label><span>{{lYear}}</span>
       <select id="fYear">
         <option>2023</option><option>2024</option><option>2025</option><option selected>2026</option>
       </select>
     </label>
-    <label><span>Bruttolohn</span>
+    <label><span>{{lGross}}</span>
       <span class="bnr-inline">
         <input id="fGross" type="number" inputmode="decimal" min="0" placeholder="65000">
         <select id="fPeriod">
-          <option value="year" selected>pro Jahr</option>
-          <option value="month">pro Monat</option>
+          <option value="year" selected>{{oYear}}</option>
+          <option value="month">{{oMonth}}</option>
         </select>
       </span>
     </label>
-    <label><span>Steuerklasse</span>
+    <label><span>{{lClass}}</span>
       <select id="fClass"><option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
     </label>
-    <label id="rowFaktor" class="hide"><span>Faktor (Faktorverfahren)</span>
+    <label id="rowFaktor" class="hide"><span>{{lFaktor}}</span>
       <input id="fFaktor" type="number" inputmode="decimal" step="0.001" min="0.001" max="1" placeholder="—">
     </label>
-    <label><span>Bundesland</span>
+    <label><span>{{lState}}</span>
       <select id="fState">
-        <option value="" selected>— keine Angabe —</option>
+        <option value="" selected>{{oNone}}</option>
         <option value="BW">Baden-Württemberg</option><option value="BY">Bayern</option><option value="BE">Berlin</option>
         <option value="BB">Brandenburg</option><option value="HB">Bremen</option><option value="HH">Hamburg</option>
         <option value="HE">Hessen</option><option value="MV">Mecklenburg-Vorpommern</option><option value="NI">Niedersachsen</option>
@@ -98,69 +96,69 @@
         <option value="TH">Thüringen</option>
       </select>
     </label>
-    <label><span>Kinderfreibeträge (ZKF)</span>
+    <label><span>{{lKids}}</span>
       <input id="fKids" type="number" inputmode="decimal" step="0.5" min="0" value="0">
     </label>
-    <label><span>Kinder unter 25 (für die Pflegeversicherung)</span>
-      <input id="fKidsU25" type="number" inputmode="numeric" step="1" min="0" placeholder="— wie oben —">
+    <label><span>{{lKidsU25}}</span>
+      <input id="fKidsU25" type="number" inputmode="numeric" step="1" min="0" placeholder="{{phKidsU25}}">
     </label>
-    <label><span>Kirchensteuer</span>
+    <label><span>{{lChurch}}</span>
       <select id="fChurch">
-        <option value="0" selected>keine</option>
+        <option value="0" selected>{{oChNone}}</option>
         <option value="8">8 % (BW/BY)</option>
         <option value="9">9 %</option>
       </select>
     </label>
-    <label><span>KV-Zusatzbeitrag (%)</span>
+    <label><span>{{lKvz}}</span>
       <input id="fKvz" type="number" inputmode="decimal" step="0.01" min="0" max="6">
     </label>
-    <label><span>Alter (optional)</span>
+    <label><span>{{lAge}}</span>
       <input id="fAge" type="number" inputmode="numeric" min="15" max="99" placeholder="—">
     </label>
-    <label class="bnr-check"><input id="fPkv" type="checkbox"> <span>privat krankenversichert</span></label>
-    <label id="rowPkvPrem" class="hide"><span>PKV-Jahresprämie (€)</span>
+    <label class="bnr-check"><input id="fPkv" type="checkbox"> <span>{{lPkv}}</span></label>
+    <label id="rowPkvPrem" class="hide"><span>{{lPkvPrem}}</span>
       <input id="fPkvPrem" type="number" inputmode="decimal" min="0" placeholder="7200">
     </label>
     <div class="bnr-actions">
-      <button class="lp-btn lp-btn-primary" id="fGo" type="submit">Netto berechnen</button>
+      <button class="lp-btn lp-btn-primary" id="fGo" type="submit">{{bGo}}</button>
       <div class="bnr-err hide" id="bnrErr"></div>
     </div>
   </form>
 
   <section id="bnrResult" class="hide">
-    <h2 style="font-size:17px">Ergebnis</h2>
+    <h2 style="font-size:17px">{{hResult}}</h2>
     <table class="bnr-table" id="bnrTable"></table>
     <p class="bnr-note" id="bnrBasis"></p>
   </section>
 
   <section class="bnr-sec">
-    <h2>Wie wird gerechnet?</h2>
-    <p>Lohnsteuer und Solidaritätszuschlag folgen dem amtlichen Programmablaufplan (PAP) des Bundesfinanzministeriums für das jeweilige Jahr — derselbe Algorithmus, den professionelle Lohnabrechnungssoftware verwendet. Für 2024 gilt der rückwirkende Dezember-Tarif, für 2023 der PAP ab Juli. Die Berechnung ist gegen alle 1.008 amtlichen Prüftabellenwerte getestet und stimmt auf den Euro.</p>
-    <p>Die Sozialversicherung verwendet die Beitragsbemessungsgrenzen, Beitragssätze und den durchschnittlichen Zusatzbeitrag des gewählten Jahres, inklusive der Kinderabschläge in der Pflegeversicherung und der sächsischen Sonderregelung. Tragen Sie den Zusatzbeitrag Ihrer Krankenkasse ein, um auf den Cent genaue Werte zu erhalten.</p>
-    <p>Alles läuft in Ihrem Browser: Ihr Gehalt wird an keinen Server geschickt, nicht gespeichert und nicht ausgewertet. Der Quellcode ist offen (Apache-2.0), dieselbe Berechnung ist auch als MCP-Server und JSON-API für KI-Agenten verfügbar.</p>
+    <h2>{{hMethod}}</h2>
+    <p>{{pMethod1}}</p>
+    <p>{{pMethod2}}</p>
+    <p>{{pMethod3}}</p>
   </section>
 
   <section class="bnr-sec">
-    <h2>Mehr als ein Rechner</h2>
-    <p>nestegg ist ein privater Vermögens- und Gehalts-Tracker — verschlüsselt im Browser, ohne E-Mail und ohne Passwort. <a href="/dashboard#demo">Live-Demo ansehen</a></p>
+    <h2>{{hMore}}</h2>
+    <p>{{pMore}} <a href="/dashboard#demo">{{aDemo}}</a></p>
   </section>
 </main>
 
 <footer class="lp-foot">
-  <span>nestegg · <a href="/de/privacy.html">Datenschutz</a> · <a href="/de/terms.html">AGB</a> · <a href="https://github.com/VladimirWrites/nestegg.money" rel="noopener">Quellcode</a></span>
+  <span>nestegg · <a href="{{privacyHref}}">{{footPrivacy}}</a> · <a href="{{termsHref}}">{{footTerms}}</a> · <a href="https://github.com/VladimirWrites/nestegg.money" rel="noopener">{{footSource}}</a></span>
 </footer>
 
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "nestegg Brutto-Netto-Rechner",
-  "url": "https://nestegg.money/brutto-netto-rechner",
-  "inLanguage": "de",
+  "name": "{{jsonLdName}}",
+  "url": "{{canonical}}",
+  "inLanguage": "{{lang}}",
   "applicationCategory": "FinanceApplication",
   "operatingSystem": "Web",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
-  "description": "Exakter Brutto-Netto-Rechner für die Steuerjahre 2023–2026 nach dem amtlichen BMF-Programmablaufplan. Läuft vollständig im Browser."
+  "description": "{{jsonLdDescription}}"
 }
 </script>
 <script type="module" src="/js/brutto-netto.js"></script>
