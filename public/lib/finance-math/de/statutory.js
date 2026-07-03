@@ -14,24 +14,48 @@ export const DE_STATUTORY = {
     rvEmployeePct: 9.3, avEmployeePct: 1.3,
     kvGeneralEmployeePct: 7.3, kvAvgZusatzPct: 1.6,
     pvTotalPct: 3.4, pvChildlessSurchargePct: 0.6, pvPerChildDiscountPct: 0.25, pvSaxonyShiftPct: 0.5,
+    sparerPauschbetragSingle: 1000, sparerPauschbetragJoint: 2000,
+    kindergeldMonthly: 250,
+    minijobMonthly: 520, midijobUpper: 2000,
+    midijobFaktorF: 0.6922,          // official BMAS value — set with the Jan–Jun PV rate, so not 28/GSV of this table
+    durchschnittsentgelt: 43142,
+    rentenwertJanJun: 36.02, rentenwertJanJunOst: 35.52, rentenwertFromJul: 37.6,   // East reached 100% on 2023-07-01
   },
   2024: {
     bbgRvAvWest: 90600, bbgRvAvOst: 89400, bbgKvPv: 62100,
     rvEmployeePct: 9.3, avEmployeePct: 1.3,
     kvGeneralEmployeePct: 7.3, kvAvgZusatzPct: 1.7,
     pvTotalPct: 3.4, pvChildlessSurchargePct: 0.6, pvPerChildDiscountPct: 0.25, pvSaxonyShiftPct: 0.5,
+    sparerPauschbetragSingle: 1000, sparerPauschbetragJoint: 2000,
+    kindergeldMonthly: 250,
+    minijobMonthly: 538, midijobUpper: 2000,
+    midijobFaktorF: 0.6846,
+    durchschnittsentgelt: 45358,
+    rentenwertJanJun: 37.6, rentenwertFromJul: 39.32,
   },
   2025: {
     bbgRvAvWest: 96600, bbgRvAvOst: 96600, bbgKvPv: 66150,   // BBG unified from 2025-01-01
     rvEmployeePct: 9.3, avEmployeePct: 1.3,
     kvGeneralEmployeePct: 7.3, kvAvgZusatzPct: 2.5,
     pvTotalPct: 3.6, pvChildlessSurchargePct: 0.6, pvPerChildDiscountPct: 0.25, pvSaxonyShiftPct: 0.5,
+    sparerPauschbetragSingle: 1000, sparerPauschbetragJoint: 2000,
+    kindergeldMonthly: 255,
+    minijobMonthly: 556, midijobUpper: 2000,
+    midijobFaktorF: 0.6683,
+    durchschnittsentgelt: 50493,     // jump vs 2024: changed computation method, not a data error
+    rentenwertJanJun: 39.32, rentenwertFromJul: 40.79,
   },
   2026: {
     bbgRvAvWest: 101400, bbgRvAvOst: 101400, bbgKvPv: 69750,
     rvEmployeePct: 9.3, avEmployeePct: 1.3,
     kvGeneralEmployeePct: 7.3, kvAvgZusatzPct: 2.9,          // BAnz 2025-11-10
     pvTotalPct: 3.6, pvChildlessSurchargePct: 0.6, pvPerChildDiscountPct: 0.25, pvSaxonyShiftPct: 0.5,
+    sparerPauschbetragSingle: 1000, sparerPauschbetragJoint: 2000,
+    kindergeldMonthly: 259,          // §66 EStG current text
+    minijobMonthly: 603, midijobUpper: 2000,
+    midijobFaktorF: 0.6619,          // BAnz 2025-12-18
+    durchschnittsentgelt: 51944,     // SVBezGrV 2026
+    rentenwertJanJun: 40.79, rentenwertFromJul: 42.52,       // RWBestV 2026, in force since 2026-07-01
   },
 };
 
