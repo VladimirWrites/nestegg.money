@@ -9,6 +9,7 @@ import { renderAll } from "./ui/charts.js";
 import { renderEntries } from "./ui/networth.js";
 import { drawSalaryChart } from "./ui/salary.js";
 import { boot } from "./ui/gate.js";
+import { initI18n, translateDom } from "./i18n.js";
 import "./ui/assets.js"; // side-effect: wire its editor listeners
 import "./ui/share.js"; // side-effect: wire the share dialog
 
@@ -116,6 +117,10 @@ if (installBtn) {
     if ($("infoModal")) $("infoModal").classList.remove("hide");
   };
 }
+
+// Resolve the locale and translate the static page before first paint (module scripts run
+// pre-render), so boot never flashes English at a German user. Failure = English fallback.
+try { await initI18n(); translateDom(); } catch (e) {}
 
 try { boot(); } catch (e) {}
 

@@ -13,6 +13,7 @@ import { renderAll, repaintCharts, renderForecast, renderRetire, fcSyncInputs, r
 import { renderSalary, armSalaryAnim } from "./salary.js";
 import { renderBudget, setBudgetReadOnly } from "./budget.js";
 import { setEntriesReadOnly } from "./networth.js";
+import { initI18n, translateDom, t, getLocale } from "../i18n.js";
 
 // Render an account number with digits and letters coloured differently, kept on one line —
 // shrinking the font only if the screen is too narrow.
@@ -152,6 +153,7 @@ async function bootShare() {
     setState(migrate(snap));
     applyShareVisibility(inc);
     $("shareBanner").classList.remove("hide");
+    syncShareThemeLabel(); // now in the viewer's language (module-load ran before initI18n)
     enterApp(true); // frozen snapshot — skip the live FX/price refresh
     // Net worth may not be shared, so land on the first included section.
     const order = [["networth", "net"], ["salaries", "salary"], ["budget", "budget"]];
@@ -184,7 +186,7 @@ function renderProfAcct() {
   $("profEye").classList.toggle("on", profShown);
   const ls = $("lastSync"); if (ls) ls.textContent = "Last synced " + relTime(syncedAt());
 }
-function openProfile() { profShown = false; showEditor("profileEditor"); renderProfAcct(); syncThemeSel(); }
+function openProfile() { profShown = false; showEditor("profileEditor"); renderProfAcct(); syncThemeSel(); syncLangSel(); }
 function closeProfile() { hideEditor("profileEditor"); }
 $("profileBtn").onclick = openProfile;
 $("profileBack").onclick = closeProfile;
@@ -214,11 +216,29 @@ function setTheme(t) {
 const themeSel = $("themeSel");
 if (themeSel) themeSel.addEventListener("change", () => setTheme(themeSel.value));
 // Share viewer: the profile (and its theme picker) is hidden, so the banner carries a toggle.
+// t() falls back to English literals for the module-load call, which runs before initI18n.
 const shareTheme = $("shareTheme");
-function syncShareThemeLabel() { if (shareTheme) shareTheme.textContent = currentTheme() === "light" ? "Dark mode" : "Light mode"; }
+function syncShareThemeLabel() {
+  if (!shareTheme) return;
+  const key = currentTheme() === "light" ? "banner.darkMode" : "banner.lightMode";
+  const v = t(key);
+  shareTheme.textContent = v === key ? (currentTheme() === "light" ? "Dark mode" : "Light mode") : v;
+}
 if (shareTheme) shareTheme.onclick = () => { setTheme(currentTheme() === "light" ? "dark" : "light"); syncShareThemeLabel(); };
 syncShareThemeLabel();
 applyTheme(currentTheme()); // sync the browser UI colour to the theme set by the head script
+
+/* ---- language ---- */
+const langSel = $("langSel");
+function syncLangSel() { if (langSel) langSel.value = getLocale(); }
+if (langSel) langSel.addEventListener("change", async () => {
+  LS.set("nw_lang", langSel.value);
+  await initI18n(langSel.value);
+  translateDom();       // static labels, incl. the open profile
+  applyMastTexts();     // the masthead tracks the active tab, so re-derive it
+  syncShareThemeLabel();
+  repaintForTheme();    // charts bake text into SVG the same way a theme change does
+});
 $("profCopyAcct").onclick = async () => { const t = LS.get("nw_token") || ""; toast((await copyText(t)) ? "Account number copied" : "Couldn't copy — use the eye to reveal it"); };
 $("profSyncNow").onclick = () => pushServer(true);
 $("syncNowHome").onclick = () => pushServer(true);
@@ -232,20 +252,18 @@ export function showView(name) {
   $("navNet").classList.toggle("on", view === "net");
   $("salaryBtn").classList.toggle("on", view === "salary");
   $("navBudget").classList.toggle("on", view === "budget");
-  if (view === "net") {
-    $("mastTitle").textContent = "Net Worth";
-    $("mastSub").textContent = "A quiet accounting of what you hold.";
-    armChartAnim(); renderAll();
-  } else if (view === "salary") {
-    $("mastTitle").textContent = "Salary";
-    $("mastSub").textContent = "What you and yours bring home, month by month.";
-    armSalaryAnim(); renderSalary();
-  } else {
-    $("mastTitle").textContent = "Budget";
-    $("mastSub").textContent = "Roughly what's left each month.";
-    renderBudget();
-  }
+  applyMastTexts();
+  if (view === "net") { armChartAnim(); renderAll(); }
+  else if (view === "salary") { armSalaryAnim(); renderSalary(); }
+  else renderBudget();
   window.scrollTo(0, 0);
+}
+// The masthead title/sub follow the active tab, in the active locale. Reads the view off the
+// DOM so a language change can re-apply it without knowing how the current view was reached.
+function applyMastTexts() {
+  const view = !$("viewSalary").classList.contains("hide") ? "salary" : !$("viewBudget").classList.contains("hide") ? "budget" : "net";
+  $("mastTitle").textContent = t(view === "salary" ? "nav.salaryTitle" : view === "budget" ? "nav.budgetTitle" : "nav.netTitle");
+  $("mastSub").textContent = t(view === "salary" ? "nav.salarySub" : view === "budget" ? "nav.budgetSub" : "nav.netSub");
 }
 $("navNet").onclick = () => showView("net");
 $("navBudget").onclick = () => showView("budget");
