@@ -341,8 +341,10 @@ export default {
     // bare /s/ regardless of which share is being viewed.
     if (pathname === "/s" || pathname === "/s/") return serve("/dashboard.html");
     if (pathname === "/landing") return serve("/index.html");
-    // Public German net-salary calculator (client-side, indexable, linked from the landing page).
+    // Public per-locale pages (pre-rendered by scripts/gen-i18n-pages.mjs, hreflang-linked).
     if (pathname === "/brutto-netto-rechner" || pathname === "/brutto-netto-rechner/") return serve("/brutto-netto-rechner.html");
+    if (pathname === "/en/german-net-salary-calculator" || pathname === "/en/german-net-salary-calculator/") return serve("/en/german-net-salary-calculator.html");
+    if (pathname === "/de" || pathname === "/de/") return serve("/de/index.html");
     if (pathname === "/" || pathname === "") return serve(appHost ? "/dashboard.html" : "/index.html");
     // Everything else: serve the static asset by path (404 if missing).
     return env.ASSETS.fetch(request);
