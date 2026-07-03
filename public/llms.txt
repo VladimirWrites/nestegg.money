@@ -16,6 +16,12 @@ nestegg also exposes its deterministic finance math as stateless calculators tha
 - MCP server (Streamable HTTP): `https://nestegg.money/mcp` exposes the same calculators as MCP tools (initialize, tools/list, tools/call) with typed outputSchema and read-only annotations. It also serves `resources/*` (the calculator docs) and `prompts/*` (mortgage-plan, fire-check, brutto-netto). Large results are compact by default: `amortization` returns a per-year summary unless `detail: "monthly"` is requested (paginated with offset/limit).
 - Server descriptor: [/.well-known/mcp.json](https://nestegg.money/.well-known/mcp.json). Registry name: `io.github.VladimirWrites/nestegg-calculators` (published to the official MCP registry).
 
+## Brutto-Netto-Rechner
+
+- [Public net-salary calculator](https://nestegg.money/brutto-netto-rechner): the de-net-salary
+  engine as a bilingual (DE/EN) browser page — exact per the official BMF Programmablaufplan for
+  2023-2026, fully client-side (the salary never leaves the device), free, no account.
+
 ## App
 
 - [Live app](https://nestegg.money): the tracker. A no-account demo loads sample data at https://nestegg.money/dashboard#demo.
