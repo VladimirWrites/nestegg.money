@@ -14,11 +14,14 @@ export function refreshPalette() {
   C.ink = cssVar("--ink", C.ink); C.bg = cssVar("--bg", C.bg); C.red = cssVar("--red", C.red);
 }
 
-// Round a value up to a "nice" axis maximum (1/2/2.5/5 x 10^n).
+// Round a value up to a "nice" axis maximum. The step sequence is fine-grained on purpose:
+// a value just past a power of ten (say 1.003M) tops the axis at 1.2M, not 2M — a coarse
+// 1/2/5 ladder would waste half the chart's height on empty headroom.
 export function niceCeil(v) {
   const p = Math.pow(10, Math.floor(Math.log10(v || 1)));
   const f = (v || 1) / p;
-  const n = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+  const STEPS = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+  const n = STEPS.find((s) => f <= s) || 10;
   return n * p;
 }
 
