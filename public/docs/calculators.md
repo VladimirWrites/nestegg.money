@@ -1,6 +1,6 @@
 # nestegg calculators
 
-Deterministic, pure finance calculators (version 1.4.0). Every function depends only on
+Deterministic, pure finance calculators (version 1.5.0). Every function depends only on
 its inputs: none read user data, fetch live prices, or look up exchange rates or tax tables. Where
 current statutory figures are needed (e.g. German payroll), they are passed in as arguments. Money
 is rounded half-up to two decimals (the app's `round2`); rates are in percent unless noted; dates
@@ -11,7 +11,7 @@ as the JSON body) and as an MCP tool (Streamable HTTP at `/mcp`, same name and i
 `outputSchema`). `GET /api/calc` lists them. Both are stateless, CORS-open, and need no auth.
 
 > This file is generated from the registry by `scripts/gen-calculator-docs.mjs` — do not edit by
-> hand; run `npm run gen-docs` after changing a calculator. 95 calculators.
+> hand; run `npm run gen-docs` after changing a calculator. 99 calculators.
 
 ## amortization
 
@@ -528,7 +528,7 @@ Inputs:
 - `childrenUnder25` — number: Optional. Children under 25 for the care-insurance discounts, when it differs from `children`.
 - `churchTaxPct` — number: Church tax rate: 8, 9, or 0 for none (default 0).
 - `bundesland` — string: Optional. State code (BW, BY, BE, ... SN, TH). Drives the Saxony care-insurance split and the pre-2025 East pension ceiling.
-- `kvZusatzPct` — number: Optional. Your Krankenkasse's Zusatzbeitrag in percent; defaults to the year's official average.
+- `kvZusatzPct` — number: Optional. The Krankenkasse's own Zusatzbeitrag in percent — pass the actual rate for exact results (rates change yearly, e.g. TK 2025: 2.45, 2026: 2.69). Defaults to the year's official average, which is only right for generic estimates.
 - `privateHealth` — object
 - `age` — number: Optional. Age in years - under 23 skips the childless care surcharge.
 - `faktor` — number: Optional. Steuerklasse-4 Faktorverfahren factor (e.g. 0.921).
@@ -545,6 +545,107 @@ Outputs:
 - `totalDeductions` — Taxes + contributions.
 - `net` — { annual, monthly }.
 - `assumptions` — Inputs as applied (tax class, Zusatzbeitrag, PAP basis, ...).
+
+## de-abgeltungsteuer
+
+German flat tax on capital income (Abgeltungsteuer, §32d EStG) for tax years 2023-2026 with the year's Sparerpauschbetrag built in. 25% above the allowance, Soli 5.5% on top (no Freigrenze for capital income), and with church tax the statutory reduced rate (e.g. 24.45% at 9%) plus the church tax itself.
+
+**Endpoint:** `POST /api/calc/de-abgeltungsteuer` · **MCP tool:** `de-abgeltungsteuer`
+
+Inputs:
+
+- `year` *(required)* — number: Tax year: 2023, 2024, 2025 or 2026.
+- `capitalIncome` *(required)* — number: Annual capital income (interest, dividends, realized gains) in EUR.
+- `joint` — boolean: true for jointly assessed couples (doubles the Sparerpauschbetrag).
+- `churchTaxPct` — number: Church tax rate: 8, 9, or 0 for none (default 0).
+- `foreignTaxCredit` — number: Optional. Creditable foreign withholding tax (q in the §32d formula).
+
+Outputs:
+
+- `year` — Tax year.
+- `capitalIncome` — Income.
+- `allowance` — Sparerpauschbetrag applied.
+- `taxable` — Taxable after allowance.
+- `incomeTax` — Flat tax (25% or church-reduced).
+- `soli` — Soli (5.5%).
+- `churchTax` — Church tax.
+- `totalTax` — All taxes.
+- `net` — Income after taxes.
+- `effectiveRatePct` — Total tax / income, percent.
+
+## de-kindergeld
+
+German child benefit (Kindergeld) for 2023-2026: the year's flat monthly amount per child (uniform since 2023), as monthly and annual totals.
+
+**Endpoint:** `POST /api/calc/de-kindergeld` · **MCP tool:** `de-kindergeld`
+
+Inputs:
+
+- `year` *(required)* — number: Year: 2023, 2024, 2025 or 2026.
+- `children` — number: Number of children (default 1).
+
+Outputs:
+
+- `year` — Year.
+- `children` — Children.
+- `perChildMonthly` — Monthly amount per child.
+- `monthly` — Total monthly.
+- `annual` — Total annual.
+
+## de-midijob
+
+German Midijob / Uebergangsbereich (paragraph 20 Abs. 2a SGB IV) for 2023-2026: classifies a monthly pay as Minijob / Midijob / regular against the year's thresholds and, inside the Midijob band, computes the reduced contribution bases (Faktor F from the year's rates) and the employee vs employer social-insurance split.
+
+**Endpoint:** `POST /api/calc/de-midijob` · **MCP tool:** `de-midijob`
+
+Inputs:
+
+- `year` *(required)* — number: Year: 2023, 2024, 2025 or 2026.
+- `monthlyPay` *(required)* — number: Gross monthly pay in EUR.
+- `children` — number: Children, for the care-insurance rate (default 0).
+- `childrenUnder25` — number: Optional. Children under 25 for the care discounts, when different.
+- `age` — number: Optional. Age - under 23 skips the childless care surcharge.
+- `bundesland` — string: Optional. State code; SN applies the Saxony care split.
+- `kvZusatzPct` — number: Optional. Krankenkasse Zusatzbeitrag in percent; defaults to the year's average.
+
+Outputs:
+
+- `year` — Year.
+- `monthlyPay` — Pay.
+- `zone` — minijob | midijob | regular | none.
+- `thresholds` — { minijobMonthly, midijobUpper }.
+- `faktorF` — Faktor F (midijob only).
+- `contributionBase` — { total, employee } reduced bases.
+- `employee` — { pension, unemployment, health, care, total }.
+- `employer` — { total }.
+- `savingsVsFull` — Employee saving vs full contributions.
+- `rates` — { employee, total } percent rates.
+
+## de-rentenpunkte
+
+German pension points (Entgeltpunkte, paragraph 63 SGB VI) for 2023-2026: points earned from an annual gross via the year's Durchschnittsentgelt (capped at the contribution ceiling), the aktueller Rentenwert for both halves of the year, and optionally the gross monthly state pension for a total point count.
+
+**Endpoint:** `POST /api/calc/de-rentenpunkte` · **MCP tool:** `de-rentenpunkte`
+
+Inputs:
+
+- `year` *(required)* — number: Year: 2023, 2024, 2025 or 2026.
+- `grossAnnual` *(required)* — number: Annual insured gross salary in EUR.
+- `bundesland` — string: Optional. State code - East states use the East ceiling before 2025.
+- `totalPoints` — number: Optional. Accumulated points, to project the gross monthly pension at today's Rentenwert.
+
+Outputs:
+
+- `year` — Year.
+- `grossAnnual` — Gross.
+- `insuredGross` — Gross after the ceiling.
+- `ceilingApplied` — True if capped.
+- `durchschnittsentgelt` — Average earnings divisor.
+- `points` — Points earned this year.
+- `maxPointsThisYear` — Ceiling / average.
+- `rentenwert` — { janToJun, fromJuly } EUR per point per month.
+- `monthlyPensionPerPoint` — Current EUR per point.
+- `projection` — { totalPoints, monthlyPension, note } when totalPoints given.
 
 ## vat
 

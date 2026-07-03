@@ -1,12 +1,12 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.VladimirWrites/nestegg-calculators",
-  "description": "95 exact, auditable finance calculators. German net salary 2023-2026 via the official BMF Programmablaufplan, verified against all 1,008 published test values; plus loans, TVM, investing, bonds, options, FIRE, VAT. Stateless, no auth, stores nothing.",
+  "description": "99 exact, auditable finance calculators. German net salary 2023-2026 via the official BMF Programmablaufplan, verified against all 1,008 published test values; plus loans, TVM, investing, bonds, options, FIRE, VAT. Stateless, no auth, stores nothing.",
   "repository": {
     "url": "https://github.com/VladimirWrites/nestegg.money",
     "source": "github"
   },
-  "version": "1.4.1",
+  "version": "1.5.0",
   "remotes": [
     {
       "type": "streamable-http",

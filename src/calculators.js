@@ -24,12 +24,16 @@ import {
   netWorth, budget503020, tipSplit, discount, successiveDiscounts, percentageChange, unitPrice,
   hourlyToSalary, salaryToHourly, afterTaxYield, taxEquivalentYield, coastFire, baristaFire,
 } from "../public/lib/finance-math.js";
-// Direct import (not via the barrel): the browser also loads the barrel, and the generated
-// per-year PAP engines are worker-only weight.
+// Direct imports (not via the barrel): the browser also loads the barrel, and the German
+// statutory modules (generated PAP engines + dated tables) are worker-only weight.
 import { deNetSalary } from "../public/lib/finance-math/de/net.js";
+import { deAbgeltungsteuer } from "../public/lib/finance-math/de/abgeltungsteuer.js";
+import { deKindergeld } from "../public/lib/finance-math/de/kindergeld.js";
+import { deMidijob } from "../public/lib/finance-math/de/midijob.js";
+import { deRentenpunkte } from "../public/lib/finance-math/de/rentenpunkte.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.4.0";
+export const CALC_VERSION = "1.5.0";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
@@ -323,12 +327,54 @@ export const CALCULATORS = {
       childrenUnder25: num("Optional. Children under 25 for the care-insurance discounts, when it differs from `children`."),
       churchTaxPct: num("Church tax rate: 8, 9, or 0 for none (default 0)."),
       bundesland: str("Optional. State code (BW, BY, BE, ... SN, TH). Drives the Saxony care-insurance split and the pre-2025 East pension ceiling."),
-      kvZusatzPct: num("Optional. Your Krankenkasse's Zusatzbeitrag in percent; defaults to the year's official average."),
+      kvZusatzPct: num("Optional. The Krankenkasse's own Zusatzbeitrag in percent — pass the actual rate for exact results (rates change yearly, e.g. TK 2025: 2.45, 2026: 2.69). Defaults to the year's official average, which is only right for generic estimates."),
       privateHealth: obj({ premiumAnnual: num("Annual private health+care premium in EUR.") }, ["premiumAnnual"]),
       age: num("Optional. Age in years - under 23 skips the childless care surcharge."),
       faktor: num("Optional. Steuerklasse-4 Faktorverfahren factor (e.g. 0.921)."),
     }, ["year", "grossAnnual"]),
     run: (a) => deNetSalary(a),
+  },
+  "de-abgeltungsteuer": {
+    description: "German flat tax on capital income (Abgeltungsteuer, §32d EStG) for tax years 2023-2026 with the year's Sparerpauschbetrag built in. 25% above the allowance, Soli 5.5% on top (no Freigrenze for capital income), and with church tax the statutory reduced rate (e.g. 24.45% at 9%) plus the church tax itself.",
+    inputSchema: obj({
+      year: num("Tax year: 2023, 2024, 2025 or 2026."),
+      capitalIncome: num("Annual capital income (interest, dividends, realized gains) in EUR."),
+      joint: bool("true for jointly assessed couples (doubles the Sparerpauschbetrag)."),
+      churchTaxPct: num("Church tax rate: 8, 9, or 0 for none (default 0)."),
+      foreignTaxCredit: num("Optional. Creditable foreign withholding tax (q in the §32d formula)."),
+    }, ["year", "capitalIncome"]),
+    run: (a) => deAbgeltungsteuer(a),
+  },
+  "de-kindergeld": {
+    description: "German child benefit (Kindergeld) for 2023-2026: the year's flat monthly amount per child (uniform since 2023), as monthly and annual totals.",
+    inputSchema: obj({
+      year: num("Year: 2023, 2024, 2025 or 2026."),
+      children: num("Number of children (default 1)."),
+    }, ["year"]),
+    run: (a) => deKindergeld(a),
+  },
+  "de-midijob": {
+    description: "German Midijob / Uebergangsbereich (paragraph 20 Abs. 2a SGB IV) for 2023-2026: classifies a monthly pay as Minijob / Midijob / regular against the year's thresholds and, inside the Midijob band, computes the reduced contribution bases (Faktor F from the year's rates) and the employee vs employer social-insurance split.",
+    inputSchema: obj({
+      year: num("Year: 2023, 2024, 2025 or 2026."),
+      monthlyPay: num("Gross monthly pay in EUR."),
+      children: num("Children, for the care-insurance rate (default 0)."),
+      childrenUnder25: num("Optional. Children under 25 for the care discounts, when different."),
+      age: num("Optional. Age - under 23 skips the childless care surcharge."),
+      bundesland: str("Optional. State code; SN applies the Saxony care split."),
+      kvZusatzPct: num("Optional. Krankenkasse Zusatzbeitrag in percent; defaults to the year's average."),
+    }, ["year", "monthlyPay"]),
+    run: (a) => deMidijob(a),
+  },
+  "de-rentenpunkte": {
+    description: "German pension points (Entgeltpunkte, paragraph 63 SGB VI) for 2023-2026: points earned from an annual gross via the year's Durchschnittsentgelt (capped at the contribution ceiling), the aktueller Rentenwert for both halves of the year, and optionally the gross monthly state pension for a total point count.",
+    inputSchema: obj({
+      year: num("Year: 2023, 2024, 2025 or 2026."),
+      grossAnnual: num("Annual insured gross salary in EUR."),
+      bundesland: str("Optional. State code - East states use the East ceiling before 2025."),
+      totalPoints: num("Optional. Accumulated points, to project the gross monthly pension at today's Rentenwert."),
+    }, ["year", "grossAnnual"]),
+    run: (a) => deRentenpunkte(a),
   },
   "vat": {
     description: "Value-added tax (MwSt/USt, sales tax) on a price. By default adds the tax to a net price; with inclusive=true treats the amount as gross and extracts the tax. The rate is always an input (19 or 7 for Germany, etc.).",
@@ -715,6 +761,10 @@ const OUTPUTS = {
   "margin-markup": out({ cost: onum("Cost."), price: onum("Price."), profit: onum("Profit."), marginPct: onum("Margin, percent."), markupPct: onum("Markup, percent.") }),
   "de-gross-to-net": out({ gross: onum("Gross."), incomeTax: onum("Income tax."), soli: onum("Soli."), churchTax: onum("Church tax."), contributions: oobj("{ pension, unemployment, health, care, total }."), totalDeductions: onum("Total deductions."), net: onum("Net.") }),
   "de-net-salary": out({ year: onum("Tax year."), gross: oobj("{ annual, monthly }."), incomeTax: onum("Lohnsteuer (annual)."), soli: onum("Solidaritätszuschlag."), churchTax: onum("Kirchensteuer."), totalTax: onum("All taxes."), contributions: oobj("{ pension, unemployment, health, care, total, rates, ceilingsApplied }."), totalDeductions: onum("Taxes + contributions."), net: oobj("{ annual, monthly }."), assumptions: oobj("Inputs as applied (tax class, Zusatzbeitrag, PAP basis, ...).") }),
+  "de-abgeltungsteuer": out({ year: onum("Tax year."), capitalIncome: onum("Income."), allowance: onum("Sparerpauschbetrag applied."), taxable: onum("Taxable after allowance."), incomeTax: onum("Flat tax (25% or church-reduced)."), soli: onum("Soli (5.5%)."), churchTax: onum("Church tax."), totalTax: onum("All taxes."), net: onum("Income after taxes."), effectiveRatePct: onum("Total tax / income, percent.") }),
+  "de-kindergeld": out({ year: onum("Year."), children: onum("Children."), perChildMonthly: onum("Monthly amount per child."), monthly: onum("Total monthly."), annual: onum("Total annual.") }),
+  "de-midijob": out({ year: onum("Year."), monthlyPay: onum("Pay."), zone: ostr("minijob | midijob | regular | none."), thresholds: oobj("{ minijobMonthly, midijobUpper }."), faktorF: onum("Faktor F (midijob only)."), contributionBase: oobj("{ total, employee } reduced bases."), employee: oobj("{ pension, unemployment, health, care, total }."), employer: oobj("{ total }."), savingsVsFull: onum("Employee saving vs full contributions."), rates: oobj("{ employee, total } percent rates.") }),
+  "de-rentenpunkte": out({ year: onum("Year."), grossAnnual: onum("Gross."), insuredGross: onum("Gross after the ceiling."), ceilingApplied: obool("True if capped."), durchschnittsentgelt: onum("Average earnings divisor."), points: onum("Points earned this year."), maxPointsThisYear: onum("Ceiling / average."), rentenwert: oobj("{ janToJun, fromJuly } EUR per point per month."), monthlyPensionPerPoint: onum("Current EUR per point."), projection: oobj("{ totalPoints, monthlyPension, note } when totalPoints given.") }),
   "vat": out({ net: onum("Net price."), tax: onum("Tax amount."), gross: onum("Gross price.") }),
   "roi": out({ roiPct: onum("Total return, percent."), annualizedPct: onum("Annualized return, percent (null if no years).") }),
   "real-return": out({ realPct: onum("Real return, percent.") }),
