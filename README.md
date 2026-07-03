@@ -54,6 +54,9 @@ ciphertext.
   sent upstream — never an account or user identifier.
 - **Salary**: monthly pay per person (gross or net — your choice), with events (raises, job changes),
   a dual-axis chart, and paste-from-spreadsheet import.
+- **Budget**: a rough monthly "what's left" — income from your latest salary
+  month, loan payments pulled from your assets, recurring expenses you enter,
+  grouped into categories with a breakdown donut.
 - **Forecast & retirement**: project net worth forward (contributions,
   growth, scenario band, FIRE goal) and simulate drawdown with a state
   pension (flat amount or German Rentenpunkte).
@@ -61,15 +64,29 @@ ciphertext.
   only thing the server sees) and an AES-GCM key (never leaves the browser).
   Multi-device edits merge per record with tombstones, newest wins.
   **No recovery** — keep the number safe; Export JSON is the real backup.
+- **Share links**: publish a frozen, read-only snapshot of chosen sections for
+  an advisor. Each share gets its own AES-GCM key, carried only in the URL
+  fragment; the server stores an unlinkable id + ciphertext. Expires in 30
+  days, revocable any time.
+- **Bilingual**: English and German throughout — the app (language picker in
+  the profile), the landing pages (`/` and `/de/`), and a public
+  [Brutto-Netto-Rechner](https://nestegg.money/brutto-netto-rechner)
+  ([English version](https://nestegg.money/en/german-net-salary-calculator))
+  that runs the exact salary engine entirely in the browser.
 
 ## Layout
 
 ```
 nestegg.money/
-├── src/index.js          # the Worker: /api/fx, /api/price, /api/vault + routing
+├── src/                  # the Worker: /api/fx, /api/price, /api/vault, /api/share,
+│                         # /api/calc/*, /mcp, /.well-known/mcp.json + page routing
 ├── public/
-│   ├── index.html        # marketing landing (root domain)
+│   ├── index.html        # marketing landing (generated; German at de/, see scripts/)
 │   ├── dashboard.html    # the app — loads one <script type="module" src="js/main.js">
+│   ├── brutto-netto-rechner.html  # public net-salary calculator (client-side, per-locale)
+│   ├── i18n/             # runtime dictionaries (en, de)
+│   ├── lib/              # finance-math: pure calculators incl. finance-math/de/
+│   │                     #   (generated BMF PAP Lohnsteuer engines + statutory tables)
 │   ├── css/              # base, landing, app styles
 │   └── js/               # native ES modules (no bundler); layers point ui → io → domain
 │       ├── domain/       #   pure logic, no DOM/network: money, dates, schema, ids,
@@ -77,7 +94,8 @@ nestegg.money/
 │       ├── io/           #   effects: crypto (encrypt), storage (localStorage/sync/fetch)
 │       ├── ui/           #   DOM: dom, chart-kit, charts, networth, assets, salary, gate
 │       └── main.js       #   entry point: cross-cutting wiring + boot
-├── tests/                # node --test over the pure domain modules
+├── scripts/              # generators: per-locale pages, BMF PAP → JS, calculator docs
+├── tests/                # node --test: domain math, calculators, MCP, i18n page sync
 ├── schema.sql            # D1: one row per account (hash → encrypted blob)
 └── wrangler.toml
 ```
@@ -108,11 +126,17 @@ no browser needed).
 
 ## Calculators & MCP
 
-The finance math is also exposed as **stateless calculators** any client — including AI
+The finance math is also exposed as **99 stateless calculators** any client — including AI
 agents — can call. They are pure functions of their inputs: no user data, no live prices, no
-FX or tax lookups (you pass the rate / statutory figures in), no auth. This is a remote
-service, so your inputs are sent to the server — but it stores nothing and logs no request
-bodies: each call is computed in memory and discarded.
+FX lookups (you pass the rate in), no auth. This is a remote service, so your inputs are sent
+to the server — but it stores nothing and logs no request bodies: each call is computed in
+memory and discarded.
+
+The German set is the exception that carries data: `de-net-salary` computes exact Netto for
+tax years 2023–2026 via the official BMF Programmablaufplan (generated engines under
+`public/lib/finance-math/de/`, verified against all 1,008 published Prüftabellen values),
+with `de-abgeltungsteuer`, `de-kindergeld`, `de-midijob`, and `de-rentenpunkte` sharing the
+same verified statutory table. Everything else stays country-agnostic.
 
 - **JSON API:** `POST https://nestegg.money/api/calc/<name>` (JSON in, JSON out).
   `GET /api/calc` lists them. See [`public/docs/calculators.md`](public/docs/calculators.md).
@@ -125,6 +149,11 @@ Install in an MCP client:
 ```
 claude mcp add --transport http nestegg https://nestegg.money/mcp
 ```
+
+Also published to the official MCP registry as `io.github.VladimirWrites/nestegg-calculators`
+(auto-republished when `server.json` changes on main), with the descriptor served at
+[`/.well-known/mcp.json`](https://nestegg.money/.well-known/mcp.json) and an
+[`llms.txt`](https://nestegg.money/llms.txt) for agent discovery.
 
 Example (an agent keeps responses small by default, then drills in):
 
