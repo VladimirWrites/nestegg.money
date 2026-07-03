@@ -41,7 +41,7 @@ if ($("toDemo")) { $("toDemo").onclick = startDemo; keyActivate($("toDemo")); }
 if ($("demoCreate")) $("demoCreate").onclick = () => location.assign("/dashboard");
 if ($("demoExit")) $("demoExit").onclick = () => location.assign("/dashboard");
 $("regenAcct").onclick = () => newToken();
-$("copyAcct").onclick = async () => { toast((await copyText(pendingToken)) ? "Copied" : "Couldn't copy — write it down"); };
+$("copyAcct").onclick = async () => { toast((await copyText(pendingToken)) ? t("common.copied") : t("gate.copyFail")); };
 $("gateCreate").addEventListener("submit", async (e) => {
   e.preventDefault();
   LS.set("nw_token", pendingToken);
@@ -53,9 +53,9 @@ $("gateCreate").addEventListener("submit", async (e) => {
 });
 $("gateSignin").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const t = $("signinInput").value.trim();
-  if (!validToken(t)) { toast("That's not a valid account number"); return; }
-  const canon = canonToken(t);
+  const input = $("signinInput").value.trim();
+  if (!validToken(input)) { toast(t("gate.invalid")); return; }
+  const canon = canonToken(input);
   // Any cached local state belongs to whoever was signed in before. Only merge it if it's the
   // same account — otherwise discard it so two accounts can never bleed together.
   const prevTok = LS.get("nw_token"), sameAcct = !!prevTok && normTok(prevTok) === normTok(canon);
@@ -106,7 +106,7 @@ function enterApp(skipRefresh) {
   try {
     $("gate").classList.add("hide");
     $("app").classList.remove("hide");
-    $("dateline").textContent = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    $("dateline").textContent = new Date().toLocaleDateString(getLocale(), { day: "numeric", month: "long", year: "numeric" });
     $("ccySel").innerHTML = CCYS.map((c) => `<option ${c === state.baseCcy ? "selected" : ""}>${c}</option>`).join("");
     armChartAnim();
     renderAll();
@@ -137,15 +137,15 @@ async function bootShare() {
   const dot = frag.indexOf(".");
   const id = dot > 0 ? frag.slice(0, dot) : "";
   const keyStr = dot > 0 ? frag.slice(dot + 1) : "";
-  if (!/^[a-f0-9]{32}$/.test(id) || !keyStr) return shareError("Invalid link", "This share link is incomplete or malformed. Ask for a fresh one.");
+  if (!/^[a-f0-9]{32}$/.test(id) || !keyStr) return shareError(t("share.errInvalidTitle"), t("share.errInvalidBody"));
   setDemo(true); // no persistence, no sync
   let blob;
   try {
     const r = await fetch("/api/share", { headers: { "X-Share-Id": id } });
-    if (r.status === 404 || r.status === 410) return shareError("Link no longer available", "This shared snapshot has expired or been revoked by its owner.");
-    if (!r.ok) return shareError("Couldn't load", "Something went wrong fetching this snapshot. Try again later.");
+    if (r.status === 404 || r.status === 410) return shareError(t("share.errGoneTitle"), t("share.errGoneBody"));
+    if (!r.ok) return shareError(t("share.errLoadTitle"), t("share.errLoadBody"));
     blob = (await r.json()).blob;
-  } catch (e) { return shareError("Couldn't load", "Network error fetching this snapshot. Check your connection and retry."); }
+  } catch (e) { return shareError(t("share.errLoadTitle"), t("share.errNetBody")); }
   try {
     const key = await importShareKey(keyStr);
     const snap = await decWith(blob, key);
@@ -159,7 +159,7 @@ async function bootShare() {
     const order = [["networth", "net"], ["salaries", "salary"], ["budget", "budget"]];
     const first = order.find(([k]) => inc[k]);
     if (first) showView(first[1]);
-  } catch (e) { return shareError("Couldn't open", "The link's key didn't match this snapshot — it may be truncated."); }
+  } catch (e) { return shareError(t("share.errOpenTitle"), t("share.errOpenBody")); }
 }
 
 // Hide tabs/sections the sharer didn't include. Net worth, Salary and Budget are top-level
@@ -176,7 +176,7 @@ function shareError(title, body) {
   $("gate").classList.add("hide");
   const app = $("app");
   app.classList.remove("hide");
-  app.innerHTML = `<div class="sharemsg"><h1>${title}</h1><p>${body}</p><p class="sharemsg-foot"><a href="https://nestegg.money" rel="noopener">nestegg — private net-worth tracker</a></p></div>`;
+  app.innerHTML = `<div class="sharemsg"><h1>${title}</h1><p>${body}</p><p class="sharemsg-foot"><a href="https://nestegg.money" rel="noopener">${t("share.errFoot")}</a></p></div>`;
 }
 
 let profShown = false;
@@ -184,7 +184,7 @@ function renderProfAcct() {
   const el = $("profAcct"), tok = LS.get("nw_token") || "";
   if (profShown) showToken(el, tok); else el.textContent = tok.replace(/[0-9A-Za-z]/g, "•") || "…";
   $("profEye").classList.toggle("on", profShown);
-  const ls = $("lastSync"); if (ls) ls.textContent = "Last synced " + relTime(syncedAt());
+  const ls = $("lastSync"); if (ls) ls.textContent = t("prof.lastSynced", { time: relTime(syncedAt()) });
 }
 function openProfile() { profShown = false; showEditor("profileEditor"); renderProfAcct(); syncThemeSel(); syncLangSel(); }
 function closeProfile() { hideEditor("profileEditor"); }
@@ -239,7 +239,7 @@ if (langSel) langSel.addEventListener("change", async () => {
   syncShareThemeLabel();
   repaintForTheme();    // charts bake text into SVG the same way a theme change does
 });
-$("profCopyAcct").onclick = async () => { const t = LS.get("nw_token") || ""; toast((await copyText(t)) ? "Account number copied" : "Couldn't copy — use the eye to reveal it"); };
+$("profCopyAcct").onclick = async () => { const tok = LS.get("nw_token") || ""; toast((await copyText(tok)) ? t("prof.acctCopied") : t("prof.copyFail")); };
 $("profSyncNow").onclick = () => pushServer(true);
 $("syncNowHome").onclick = () => pushServer(true);
 
@@ -267,7 +267,7 @@ function applyMastTexts() {
 }
 $("navNet").onclick = () => showView("net");
 $("navBudget").onclick = () => showView("budget");
-$("profLogout").onclick = () => { if (confirm("Log out on this device? Make sure your account number is saved — it's the only way back in.")) { LS.rem("nw_token"); LS.rem("nw_state"); LS.rem("nw_state_bak"); location.reload(); } };
+$("profLogout").onclick = () => { if (confirm(t("prof.logoutConfirm"))) { LS.rem("nw_token"); LS.rem("nw_state"); LS.rem("nw_state_bak"); location.reload(); } };
 $("ccySel").onchange = (e) => { state.baseCcy = e.target.value; scheduleSync(); renderAll(); };
 $("pricesBtn").onclick = refreshPrices;
 
@@ -305,4 +305,4 @@ $("pricesBtn").onclick = refreshPrices;
 $("dlFc") && ($("dlFc").onclick = () => downloadForecast());
 $("dlHist").onclick = () => downloadHist();
 $("dlDonut").onclick = () => downloadDonut();
-$("ratesBtn").onclick = async () => { toast("Updating rates…"); const ok = await fetchFx(); await refreshHistFx(); scheduleSync(); renderAll(); toast(ok ? "Rates updated · " + (state.fxDate || "") : "Rates unavailable (offline)"); };
+$("ratesBtn").onclick = async () => { toast(t("net.ratesUpdating")); const ok = await fetchFx(); await refreshHistFx(); scheduleSync(); renderAll(); toast(ok ? t("net.ratesUpdated", { date: state.fxDate || "" }) : t("net.ratesOffline")); };

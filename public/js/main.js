@@ -9,7 +9,7 @@ import { renderAll } from "./ui/charts.js";
 import { renderEntries } from "./ui/networth.js";
 import { drawSalaryChart } from "./ui/salary.js";
 import { boot } from "./ui/gate.js";
-import { initI18n, translateDom } from "./i18n.js";
+import { initI18n, translateDom, t } from "./i18n.js";
 import "./ui/assets.js"; // side-effect: wire its editor listeners
 import "./ui/share.js"; // side-effect: wire the share dialog
 
@@ -39,17 +39,17 @@ $("importFile").onchange = (e) => {
       const d = JSON.parse(rd.result);
       if (d.snapshots) {
         const hasData = (state.snapshots && state.snapshots.length) || (state.salaries && state.salaries.length) || (state.assets && state.assets.length);
-        if (hasData && !confirm("Importing replaces ALL current data on this device. Export a backup first if you're unsure. Continue?")) { e.target.value = ""; return; }
-        setState(migrate(d)); $("ccySel").value = state.baseCcy; scheduleSync(); renderAll(); toast("Imported");
+        if (hasData && !confirm(t("prof.importConfirm"))) { e.target.value = ""; return; }
+        setState(migrate(d)); $("ccySel").value = state.baseCcy; scheduleSync(); renderAll(); toast(t("prof.imported"));
         // Refresh FX, live prices and past-year closes for whatever the import brought in.
         try { autoRefresh().then((ch) => { if (ch) { scheduleSync(); renderAll(); } }).catch(() => {}); } catch (err) {}
-      } else toast("No snapshots in that file");
-    } catch (err) { toast("Could not read that file"); }
+      } else toast(t("prof.noSnapshots"));
+    } catch (err) { toast(t("prof.readFail")); }
     finally { e.target.value = ""; }
   };
   rd.readAsText(f);
 };
-$("resetBtn").onclick = () => { if (confirm("Clear all data and start fresh? Export JSON first if you want a backup.")) { setState(emptyState()); $("ccySel").value = "EUR"; scheduleSync(); renderAll(); toast("Cleared"); } };
+$("resetBtn").onclick = () => { if (confirm(t("prof.resetConfirm"))) { setState(emptyState()); $("ccySel").value = "EUR"; scheduleSync(); renderAll(); toast(t("prof.cleared")); } };
 
 // Flush the pending change immediately when the tab is hidden/closed, so the last edit lands.
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") try { flushSync(); } catch (e) {} });
@@ -97,23 +97,9 @@ if (installBtn) {
       return;
     }
     // No programmatic prompt (iOS, Brave, Firefox, or not yet eligible) — show how to install.
+    // The guide HTML lives in the i18n dictionaries (prof.installIOS / prof.installOther).
     const b = $("infoBody");
-    if (b) b.innerHTML = onIOS
-      ? `<h3>Install on iPhone / iPad</h3>
-         <p>iOS installs apps from the browser's Share menu:</p>
-         <ul>
-           <li>Tap the <b>Share</b> button (the square with an up-arrow) in Safari's toolbar.</li>
-           <li>Scroll down and choose <b>Add to Home Screen</b>, then <b>Add</b>.</li>
-         </ul>
-         <p>nestegg then opens full-screen like an app; your data stays on this device.</p>`
-      : `<h3>Install nestegg as an app</h3>
-         <p>Look for the install control in your browser:</p>
-         <ul>
-           <li><b>Chrome / Edge</b> — the install icon (a monitor with a ↓) at the right of the address bar, or menu → <b>Install nestegg…</b></li>
-           <li><b>Brave</b> — the install icon in the address bar, or menu → <b>Install nestegg.money…</b></li>
-           <li><b>Firefox (desktop)</b> — no built-in install; use Chrome/Edge/Brave, or your phone.</li>
-         </ul>
-         <p>Once installed it opens in its own window and works offline.</p>`;
+    if (b) b.innerHTML = onIOS ? t("prof.installIOS") : t("prof.installOther");
     if ($("infoModal")) $("infoModal").classList.remove("hide");
   };
 }
@@ -140,7 +126,7 @@ if ("serviceWorker" in navigator) {
         updating = true;
         const o = document.createElement("div");
         o.className = "updating";
-        o.innerHTML = '<div class="spin"></div><div class="updtxt">Updating…</div>';
+        o.innerHTML = `<div class="spin"></div><div class="updtxt">${t("prof.updating")}</div>`;
         document.body.appendChild(o);
       });
       // Installed PWAs rarely navigate, so the browser seldom re-checks sw.js on its own —

@@ -1,5 +1,6 @@
 // Leaf DOM helpers. The only layer that touches the document directly besides the
 // renderers/editors. No domain or io imports, so anything may depend on it.
+import { t } from "../i18n.js";
 
 export const $ = (id) => document.getElementById(id);
 
@@ -70,14 +71,14 @@ export function syncVal(id, val) {
 let toastTimer;
 // Human relative time, e.g. "just now", "5 min ago", "3 days ago". 0/missing -> "never".
 export function relTime(ts) {
-  if (!ts) return "never";
+  if (!ts) return t("common.never");
   const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-  if (s < 45) return "just now";
-  const m = Math.floor(s / 60); if (m < 60) return m + " min ago";
-  const h = Math.floor(m / 60); if (h < 24) return h + " hour" + (h === 1 ? "" : "s") + " ago";
-  const d = Math.floor(h / 24); if (d < 30) return d + " day" + (d === 1 ? "" : "s") + " ago";
-  const mo = Math.floor(d / 30); if (mo < 12) return mo + " month" + (mo === 1 ? "" : "s") + " ago";
-  const y = Math.floor(mo / 12); return y + " year" + (y === 1 ? "" : "s") + " ago";
+  if (s < 45) return t("common.justNow");
+  const m = Math.floor(s / 60); if (m < 60) return t("common.minAgo", { count: m });
+  const h = Math.floor(m / 60); if (h < 24) return t("common.hoursAgo", { count: h });
+  const d = Math.floor(h / 24); if (d < 30) return t("common.daysAgo", { count: d });
+  const mo = Math.floor(d / 30); if (mo < 12) return t("common.monthsAgo", { count: mo });
+  const y = Math.floor(mo / 12); return t("common.yearsAgo", { count: y });
 }
 
 export function toast(m) {

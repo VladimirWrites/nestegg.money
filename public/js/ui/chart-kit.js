@@ -2,6 +2,7 @@
 // the colour palette, axis/grid helpers, and the titled-frame PNG export.
 import { shortK, esc } from "../domain/money.js";
 import { toast, downloadBlob } from "./dom.js";
+import { t } from "../i18n.js";
 
 // Chart colours, read from the active theme's CSS variables. Mutated by refreshPalette()
 // before each render so a theme switch recolours the SVG charts.
@@ -105,9 +106,9 @@ export function svgToPng(svgString, w, h, scale, filename) {
   const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" }), url = URL.createObjectURL(blob), img = new Image();
   img.onload = () => {
     const c = document.createElement("canvas"); c.width = Math.round(w * scale); c.height = Math.round(h * scale); const ctx = c.getContext("2d"); ctx.scale(scale, scale); ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url);
-    c.toBlob((b) => { if (!b) { toast("Could not save image"); return; } downloadBlob(b, filename); toast("Image saved"); }, "image/png");
+    c.toBlob((b) => { if (!b) { toast(t("common.imageSaveFailed")); return; } downloadBlob(b, filename); toast(t("common.imageSaved")); }, "image/png");
   };
-  img.onerror = () => { URL.revokeObjectURL(url); toast("Could not render image"); };
+  img.onerror = () => { URL.revokeObjectURL(url); toast(t("common.imageRenderFailed")); };
   img.src = url;
 }
 

@@ -9,6 +9,7 @@ import { fmtMY } from "../domain/dates.js";
 import { yGrid, C, refreshPalette, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
 import { showView } from "./gate.js";
+import { t } from "../i18n.js";
 
 const salTotal = (en) => parseFloat(en.amount) || 0; // raw amount, in the entry's own currency
 const salEccy = (p, e) => e.ccy || p.ccy || state.baseCcy; // a month's currency (defaults to person)
@@ -44,7 +45,7 @@ export function drawSalaryChart() {
   const svg = $("salaryChart"), people = state.salaries || [], leg = $("salaryLegend");
   if (!svg || !leg) return;
   const all = people.flatMap((p) => p.entries || []);
-  if (!all.length) { svg.innerHTML = ""; svg.removeAttribute("width"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", "Salary over time — no data yet."); leg.innerHTML = ""; return; }
+  if (!all.length) { svg.innerHTML = ""; svg.removeAttribute("width"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", t("salary.ariaEmpty")); leg.innerHTML = ""; return; }
   const idxM = (ym) => { const [y, m] = ym.split("-").map(Number); return y * 12 + (m - 1); };
   const minI = Math.min(...all.map((e) => idxM(e.ym))), maxI = Math.max(...all.map((e) => idxM(e.ym))), span = Math.max(1, maxI - minI);
   const nmL = axisMax(Math.max(1, ...people.flatMap((p) => (p.entries || []).map((e) => salBase(p, e)))));
@@ -75,22 +76,22 @@ export function drawSalaryChart() {
   const cpts = combY.map((c) => ({ x: X(idxM(c.y + "-07")), yy: YR(c.v), y0: c.y, v: c.v }));
   s += `<polyline class="line" pathLength="1" points="${cpts.map((p) => p.x.toFixed(1) + "," + p.yy.toFixed(1)).join(" ")}" fill="none" stroke="${SAL_COMB}" stroke-width="2.4"/>`;
   cpts.forEach((p) => {
-    s += `<circle class="saldot" cx="${p.x.toFixed(1)}" cy="${p.yy.toFixed(1)}" r="3.5" fill="${SAL_COMB}" data-lbl="${esc(p.y0 + " · combined · " + sym + Math.round(p.v).toLocaleString())}"></circle>`;
+    s += `<circle class="saldot" cx="${p.x.toFixed(1)}" cy="${p.yy.toFixed(1)}" r="3.5" fill="${SAL_COMB}" data-lbl="${esc(p.y0 + " · " + t("salary.combined") + " · " + sym + Math.round(p.v).toLocaleString())}"></circle>`;
     s += `<text x="${p.x.toFixed(1)}" y="${(p.yy - 8).toFixed(1)}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${p.y0}</text>`;
   });
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = s;
   svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", `Monthly salary over time for ${people.length} ${people.length === 1 ? "person" : "people"}.`);
+  svg.setAttribute("aria-label", t("salary.ariaChart", { count: people.length }));
   svg.classList.toggle("anim", animOn);
   // when it overflows, show the most recent months first (scroll to the right edge)
   if (animOn) scrollToNewest(svg);
-  leg.innerHTML = people.map((p, pi) => `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("") + `<span><span class="chip" style="background:${SAL_COMB}"></span>Combined yearly salary</span>`;
+  leg.innerHTML = people.map((p, pi) => `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("") + `<span><span class="chip" style="background:${SAL_COMB}"></span>${t("salary.combinedYearly")}</span>`;
 }
 
 function downloadSalary() {
-  const src = $("salaryChart"); if (!src.innerHTML) { toast("Nothing to save"); return; }
-  exportChart({ src, title: "Our Salary History", width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-salary.png",
-    items: state.salaries.map((p, pi) => ({ color: salColor(pi), label: p.name })).concat([{ color: SAL_COMB, label: "Combined yearly salary" }]) });
+  const src = $("salaryChart"); if (!src.innerHTML) { toast(t("common.nothingToSave")); return; }
+  exportChart({ src, title: t("salary.history"), width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-salary.png",
+    items: state.salaries.map((p, pi) => ({ color: salColor(pi), label: p.name })).concat([{ color: SAL_COMB, label: t("salary.combinedYearly") }]) });
 }
 
 // Shared month axis across all people, and per-(person,month) lookup/creation.
@@ -124,7 +125,7 @@ function parseAmt(s) {
 }
 function importSalary() {
   const who = $("salImportWho").value, p = (state.salaries || []).find((x) => x.id === who);
-  if (!p) { toast("Add a person first"); return; }
+  if (!p) { toast(t("salary.addFirst")); return; }
   const txt = $("salImportText").value || ""; let n = 0, bad = 0;
   txt.split(/\r?\n/).forEach((line) => {
     if (!line.trim()) return;
@@ -137,18 +138,18 @@ function importSalary() {
   });
   scheduleSync(); renderSalaryEdit();
   $("salImportText").value = "";
-  toast(n ? "Imported " + n + " month" + (n === 1 ? "" : "s") + (bad ? " · " + bad + " skipped" : "") : "Nothing parsed — paste Month + amount columns");
+  toast(n ? t("salary.imported", { count: n }) + (bad ? " · " + t("salary.skipped", { count: bad }) : "") : t("salary.nothingParsed"));
 }
 
 // Read-only table shown on the Salary tab; all edits happen in the edit overlay.
 export function renderSalary() {
   drawSalaryChart();
   const host = $("salaryTable"), people = state.salaries || [];
-  if (!people.length) { host.innerHTML = `<div class="emptyhint">No salary history yet. Tap “Edit salaries” to add people and months, or import from a spreadsheet.</div>`; return; }
+  if (!people.length) { host.innerHTML = `<div class="emptyhint">${t("salary.emptyTable")}</div>`; return; }
   const yms = salGlobalYms(), multi = people.length > 1;
-  let head = `<tr><th class="salm-h">Month</th>`;
+  let head = `<tr><th class="salm-h">${t("salary.impMonth")}</th>`;
   people.forEach((p) => (head += `<th class="r salgsep">${esc(p.name)}</th>`));
-  if (multi) head += `<th class="r salgsep">Household</th>`;
+  if (multi) head += `<th class="r salgsep">${t("salary.household")}</th>`;
   head += `</tr>`;
   let body = "", curY = null;
   yms.forEach((ym) => {
@@ -171,12 +172,12 @@ export function renderSalary() {
 function renderSalaryEdit() {
   const host = $("salaryList");
   const people = state.salaries || [];
-  if (!people.length) { host.innerHTML = `<div class="emptyhint">No one yet. Add yourself (and your partner) below, then add a range of months and type each one's salary side by side.</div>`; return; }
+  if (!people.length) { host.innerHTML = `<div class="emptyhint">${t("salary.emptyEdit")}</div>`; return; }
   const yms = salGlobalYms();
-  let h1 = `<th class="salm-h"></th>`, h2 = `<th class="salm-h">Month</th>`;
+  let h1 = `<th class="salm-h"></th>`, h2 = `<th class="salm-h">${t("salary.impMonth")}</th>`;
   people.forEach((p) => {
-    h1 += `<th colspan="3" class="salp-h salgsep"><span class="salp-hin"><input class="salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="Name"><button class="delbtn" data-perdel="${p.id}" title="Remove ${esc(p.name)}" aria-label="Remove person"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></span></th>`;
-    h2 += `<th class="salgsep">Net</th><th>Ccy</th><th>Event</th>`;
+    h1 += `<th colspan="3" class="salp-h salgsep"><span class="salp-hin"><input class="salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${p.id}" title="${esc(t("salary.removeName", { name: p.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></span></th>`;
+    h2 += `<th class="salgsep">${t("salary.thNet")}</th><th>${t("salary.thCcy")}</th><th>${t("salary.thEvent")}</th>`;
   });
   h1 += `<th class="salx-h"></th>`; h2 += `<th class="salx-h"></th>`;
   let body = "", curY = null;
@@ -192,14 +193,14 @@ function renderSalaryEdit() {
       const e = salEntry(p, ym); const amt = e ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
       row += `<td class="salgsep"><input class="salf num" type="number" step="any" inputmode="decimal" value="${amt}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0"></td>` +
         `<td><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select></td>` +
-        `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="—" title="Raise, job change…"></td>`;
+        `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="—" title="${t("salary.eventTitle")}"></td>`;
     });
-    row += `<td class="salxc"><button class="delbtn" data-salrowdel="${ym}" title="Remove ${ymLabel(ym)}" aria-label="Remove month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button></td>`;
+    row += `<td class="salxc"><button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${t("salary.removeMonthAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button></td>`;
     body += row + `</tr>`;
   });
   const dFrom = yms.length ? yms[0] : new Date().getFullYear() + "-01", dTo = salThisMonth();
-  host.innerHTML = `<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + people.length * 3}" class="exhint">No months yet — add a range below.</td></tr>`}</tbody></table></div>
-    <div class="controls salctrls"><span class="salrlbl">Add months from</span><input type="month" class="salpick salfrom" value="${dFrom}" title="From"><span class="salrlbl">to</span><input type="month" class="salpick salto" value="${dTo}" title="To"><button class="act ghost mini" data-salgen>Add range</button><button class="act ghost mini" data-salnext>+ Next month</button></div>`;
+  host.innerHTML = `<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + people.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>
+    <div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="act ghost mini" data-salgen>${t("salary.addRange")}</button><button class="act ghost mini" data-salnext>${t("salary.next")}</button></div>`;
   const who = $("salImportWho"); if (who) { const prev = who.value; who.innerHTML = people.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join(""); if (prev) who.value = prev; }
 }
 
@@ -214,19 +215,19 @@ $("salaryList").addEventListener("input", (e) => {
 });
 $("salaryList").addEventListener("change", (e) => { if (e.target.dataset.f === "ccy") renderSalaryEdit(); });
 $("salaryList").addEventListener("click", (e) => {
-  const pd = e.target.closest("[data-perdel]"); if (pd) { const p = state.salaries.find((x) => x.id === pd.dataset.perdel); if (confirm("Remove " + (p ? p.name : "this person") + " and their salary history?")) { state.salaries = state.salaries.filter((x) => x.id !== pd.dataset.perdel); scheduleSync(); renderSalaryEdit(); } return; }
+  const pd = e.target.closest("[data-perdel]"); if (pd) { const p = state.salaries.find((x) => x.id === pd.dataset.perdel); if (confirm(t("salary.removePersonConfirm", { name: p ? p.name : t("salary.thisPerson") }))) { state.salaries = state.salaries.filter((x) => x.id !== pd.dataset.perdel); scheduleSync(); renderSalaryEdit(); } return; }
   const rd = e.target.closest("[data-salrowdel]"); if (rd) { const ym = rd.dataset.salrowdel; state.salaries.forEach((p) => { p.entries = (p.entries || []).filter((en) => en.ym !== ym); }); scheduleSync(); renderSalaryEdit(); return; }
   const nx = e.target.closest("[data-salnext]"); if (nx) { const ys = salGlobalYms(); salAddRowAt(ys.length ? nextYm(ys[ys.length - 1]) : salThisMonth(), true); scheduleSync(); renderSalaryEdit(); return; }
   const gn = e.target.closest("[data-salgen]");
   if (gn) {
     const c = e.target.closest(".controls"); let from = c.querySelector(".salfrom").value, to = c.querySelector(".salto").value;
-    if (!/^\d{4}-\d{2}$/.test(from) || !/^\d{4}-\d{2}$/.test(to)) { toast("Pick both months"); return; }
+    if (!/^\d{4}-\d{2}$/.test(from) || !/^\d{4}-\d{2}$/.test(to)) { toast(t("salary.pickBoth")); return; }
     if (from > to) { const t2 = from; from = to; to = t2; }
     let cur = from, n = 0; while (cur <= to && n < 600) { salAddRowAt(cur, true); cur = nextYm(cur); n++; }
-    scheduleSync(); renderSalaryEdit(); toast("Added " + n + " month" + (n === 1 ? "" : "s")); return;
+    scheduleSync(); renderSalaryEdit(); toast(t("salary.addedMonths", { count: n })); return;
   }
 });
-$("addPerson").onclick = () => { state.salaries.push({ id: nid(), name: state.salaries.length ? "Partner" : "Me", ccy: state.baseCcy, entries: [] }); scheduleSync(); renderSalaryEdit(); };
+$("addPerson").onclick = () => { state.salaries.push({ id: nid(), name: state.salaries.length ? t("salary.partner") : t("salary.me"), ccy: state.baseCcy, entries: [] }); scheduleSync(); renderSalaryEdit(); };
 $("salImportBtn").onclick = importSalary;
 
 // In-chart tooltip flag: shown next to the hovered/tapped point, not as a bottom toast.

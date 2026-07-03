@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { relTime } from "../public/js/ui/dom.js";
+import { initI18n } from "../public/js/i18n.js";
+
+// relTime now speaks through the i18n runtime — load the English dictionary explicitly
+// (the browser does this in main.js before boot).
+await initI18n("en");
 
 const ago = (ms) => Date.now() - ms;
 const MIN = 60000, HOUR = 3600000, DAY = 86400000;

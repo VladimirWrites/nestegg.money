@@ -11,6 +11,7 @@ import { fmtMY } from "../domain/dates.js";
 import { fcCfg, forecastNetAt, fcTarget, fcBandRates, debtSummary } from "../domain/forecast.js";
 import { retCfg, retSim, pensionPts } from "../domain/retirement.js";
 import { C, refreshPalette, niceCeil, chartDims, yGrid, txt, donutArcs, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
+import { t, getLocale } from "../i18n.js";
 
 // Entrance animations play only on view-entry (boot / tab switch), never on the many
 // live re-renders (keystrokes, background refresh) — gated by this one-shot arm flag.
@@ -74,7 +75,7 @@ export function fcSyncInputs() {
   syncVal("fcMonthly", fc.monthly);
   syncVal("fcGrowth", fc.growth ? +(fc.growth * 100).toFixed(2) : "");
   const gm = $("fcGoalMode"); if (gm) gm.value = fc.goalMode;
-  const lbl = $("fcGoalLbl"); if (lbl) { lbl.textContent = fc.goalMode === "spend" ? "Annual spending" : "Target amount"; lbl.title = lbl.textContent; }
+  const lbl = $("fcGoalLbl"); if (lbl) { lbl.textContent = fc.goalMode === "spend" ? t("net.annualSpend") : t("net.goalAmount"); lbl.title = lbl.textContent; }
   syncVal("fcGoalVal", (fc.goalMode === "spend" ? fc.annualSpending : fc.goalAmount) || "");
   const rd = $("fcRedirect"); if (rd) rd.checked = !!fc.redirectLoans;
   syncVal("fcContribGrowth", fc.contribGrowth ? +(fc.contribGrowth * 100).toFixed(2) : "");
@@ -91,7 +92,7 @@ export function renderForecast() {
   fcSyncInputs();
   const stEl = $("fcStats"), now = new Date(), cy = now.getFullYear();
   const actual = sortedSnaps().map((s) => ({ y: s.year, v: snapTotalBase(s) }));
-  if (!actual.length) { svg.innerHTML = ""; svg.removeAttribute("width"); if (stEl) stEl.innerHTML = '<div class="fchint">Add a year of net worth to see your trajectory.</div>'; return; }
+  if (!actual.length) { svg.innerHTML = ""; svg.removeAttribute("width"); if (stEl) stEl.innerHTML = `<div class="fchint">${t("net.fcEmpty")}</div>`; return; }
   const lastA = actual[actual.length - 1], target = fcTarget();
   const fnet = (d, g) => forecastNetAt(d, g);
   // FIRE crossing
@@ -123,7 +124,7 @@ export function renderForecast() {
   // goal line
   if (target > 0 && target <= nm) {
     const gy = Y(target); s += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="${C.green}" stroke-width="1.4" stroke-dasharray="2 4"/>`;
-    const lbl = "goal " + sym + shortK(target), lw = lbl.length * 5.6 + 10, above = gy > padT + 18, ty = above ? gy - 5 : gy + 12, ry = above ? gy - 15 : gy + 2;
+    const lbl = t("net.goalLine", { amount: sym + shortK(target) }), lw = lbl.length * 5.6 + 10, above = gy > padT + 18, ty = above ? gy - 5 : gy + 12, ry = above ? gy - 15 : gy + 2;
     s += `<rect x="${padL + 2}" y="${ry}" width="${lw}" height="14" rx="3" fill="${C.bg}" opacity="0.78"/>`;
     s += `<text x="${padL + 7}" y="${ty}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.green}">${lbl}</text>`;
   }
@@ -131,22 +132,22 @@ export function renderForecast() {
   if (band) {
     const poly = bandHi.map((p) => X(p.y) + "," + Y(p.v)).concat(bandLo.slice().reverse().map((p) => X(p.y) + "," + Y(p.v))).join(" ");
     s += `<polygon points="${poly}" fill="${C.amber}" opacity="0.1"/>`;
-    s += `<polyline points="${bandHi.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>great: ${Math.round(br.hi * 100)}%/yr</title></polyline>`;
-    s += `<polyline points="${bandLo.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>poor: ${Math.round(br.lo * 100)}%/yr</title></polyline>`;
+    s += `<polyline points="${bandHi.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>${t("net.bandGreat", { pct: Math.round(br.hi * 100) })}</title></polyline>`;
+    s += `<polyline points="${bandLo.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>${t("net.bandPoor", { pct: Math.round(br.lo * 100) })}</title></polyline>`;
   }
   s += `<polyline points="${proj.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`;
   s += `<polyline class="line" pathLength="1" points="${actual.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2.4"/>`;
   actual.forEach((p) => { s += `<circle cx="${X(p.y)}" cy="${Y(p.v)}" r="3" fill="${C.amber}"><title>${p.y}: ${money(p.v)}</title></circle>`; });
-  if (fireY && fnet(new Date(fireY, 11, 31)) >= target) { const fx = X(fireY), fyv = Y(Math.min(target, nm)); s += `<line x1="${fx}" y1="${padT}" x2="${fx}" y2="${padT + plotH}" stroke="${C.green}" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>`; s += `<circle cx="${fx}" cy="${fyv}" r="4" fill="${C.green}"><title>Goal reached ${fireY}</title></circle>`; }
+  if (fireY && fnet(new Date(fireY, 11, 31)) >= target) { const fx = X(fireY), fyv = Y(Math.min(target, nm)); s += `<line x1="${fx}" y1="${padT}" x2="${fx}" y2="${padT + plotH}" stroke="${C.green}" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>`; s += `<circle cx="${fx}" cy="${fyv}" r="4" fill="${C.green}"><title>${t("net.goalReached", { year: fireY })}</title></circle>`; }
   s += `<circle cx="${X(projEnd.y)}" cy="${Y(projEnd.v)}" r="3" fill="${C.amber}" opacity="0.85"><title>${projEnd.y}: ${money(projEnd.v)}</title></circle>`;
   svg.innerHTML = s;
   svg.classList.toggle("anim", _animOn);
   // stats
   const d = debtSummary();
-  const goalStat = target > 0 ? (fireY ? `<div class="fcstat"><span class="k">${fc.goalMode === "spend" ? "FIRE goal (" + money(target) + ")" : "Goal " + money(target)}</span><span class="v ok">${fireY <= cy ? "reached 🎉" : "~" + fireY + " · in " + (fireY - cy) + " yr" + (fireY - cy === 1 ? "" : "s")}</span></div>` : `<div class="fcstat"><span class="k">Goal ${money(target)}</span><span class="v">not within 45 yrs</span></div>`) : `<div class="fcstat"><span class="k">Goal</span><span class="v dim">set a target above</span></div>`;
-  const debtStat = d.has ? `<div class="fcstat"><span class="k">Debt-free by</span><span class="v ok">${fmtMY(d.payoff)}</span><span class="sub">${money(d.rem)} interest remaining</span></div>` : `<div class="fcstat"><span class="k">Debt</span><span class="v ok">none 🎉</span></div>`;
-  const projSub = band ? "range " + money(bandLo[bandLo.length - 1].v) + " – " + money(bandHi[bandHi.length - 1].v) : "";
-  const projStat = `<div class="fcstat"><span class="k">Projected ${projEnd.y}</span><span class="v">${money(projEnd.v)}</span>${projSub ? `<span class="sub">${projSub}</span>` : ""}</div>`;
+  const goalStat = target > 0 ? (fireY ? `<div class="fcstat"><span class="k">${fc.goalMode === "spend" ? t("net.fireGoal", { amount: money(target) }) : t("net.goalOf", { amount: money(target) })}</span><span class="v ok">${fireY <= cy ? t("net.reached") : t("net.goalIn", { year: fireY, count: fireY - cy })}</span></div>` : `<div class="fcstat"><span class="k">${t("net.goalOf", { amount: money(target) })}</span><span class="v">${t("net.goalFar")}</span></div>`) : `<div class="fcstat"><span class="k">${t("net.goal")}</span><span class="v dim">${t("net.setTarget")}</span></div>`;
+  const debtStat = d.has ? `<div class="fcstat"><span class="k">${t("net.debtFreeBy")}</span><span class="v ok">${fmtMY(d.payoff)}</span><span class="sub">${t("net.interestRemaining", { amount: money(d.rem) })}</span></div>` : `<div class="fcstat"><span class="k">${t("net.debt")}</span><span class="v ok">${t("net.debtNone")}</span></div>`;
+  const projSub = band ? t("net.range", { lo: money(bandLo[bandLo.length - 1].v), hi: money(bandHi[bandHi.length - 1].v) }) : "";
+  const projStat = `<div class="fcstat"><span class="k">${t("net.projectedYear", { year: projEnd.y })}</span><span class="v">${money(projEnd.v)}</span>${projSub ? `<span class="sub">${projSub}</span>` : ""}</div>`;
   if (stEl) stEl.innerHTML = projStat + goalStat + debtStat;
 }
 
@@ -170,7 +171,7 @@ export function renderRetire() {
   if (on) on.checked = r.on; if (body) body.classList.toggle("hide", !r.on);
   if (!r.on) return;
   retSyncInputs();
-  if (!latestSnap()) { if (svg) { svg.innerHTML = ""; svg.removeAttribute("width"); } stEl.innerHTML = '<div class="fchint">Add a year of net worth to simulate retirement.</div>'; return; }
+  if (!latestSnap()) { if (svg) { svg.innerHTML = ""; svg.removeAttribute("width"); } stEl.innerHTML = `<div class="fchint">${t("net.rtEmpty")}</div>`; return; }
   const sim = retSim();
   if (svg) {
     const dim = chartDims(svg, 720), W = dim.W, H = dim.H, padL = 58, padR = 16, padT = 22, padB = 30, innerW = W - padL - padR, plotH = H - padT - padB;
@@ -180,26 +181,26 @@ export function renderRetire() {
     svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     const sym = ccySym(); let s = yGrid(W, padL, padR, padT, plotH, nm, sym);
     const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.axis}">${y}</text>`;
-    if (sim.pensY > minY && sim.pensY <= maxY && sim.pensionAnnual > 0) { const px = X(sim.pensY); s += `<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT + plotH}" stroke="${C.green}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`; s += `<text x="${px + 4}" y="${padT + 10}" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.green}">pension starts ${sim.pensY}</text>`; }
+    if (sim.pensY > minY && sim.pensY <= maxY && sim.pensionAnnual > 0) { const px = X(sim.pensY); s += `<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT + plotH}" stroke="${C.green}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`; s += `<text x="${px + 4}" y="${padT + 10}" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.green}">${t("net.pensionStarts", { year: sim.pensY })}</text>`; }
     s += `<defs><linearGradient id="rtArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.amber}" stop-opacity="0.22"/><stop offset="1" stop-color="${C.amber}" stop-opacity="0"/></linearGradient></defs>`;
     s += `<polygon points="${X(minY)},${Y(0)} ${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")} ${X(maxY)},${Y(0)}" fill="url(#rtArea)"/>`;
     s += `<polyline class="line" pathLength="1" points="${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2.4"/>`;
     sim.pts.forEach((p) => { if (p.y === sim.pensY || p.y === minY || p.y === maxY) s += `<circle cx="${X(p.y)}" cy="${Y(p.pot)}" r="3" fill="${C.amber}"><title>${p.y}: ${money(p.pot)}</title></circle>`; });
-    if (sim.depleted) s += `<circle cx="${X(sim.depleted)}" cy="${Y(0)}" r="4" fill="${C.red}"><title>Depleted ${sim.depleted}</title></circle>`;
+    if (sim.depleted) s += `<circle cx="${X(sim.depleted)}" cy="${Y(0)}" r="4" fill="${C.red}"><title>${t("net.depletedYear", { year: sim.depleted })}</title></circle>`;
     svg.innerHTML = s;
     svg.classList.toggle("anim", _animOn);
   }
-  const eggStat = `<div class="fcstat"><span class="k">Nest egg ${sim.retY}</span><span class="v">${money(sim.pts[0].pot)}</span><span class="sub">today's money · investable</span></div>`;
-  const ptsNote = r.pmode === "de" ? pensionPts().toFixed(1) + " pts · " : "";
-  const pensStat = sim.pensionAnnual > 0 ? `<div class="fcstat"><span class="k">Pension from ${sim.pensY}</span><span class="v ok">${money(sim.pensionMonthly)}/mo</span><span class="sub">${ptsNote}covers ${sim.spend > 0 ? Math.min(100, Math.round((sim.pensionAnnual / sim.spend) * 100)) : 0}% of spend</span></div>` : `<div class="fcstat"><span class="k">Pension</span><span class="v dim">set amount</span></div>`;
-  const spendStat = `<div class="fcstat"><span class="k">Spending</span><span class="v">${money(sim.spend)}/yr</span><span class="sub">${money(sim.spend / 12)}/mo · today's money</span></div>`;
-  const verdict = sim.depleted ? `<div class="fcstat hero"><span class="k">Pot runs out</span><span class="v bad">${sim.depleted}</span><span class="sub">${sim.depleted - sim.retY} yrs into retirement</span></div>` : `<div class="fcstat hero"><span class="k">Lasts past ${sim.until}</span><span class="v ok">${money(sim.endPot)} left</span><span class="sub">low point ${money(sim.minPot)}</span></div>`;
+  const eggStat = `<div class="fcstat"><span class="k">${t("net.nestEggYear", { year: sim.retY })}</span><span class="v">${money(sim.pts[0].pot)}</span><span class="sub">${t("net.todayInvestable")}</span></div>`;
+  const ptsNote = r.pmode === "de" ? t("net.ptsNote", { pts: pensionPts().toFixed(1) }) + " · " : "";
+  const pensStat = sim.pensionAnnual > 0 ? `<div class="fcstat"><span class="k">${t("net.pensionFrom", { year: sim.pensY })}</span><span class="v ok">${t("net.perMo", { amount: money(sim.pensionMonthly) })}</span><span class="sub">${ptsNote}${t("net.coversSpend", { pct: sim.spend > 0 ? Math.min(100, Math.round((sim.pensionAnnual / sim.spend) * 100)) : 0 })}</span></div>` : `<div class="fcstat"><span class="k">${t("net.pension")}</span><span class="v dim">${t("net.setAmount")}</span></div>`;
+  const spendStat = `<div class="fcstat"><span class="k">${t("net.spending")}</span><span class="v">${t("net.perYr", { amount: money(sim.spend) })}</span><span class="sub">${t("net.perMoToday", { amount: money(sim.spend / 12) })}</span></div>`;
+  const verdict = sim.depleted ? `<div class="fcstat hero"><span class="k">${t("net.potRunsOut")}</span><span class="v bad">${sim.depleted}</span><span class="sub">${t("net.yrsInto", { count: sim.depleted - sim.retY })}</span></div>` : `<div class="fcstat hero"><span class="k">${t("net.lastsPast", { year: sim.until })}</span><span class="v ok">${t("net.amountLeft", { amount: money(sim.endPot) })}</span><span class="sub">${t("net.lowPoint", { amount: money(sim.minPot) })}</span></div>`;
   stEl.innerHTML = eggStat + pensStat + spendStat + verdict;
 }
 
 function updNote() {
-  const px = state.lastPx ? "prices " + new Date(state.lastPx).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) : "";
-  const fxd = state.fxDate ? "FX " + state.fxDate : "";
+  const px = state.lastPx ? t("net.prices") + " " + new Date(state.lastPx).toLocaleString(getLocale(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) : "";
+  const fxd = state.fxDate ? t("net.rates") + " " + state.fxDate : "";
   $("updNote").textContent = [px, fxd].filter(Boolean).join(" · ");
 }
 
@@ -221,7 +222,7 @@ function drawHist() {
     const cx = padL + idx * slot + slot / 2, x = cx - bw / 2; let yTop = padT + plotH; const ents = effEntries(sn);
     names.forEach((nm2) => { const tot = ents.filter((e) => seriesKey(e) === nm2).reduce((a, e) => a + entryBase(e, sn.year), 0); if (tot <= 0) return; const h = (tot / nm) * plotH; yTop -= h; s += `<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2, names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`; });
     const net = snapTotalBase(sn), gross = snapGrossBase(sn);
-    if (gross - net > 0.005) { const ny = padT + plotH - (Math.max(0, net) / nm) * plotH; s += `<line x1="${x - 3}" y1="${ny}" x2="${x + bw + 3}" y2="${ny}" stroke="${C.red}" stroke-width="2"><title>${sn.year} net worth ${money(net)} — after ${money(gross - net)} liabilities</title></line>`; }
+    if (gross - net > 0.005) { const ny = padT + plotH - (Math.max(0, net) / nm) * plotH; s += `<line x1="${x - 3}" y1="${ny}" x2="${x + bw + 3}" y2="${ny}" stroke="${C.red}" stroke-width="2"><title>${t("net.histNetTitle", { year: sn.year, net: money(net), liab: money(gross - net) })}</title></line>`; }
     s += `<text x="${cx}" y="${yTop - 6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="${C.axis}">${sym}${shortK(net)}</text>`;
     s += `<text x="${cx}" y="${H - padB + 16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${C.ink}">${sn.year}</text>`;
     // full-height transparent hit area: hover/tap a year to see its breakdown
@@ -229,16 +230,16 @@ function drawHist() {
   });
   svg.innerHTML = s;
   svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", n ? `Net worth over time, ${snaps[0].year} to ${snaps[n - 1].year}. Latest net worth ${money(snapTotalBase(snaps[n - 1]))}.` : "Net worth over time — no data yet.");
+  svg.setAttribute("aria-label", n ? t("net.histAria", { from: snaps[0].year, to: snaps[n - 1].year, amount: money(snapTotalBase(snaps[n - 1])) }) : t("net.histAriaEmpty"));
   svg.classList.toggle("anim", _animOn);
   if (_animOn) scrollToNewest(svg); // when it overflows, show the most recent years first
   // hero = latest
   const ls = latestSnap(); const nw = ls ? snapTotalBase(ls) : 0;
   setHero(nw);
   const nAssets = ls ? effEntries(ls).filter((e) => !isLiability(e)).length : 0;
-  $("nwNote").textContent = ls ? "as of " + ls.year + " · " + nAssets + " asset" + (nAssets === 1 ? "" : "s") : "No data yet";
+  $("nwNote").textContent = ls ? t("net.asOf", { year: ls.year, count: nAssets }) : t("net.noData");
   const dEl = $("nwDay"); const dc = dayChangeBase(nw);
-  if (dc) { const flat = Math.abs(dc.abs) < 0.005, up = dc.abs >= 0; dEl.className = "day " + (flat ? "flat" : up ? "up" : "down"); const sign = up ? "+" : "−", arrow = flat ? "" : up ? "▲ " : "▼ "; dEl.textContent = arrow + sign + money(Math.abs(dc.abs)) + " · " + sign + Math.abs(dc.pct).toFixed(2) + "% today"; }
+  if (dc) { const flat = Math.abs(dc.abs) < 0.005, up = dc.abs >= 0; dEl.className = "day " + (flat ? "flat" : up ? "up" : "down"); const sign = up ? "+" : "−", arrow = flat ? "" : up ? "▲ " : "▼ "; dEl.textContent = t("net.dayChange", { arrow, sign, abs: money(Math.abs(dc.abs)), pct: Math.abs(dc.pct).toFixed(2) }); }
   else { dEl.className = "day"; dEl.textContent = ""; }
 }
 function drawHistLegend() {
@@ -259,15 +260,15 @@ function histBreakdown(year) {
   const net = snapTotalBase(sn), gross = snapGrossBase(sn), liab = gross - net;
   let html = `<div class="tiph">${sn.year}</div>`;
   rows.forEach((r) => { html += `<div class="tipr"><span class="chip" style="background:${colorOf(r.nm2, names)}"></span><span class="tipn">${esc(r.nm2)}</span><span class="tipv">${money(r.tot)}</span></div>`; });
-  if (liab > 0.005) html += `<div class="tipr"><span class="tipn">Liabilities</span><span class="tipv" style="color:var(--red)">−${money(liab)}</span></div>`;
-  html += `<div class="tipnet">Net worth <b>${money(net)}</b></div>`;
+  if (liab > 0.005) html += `<div class="tipr"><span class="tipn">${t("net.liabilities")}</span><span class="tipv" style="color:var(--red)">−${money(liab)}</span></div>`;
+  html += `<div class="tipnet">${t("nav.net")} <b>${money(net)}</b></div>`;
   // Year-over-year change vs the previous snapshot (just the balance delta — not a
   // contributions/market split, which yearly balances can't tell apart).
   const prev = idx > 0 ? snaps[idx - 1] : null;
   if (prev) {
     const pnw = snapTotalBase(prev), d = net - pnw, up = d >= 0, sign = up ? "+" : "−";
     const pct = Math.abs(pnw) > 0.005 ? (d / Math.abs(pnw)) * 100 : null;
-    html += `<div class="tipyoy ${up ? "up" : "down"}">vs ${prev.year}: ${sign}${money(Math.abs(d))}${pct != null ? " · " + sign + Math.abs(pct).toFixed(1) + "%" : ""}</div>`;
+    html += `<div class="tipyoy ${up ? "up" : "down"}">${t("net.vsYear", { year: prev.year })} ${sign}${money(Math.abs(d))}${pct != null ? " · " + sign + Math.abs(pct).toFixed(1) + "%" : ""}</div>`;
   }
   return html;
 }
@@ -296,7 +297,7 @@ function donutBreakdown(name) {
   const sum = items.reduce((a, i) => a + i.v, 0);
   let html = `<div class="tiph">${esc(name)}</div>`;
   items.forEach((i) => { html += `<div class="tipr"><span class="tipn">${esc(i.n)}</span><span class="tipv">${money(i.v)}</span></div>`; });
-  if (items.length > 1) html += `<div class="tipnet">Total <b>${money(sum)}</b></div>`;
+  if (items.length > 1) html += `<div class="tipnet">${t("common.total")} <b>${money(sum)}</b></div>`;
   return html;
 }
 function donutShowTip(path) {
@@ -327,33 +328,33 @@ function drawDonut() {
   const segs = rows.map((row) => ({ v: row.v, color: colorOf(row.name, names), name: row.name }));
   const total = donutArcs(svg, segs, (p, s) => p.setAttribute("data-name", s.name));
   if (total > 0) {
-    txt(svg, 120, 116, "TOTAL", 10, C.axis, 2, 400); txt(svg, 120, 138, money(total), 16, C.ink, 0, 600);
+    txt(svg, 120, 116, t("common.total").toUpperCase(), 10, C.axis, 2, 400); txt(svg, 120, 138, money(total), 16, C.ink, 0, 600);
   }
   svg.classList.toggle("anim", _animOn);
   svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", total > 0 ? `Allocation for ${ls.year}: ${rows.map((r) => r.name + " " + Math.round((r.v / total) * 100) + "%").join(", ")}.` : "Allocation — no data yet.");
+  svg.setAttribute("aria-label", total > 0 ? t("net.allocAria", { year: ls.year, list: rows.map((r) => r.name + " " + Math.round((r.v / total) * 100) + "%").join(", ") }) : t("net.allocAriaEmpty"));
   const leg = $("legend"); leg.innerHTML = "";
   rows.forEach((row) => { const d = document.createElement("div"); d.className = "legrow"; d.innerHTML = `<span class="swatch" style="background:${colorOf(row.name, names)}"></span><span>${esc(row.name)}</span><span class="pct">${((row.v / total) * 100).toFixed(0)}%</span><span class="amt num">${money(row.v)}</span>`; leg.appendChild(d); });
 }
 
 export function downloadForecast() {
-  const src = $("fcChart"); if (!src || !src.innerHTML) { toast("Nothing to save"); return; }
-  exportChart({ src, title: "Net Worth · forecast", width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-forecast.png",
-    items: [{ color: C.amber, label: "Actual / Projected" }, { color: C.green, label: "Goal" }] });
+  const src = $("fcChart"); if (!src || !src.innerHTML) { toast(t("common.nothingToSave")); return; }
+  exportChart({ src, title: t("net.expForecast"), width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-forecast.png",
+    items: [{ color: C.amber, label: t("net.actual") + " / " + t("net.projected") }, { color: C.green, label: t("net.goal") }] });
 }
 export function downloadHist() {
-  const src = $("histChart"); if (!src.innerHTML) { toast("Nothing to save"); return; }
+  const src = $("histChart"); if (!src.innerHTML) { toast(t("common.nothingToSave")); return; }
   const names = allNames();
-  exportChart({ src, title: "Net Worth · over time", width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-over-time.png",
+  exportChart({ src, title: t("net.expHist"), width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-over-time.png",
     items: names.map((n) => ({ color: colorOf(n, names), label: n })) });
 }
 export function downloadDonut() {
   const ls = latestSnap(), src = $("donut"), names = allNames();
   const rows = allocationRows(ls);
-  if (!rows.length) { toast("No allocation to save"); return; }
+  if (!rows.length) { toast(t("net.noAllocSave")); return; }
   const total = rows.reduce((a, r) => a + r.v, 0);
   const items = rows.map((r) => ({ color: colorOf(r.name, names), label: r.name + "   " + Math.round((r.v / total) * 100) + "%   " + money(r.v) }));
-  exportChart({ src, title: "Allocation · " + (ls ? ls.year : ""), items, width: 240, height: 240, filename: "nestegg-allocation.png" });
+  exportChart({ src, title: t("net.alloc") + " · " + (ls ? ls.year : ""), items, width: 240, height: 240, filename: "nestegg-allocation.png" });
 }
 
 /* ---- year list ---- */
@@ -366,7 +367,7 @@ function renderYears() {
     const agg = {}; allocationRows(sn).forEach((r) => { agg[r.name] = r.v; });
     // Order segments by allNames() (same as the graph's stacking) so colours line up.
     const segs = names.map((k) => (agg[k] > 0 ? `<i style="width:${(agg[k] / (gross || 1)) * 100}%;background:${colorOf(k, names)}"></i>` : "")).join("");
-    const liab = gross - tot, liabHtml = liab > 0.005 ? `<span class="yliab num" title="liabilities">−${money(liab)}</span>` : "";
+    const liab = gross - tot, liabHtml = liab > 0.005 ? `<span class="yliab num" title="${t("net.liabilities")}">−${money(liab)}</span>` : "";
     const card = document.createElement("div"); card.className = "ycard";
     card.innerHTML = `<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar" style="max-width:${Math.max(8, (gross / maxV) * 100)}%">${segs}</span>${liabHtml}<span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
     host.appendChild(card);
