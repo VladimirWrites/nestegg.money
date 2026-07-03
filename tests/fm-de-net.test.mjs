@@ -80,6 +80,18 @@ test("Soli kicks in above the Freigrenze at 5.5% of the Lohnsteuer", () => {
   assert.equal(low.soli, 0);
 });
 
+test("cross-check vs a reference calculator: 2026, 120k, class 4, TK Zusatzbeitrag 2.69%", () => {
+  const r = deNetSalary({ year: 2026, grossAnnual: 120000, taxClass: 4, kvZusatzPct: 2.69 });
+  const m = (x) => Math.round(x / 12 * 100) / 100;
+  assert.equal(m(r.incomeTax), 2635.33);
+  assert.equal(m(r.soli), 111.8);
+  assert.equal(m(r.contributions.pension), 785.85);
+  assert.equal(m(r.contributions.unemployment), 109.85);
+  assert.equal(m(r.contributions.health), 502.49);
+  assert.equal(m(r.contributions.care), 139.5);
+  assert.equal(r.net.monthly, 5715.18);
+});
+
 test("KV Zusatzbeitrag override replaces the year average in both tax and contributions", () => {
   const avg = deNetSalary({ year: 2026, grossAnnual: 60000 });
   const own = deNetSalary({ year: 2026, grossAnnual: 60000, kvZusatzPct: 1.9 });

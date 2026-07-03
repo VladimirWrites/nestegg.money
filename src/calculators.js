@@ -327,7 +327,7 @@ export const CALCULATORS = {
       childrenUnder25: num("Optional. Children under 25 for the care-insurance discounts, when it differs from `children`."),
       churchTaxPct: num("Church tax rate: 8, 9, or 0 for none (default 0)."),
       bundesland: str("Optional. State code (BW, BY, BE, ... SN, TH). Drives the Saxony care-insurance split and the pre-2025 East pension ceiling."),
-      kvZusatzPct: num("Optional. Your Krankenkasse's Zusatzbeitrag in percent; defaults to the year's official average."),
+      kvZusatzPct: num("Optional. The Krankenkasse's own Zusatzbeitrag in percent — pass the actual rate for exact results (rates change yearly, e.g. TK 2025: 2.45, 2026: 2.69). Defaults to the year's official average, which is only right for generic estimates."),
       privateHealth: obj({ premiumAnnual: num("Annual private health+care premium in EUR.") }, ["premiumAnnual"]),
       age: num("Optional. Age in years - under 23 skips the childless care surcharge."),
       faktor: num("Optional. Steuerklasse-4 Faktorverfahren factor (e.g. 0.921)."),
