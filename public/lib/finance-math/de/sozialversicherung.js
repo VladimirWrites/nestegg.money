@@ -37,8 +37,9 @@ export function deSozialversicherung(grossAnnual, p, opts = {}) {
     };
   }
 
+  // The rate stays unrounded (7.3 + 2.69/2 = 8.645 exactly) — only amounts get rounded.
   const kvZusatz = opts.kvZusatzPct == null ? p.kvAvgZusatzPct : +opts.kvZusatzPct;
-  const kvPct = round2(p.kvGeneralEmployeePct + kvZusatz / 2);
+  const kvPct = p.kvGeneralEmployeePct + kvZusatz / 2;
   const pvPct = pvEmployeePct(p, opts);
   const health = round2(kvBase * kvPct / 100);
   const care = round2(kvBase * pvPct / 100);

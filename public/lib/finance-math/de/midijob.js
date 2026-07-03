@@ -32,13 +32,13 @@ export function deMidijob({ year, monthlyPay, children = 0, childrenUnder25 = nu
   const employeeRates = {
     rvPct: p.rvEmployeePct,
     avPct: p.avEmployeePct,
-    kvPct: round2(p.kvGeneralEmployeePct + kvZusatz / 2),
+    kvPct: p.kvGeneralEmployeePct + kvZusatz / 2,   // unrounded — only amounts get rounded
     pvPct: pvEmployeePct(p, { children, childrenUnder25, age, saxony }),
   };
   const totalRates = {
     rvPct: 2 * p.rvEmployeePct,
     avPct: 2 * p.avEmployeePct,
-    kvPct: round2(2 * p.kvGeneralEmployeePct + kvZusatz),
+    kvPct: 2 * p.kvGeneralEmployeePct + kvZusatz,
     pvPct: p.pvTotalPct + (children <= 0 && (age == null || age >= 23) ? p.pvChildlessSurchargePct : 0),
   };
   const emp = (r) => round2(employeeBase * r / 100);
