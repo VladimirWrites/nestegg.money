@@ -10,6 +10,7 @@ import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, re
 import { C, refreshPalette, donutArcs, exportChart, positionTip } from "./chart-kit.js";
 import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
 import { scheduleSync } from "../io/storage.js";
+import { t } from "../i18n.js";
 
 // Cache the latest segments so the tooltip and the PNG export can read them.
 let _segs = [];
@@ -32,10 +33,14 @@ function roGroupSection(name, color, subtotalHTML, cardsHTML) {
 
 // Where the income goes, at the top level: one wedge per category (expenses + loans grouped by the
 // domain) plus the leftover. Each carries its `items` so the tooltip can break it down on hover.
+// The "Uncategorized" sentinel comes from domain/budget.js (which stays i18n-free), so it's
+// mapped to the active locale here, at the UI boundary. Real category names are user data.
+const dispCat = (name) => (name === "Uncategorized" ? t("budget.uncategorized") : name);
+
 function breakdownSegments(s) {
   const segs = [];
-  (s.categories || []).forEach((c, i) => { if (c.total > 0) segs.push({ name: c.category, v: c.total, color: PALETTE[i % PALETTE.length], items: c.items }); });
-  if (s.leftover > 0) segs.push({ name: "Left over", v: s.leftover, color: C.green, items: [] });
+  (s.categories || []).forEach((c, i) => { if (c.total > 0) segs.push({ name: dispCat(c.category), v: c.total, color: PALETTE[i % PALETTE.length], items: c.items }); });
+  if (s.leftover > 0) segs.push({ name: t("budget.leftOver"), v: s.leftover, color: C.green, items: [] });
   return segs;
 }
 
@@ -63,7 +68,7 @@ function drawBudgetDonut(s, animate = false) {
   }
   svg.classList.toggle("anim", !!animate && total > 0);
   svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", total > 0 ? "Budget breakdown: " + segs.map((x) => x.name + " " + Math.round(x.v / total * 100) + "%").join(", ") : "Budget breakdown — add income or expenses to see it.");
+  svg.setAttribute("aria-label", total > 0 ? t("budget.ariaList", { list: segs.map((x) => x.name + " " + Math.round(x.v / total * 100) + "%").join(", ") }) : t("budget.ariaEmpty"));
   const leg = $("budgetLegend"); if (leg) {
     leg.innerHTML = segs.map((x) => `<div class="legrow"><span class="swatch" style="background:${x.color}"></span><span>${esc(x.name)}</span><span class="pct">${total > 0 ? (x.v / total * 100).toFixed(0) : 0}%</span><span class="amt num">${money(x.v)}</span></div>`).join("");
   }
@@ -80,7 +85,7 @@ function budgetTipShow(path) {
   const items = (seg.items || []).slice().sort((a, b) => b.amount - a.amount);
   if (items.length) {
     items.forEach((it) => { html += `<div class="tipr"><span class="tipn">${esc(it.name)}</span><span class="tipv">${money(it.amount)}</span></div>`; });
-    if (items.length > 1) html += `<div class="tipnet">Total <b>${money(seg.v)}</b></div>`;
+    if (items.length > 1) html += `<div class="tipnet">${t("common.total")} <b>${money(seg.v)}</b></div>`;
   } else {
     html += `<div class="tipr"><span class="tipn">&nbsp;</span><span class="tipv">${money(seg.v)}</span></div>`;
   }
@@ -109,10 +114,10 @@ function wireBudgetTip() {
 // Export the doughnut as a framed PNG, like the other charts.
 function downloadBudgetDonut() {
   const src = $("budgetDonut");
-  if (!src || !_segs.length) { toast("Nothing to save"); return; }
+  if (!src || !_segs.length) { toast(t("common.nothingToSave")); return; }
   const total = _segs.reduce((a, x) => a + x.v, 0);
   const items = _segs.map((x) => ({ color: x.color, label: x.name + "   " + Math.round(x.v / total * 100) + "%   " + money(x.v) }));
-  exportChart({ src, title: "Budget · monthly breakdown", items, width: 240, height: 240, filename: "nestegg-budget.png" });
+  exportChart({ src, title: t("budget.expTitle"), items, width: 240, height: 240, filename: "nestegg-budget.png" });
 }
 
 const bud = () => {
@@ -144,12 +149,12 @@ function refreshTotals() {
 }
 
 function expenseRow(e) {
-  if (RO) return roItemRow(e.name || "Expense", +e.amount || 0);
+  if (RO) return roItemRow(e.name || t("budget.expense"), +e.amount || 0);
   return `<div class="bud-exp" data-id="${e.id}">
-    <input class="bud-exp-name" data-id="${e.id}" type="text" value="${esc(e.name || "")}" placeholder="Expense" aria-label="Expense name">
+    <input class="bud-exp-name" data-id="${e.id}" type="text" value="${esc(e.name || "")}" placeholder="${t("budget.expense")}" aria-label="${t("budget.expenseName")}">
     ${catSelect("bud-exp-cat", `data-id="${e.id}"`, e.group)}
-    <input class="bud-exp-amt" data-id="${e.id}" type="number" inputmode="decimal" value="${e.amount || ""}" placeholder="0" aria-label="Monthly amount">
-    <button class="bud-exp-del" data-id="${e.id}" title="Remove" aria-label="Remove">✕</button>
+    <input class="bud-exp-amt" data-id="${e.id}" type="number" inputmode="decimal" value="${e.amount || ""}" placeholder="0" aria-label="${t("budget.monthlyAmount")}">
+    <button class="bud-exp-del" data-id="${e.id}" title="${t("common.remove")}" aria-label="${t("common.remove")}">✕</button>
   </div>`;
 }
 
@@ -157,7 +162,7 @@ function expenseRow(e) {
 function loanRow(l, loanCats) {
   if (RO) return roItemRow(l.name, l.monthly);
   return `<div class="bud-exp bud-loan" data-lid="${l.id}">
-    <span class="bud-loan-name" title="Loan payment (from your assets)">${esc(l.name)}</span>
+    <span class="bud-loan-name" title="${t("budget.loanTitle")}">${esc(l.name)}</span>
     ${catSelect("bud-loan-cat", `data-lid="${l.id}"`, loanCats[l.id])}
     <span class="bud-loan-amt">${money(l.monthly)}</span>
   </div>`;
@@ -202,18 +207,18 @@ export function renderBudget() {
 
   host.innerHTML = `
     <section class="over" style="border:none;padding:8px 0">
-      <div class="sectitle">Roughly what's left each month</div>
+      <div class="sectitle">${t("budget.title")}</div>
       <div class="bud-card${s.leftover < 0 ? " neg" : ""}" id="budCard">
-        <span class="k">Left over / month</span>
+        <span class="k">${t("budget.leftPerMonth")}</span>
         <span class="v" id="budLeftover">${money(s.leftover)}</span>
-        <span class="sub">savings rate <b id="budSavings">${s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%"}</b></span>
+        <span class="sub">${t("budget.savingsRate")} <b id="budSavings">${s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%"}</b></span>
       </div>
       <div class="bud-chart">
         <div class="bud-chart-main">
           <div class="bud-chartwrap">
-            <svg id="budgetDonut" viewBox="0 0 240 240" width="240" height="240" aria-label="Budget breakdown"></svg>
+            <svg id="budgetDonut" viewBox="0 0 240 240" width="240" height="240" aria-label="${t("budget.breakdown")}"></svg>
             <div id="budgetTip" class="salflag hide"></div>
-            <button class="chartdl" id="dlBudget" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+            <button class="chartdl" id="dlBudget" title="${t("net.dlChart")}" aria-label="${t("net.dlChart")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
           </div>
           <div class="legend" id="budgetLegend"></div>
         </div>
@@ -221,20 +226,20 @@ export function renderBudget() {
     </section>
 
     <div class="bud-rows">
-      <div class="bud-row"><span class="bud-lbl">Income <span class="hint">latest salary month: ${money(auto)}</span></span><span class="bud-val" id="budIncome">${money(s.income)}</span></div>
+      <div class="bud-row"><span class="bud-lbl">${t("budget.income")} <span class="hint">${t("budget.latestSalary", { amount: money(auto) })}</span></span><span class="bud-val" id="budIncome">${money(s.income)}</span></div>
       ${RO ? "" : `<div class="bud-row indent">
-        <span class="bud-lbl">Override monthly income</span>
+        <span class="bud-lbl">${t("budget.overrideIncome")}</span>
         <span class="bud-ovr">
-          <button id="budUseSalary" class="bud-reset${b.incomeOverride == null ? " hide" : ""}" type="button" title="Use the salary figure again">↺ use salary</button>
-          <input id="budOverride" class="bud-input" type="number" inputmode="decimal" value="${b.incomeOverride == null ? "" : b.incomeOverride}" placeholder="auto (${money(auto)})" aria-label="Override monthly income">
+          <button id="budUseSalary" class="bud-reset${b.incomeOverride == null ? " hide" : ""}" type="button" title="${t("budget.useSalaryAgain")}">${t("budget.useSalary")}</button>
+          <input id="budOverride" class="bud-input" type="number" inputmode="decimal" value="${b.incomeOverride == null ? "" : b.incomeOverride}" placeholder="${t("budget.autoPh", { amount: money(auto) })}" aria-label="${t("budget.overrideIncome")}">
         </span>
       </div>`}
-      <div class="bud-exp-head">Outgoings <span class="hint">tag loans &amp; expenses into categories</span></div>
+      <div class="bud-exp-head">${t("budget.outgoings")} <span class="hint">${t("budget.outgoingsHint")}</span></div>
       <div id="budItems">${itemsHTML(s, b)}</div>
-      <div class="bud-row total"><span class="bud-lbl">Total outgoings</span><span class="bud-val" id="budOutTotal">${money(s.fixed + s.expenses)}</span></div>
+      <div class="bud-row total"><span class="bud-lbl">${t("budget.totalOutgoings")}</span><span class="bud-val" id="budOutTotal">${money(s.fixed + s.expenses)}</span></div>
     </div>
 
-    ${RO ? "" : `<div class="controls"><button class="act ghost" id="budAddExp">+ Add expense</button><button class="act ghost" id="budAddCat">+ Add category</button></div>`}
+    ${RO ? "" : `<div class="controls"><button class="act ghost" id="budAddExp">${t("budget.addExpense")}</button><button class="act ghost" id="budAddCat">${t("budget.addCategory")}</button></div>`}
   `;
 
   const dl = $("dlBudget"); if (dl) dl.onclick = downloadBudgetDonut;
@@ -281,7 +286,7 @@ export function renderBudget() {
     const gd = ev.target.closest("[data-grpdel]");
     if (gd) {
       const g = gd.dataset.grpdel, n = budgetCategoryUsage(g);
-      if (n === 0 || confirm(`Remove the "${g}" category? Its ${n} tagged item${n === 1 ? "" : "s"} lose the category — nothing is deleted.`)) { removeBudgetCategory(g); scheduleSync(); renderBudget(); }
+      if (n === 0 || confirm(t("budget.removeCategoryConfirm", { name: g, count: n }))) { removeBudgetCategory(g); scheduleSync(); renderBudget(); }
       return;
     }
     const del = ev.target.closest(".bud-exp-del");
@@ -297,5 +302,5 @@ export function renderBudget() {
     if (el) el.focus();
   };
   // "+ Add category" — same as net worth: adds a category you then rename inline.
-  $("budAddCat").onclick = () => { addBudgetCategory(); scheduleSync(); renderBudget(); };
+  $("budAddCat").onclick = () => { addBudgetCategory(t("common.newCategory")); scheduleSync(); renderBudget(); };
 }

@@ -1,7 +1,7 @@
 /* nestegg — service worker. Offline app shell only.
    /api/* is never cached: the vault must always be live (sync correctness),
    and fx/price already have client-side fallbacks when the network is gone. */
-const CACHE = "nestegg-v1.2.24";
+const CACHE = "nestegg-v1.2.25";
 const SHELL = [
   "/dashboard.html",
   "/css/base.css", "/css/app.css",
@@ -15,6 +15,7 @@ const SHELL = [
   "/js/ui/dom.js", "/js/ui/chart-kit.js", "/js/ui/charts.js", "/js/ui/networth.js",
   "/js/ui/assets.js", "/js/ui/salary.js", "/js/ui/gate.js", "/js/ui/share.js",
   "/js/ui/budget.js", "/js/ui/categories-ui.js",
+  "/js/i18n.js", "/i18n/en.js", "/i18n/de.js",
   "/assets/favicon.svg", "/assets/favicon-32.png",
   "/assets/icon-192.png", "/assets/icon-512.png", "/assets/apple-touch-icon.png",
   "/site.webmanifest",

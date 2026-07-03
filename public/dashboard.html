@@ -40,50 +40,50 @@
 
 <div id="gate">
   <div class="gatebox">
-    <div class="kick">Personal Ledger</div><h1>Net Worth</h1>
-    <div class="sub">No email. No password. Just an account number.</div>
+    <div class="kick" data-i18n="gate.kick">Personal Ledger</div><h1 data-i18n="gate.title">Net Worth</h1>
+    <div class="sub" data-i18n="gate.sub">No email. No password. Just an account number.</div>
     <form class="panel" id="gateCreate" autocomplete="on">
-      <p>Your account number is your only key. It identifies you and unlocks your data, which is encrypted in your browser before it ever leaves. Write it down somewhere safe.</p>
+      <p data-i18n="gate.createLede">Your account number is your only key. It identifies you and unlocks your data, which is encrypted in your browser before it ever leaves. Write it down somewhere safe.</p>
       <div class="acctnum num" id="newAcct">…</div>
-      <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct">I've saved it — continue</button></div>
-      <div class="warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
-      <div class="switch">Already have one? <a id="toSignin" role="button" tabindex="0">Sign in with an account number</a></div>
-      <div class="switch demoswitch"><a id="toDemo" role="button" tabindex="0">Explore a live demo — no account needed</a></div>
+      <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct" data-i18n="gate.copy">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct" data-i18n="gate.regen">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct" data-i18n="gate.confirm">I've saved it — continue</button></div>
+      <div class="warn" data-i18n="gate.warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
+      <div class="switch"><span data-i18n="gate.haveOne">Already have one?</span> <a id="toSignin" role="button" tabindex="0" data-i18n="gate.toSignin">Sign in with an account number</a></div>
+      <div class="switch demoswitch"><a id="toDemo" role="button" tabindex="0" data-i18n="gate.demo">Explore a live demo — no account needed</a></div>
     </form>
     <form class="panel hide" id="gateSignin" autocomplete="on">
-      <p>Enter your account number to load and decrypt your ledger on this device.</p>
+      <p data-i18n="gate.signinLede">Enter your account number to load and decrypt your ledger on this device.</p>
       <input type="text" id="signinUser" class="sr-only" autocomplete="username" value="nestegg account" readonly tabindex="-1" aria-hidden="true">
-      <input class="gatein" id="signinInput" type="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false" aria-label="Account number">
-      <div class="gaterow"><button type="submit" class="gatebtn" id="signinBtn">Sign in</button></div>
-      <div class="switch">Need a new account? <a id="toCreate" role="button" tabindex="0">Create one</a></div>
+      <input class="gatein" id="signinInput" type="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false" aria-label="Account number" data-i18n-aria-label="gate.acctAria">
+      <div class="gaterow"><button type="submit" class="gatebtn" id="signinBtn" data-i18n="gate.signin">Sign in</button></div>
+      <div class="switch"><span data-i18n="gate.needNew">Need a new account?</span> <a id="toCreate" role="button" tabindex="0" data-i18n="gate.create">Create one</a></div>
     </form>
-    <div class="switch">By continuing you agree to the <a href="privacy.html">Privacy Policy</a> and <a href="terms.html">Terms &amp; Conditions</a>.</div>
+    <div class="switch"><span data-i18n="gate.agreePre">By continuing you agree to the</span> <a href="privacy.html" data-i18n="gate.privacy">Privacy Policy</a> <span data-i18n="gate.and">and</span> <a href="terms.html" data-i18n="gate.terms">Terms &amp; Conditions</a>.</div>
   </div>
 </div>
 
 <div id="app" class="hide">
   <div id="demoBanner" class="demobar hide" role="status">
-    <span>Demo — sample data, nothing is saved.</span>
-    <span class="demobtns"><button type="button" class="act" id="demoCreate">Create an account</button><button type="button" class="demolink" id="demoExit">Leave</button></span>
+    <span data-i18n="banner.demo">Demo — sample data, nothing is saved.</span>
+    <span class="demobtns"><button type="button" class="act" id="demoCreate" data-i18n="banner.demoCreate">Create an account</button><button type="button" class="demolink" id="demoExit" data-i18n="banner.demoExit">Leave</button></span>
   </div>
   <div id="shareBanner" class="demobar hide" role="status">
-    <span>Read-only shared snapshot — a point-in-time copy. Nothing here can be edited.</span>
-    <span class="demobtns"><button class="demolink" id="shareTheme" type="button">Light mode</button><a class="demolink" href="https://nestegg.money" rel="noopener">What is nestegg?</a></span>
+    <span data-i18n="banner.share">Read-only shared snapshot — a point-in-time copy. Nothing here can be edited.</span>
+    <span class="demobtns"><button class="demolink" id="shareTheme" type="button">Light mode</button><a class="demolink" href="https://nestegg.money" rel="noopener" data-i18n="banner.whatIs">What is nestegg?</a></span>
   </div>
   <div class="acctbar">
-    <button class="who syncbtn" id="syncNowHome" title="Sync now"><span class="syncdot" id="syncDot"></span><span id="syncTxt">Local</span></button>
-    <div><button id="profileBtn">Profile</button></div>
+    <button class="who syncbtn" id="syncNowHome" title="Sync now" data-i18n-title="nav.syncNow"><span class="syncdot" id="syncDot"></span><span id="syncTxt">Local</span></button>
+    <div><button id="profileBtn" data-i18n="nav.profile">Profile</button></div>
   </div>
   <header class="masthead">
-    <div class="kicker"><span>Personal Ledger</span><span id="dateline">—</span></div>
-    <div class="titlerow"><h1 class="title" id="mastTitle">Net Worth</h1></div>
-    <div class="subt" id="mastSub">A quiet accounting of what you hold.</div>
-    <nav class="mainnav"><button class="navtab on" id="navNet">Net worth</button><button class="navtab" id="salaryBtn">Salary</button><button class="navtab" id="navBudget">Budget</button></nav>
+    <div class="kicker"><span data-i18n="nav.kicker">Personal Ledger</span><span id="dateline">—</span></div>
+    <div class="titlerow"><h1 class="title" id="mastTitle" data-i18n="nav.netTitle">Net Worth</h1></div>
+    <div class="subt" id="mastSub" data-i18n="nav.netSub">A quiet accounting of what you hold.</div>
+    <nav class="mainnav"><button class="navtab on" id="navNet" data-i18n="nav.net">Net worth</button><button class="navtab" id="salaryBtn" data-i18n="nav.salary">Salary</button><button class="navtab" id="navBudget" data-i18n="nav.budget">Budget</button></nav>
   </header>
   <main>
     <div id="viewNet">
     <div class="hero">
-      <div class="label">Total Net Worth</div>
+      <div class="label" data-i18n="net.totalLbl">Total Net Worth</div>
       <div class="big num" id="nwTotal">—</div>
       <div class="day num" id="nwDay"></div>
       <div class="delta" id="nwNote"></div>
@@ -91,67 +91,67 @@
 
     <div class="panels">
       <section class="over">
-        <button class="chartdl" id="dlHist" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle">Over time <span class="tin">— tap a year to edit its assets</span></div>
+        <button class="chartdl" id="dlHist" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+        <div class="sectitle"><span data-i18n="net.overTime">Over time</span> <span class="tin" data-i18n="net.overTimeTin">— tap a year to edit its assets</span></div>
         <div class="histscroll"><div class="chartwrap"><svg id="histChart"></svg><div id="histTip" class="salflag hide"></div></div></div>
         <div class="chiplegend" id="histLegend"></div>
         <div class="years" id="years"></div>
-        <div class="controls"><button class="act" id="addYear">+ Year</button></div>
+        <div class="controls"><button class="act" id="addYear" data-i18n="net.addYear">+ Year</button></div>
       </section>
 
       <section class="alloc">
-        <button class="chartdl" id="dlDonut" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle">Allocation <span class="tin" id="allocYear"></span></div>
+        <button class="chartdl" id="dlDonut" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+        <div class="sectitle"><span data-i18n="net.alloc">Allocation</span> <span class="tin" id="allocYear"></span></div>
         <div class="charts"><div style="display:flex;justify-content:center"><div class="chartwrap"><svg id="donut" width="240" height="240" viewBox="0 0 240 240"></svg><div id="donutTip" class="salflag hide"></div></div></div><div class="legend" id="legend"></div></div>
       </section>
     </div>
 
     <section class="forecast">
-      <button class="chartdl" id="dlFc" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-      <div class="sectitle">Forecast <span class="tin">— where you're headed</span><label class="fcswitch"><input type="checkbox" id="fcOn"><span class="track"></span><em>Show</em></label></div>
+      <button class="chartdl" id="dlFc" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+      <div class="sectitle"><span data-i18n="net.forecast">Forecast</span> <span class="tin" data-i18n="net.forecastTin">— where you're headed</span><label class="fcswitch"><input type="checkbox" id="fcOn"><span class="track"></span><em data-i18n="net.show">Show</em></label></div>
       <div id="fcBody">
         <div class="fcrow">
-          <label class="fld"><span class="cap" title="Monthly contribution">Monthly contribution</span><input id="fcMonthly" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
-          <label class="fld"><span class="cap" title="Expected return / yr">Expected return / yr</span><span class="pct"><input id="fcGrowth" class="fin num" type="number" step="any" inputmode="decimal" placeholder="5"><i>%</i></span></label>
-          <label class="fld"><span class="cap" title="Contributions grow / yr">Contributions grow / yr</span><span class="pct"><input id="fcContribGrowth" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"><i>%</i></span></label>
-          <label class="fld"><span class="cap" title="Goal">Goal</span><select id="fcGoalMode"><option value="amount">Target amount</option><option value="spend">Annual spending ×25</option></select></label>
+          <label class="fld"><span class="cap" title="Monthly contribution" data-i18n="net.monthly" data-i18n-title="net.monthly">Monthly contribution</span><input id="fcMonthly" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
+          <label class="fld"><span class="cap" title="Expected return / yr" data-i18n="net.retYr" data-i18n-title="net.retYr">Expected return / yr</span><span class="pct"><input id="fcGrowth" class="fin num" type="number" step="any" inputmode="decimal" placeholder="5"><i>%</i></span></label>
+          <label class="fld"><span class="cap" title="Contributions grow / yr" data-i18n="net.contribGrow" data-i18n-title="net.contribGrow">Contributions grow / yr</span><span class="pct"><input id="fcContribGrowth" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"><i>%</i></span></label>
+          <label class="fld"><span class="cap" title="Goal" data-i18n="net.goal" data-i18n-title="net.goal">Goal</span><select id="fcGoalMode"><option value="amount" data-i18n="net.goalAmount">Target amount</option><option value="spend" data-i18n="net.goalSpend">Annual spending ×25</option></select></label>
           <label class="fld"><span class="cap" id="fcGoalLbl" title="Target amount">Target amount</span><input id="fcGoalVal" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
-          <label class="fld"><span class="cap" title="Show until (year)">Show until (year)</span><input id="fcHorizon" class="fin num" type="number" step="1" inputmode="numeric" placeholder="auto"></label>
+          <label class="fld"><span class="cap" title="Show until (year)" data-i18n="net.showUntil" data-i18n-title="net.showUntil">Show until (year)</span><input id="fcHorizon" class="fin num" type="number" step="1" inputmode="numeric" placeholder="auto" data-i18n-placeholder="net.auto"></label>
         </div>
-        <label class="fccheck"><input type="checkbox" id="fcRedirect"><span>Reinvest freed-up loan payments after each loan is paid off</span></label>
-        <label class="fccheck"><input type="checkbox" id="fcBand"><span>Show return range (poor / expected / great)</span></label>
+        <label class="fccheck"><input type="checkbox" id="fcRedirect"><span data-i18n="net.redirect">Reinvest freed-up loan payments after each loan is paid off</span></label>
+        <label class="fccheck"><input type="checkbox" id="fcBand"><span data-i18n="net.band">Show return range (poor / expected / great)</span></label>
         <div class="fcstats" id="fcStats"></div>
         <div class="histscroll"><svg id="fcChart"></svg></div>
-        <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span>Actual</span><span><span class="chip fcdash"></span>Projected</span><span><span class="chip" style="background:var(--green)"></span>Goal</span></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span><span data-i18n="net.actual">Actual</span></span><span><span class="chip fcdash"></span><span data-i18n="net.projected">Projected</span></span><span><span class="chip" style="background:var(--green)"></span><span data-i18n="net.goal">Goal</span></span></div>
       </div>
     </section>
 
     <section class="forecast retire">
-      <div class="sectitle">Retirement <span class="tin">— spend down the nest egg, then the pension kicks in</span><label class="fcswitch"><input type="checkbox" id="rtOn"><span class="track"></span><em>Show</em></label></div>
+      <div class="sectitle"><span data-i18n="net.retire">Retirement</span> <span class="tin" data-i18n="net.retireTin">— spend down the nest egg, then the pension kicks in</span><label class="fcswitch"><input type="checkbox" id="rtOn"><span class="track"></span><em data-i18n="net.show">Show</em></label></div>
       <div id="rtBody">
         <div class="fcrow">
-          <label class="fld"><span class="cap" title="Retire in (year)">Retire in (year)</span><input id="rtYear" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2026"></label>
-          <label class="fld"><span class="cap" title="Annual spending">Annual spending</span><input id="rtSpend" class="fin num" type="number" step="any" inputmode="decimal" placeholder="30000"></label>
-          <label class="fld"><span class="cap" title="Pension type">Pension</span><select id="rtPmode"><option value="amount">Enter amount</option><option value="de">Germany (Rentenpunkte)</option></select></label>
-          <label class="fld" id="rtAmtFld"><span class="cap" title="Monthly pension (in today's money)">Monthly pension (in today's money)</span><input id="rtPension" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
-          <label class="fld rt-de"><span class="cap" title="Points so far (Entgeltpunkte)">Points so far</span><input id="rtPts" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
-          <label class="fld rt-de"><span class="cap" title="Points / year">Points / year</span><input id="rtPtsYr" class="fin num" type="number" step="any" inputmode="decimal" placeholder="1"></label>
-          <label class="fld rt-de"><span class="cap" title="Value / point (€/mo)">Value / point</span><input id="rtPtVal" class="fin num" type="number" step="any" inputmode="decimal" placeholder="39.32"></label>
-          <label class="fld"><span class="cap" title="Pension starts (year)">Pension starts (year)</span><input id="rtPensStart" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2050"></label>
-          <label class="fld"><span class="cap" title="Plan until (year)">Plan until (year)</span><input id="rtUntil" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2071"></label>
-          <label class="fld"><span class="cap" title="Inflation / yr">Inflation / yr</span><span class="pct"><input id="rtInfl" class="fin num" type="number" step="any" inputmode="decimal" placeholder="2"><i>%</i></span></label>
+          <label class="fld"><span class="cap" title="Retire in (year)" data-i18n="net.retireIn" data-i18n-title="net.retireIn">Retire in (year)</span><input id="rtYear" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2026"></label>
+          <label class="fld"><span class="cap" title="Annual spending" data-i18n="net.annualSpend" data-i18n-title="net.annualSpend">Annual spending</span><input id="rtSpend" class="fin num" type="number" step="any" inputmode="decimal" placeholder="30000"></label>
+          <label class="fld"><span class="cap" title="Pension type" data-i18n="net.pension" data-i18n-title="net.pensionType">Pension</span><select id="rtPmode"><option value="amount" data-i18n="net.pensAmount">Enter amount</option><option value="de" data-i18n="net.pensDe">Germany (Rentenpunkte)</option></select></label>
+          <label class="fld" id="rtAmtFld"><span class="cap" title="Monthly pension (in today's money)" data-i18n="net.monthlyPension" data-i18n-title="net.monthlyPension">Monthly pension (in today's money)</span><input id="rtPension" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
+          <label class="fld rt-de"><span class="cap" title="Points so far (Entgeltpunkte)" data-i18n="net.points" data-i18n-title="net.pointsTitle">Points so far</span><input id="rtPts" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
+          <label class="fld rt-de"><span class="cap" title="Points / year" data-i18n="net.ptsYr" data-i18n-title="net.ptsYr">Points / year</span><input id="rtPtsYr" class="fin num" type="number" step="any" inputmode="decimal" placeholder="1"></label>
+          <label class="fld rt-de"><span class="cap" title="Value / point (€/mo)" data-i18n="net.ptVal" data-i18n-title="net.ptValTitle">Value / point</span><input id="rtPtVal" class="fin num" type="number" step="any" inputmode="decimal" placeholder="39.32"></label>
+          <label class="fld"><span class="cap" title="Pension starts (year)" data-i18n="net.pensStart" data-i18n-title="net.pensStart">Pension starts (year)</span><input id="rtPensStart" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2050"></label>
+          <label class="fld"><span class="cap" title="Plan until (year)" data-i18n="net.planUntil" data-i18n-title="net.planUntil">Plan until (year)</span><input id="rtUntil" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2071"></label>
+          <label class="fld"><span class="cap" title="Inflation / yr" data-i18n="net.inflation" data-i18n-title="net.inflation">Inflation / yr</span><span class="pct"><input id="rtInfl" class="fin num" type="number" step="any" inputmode="decimal" placeholder="2"><i>%</i></span></label>
         </div>
-        <div class="fchint" style="padding:0 0 4px">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the pension you expect (in today's value) and when it starts. Germany: pension = points × value (~1 point/yr at the average salary; points accrue while working).</div>
+        <div class="fchint" style="padding:0 0 4px" data-i18n="net.retireHint">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the pension you expect (in today's value) and when it starts. Germany: pension = points × value (~1 point/yr at the average salary; points accrue while working).</div>
         <div class="fcstats" id="rtStats"></div>
         <div class="histscroll"><svg id="rtChart"></svg></div>
-        <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span>Nest egg (today's money)</span></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span><span data-i18n="net.nestEggChip">Nest egg (today's money)</span></span></div>
       </div>
     </section>
 
     <section style="border-bottom:none;padding-top:8px">
       <div class="controls" style="margin-top:0">
-        <button class="act ghost" id="pricesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg>Prices</button>
-        <button class="act ghost" id="ratesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg>Rates</button>
+        <button class="act ghost" id="pricesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.prices">Prices</span></button>
+        <button class="act ghost" id="ratesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.rates">Rates</span></button>
         <span class="updnote" id="updNote"></span>
       </div>
     </section>
@@ -159,13 +159,13 @@
 
     <div id="viewSalary" class="hide">
       <section class="over" style="border:none;padding:8px 0">
-        <button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle">Our salary history</div>
+        <button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart" data-i18n-title="salary.dlChart" data-i18n-aria-label="salary.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
+        <div class="sectitle" data-i18n="salary.history">Our salary history</div>
         <div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div>
         <div class="chiplegend" id="salaryLegend"></div>
       </section>
       <div id="salaryTable"></div>
-      <div class="controls"><button class="act ghost" id="salNext">+ Next month</button><button class="act" id="salEdit">Edit salaries</button></div>
+      <div class="controls"><button class="act ghost" id="salNext" data-i18n="salary.next">+ Next month</button><button class="act" id="salEdit" data-i18n="salary.edit">Edit salaries</button></div>
     </div>
 
     <div id="viewBudget" class="hide">
@@ -173,109 +173,111 @@
     </div>
   </main>
   <div class="foot">
-    Your data is encrypted in your browser with a key derived from your account number, and the server stores only ciphertext —
+    <span data-i18n="foot.blurb">Your data is encrypted in your browser with a key derived from your account number, and the server stores only ciphertext —
     it never sees your figures. It can still see the size of your encrypted data, when you sync, and your IP address.
     Each year holds its own asset rows, each in its own currency, shown in your chosen display currency — past years at that year's year-end ECB rates, the current year live.
-    There is no recovery if you lose your account number — Export JSON is your backup.
-    <div class="footlinks"><a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms &amp; Conditions</a> · <a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener">Source</a> · <a href="https://buymeacoffee.com/vladimirj.dev" target="_blank" rel="noopener">Buy me a coffee ☕</a></div>
+    There is no recovery if you lose your account number — Export JSON is your backup.</span>
+    <div class="footlinks"><a href="privacy.html" data-i18n="foot.privacy">Privacy Policy</a> · <a href="terms.html" data-i18n="foot.terms">Terms &amp; Conditions</a> · <a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener" data-i18n="foot.source">Source</a> · <a href="https://buymeacoffee.com/vladimirj.dev" target="_blank" rel="noopener" data-i18n="foot.coffee">Buy me a coffee ☕</a></div>
   </div>
 </div>
 
 <div id="yearEditor" class="editor hide">
   <div class="ed-bar">
-    <button id="edBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
-    <div class="ed-title">Year <input id="edYear" type="number" inputmode="numeric"></div>
-    <button id="edDelYear">Delete year</button>
+    <button id="edBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="yeared.back">Back</span></button>
+    <div class="ed-title"><span data-i18n="yeared.year">Year</span> <input id="edYear" type="number" inputmode="numeric"></div>
+    <button id="edDelYear" data-i18n="yeared.delYear">Delete year</button>
   </div>
   <div class="ed-wrap">
-    <div class="ed-total"><span class="et-k">Year total</span><span class="et-v" id="edTotal">—</span></div>
+    <div class="ed-total"><span class="et-k" data-i18n="yeared.total">Year total</span><span class="et-v" id="edTotal">—</span></div>
     <div class="cards" id="edEntries"></div>
-    <div class="controls"><button class="act" id="edAdd">+ Add asset</button><button class="act ghost" id="edAddLongterm">+ Property / vehicle</button><button class="act ghost" id="edAddLiability">+ Loan / debt</button><button class="act ghost" id="edAddGroup">+ Add group</button><button class="act ghost" id="edCopyPrev">Copy previous year</button></div>
+    <div class="controls"><button class="act" id="edAdd" data-i18n="yeared.add">+ Add asset</button><button class="act ghost" id="edAddLongterm" data-i18n="yeared.addLongterm">+ Property / vehicle</button><button class="act ghost" id="edAddLiability" data-i18n="yeared.addLiability">+ Loan / debt</button><button class="act ghost" id="edAddGroup" data-i18n="yeared.addGroup">+ Add group</button><button class="act ghost" id="edCopyPrev" data-i18n="yeared.copyPrev">Copy previous year</button></div>
   </div>
 </div>
 
 <div id="salaryEditor" class="editor hide">
   <div class="ed-bar">
-    <button id="salaryBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
-    <div class="ed-title">Edit salaries</div>
+    <button id="salaryBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="salary.back">Back</span></button>
+    <div class="ed-title" data-i18n="salary.edit">Edit salaries</div>
   </div>
   <div class="ed-wrap">
-    <p class="edlede">Type each person's monthly <strong>net</strong> pay side by side; the event field notes a raise or job change. Add a range of months, or import from a spreadsheet below.</p>
+    <p class="edlede"><span data-i18n="salary.lede1">Type each person's monthly </span><strong data-i18n="salary.net">net</strong><span data-i18n="salary.lede2"> pay side by side; the event field notes a raise or job change. Add a range of months, or import from a spreadsheet below.</span></p>
     <div id="salaryList"></div>
-    <div class="controls"><button class="act" id="addPerson">+ Add person</button></div>
+    <div class="controls"><button class="act" id="addPerson" data-i18n="salary.addPerson">+ Add person</button></div>
     <details class="salimport">
-      <summary>Import from a spreadsheet</summary>
-      <p class="edlede" style="margin:10px 0">In Google Sheets, select the <strong>Month</strong> column and the <strong>net amount</strong> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</p>
-      <div class="controls" style="margin:0 0 8px"><span class="salrlbl">Import for</span><select id="salImportWho" class="salccy"></select></div>
+      <summary data-i18n="salary.importSummary">Import from a spreadsheet</summary>
+      <p class="edlede" style="margin:10px 0"><span data-i18n="salary.imp1">In Google Sheets, select the </span><strong data-i18n="salary.impMonth">Month</strong><span data-i18n="salary.imp2"> column and the </span><strong data-i18n="salary.impNet">net amount</strong><span data-i18n="salary.imp3"> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</span></p>
+      <div class="controls" style="margin:0 0 8px"><span class="salrlbl" data-i18n="salary.importFor">Import for</span><select id="salImportWho" class="salccy"></select></div>
       <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
-      <div class="controls"><button class="act" id="salImportBtn">Import pasted rows</button></div>
+      <div class="controls"><button class="act" id="salImportBtn" data-i18n="salary.importBtn">Import pasted rows</button></div>
     </details>
   </div>
 </div>
 
 <div id="assetEditor" class="editor hide">
   <div class="ed-bar">
-    <button id="assetBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
-    <div class="ed-title">Asset</div>
+    <button id="assetBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="asset.back">Back</span></button>
+    <div class="ed-title" data-i18n="asset.title">Asset</div>
   </div>
   <div class="ed-wrap">
-    <p class="edlede">A car, a house, anything that depreciates or carries a loan. Toggle <strong>Depreciates</strong> to have its value fall a little every day (current year live, past years locked to year-end); toggle <strong>Has a loan</strong> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it. Assign a <strong>Category</strong> to group it on the home screen.</p>
+    <p class="edlede"><span data-i18n="asset.lede1">A car, a house, anything that depreciates or carries a loan. Toggle </span><strong data-i18n="asset.ledeDep">Depreciates</strong><span data-i18n="asset.lede2"> to have its value fall a little every day (current year live, past years locked to year-end); toggle </span><strong data-i18n="asset.ledeLoan">Has a loan</strong><span data-i18n="asset.lede3"> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it. Assign a </span><strong data-i18n="asset.ledeCat">Category</strong><span data-i18n="asset.lede4"> to group it on the home screen.</span></p>
     <div class="cards" id="assetList"></div>
   </div>
 </div>
 
 <div id="profileEditor" class="editor hide">
   <div class="ed-bar">
-    <button id="profileBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
-    <div class="ed-title">Profile</div>
+    <button id="profileBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="prof.back">Back</span></button>
+    <div class="ed-title" data-i18n="prof.title">Profile</div>
   </div>
   <div class="ed-wrap">
     <div class="prof-sync"><span class="syncdot" id="syncDot2"></span><span id="syncTxt2">Local</span></div>
-    <div class="sectitle">Your account number</div>
-    <div class="acctrow"><div class="acctnum num" id="profAcct">…</div><button class="eyebtn" id="profEye" title="Show / hide" aria-label="Show or hide account number"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-    <div class="controls"><button class="act ghost" id="profCopyAcct">Copy</button><button class="act ghost" id="profSyncNow">Sync now</button></div>
+    <div class="sectitle" data-i18n="prof.acctTitle">Your account number</div>
+    <div class="acctrow"><div class="acctnum num" id="profAcct">…</div><button class="eyebtn" id="profEye" title="Show / hide" aria-label="Show or hide account number" data-i18n-title="prof.eyeTitle" data-i18n-aria-label="prof.eyeAria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <div class="controls"><button class="act ghost" id="profCopyAcct" data-i18n="prof.copy">Copy</button><button class="act ghost" id="profSyncNow" data-i18n="prof.syncNow">Sync now</button></div>
     <div class="synced" id="lastSync"></div>
-    <div class="warn">This number is your only key — it identifies you and decrypts your data. There is no recovery if you lose it. Keep it somewhere safe, and use Export JSON for a real backup.</div>
-    <div class="sectitle" style="margin-top:28px">Display currency</div>
-    <div class="controls"><label class="ccypick">Show amounts in <select id="ccySel"></select></label></div>
-    <div class="sectitle" style="margin-top:28px">Theme</div>
-    <div class="controls"><label class="ccypick">Appearance <select id="themeSel"><option value="dark">Dark</option><option value="light">Light</option></select></label></div>
-    <div class="sectitle" style="margin-top:28px">Share</div>
-    <div class="controls"><button class="act ghost" id="shareBtn">Share a read-only link</button></div>
-    <div class="synced">Publish a frozen, read-only snapshot for an advisor. It expires in 30 days and you can revoke it any time. The link's key never reaches the server.</div>
+    <div class="warn" data-i18n="prof.warn">This number is your only key — it identifies you and decrypts your data. There is no recovery if you lose it. Keep it somewhere safe, and use Export JSON for a real backup.</div>
+    <div class="sectitle" style="margin-top:28px" data-i18n="prof.ccyTitle">Display currency</div>
+    <div class="controls"><label class="ccypick"><span data-i18n="prof.ccyLbl">Show amounts in</span> <select id="ccySel"></select></label></div>
+    <div class="sectitle" style="margin-top:28px" data-i18n="prof.theme">Theme</div>
+    <div class="controls"><label class="ccypick"><span data-i18n="prof.themeLbl">Appearance</span> <select id="themeSel"><option value="dark" data-i18n="prof.themeDark">Dark</option><option value="light" data-i18n="prof.themeLight">Light</option></select></label></div>
+    <div class="sectitle" data-i18n="prof.language" style="margin-top:28px">Language</div>
+    <div class="controls"><label class="ccypick"><span data-i18n="prof.languageLbl">Language</span> <select id="langSel"><option value="en">English</option><option value="de">Deutsch</option></select></label></div>
+    <div class="sectitle" style="margin-top:28px" data-i18n="prof.share">Share</div>
+    <div class="controls"><button class="act ghost" id="shareBtn" data-i18n="prof.shareBtn">Share a read-only link</button></div>
+    <div class="synced" data-i18n="prof.shareNote">Publish a frozen, read-only snapshot for an advisor. It expires in 30 days and you can revoke it any time. The link's key never reaches the server.</div>
 
-    <div class="sectitle" style="margin-top:28px">Data</div>
+    <div class="sectitle" style="margin-top:28px" data-i18n="prof.data">Data</div>
     <div class="controls">
-      <button class="act ghost hide" id="installBtn">Install app</button>
-      <button class="act ghost" id="exportBtn">Export JSON</button>
-      <button class="act ghost" id="importBtn">Import JSON</button>
+      <button class="act ghost hide" id="installBtn" data-i18n="prof.install">Install app</button>
+      <button class="act ghost" id="exportBtn" data-i18n="prof.export">Export JSON</button>
+      <button class="act ghost" id="importBtn" data-i18n="prof.import">Import JSON</button>
       <input type="file" id="importFile" accept="application/json" style="display:none">
-      <button class="act ghost danger" id="resetBtn">Reset</button>
+      <button class="act ghost danger" id="resetBtn" data-i18n="prof.reset">Reset</button>
     </div>
-    <div class="controls" style="margin-top:28px"><button class="act ghost danger" id="profLogout">Log out on this device</button></div>
+    <div class="controls" style="margin-top:28px"><button class="act ghost danger" id="profLogout" data-i18n="prof.logout">Log out on this device</button></div>
   </div>
 </div>
 
 <div id="shareModal" class="infomodal hide"><div class="infobox">
-  <button class="infoclose" id="shareClose" aria-label="Close">×</button>
+  <button class="infoclose" id="shareClose" aria-label="Close" data-i18n-aria-label="share.close">×</button>
   <div id="shareBody">
-    <h3>Share a read-only link</h3>
-    <p>Pick what to include. The person you share with sees a frozen, read-only snapshot — they can't edit your data, and the link expires in 30 days.</p>
+    <h3 data-i18n="share.title">Share a read-only link</h3>
+    <p data-i18n="share.lede">Pick what to include. The person you share with sees a frozen, read-only snapshot — they can't edit your data, and the link expires in 30 days.</p>
     <div id="shareSecs" class="share-secs"></div>
-    <label class="share-lbl">Who's it for? <span class="share-hint">(optional, for your list)</span>
-      <input type="text" id="shareLabel" maxlength="60" placeholder="e.g. My advisor" autocomplete="off">
+    <label class="share-lbl"><span data-i18n="share.whoFor">Who's it for?</span> <span class="share-hint" data-i18n="share.whoHint">(optional, for your list)</span>
+      <input type="text" id="shareLabel" maxlength="60" placeholder="e.g. My advisor" autocomplete="off" data-i18n-placeholder="share.whoPh">
     </label>
-    <div class="controls"><button class="act" id="shareCreate">Create link</button></div>
+    <div class="controls"><button class="act" id="shareCreate" data-i18n="share.create">Create link</button></div>
     <div id="shareResult" class="share-result hide">
-      <div class="sectitle">Your link</div>
-      <div class="acctrow"><input type="text" id="shareLinkOut" class="acctnum" readonly><button class="act ghost" id="shareCopy">Copy</button></div>
-      <div class="synced">Anyone with this link can view the snapshot until it expires. Copy it now — the key is only in this link and isn't stored anywhere.</div>
+      <div class="sectitle" data-i18n="share.yourLink">Your link</div>
+      <div class="acctrow"><input type="text" id="shareLinkOut" class="acctnum" readonly><button class="act ghost" id="shareCopy" data-i18n="share.copy">Copy</button></div>
+      <div class="synced" data-i18n="share.copyNote">Anyone with this link can view the snapshot until it expires. Copy it now — the key is only in this link and isn't stored anywhere.</div>
     </div>
-    <div class="sectitle" style="margin-top:28px">Active links</div>
+    <div class="sectitle" style="margin-top:28px" data-i18n="share.active">Active links</div>
     <div id="shareList" class="share-list"></div>
   </div>
 </div></div>
-<div id="infoModal" class="infomodal hide"><div class="infobox"><button class="infoclose" id="infoClose" aria-label="Close">×</button><div id="infoBody"></div></div></div>
+<div id="infoModal" class="infomodal hide"><div class="infobox"><button class="infoclose" id="infoClose" aria-label="Close" data-i18n-aria-label="share.close">×</button><div id="infoBody"></div></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- App is an ES-module graph; main.js imports everything (domain / io / ui). No bundler. -->
