@@ -52,6 +52,16 @@ test("tools/call reaches the new calculators (fire-number, debt-payoff)", async 
   assert.equal(j.result.structuredContent.payoffOrder[0], "B");
 });
 
+test("/.well-known/mcp.json serves the registry descriptor for agent discovery", async () => {
+  const r = await worker.fetch(new Request("https://x/.well-known/mcp.json"), {});
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("access-control-allow-origin"), "*");
+  const j = await r.json();
+  assert.equal(j.name, "io.github.VladimirWrites/nestegg-calculators");
+  assert.equal(j.remotes[0].url, "https://nestegg.money/mcp");
+  assert.ok(j.version);
+});
+
 test("tools/call de-net-salary: exact 2026 value and a clear error for unsupported years", async () => {
   let j = await (await mcp({ jsonrpc: "2.0", id: 30, method: "tools/call", params: { name: "de-net-salary", arguments: { year: 2026, grossAnnual: 60000, taxClass: 1 } } })).json();
   assert.equal(j.result.isError, undefined);

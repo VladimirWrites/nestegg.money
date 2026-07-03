@@ -11,6 +11,7 @@ import { CALCULATORS, CORS } from "./calculators.js";
 import { mcpRoute } from "./mcp.js";
 import { validateArgs } from "./validate.js";
 import { MAX_BLOB } from "../public/lib/limits.js";
+import serverMeta from "../server.json" with { type: "json" };
 
 function json(obj, status = 200, ttl = 0) {
   return new Response(JSON.stringify(obj), {
@@ -317,6 +318,14 @@ export default {
 
     if (pathname === "/mcp" || pathname === "/mcp/") {
       return mcpRoute(request, env);
+    }
+
+    // Agent discovery: the registry-shaped server descriptor at the conventional location.
+    if (pathname === "/.well-known/mcp.json") {
+      if (method !== "GET") return json({ error: "method not allowed" }, 405);
+      return new Response(JSON.stringify(serverMeta, null, 2), {
+        headers: { "content-type": "application/json", "access-control-allow-origin": "*", "cache-control": "public, max-age=3600" },
+      });
     }
 
     // Host/path routing: marketing landing at the root domain, app at the dashboard
