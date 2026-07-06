@@ -40,7 +40,16 @@ function prefillKvz() {
 $("fKvz").addEventListener("input", () => { kvzTouched = true; });
 $("fYear").addEventListener("change", prefillKvz);
 $("fClass").addEventListener("change", () => $("rowFaktor").classList.toggle("hide", $("fClass").value !== "4"));
-$("fPkv").addEventListener("change", () => $("rowPkvPrem").classList.toggle("hide", !$("fPkv").checked));
+// The surcharge and the PKV premium share one grid cell, so toggling never reflows the form.
+$("fPkv").addEventListener("change", () => {
+  const pkv = $("fPkv").checked;
+  $("fKvz").classList.toggle("hide", pkv);
+  $("fPkvPrem").classList.toggle("hide", !pkv);
+  $("kvzLabel").textContent = pkv ? t("bnr.lPkvPrem") : t("bnr.lKvz");
+});
+$("fNetMode").addEventListener("change", () => {
+  $("grossLabel").textContent = $("fNetMode").checked ? t("bnr.lNetTarget") : t("bnr.lGross");
+});
 prefillKvz();
 
 /* ---- calculation + rendering ---- */
@@ -71,6 +80,17 @@ function calc() {
   const fk = parseFloat($("fFaktor").value);
   if (args.taxClass === 4 && fk > 0 && fk <= 1) args.faktor = fk;
 
+  let requiredGross = null;
+  if ($("fNetMode").checked) {
+    const targetNet = gross;               // the entered amount is the desired net
+    let lo = targetNet, hi = targetNet * 3;
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      if (deNetSalary({ ...args, grossAnnual: mid }).net.annual < targetNet) lo = mid; else hi = mid;
+    }
+    requiredGross = Math.round(hi * 100) / 100;
+    args.grossAnnual = requiredGross;
+  }
   const r = deNetSalary(args);
   const c = r.contributions;
   const rows = [

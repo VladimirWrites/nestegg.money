@@ -33,7 +33,7 @@ import { deMidijob } from "../public/lib/finance-math/de/midijob.js";
 import { deRentenpunkte } from "../public/lib/finance-math/de/rentenpunkte.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.5.2";
+export const CALC_VERSION = "1.5.3";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
@@ -330,7 +330,7 @@ export const CALCULATORS = {
       kvZusatzPct: num("Optional. The Krankenkasse's own Zusatzbeitrag in percent — pass the actual rate for exact results (rates change yearly, e.g. TK 2025: 2.45, 2026: 2.69). Defaults to the year's official average, which is only right for generic estimates."),
       privateHealth: obj({ premiumAnnual: num("Annual private health+care premium in EUR.") }, ["premiumAnnual"]),
       age: num("Optional. Age in years - under 23 skips the childless care surcharge."),
-      faktor: num("Optional. Steuerklasse-4 Faktorverfahren factor (e.g. 0.921)."),
+      faktor: num("Optional. Tax-class-4 Faktorverfahren factor, default 1.0 (no factor). Only the small minority of married IV/IV couples who applied for it have one; it is assigned by the Finanzamt and printed on the payslip / ELStAM (e.g. 0.921, always <= 1). Leave unset unless the payslip shows a Faktor."),
     }, ["year", "grossAnnual"]),
     run: (a) => deNetSalary(a),
   },

@@ -24,7 +24,7 @@
   "lState": "Bundesland",
   "oNone": "— keine Angabe —",
   "lKids": "Kinderfreibeträge (ZKF)",
-  "lKidsU25": "Kinder unter 25 (für die Pflegeversicherung)",
+  "lKidsU25": "Kinder unter 25 (Pflege)",
   "phKidsU25": "— wie oben —",
   "lChurch": "Kirchensteuer",
   "oChNone": "keine",
@@ -48,5 +48,6 @@
   "termsHref": "/de/terms.html",
   "footPrivacy": "Datenschutz",
   "footTerms": "AGB",
-  "footSource": "Quellcode"
+  "footSource": "Quellcode",
+  "lNetMode": "Betrag ist Wunsch-Netto"
 }
