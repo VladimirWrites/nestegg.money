@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>try{var t=localStorage.getItem("nw_theme");if(t==="light")document.documentElement.setAttribute("data-theme","light");}catch(e){}</script>
+<title>nestegg MCP server — documentation</title>
+<meta name="description" content="How to connect and use the nestegg finance calculators: setup for Claude and other MCP clients, example prompts, limits, troubleshooting, and support.">
+<link rel="canonical" href="https://nestegg.money/docs/mcp.html">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/landing.css">
+<style>
+.doc{max-width:760px;margin:0 auto;padding:0 20px 60px}
+.doc h1{margin:26px 0 8px}
+.doc h2{font-size:17px;margin:34px 0 8px}
+.doc p,.doc li{font-size:14px;color:var(--muted);line-height:1.65}
+.doc code,.doc pre{font-family:var(--mono);font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:3px}
+.doc code{padding:1px 5px}
+.doc pre{padding:12px 14px;overflow-x:auto}
+.doc pre code{border:none;background:none;padding:0}
+.doc strong{color:var(--ink)}
+</style>
+</head>
+<body class="lp">
+<header class="lp-nav">
+  <a class="lp-brand" href="/">nestegg</a>
+  <nav class="lp-navlinks"><a href="/">Home</a><a href="/docs/calculators.md">Calculator reference</a></nav>
+</header>
+<main class="doc">
+  <h1>nestegg MCP server</h1>
+  <p class="lp-sub">Deterministic personal-finance calculators your AI assistant can call — loans, investing, retirement, and exact German payroll math. Free, no account, nothing stored.</p>
+
+  <h2>What it is</h2>
+  <p>A remote <a href="https://modelcontextprotocol.io" rel="noopener">Model Context Protocol</a> server at
+  <code>https://nestegg.money/mcp</code> (Streamable HTTP, no authentication). Every tool is a pure
+  function: your inputs are used to compute a result and then discarded — nothing is written to a
+  database and request bodies are never logged. Read-only by design.</p>
+  <p>Coverage: loans &amp; mortgages (full amortization with extra payments and rate-fixed periods),
+  time value of money, investing &amp; risk, bonds, options, retirement &amp; FIRE, real estate,
+  business ratios, VAT, and a German set — exact net salary, capital-gains tax, child benefit,
+  Midijob and pension points — built on the official BMF payroll specification and verified
+  against its published test values. The full list with every input and output is in the
+  <a href="/docs/calculators.md">calculator reference</a>.</p>
+
+  <h2>Setup</h2>
+  <p><strong>Claude (web/desktop):</strong> add it from the Connectors directory, or via
+  Settings → Connectors → <em>Add custom connector</em> with the URL <code>https://nestegg.money/mcp</code>.
+  No login step follows — there are no accounts.</p>
+  <p><strong>Claude Code:</strong></p>
+  <pre><code>claude mcp add --transport http nestegg https://nestegg.money/mcp</code></pre>
+  <p><strong>Any other MCP client:</strong> point it at the same URL with the Streamable HTTP
+  transport. The server descriptor is published at
+  <a href="/.well-known/mcp.json">/.well-known/mcp.json</a> and in the official MCP registry as
+  <code>io.github.VladimirWrites/nestegg-calculators</code>.</p>
+  <p><strong>Without MCP:</strong> the same calculators are plain JSON endpoints —
+  <code>POST https://nestegg.money/api/calc/&lt;name&gt;</code>, and <code>GET /api/calc</code> lists them.</p>
+
+  <h2>Example prompts</h2>
+  <ul>
+    <li>"I have a €475,000 mortgage at 3.75%. If I pay an extra €300/month, how much interest do I save and when am I debt-free?"</li>
+    <li>"What's the net monthly salary for €85,000 in Berlin, tax class 1, TK health insurance?"</li>
+    <li>"I'm 34 with €210,000 invested, saving €2,500/month at 5% real returns — when do I reach €1.5M, and how long does it last at €45,000/year spending?"</li>
+    <li>"I put in €10,000, added €500 monthly for 6 years, now it's €62,000 — what was my annualized return?"</li>
+  </ul>
+
+  <h2>Behaviour &amp; limits</h2>
+  <ul>
+    <li>Rates, prices, and exchange rates are <strong>inputs</strong> — the tools never fetch live data. The one exception with built-in data is the German statutory set, which carries the official figures for recent tax years.</li>
+    <li>Results are compact by default: a 30-year amortization returns per-year totals unless monthly detail is requested; long schedules paginate (360 rows per page via <code>offset</code>/<code>nextOffset</code>).</li>
+    <li>Every result carries a calculator version in <code>_meta</code> for reproducibility.</li>
+    <li>Numbers, never advice: outputs depend entirely on the figures and assumptions supplied.</li>
+  </ul>
+
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li><strong>"Unknown tool" or empty tool list</strong> — confirm the URL is exactly <code>https://nestegg.money/mcp</code> (no trailing path) and the transport is Streamable HTTP, not SSE.</li>
+    <li><strong>"Invalid arguments"</strong> — the error names the field; every tool's schema is in the <a href="/docs/calculators.md">reference</a>. Amounts are plain numbers, rates are percents (e.g. <code>3.75</code>), dates are ISO <code>YYYY-MM-DD</code>.</li>
+    <li><strong>A German tax year is rejected</strong> — <code>de-net-salary</code> and its siblings carry data for recent years only; the error lists the supported ones. For older years use <code>de-gross-to-net</code> and supply the figures yourself.</li>
+    <li><strong>Result seems off</strong> — check the <code>assumptions</code> field in the result; defaults (like the average health-insurance surcharge) are stated there and can be overridden.</li>
+  </ul>
+
+  <h2>Support</h2>
+  <p>Issues and questions: <a href="https://github.com/VladimirWrites/nestegg.money/issues" rel="noopener">GitHub issues</a>
+  or <a href="mailto:write@vladimirj.dev">write@vladimirj.dev</a>. The server is open source
+  (Apache-2.0): <a href="https://github.com/VladimirWrites/nestegg.money" rel="noopener">source</a>.
+  Privacy: <a href="/privacy.html">privacy policy</a> · <a href="/terms.html">terms</a>.</p>
+</main>
+<footer class="lp-foot">
+  <span>nestegg · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="https://github.com/VladimirWrites/nestegg.money" rel="noopener">Source</a></span>
+</footer>
+</body>
+</html>
