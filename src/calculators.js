@@ -33,7 +33,7 @@ import { deMidijob } from "../public/lib/finance-math/de/midijob.js";
 import { deRentenpunkte } from "../public/lib/finance-math/de/rentenpunkte.js";
 
 // Bump when a calculator's formula or output shape changes, so results are reproducible/citeable.
-export const CALC_VERSION = "1.5.1";
+export const CALC_VERSION = "1.5.2";
 
 // CORS is open: the calculators carry no secrets and read no user data.
 export const CORS = {
@@ -73,7 +73,7 @@ export const CALCULATORS = {
     inputSchema: obj({ ...loanProps,
       detail: { type: "string", enum: ["summary", "yearly", "monthly"], description: "Output size. summary (default): totals + yearly breakdown. monthly: full schedule (use offset/limit to paginate)." },
       offset: num("Monthly schedule start index when detail=monthly (default 0)."),
-      limit: num("Max monthly rows when detail=monthly (default all)."),
+      limit: num("Max monthly rows when detail=monthly (default and maximum 360; page with nextOffset)."),
       rateSteps: {
         type: "array",
         description: "Optional rate changes (e.g. after a Zinsbindung). The installment is held; from each date the outstanding balance continues at the new annual rate.",

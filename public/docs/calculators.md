@@ -1,6 +1,6 @@
 # nestegg calculators
 
-Deterministic, pure finance calculators (version 1.5.0). Every function depends only on
+Deterministic, pure finance calculators (version 1.5.2). Every function depends only on
 its inputs: none read user data, fetch live prices, or look up exchange rates or tax tables. Where
 current statutory figures are needed (e.g. German payroll), they are passed in as arguments. Money
 is rounded half-up to two decimals (the app's `round2`); rates are in percent unless noted; dates
@@ -31,7 +31,7 @@ Inputs:
 - `extra` — array of objects: Optional dated extra principal payments.
 - `detail` — string, one of: summary, yearly, monthly: Output size. summary (default): totals + yearly breakdown. monthly: full schedule (use offset/limit to paginate).
 - `offset` — number: Monthly schedule start index when detail=monthly (default 0).
-- `limit` — number: Max monthly rows when detail=monthly (default all).
+- `limit` — number: Max monthly rows when detail=monthly (default and maximum 360; page with nextOffset).
 - `rateSteps` — array of objects: Optional rate changes (e.g. after a Zinsbindung). The installment is held; from each date the outstanding balance continues at the new annual rate.
 
 Outputs:
