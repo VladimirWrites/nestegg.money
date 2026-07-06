@@ -36,6 +36,7 @@ test("tools/list returns all ninety-nine calculators with input schemas and read
   assert.ok(["net-worth", "budget-50-30-20", "tip-split", "discount", "successive-discounts", "percentage-change", "unit-price", "hourly-to-salary", "salary-to-hourly", "after-tax-yield", "tax-equivalent-yield", "coast-fire", "barista-fire"].every((n) => names.includes(n)));
   assert.ok(j.result.tools.every((t) => t.inputSchema && t.inputSchema.type === "object"));
   assert.ok(j.result.tools.every((t) => t.annotations && t.annotations.readOnlyHint === true && t.annotations.idempotentHint === true));
+  assert.ok(j.result.tools.every((t) => typeof t.title === "string" && t.title.length > 1), "every tool carries a human-readable title");
 });
 
 test("tools/list advertises an outputSchema for every tool", async () => {

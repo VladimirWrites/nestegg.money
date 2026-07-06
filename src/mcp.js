@@ -2,7 +2,7 @@
 // sessions, no storage. Each calculator is one tool; logic lives in lib/finance-math.js via
 // the shared registry, so nothing is duplicated. A POST carries one JSON-RPC message (or a
 // batch) and gets a single JSON response; notifications get a 202 with no body.
-import { CALCULATORS, CORS, CALC_VERSION } from "./calculators.js";
+import { CALCULATORS, CORS, CALC_VERSION, TOOL_TITLES } from "./calculators.js";
 import { validateArgs } from "./validate.js";
 import { RESOURCES, PROMPTS } from "./resources.js";
 
@@ -50,7 +50,7 @@ function handle(msg) {
       // clients can call freely without confirmation prompts.
       return rpc(id, {
         tools: Object.entries(CALCULATORS).map(([name, c]) => ({
-          name, description: c.description, inputSchema: c.inputSchema, outputSchema: c.outputSchema,
+          name, title: TOOL_TITLES[name], description: c.description, inputSchema: c.inputSchema, outputSchema: c.outputSchema,
           annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
         })),
       });
