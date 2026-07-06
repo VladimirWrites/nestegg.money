@@ -55,9 +55,13 @@ function summarizeSchedule(loan, schedule, monthlyPayment, scheduledMonths) {
     yearly: scheduleByYear(schedule),
   };
   if ((loan.detail || "summary") !== "monthly") return base;
+  // Hard cap per page: MCP clients reject tool results over ~25k tokens, and an uncapped
+  // 50-year schedule exceeds that. 360 rows (30 years) stays comfortably under; nextOffset
+  // pages through the rest.
+  const MAX_ROWS = 360;
   const total = schedule.length;
   const offset = Math.max(0, Math.round(+loan.offset || 0));
-  const limit = loan.limit == null ? total : Math.max(0, Math.round(+loan.limit || 0));
+  const limit = Math.min(MAX_ROWS, loan.limit == null ? MAX_ROWS : Math.max(0, Math.round(+loan.limit || 0)));
   const slice = schedule.slice(offset, offset + limit);
   const end = offset + slice.length;
   return { ...base, schedule: slice, scheduleTotal: total, nextOffset: end < total ? end : null };
