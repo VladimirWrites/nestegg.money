@@ -72,7 +72,7 @@
         <option>2023</option><option>2024</option><option>2025</option><option selected>2026</option>
       </select>
     </label>
-    <label><span>Bruttolohn</span>
+    <label><span id="grossLabel">Bruttolohn</span>
       <span class="bnr-inline">
         <input id="fGross" type="number" inputmode="decimal" min="0" placeholder="65000">
         <select id="fPeriod">
@@ -81,11 +81,12 @@
         </select>
       </span>
     </label>
+    <label class="bnr-check"><input id="fNetMode" type="checkbox"> <span>Betrag ist Wunsch-Netto</span></label>
     <label><span>Steuerklasse</span>
       <select id="fClass"><option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
     </label>
     <label id="rowFaktor" class="hide"><span>Faktor (Faktorverfahren)</span>
-      <input id="fFaktor" type="number" inputmode="decimal" step="0.001" min="0.001" max="1" placeholder="—">
+      <input id="fFaktor" type="number" inputmode="decimal" step="0.001" min="0.001" max="1" placeholder="1.0">
     </label>
     <label><span>Bundesland</span>
       <select id="fState">
@@ -101,7 +102,7 @@
     <label><span>Kinderfreibeträge (ZKF)</span>
       <input id="fKids" type="number" inputmode="decimal" step="0.5" min="0" value="0">
     </label>
-    <label><span>Kinder unter 25 (für die Pflegeversicherung)</span>
+    <label><span>Kinder unter 25 (Pflege)</span>
       <input id="fKidsU25" type="number" inputmode="numeric" step="1" min="0" placeholder="— wie oben —">
     </label>
     <label><span>Kirchensteuer</span>
@@ -111,16 +112,14 @@
         <option value="9">9 %</option>
       </select>
     </label>
-    <label><span>KV-Zusatzbeitrag (%)</span>
+    <label id="rowKvz"><span id="kvzLabel">KV-Zusatzbeitrag (%)</span>
       <input id="fKvz" type="number" inputmode="decimal" step="0.01" min="0" max="6">
+      <input id="fPkvPrem" class="hide" type="number" inputmode="decimal" min="0" placeholder="7200">
     </label>
     <label><span>Alter (optional)</span>
       <input id="fAge" type="number" inputmode="numeric" min="15" max="99" placeholder="—">
     </label>
     <label class="bnr-check"><input id="fPkv" type="checkbox"> <span>privat krankenversichert</span></label>
-    <label id="rowPkvPrem" class="hide"><span>PKV-Jahresprämie (€)</span>
-      <input id="fPkvPrem" type="number" inputmode="decimal" min="0" placeholder="7200">
-    </label>
     <div class="bnr-actions">
       <button class="lp-btn lp-btn-primary" id="fGo" type="submit">Netto berechnen</button>
       <div class="bnr-err hide" id="bnrErr"></div>

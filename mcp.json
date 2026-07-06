@@ -1,7 +1,7 @@
 {
   "name": "nestegg-calculators",
   "description": "99 exact, auditable finance calculators. German net salary 2023-2026 via the official BMF Programmablaufplan, verified against all 1,008 published test values; plus loans, TVM, investing, bonds, options, FIRE, VAT. Stateless, no auth, stores nothing.",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "homepage": "https://nestegg.money",
   "transport": {
     "type": "http",

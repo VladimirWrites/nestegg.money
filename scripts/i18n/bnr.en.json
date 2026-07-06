@@ -24,7 +24,7 @@
   "lState": "State (Bundesland)",
   "oNone": "— not specified —",
   "lKids": "Child allowances (ZKF)",
-  "lKidsU25": "Children under 25 (for care insurance)",
+  "lKidsU25": "Children under 25 (care)",
   "phKidsU25": "— as above —",
   "lChurch": "Church tax",
   "oChNone": "none",
@@ -48,5 +48,6 @@
   "termsHref": "/terms.html",
   "footPrivacy": "Privacy",
   "footTerms": "Terms",
-  "footSource": "Source"
+  "footSource": "Source",
+  "lNetMode": "Amount is target net"
 }

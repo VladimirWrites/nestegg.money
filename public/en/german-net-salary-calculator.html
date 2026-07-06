@@ -72,7 +72,7 @@
         <option>2023</option><option>2024</option><option>2025</option><option selected>2026</option>
       </select>
     </label>
-    <label><span>Gross salary</span>
+    <label><span id="grossLabel">Gross salary</span>
       <span class="bnr-inline">
         <input id="fGross" type="number" inputmode="decimal" min="0" placeholder="65000">
         <select id="fPeriod">
@@ -81,11 +81,12 @@
         </select>
       </span>
     </label>
+    <label class="bnr-check"><input id="fNetMode" type="checkbox"> <span>Amount is target net</span></label>
     <label><span>Tax class (Steuerklasse)</span>
       <select id="fClass"><option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
     </label>
     <label id="rowFaktor" class="hide"><span>Factor (Faktorverfahren)</span>
-      <input id="fFaktor" type="number" inputmode="decimal" step="0.001" min="0.001" max="1" placeholder="—">
+      <input id="fFaktor" type="number" inputmode="decimal" step="0.001" min="0.001" max="1" placeholder="1.0">
     </label>
     <label><span>State (Bundesland)</span>
       <select id="fState">
@@ -101,7 +102,7 @@
     <label><span>Child allowances (ZKF)</span>
       <input id="fKids" type="number" inputmode="decimal" step="0.5" min="0" value="0">
     </label>
-    <label><span>Children under 25 (for care insurance)</span>
+    <label><span>Children under 25 (care)</span>
       <input id="fKidsU25" type="number" inputmode="numeric" step="1" min="0" placeholder="— as above —">
     </label>
     <label><span>Church tax</span>
@@ -111,16 +112,14 @@
         <option value="9">9 %</option>
       </select>
     </label>
-    <label><span>Health insurance surcharge (%)</span>
+    <label id="rowKvz"><span id="kvzLabel">Health insurance surcharge (%)</span>
       <input id="fKvz" type="number" inputmode="decimal" step="0.01" min="0" max="6">
+      <input id="fPkvPrem" class="hide" type="number" inputmode="decimal" min="0" placeholder="7200">
     </label>
     <label><span>Age (optional)</span>
       <input id="fAge" type="number" inputmode="numeric" min="15" max="99" placeholder="—">
     </label>
     <label class="bnr-check"><input id="fPkv" type="checkbox"> <span>privately health-insured</span></label>
-    <label id="rowPkvPrem" class="hide"><span>Private premium per year (€)</span>
-      <input id="fPkvPrem" type="number" inputmode="decimal" min="0" placeholder="7200">
-    </label>
     <div class="bnr-actions">
       <button class="lp-btn lp-btn-primary" id="fGo" type="submit">Calculate net salary</button>
       <div class="bnr-err hide" id="bnrErr"></div>

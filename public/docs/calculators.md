@@ -531,7 +531,7 @@ Inputs:
 - `kvZusatzPct` — number: Optional. The Krankenkasse's own Zusatzbeitrag in percent — pass the actual rate for exact results (rates change yearly, e.g. TK 2025: 2.45, 2026: 2.69). Defaults to the year's official average, which is only right for generic estimates.
 - `privateHealth` — object
 - `age` — number: Optional. Age in years - under 23 skips the childless care surcharge.
-- `faktor` — number: Optional. Steuerklasse-4 Faktorverfahren factor (e.g. 0.921).
+- `faktor` — number: Optional. Tax-class-4 Faktorverfahren factor, default 1.0 (no factor). Only the small minority of married IV/IV couples who applied for it have one; it is assigned by the Finanzamt and printed on the payslip / ELStAM (e.g. 0.921, always <= 1). Leave unset unless the payslip shows a Faktor.
 
 Outputs:
 

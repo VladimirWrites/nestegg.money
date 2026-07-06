@@ -6,7 +6,7 @@
     "url": "https://github.com/VladimirWrites/nestegg.money",
     "source": "github"
   },
-  "version": "1.5.2",
+  "version": "1.5.3",
   "remotes": [
     {
       "type": "streamable-http",
