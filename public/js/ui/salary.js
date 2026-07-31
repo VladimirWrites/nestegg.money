@@ -98,12 +98,34 @@ function downloadSalary() {
 function salGlobalYms() { const s = new Set(); (state.salaries || []).forEach((p) => (p.entries || []).forEach((e) => s.add(e.ym))); return [...s].sort(); }
 const salEntry = (p, ym) => (p.entries || []).find((e) => e.ym === ym);
 const salPrevEntry = (p, ym) => salMonths(p).filter((e) => e.ym < ym).pop(); // the person's most recent month before ym
-// A new monthly entry, inheriting the previous month's currency (and its amount, when carrying).
-const salNewEntry = (p, ym, amount) => { const prev = salPrevEntry(p, ym); return { id: nid(), ym, amount: amount || 0, event: "", ccy: (prev && prev.ccy) || p.ccy || state.baseCcy }; };
-function salEnsure(p, ym) { let e = salEntry(p, ym); if (!e) { e = salNewEntry(p, ym, 0); p.entries.push(e); } return e; }
-// Add a month row for every person at ym; carry each person's most recent salary when carry=true.
-function salAddRowAt(ym, carry) { (state.salaries || []).forEach((p) => { if (salEntry(p, ym)) return; const prev = salPrevEntry(p, ym); p.entries.push(salNewEntry(p, ym, carry && prev ? prev.amount : 0)); }); }
+// A new, empty monthly entry, inheriting the previous month's currency.
+const salNewEntry = (p, ym) => { const prev = salPrevEntry(p, ym); return { id: nid(), ym, amount: 0, event: "", ccy: (prev && prev.ccy) || p.ccy || state.baseCcy }; };
+function salEnsure(p, ym) { let e = salEntry(p, ym); if (!e) { e = salNewEntry(p, ym); p.entries.push(e); } return e; }
+// Add a blank month row for every person at ym. Amounts start empty rather than copying the
+// previous month — a carried-over number reads as real data until you notice it isn't.
+function salAddRowAt(ym) { (state.salaries || []).forEach((p) => { if (salEntry(p, ym)) return; p.entries.push(salNewEntry(p, ym)); }); }
 const salThisMonth = () => new Date().toISOString().slice(0, 7);
+// The month after the last one on record — the row "+ Next month" adds, blank, for every person.
+const salNextMonth = () => { const ys = salGlobalYms(); return ys.length ? nextYm(ys[ys.length - 1]) : salThisMonth(); };
+
+// Both tables live in their own scroll box, and every edit rebuilds it — which would throw the
+// view back to the top of a long history. Keep the reader where they were across a re-render…
+function salKeepScroll(host, render) {
+  const before = host.querySelector(".saltable-scroll");
+  const top = before ? before.scrollTop : 0;
+  render();
+  const after = host.querySelector(".saltable-scroll");
+  if (after) after.scrollTop = top;
+}
+// …and, when a month was just added, bring that row into view instead (it lands at the bottom).
+function salRevealMonth(host, ym, focus) {
+  const box = host.querySelector(".saltable-scroll"); if (!box || !ym) return;
+  const row = box.querySelector(`[data-ym="${ym}"]`); if (!row) return;
+  const r = row.getBoundingClientRect(), b = box.getBoundingClientRect();
+  if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom + 8;
+  else if (r.top < b.top) box.scrollTop -= b.top - r.top + 8;
+  if (focus) { const f = row.querySelector("input.salf"); if (f) f.focus(); }
+}
 
 // Parse a pasted month cell into YYYY-MM: "May 2013", "2013-05", "5/2013", "2013/05/01"…
 const SAL_MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
@@ -136,7 +158,7 @@ function importSalary() {
     if (cells[2] && cells[2].trim() && parseAmt(cells[2]) == null) e.event = cells[2].trim();
     n++;
   });
-  scheduleSync(); renderSalaryEdit();
+  scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit);
   $("salImportText").value = "";
   toast(n ? t("salary.imported", { count: n }) + (bad ? " · " + t("salary.skipped", { count: bad }) : "") : t("salary.nothingParsed"));
 }
@@ -160,7 +182,7 @@ export function renderSalary() {
       if (multi) yr += `<td class="num salgsep">${ht ? money(ht) : "—"}</td>`;
       body += yr + `</tr>`;
     }
-    let row = `<tr><td class="salm">${ymLabel(ym)}</td>`, hh = 0;
+    let row = `<tr data-ym="${ym}"><td class="salm">${ymLabel(ym)}</td>`, hh = 0;
     people.forEach((p) => { const e = salEntry(p, ym); if (e) hh += salBase(p, e); row += `<td class="num salgsep">${e && e.event ? `<span class="evtag">${esc(e.event)}</span>` : ""}${e && e.amount ? moneyIn(salTotal(e), salEccy(p, e)) : "—"}</td>`; });
     if (multi) row += `<td class="num salgsep">${hh ? money(hh) : "—"}</td>`;
     body += row + `</tr>`;
@@ -188,9 +210,11 @@ function renderSalaryEdit() {
       people.forEach((p) => { const tot = (p.entries || []).filter((e) => e.ym.slice(0, 4) === y).reduce((a, e) => a + salBase(p, e), 0); yr += `<td colspan="3" class="num salgsep" data-ytot="${p.id}:${y}">${tot ? money(tot) : "—"}</td>`; });
       body += yr + `<td></td></tr>`;
     }
-    let row = `<tr><td class="salm">${ymLabel(ym)}</td>`;
+    let row = `<tr data-ym="${ym}"><td class="salm">${ymLabel(ym)}</td>`;
     people.forEach((p) => {
-      const e = salEntry(p, ym); const amt = e ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
+      // A zero amount renders blank (the placeholder shows through) so a freshly added month is
+      // an empty field to type into, not a "0" to clear first.
+      const e = salEntry(p, ym); const amt = e && e.amount ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
       row += `<td class="salgsep"><input class="salf num" type="number" step="any" inputmode="decimal" value="${amt}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0"></td>` +
         `<td><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select></td>` +
         `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="—" title="${t("salary.eventTitle")}"></td>`;
@@ -213,21 +237,28 @@ $("salaryList").addEventListener("input", (e) => {
     if (f === "amount") { const yr = t.dataset.ym.slice(0, 4), yt = document.querySelector('[data-ytot="' + sid + ":" + yr + '"]'); if (yt) { const tot = p.entries.filter((x) => x.ym.slice(0, 4) === yr).reduce((a, x) => a + salBase(p, x), 0); yt.textContent = tot ? money(tot) : "—"; flash(yt); } drawSalDebounced(); }
   } else { if (f === "name") p.name = t.value; else if (f === "ccy") p.ccy = t.value; scheduleSync(); if (f === "name") drawSalDebounced(); }
 });
-$("salaryList").addEventListener("change", (e) => { if (e.target.dataset.f === "ccy") renderSalaryEdit(); });
+$("salaryList").addEventListener("change", (e) => { if (e.target.dataset.f === "ccy") salKeepScroll($("salaryList"), renderSalaryEdit); });
 $("salaryList").addEventListener("click", (e) => {
-  const pd = e.target.closest("[data-perdel]"); if (pd) { const p = state.salaries.find((x) => x.id === pd.dataset.perdel); if (confirm(t("salary.removePersonConfirm", { name: p ? p.name : t("salary.thisPerson") }))) { state.salaries = state.salaries.filter((x) => x.id !== pd.dataset.perdel); scheduleSync(); renderSalaryEdit(); } return; }
-  const rd = e.target.closest("[data-salrowdel]"); if (rd) { const ym = rd.dataset.salrowdel; state.salaries.forEach((p) => { p.entries = (p.entries || []).filter((en) => en.ym !== ym); }); scheduleSync(); renderSalaryEdit(); return; }
-  const nx = e.target.closest("[data-salnext]"); if (nx) { const ys = salGlobalYms(); salAddRowAt(ys.length ? nextYm(ys[ys.length - 1]) : salThisMonth(), true); scheduleSync(); renderSalaryEdit(); return; }
+  const pd = e.target.closest("[data-perdel]"); if (pd) { const p = state.salaries.find((x) => x.id === pd.dataset.perdel); if (confirm(t("salary.removePersonConfirm", { name: p ? p.name : t("salary.thisPerson") }))) { state.salaries = state.salaries.filter((x) => x.id !== pd.dataset.perdel); scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); } return; }
+  const rd = e.target.closest("[data-salrowdel]"); if (rd) { const ym = rd.dataset.salrowdel; state.salaries.forEach((p) => { p.entries = (p.entries || []).filter((en) => en.ym !== ym); }); scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); return; }
+  // New month: blank amounts for everyone, and land on the new row with the first field focused.
+  const nx = e.target.closest("[data-salnext]"); if (nx) { const ym = salNextMonth(); salAddRowAt(ym); scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); salRevealMonth($("salaryList"), ym, true); return; }
   const gn = e.target.closest("[data-salgen]");
   if (gn) {
     const c = e.target.closest(".controls"); let from = c.querySelector(".salfrom").value, to = c.querySelector(".salto").value;
     if (!/^\d{4}-\d{2}$/.test(from) || !/^\d{4}-\d{2}$/.test(to)) { toast(t("salary.pickBoth")); return; }
     if (from > to) { const t2 = from; from = to; to = t2; }
-    let cur = from, n = 0; while (cur <= to && n < 600) { salAddRowAt(cur, true); cur = nextYm(cur); n++; }
-    scheduleSync(); renderSalaryEdit(); toast(t("salary.addedMonths", { count: n })); return;
+    let cur = from, last = from, n = 0; while (cur <= to && n < 600) { salAddRowAt(cur); last = cur; cur = nextYm(cur); n++; }
+    scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); salRevealMonth($("salaryList"), last, true); toast(t("salary.addedMonths", { count: n })); return;
   }
 });
-$("addPerson").onclick = () => { state.salaries.push({ id: nid(), name: state.salaries.length ? t("salary.partner") : t("salary.me"), ccy: state.baseCcy, entries: [] }); scheduleSync(); renderSalaryEdit(); };
+$("addPerson").onclick = () => {
+  const p = { id: nid(), name: state.salaries.length ? t("salary.partner") : t("salary.me"), ccy: state.baseCcy, entries: [] };
+  state.salaries.push(p); scheduleSync();
+  salKeepScroll($("salaryList"), renderSalaryEdit);
+  const nm = $("salaryList").querySelector(`.salname[data-sid="${p.id}"]`);
+  if (nm) { try { nm.focus({ preventScroll: true }); } catch (err) { nm.focus(); } if (nm.select) try { nm.select(); } catch (err) {} }
+};
 $("salImportBtn").onclick = importSalary;
 
 // In-chart tooltip flag: shown next to the hovered/tapped point, not as a bottom toast.
@@ -254,4 +285,4 @@ function openSalaryEdit() { showEditor("salaryEditor"); renderSalaryEdit(); }
 function closeSalaryEdit() { hideEditor("salaryEditor"); renderSalary(); }
 $("salEdit").onclick = openSalaryEdit;
 $("salaryBack").onclick = () => { scheduleSync(); closeSalaryEdit(); };
-$("salNext").onclick = () => { const ys = salGlobalYms(); salAddRowAt(ys.length ? nextYm(ys[ys.length - 1]) : salThisMonth(), true); scheduleSync(); renderSalary(); };
+$("salNext").onclick = () => { const ym = salNextMonth(); salAddRowAt(ym); scheduleSync(); salKeepScroll($("salaryTable"), renderSalary); salRevealMonth($("salaryTable"), ym); };
