@@ -15,6 +15,7 @@
 .gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--ink);letter-spacing:.05em;font-family:var(--mono)}
 .gatein:focus{outline:none;border-color:var(--amber)}
 .gaterow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.gatesaved{font-size:12px;color:var(--green);margin:-6px 0 0}
 .warn{font-size:12px;color:var(--amber2);font-style:normal;margin-top:14px;border-left:2px solid var(--amber2);padding-left:12px}
 .switch{margin-top:24px;font-size:12px;color:var(--muted)}.switch a{color:var(--amber);cursor:pointer;text-decoration:underline}
 

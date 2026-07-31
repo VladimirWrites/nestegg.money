@@ -44,7 +44,14 @@
     <div class="sub" data-i18n="gate.sub">No email. No password. Just an account number.</div>
     <form class="panel" id="gateCreate" autocomplete="on">
       <p data-i18n="gate.createLede">Your account number is your only key. It identifies you and unlocks your data, which is encrypted in your browser before it ever leaves. Write it down somewhere safe.</p>
+      <!-- The account number is the credential. A username field alongside a password field
+           carrying the number is what a manager needs before it will offer to save; both are
+           visually hidden (not display:none, which some managers skip) and readonly, so
+           autofill can never disagree with the number shown above. -->
+      <input type="text" id="createUser" class="sr-only" name="username" autocomplete="username" value="nestegg account" readonly tabindex="-1" aria-hidden="true">
       <div class="acctnum num" id="newAcct">…</div>
+      <input type="password" id="newAcctField" class="sr-only" name="password" autocomplete="new-password" readonly tabindex="-1" aria-hidden="true" spellcheck="false">
+      <p class="gatesaved hide" id="acctSaved" data-i18n="gate.savedToManager">Saved to your password manager.</p>
       <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct" data-i18n="gate.copy">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct" data-i18n="gate.regen">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct" data-i18n="gate.confirm">I've saved it — continue</button></div>
       <div class="warn" data-i18n="gate.warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
       <div class="switch"><span data-i18n="gate.haveOne">Already have one?</span> <a id="toSignin" role="button" tabindex="0" data-i18n="gate.toSignin">Sign in with an account number</a></div>
@@ -52,8 +59,10 @@
     </form>
     <form class="panel hide" id="gateSignin" autocomplete="on">
       <p data-i18n="gate.signinLede">Enter your account number to load and decrypt your ledger on this device.</p>
-      <input type="text" id="signinUser" class="sr-only" autocomplete="username" value="nestegg account" readonly tabindex="-1" aria-hidden="true">
-      <input class="gatein" id="signinInput" type="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false" aria-label="Account number" data-i18n-aria-label="gate.acctAria">
+      <!-- Empty and writable here, so the manager fills it: a username it didn't write is a
+           reason for it to decline to fill the number either. -->
+      <input type="text" id="signinUser" class="sr-only" name="username" autocomplete="username" tabindex="-1" aria-hidden="true">
+      <input class="gatein" id="signinInput" type="password" name="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false" aria-label="Account number" data-i18n-aria-label="gate.acctAria">
       <div class="gaterow"><button type="submit" class="gatebtn" id="signinBtn" data-i18n="gate.signin">Sign in</button></div>
       <div class="switch"><span data-i18n="gate.needNew">Need a new account?</span> <a id="toCreate" role="button" tabindex="0" data-i18n="gate.create">Create one</a></div>
     </form>

@@ -24,13 +24,94 @@ function showToken(el, tok) {
   if (avail > 0) { const base = parseFloat(getComputedStyle(line).fontSize), w = line.getBoundingClientRect().width; if (w > avail) line.style.fontSize = Math.max(11, (base * avail) / w) + "px"; }
 }
 
+/* ---- the password manager ----
+   The account number is the only credential and there is no recovery, so the create screen
+   offers it to the browser's password manager as well as to the clipboard. Chrome and Edge
+   implement the credential store; Firefox and Safari don't, and there the constructor can
+   exist while the call throws — so nothing below is ever promised. Copy is the offer; this is
+   a shortcut for browsers that have one.
+
+   The entry files under a constant name, never anything derived from the number: a username
+   shows in plain text in manager lists, syncs between devices and turns up in exports. */
+const VAULT_USER = "nestegg account";
+const hasCredentialApi = () => typeof window.PasswordCredential === "function";
+
+/* Asking twice for the same number is the commonest way to annoy someone who has just done as
+   they were told: the offer is made when the screen appears, and again when they press the
+   button that says they've saved it. So never for a number already stored on this device, and
+   never twice inside a minute — the cooldown covers a manager that took the credential while
+   the page was in the background, where the silent check answers late. */
+let lastAsk = { token: null, at: 0 };
+const ASK_COOLDOWN = 60000;
+
+/* Whether it was actually saved. store() resolves the same way whether the prompt was accepted
+   or dismissed, so it answers nothing; asking for the credential back does. The password is
+   compared rather than the name, because every account files under the same name — an older
+   number left in the manager would otherwise read as this one being safe. */
+async function savedToManager(token) {
+  if (!hasCredentialApi()) return false;
+  try {
+    const got = await navigator.credentials.get({ password: true, mediation: "silent" });
+    return !!got && got.type === "password" && got.password === canonToken(token);
+  } catch (e) { return false; }
+}
+
+// Raise the browser's save prompt. Built from the form where that works — the credential then
+// carries exactly what the browser would have read out of the form itself.
+async function askManager(token, form) {
+  if (!hasCredentialApi() || !token) return;
+  const now = Date.now();
+  if (lastAsk.token === token && now - lastAsk.at < ASK_COOLDOWN) return;
+  if (await savedToManager(token)) return;
+  lastAsk = { token, at: now };
+  try {
+    let cred;
+    try { cred = new window.PasswordCredential(form); }
+    catch (e) { cred = new window.PasswordCredential({ id: VAULT_USER, password: canonToken(token), name: "nestegg account number" }); }
+    await navigator.credentials.store(cred);
+  } catch (e) { /* unimplemented, dismissed or blocked — the clipboard and JSON export remain */ }
+}
+
+/* The prompt belongs to the browser and fires no event, so the only way to notice an answer is
+   to look again: a handful of times over the next twenty seconds, stopping at the first yes.
+   Coming back to the tab is the likeliest moment for it to have changed — saving into a
+   password manager often means leaving the browser for it. Returns its own canceller. */
+const LOOK_AT = [700, 1500, 2500, 4000, 6000, 9000];
+function watchForSave(token, onSaved) {
+  let stopped = false, next = 0;
+  const look = async () => {
+    if (stopped) return;
+    if (await savedToManager(token)) { stopped = true; return onSaved(); }
+    if (next < LOOK_AT.length) setTimeout(look, LOOK_AT[next++]);
+  };
+  const onReturn = () => { if (document.visibilityState === "visible") look(); };
+  addEventListener("visibilitychange", onReturn);
+  setTimeout(look, LOOK_AT[next++]);
+  return () => { stopped = true; removeEventListener("visibilitychange", onReturn); };
+}
+
 let pendingToken = null;
+let acctStored = false;   // the browser confirmed it holds the number on screen
+let stopAcctWatch = null;
+function acctSaveConfirmed() { acctStored = true; $("acctSaved").classList.remove("hide"); }
 function newToken() {
   pendingToken = generateToken();
   showToken($("newAcct"), pendingToken);
+  // The hidden credential field is what the manager reads; the display above is for the eye.
+  $("newAcctField").value = pendingToken;
+  acctStored = false;
+  $("acctSaved").classList.add("hide");
+  if (stopAcctWatch) stopAcctWatch();
+  // Offered while the number is still on screen rather than at the end of the flow: this is the
+  // moment it's worth saving, and there's nothing to lose by asking early.
+  askManager(pendingToken, $("gateCreate"));
+  stopAcctWatch = watchForSave(pendingToken, acctSaveConfirmed);
 }
 function showCreate() { $("gateCreate").classList.remove("hide"); $("gateSignin").classList.add("hide"); newToken(); }
-function showSignin() { $("gateCreate").classList.add("hide"); $("gateSignin").classList.remove("hide"); }
+function showSignin() {
+  if (stopAcctWatch) { stopAcctWatch(); stopAcctWatch = null; } // no create screen, nothing to confirm
+  $("gateCreate").classList.add("hide"); $("gateSignin").classList.remove("hide");
+}
 $("toSignin").onclick = showSignin;
 $("toCreate").onclick = showCreate;
 // these are role="button" links — let keyboard users activate them with Enter/Space too
@@ -44,6 +125,10 @@ $("regenAcct").onclick = () => newToken();
 $("copyAcct").onclick = async () => { toast((await copyText(pendingToken)) ? t("common.copied") : t("gate.copyFail")); };
 $("gateCreate").addEventListener("submit", async (e) => {
   e.preventDefault();
+  // Last chance to save it, and only if it isn't already there — telling someone who saved it
+  // from the first offer that they hadn't would be worse than not asking.
+  if (!acctStored) await askManager(pendingToken, $("gateCreate"));
+  if (stopAcctWatch) { stopAcctWatch(); stopAcctWatch = null; }
   LS.set("nw_token", pendingToken);
   try { await deriveKeys(pendingToken); } catch (e) {}
   setState(emptyState()); setBaseline(); saveLocal();
