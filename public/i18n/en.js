@@ -48,6 +48,7 @@ export default {
     terms: "Terms & Conditions",
     copyFail: "Couldn't copy — write it down",
     invalid: "That's not a valid account number",
+    savedToManager: "Saved to your password manager.",
   },
   banner: {
     demo: "Demo — sample data, nothing is saved.",

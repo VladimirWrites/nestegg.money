@@ -1,5 +1,5 @@
 // Year editor: the list of snapshots and the per-year entry editing overlay.
-import { $, showEditor, hideEditor, toast, flash } from "./dom.js";
+import { $, showEditor, hideEditor, toast, flash, focusNew } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
@@ -67,11 +67,11 @@ function cardHTML(en, i, names, year) {
     const noHistData = !p && en.ticker && year < new Date().getFullYear();
     if (noHistData) priceNote = `<div class="rhint">${t("net.noYearEndPriceLong", { year })}</div>`;
     const pxtxt = p ? "@ " + moneyIn(p.price, p.currency) + (p.frozen ? " · " + t("net.yearEnd") : "") : noHistData ? t("net.noYearEndPrice") : en.ticker ? t("net.noPrice") : isC ? t("net.setCoin") : t("net.setTicker");
-    valuePart = `<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares != null ? en.shares : 0}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
+    valuePart = `<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares ? en.shares : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
     <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker || "")}" data-i="${i}" data-f="ticker" placeholder="${isC ? "BTC-EUR" : "AMS:VWRL"}" title="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}"><button type="button" class="rinfo" data-info="${isC ? "crypto" : "ticker"}" title="${t("net.symbolHelpTitle")}" aria-label="${t("net.symbolHelpAria")}">i</button></span>
     <span class="rconv">${p ? money(baseV) : pxtxt}</span>`;
   } else {
-    valuePart = `<input class="rval num" type="number" step="any" inputmode="decimal" value="${en.value != null ? en.value : 0}" data-i="${i}" data-f="value" placeholder="${liab ? t("net.amountOwed") : "0"}">
+    valuePart = `<input class="rval num" type="number" step="any" inputmode="decimal" value="${en.value ? en.value : ""}" data-i="${i}" data-f="value" placeholder="${liab ? t("net.amountOwed") : "0"}">
     <select data-i="${i}" data-f="ccy">${CCYS.map((x) => `<option ${x === en.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>
     <span class="rconv${liab ? " liab" : ""}">${liab ? "− " + money(Math.abs(baseV)) : en.ccy !== state.baseCcy ? "= " + money(baseV) : ""}</span>`;
   }
@@ -133,10 +133,21 @@ $("edYear").addEventListener("change", (e) => {
   edYearPrev = y; scheduleSync();
 });
 $("edDelYear").onclick = () => { if (edIdx < 0) return; if (confirm(t("net.delYearConfirm", { year: state.snapshots[edIdx].year }))) { state.snapshots.splice(edIdx, 1); scheduleSync(); closeYearEditor(); } };
-$("edAdd").onclick = () => { state.snapshots[edIdx].entries.push({ id: nid(), name: t("common.newAsset"), kind: "fixed", ccy: state.baseCcy, value: 0 }); scheduleSync(); renderEntries(); };
+// Adding a row lands on a placeholder name — focus and select it so typing replaces it, and
+// bring the new card into view (it renders at the end of the ungrouped list).
+$("edAdd").onclick = () => {
+  const sn = state.snapshots[edIdx];
+  sn.entries.push({ id: nid(), name: t("common.newAsset"), kind: "fixed", ccy: state.baseCcy, value: 0 });
+  scheduleSync(); renderEntries();
+  focusNew($("edEntries").querySelector(`.rname[data-i="${sn.entries.length - 1}"]`));
+};
 $("edAddLongterm").onclick = () => { const a = newAsset(); openAssetEditor(a.id, true); };
 $("edAddLiability").onclick = () => { const a = newLiability(); openAssetEditor(a.id, true); };
-$("edAddGroup").onclick = () => { addCategory(t("common.newCategory")); scheduleSync(); renderEntries(); };
+$("edAddGroup").onclick = () => {
+  const name = addCategory(t("common.newCategory"));
+  scheduleSync(); renderEntries();
+  focusNew($("edEntries").querySelector(`.grpname[data-grp="${name}"]`));
+};
 $("edCopyPrev").onclick = () => { const cur = state.snapshots[edIdx]; const prev = state.snapshots.filter((s) => s.year < cur.year).sort((a, b) => b.year - a.year)[0]; if (!prev) { toast(t("net.noEarlierYear")); return; } if (cur.entries.length && !confirm(t("net.replaceEntries", { year: prev.year }))) return; cur.entries = prev.entries.map((e) => ({ id: nid(), name: e.name, kind: e.kind || "fixed", ccy: e.ccy, value: e.value, shares: e.shares, ticker: e.ticker, group: e.group })); scheduleSync(); renderEntries(); ensureHist(); toast(t("net.copiedYear", { year: prev.year })); };
 
 $("edEntries").addEventListener("input", (e) => {

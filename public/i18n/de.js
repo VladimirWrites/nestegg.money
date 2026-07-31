@@ -48,6 +48,7 @@ export default {
     terms: "AGB",
     copyFail: "Kopieren fehlgeschlagen — notieren Sie sie",
     invalid: "Das ist keine gültige Kontonummer",
+    savedToManager: "Im Passwort-Manager gespeichert.",
   },
   banner: {
     demo: "Demo — Beispieldaten, nichts wird gespeichert.",

@@ -40,6 +40,15 @@ export function showEditor(id) {
   } catch (e) {}
 }
 
+// Put the caret in a just-added field and scroll it into view. Placeholder text is selected, so
+// the first keystroke replaces it instead of appending to it.
+export function focusNew(el) {
+  if (!el) return;
+  el.focus();
+  if (el.select) try { el.select(); } catch (e) {}
+  if (el.scrollIntoView) try { el.scrollIntoView({ block: "nearest" }); } catch (e) {}
+}
+
 // Brief amber highlight on an element whose displayed value just recomputed.
 export function flash(el) {
   if (!el) return;

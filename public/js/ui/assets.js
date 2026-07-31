@@ -1,6 +1,6 @@
 // Long-term asset editor: one asset with optional toggles (depreciates and/or carries a loan).
 // Net contribution = (depreciated price or market value) − outstanding loan.
-import { $, toast, flash } from "./dom.js";
+import { $, toast, flash, focusNew } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
@@ -86,7 +86,7 @@ function assetCardHTML(a) {
       : `<label class="fld">${t("asset.term")}<span class="suffix"><input class="fin num" type="number" step="any" inputmode="numeric" value="${L.termYears}" data-aid="${a.id}" data-lf="termYears"><i>yr</i></span></label>`;
     const extras = (L.extra || []).map((x) => `<div class="exrow">
         <input type="date" class="fin" value="${esc(x.date)}" data-aid="${a.id}" data-eid="${x.id}" data-ef="date">
-        <span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${x.amount}" data-aid="${a.id}" data-eid="${x.id}" data-ef="amount" placeholder="${t("asset.amountPh")}"></span>
+        <span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${x.amount || ""}" data-aid="${a.id}" data-eid="${x.id}" data-ef="amount" placeholder="${t("asset.amountPh")}"></span>
         <button class="rdel" data-extradel="${x.id}" data-aid="${a.id}" title="${t("asset.removePayment")}">×</button></div>`).join("");
     loanBlock = `<div class="loanbox">
       <div class="frow">
@@ -186,7 +186,7 @@ $("assetList").addEventListener("change", (e) => {
 
 $("assetList").addEventListener("click", (e) => {
   const ad = e.target.closest("[data-adel]"); if (ad) { const a = state.assets.find((x) => x.id === ad.dataset.adel); if (confirm(t("asset.removeConfirm", { name: a ? a.name : t("asset.thisAsset") }))) { state.assets = state.assets.filter((x) => x.id !== ad.dataset.adel); scheduleSync(); closeAssetEditor(); } return; }
-  const ea = e.target.closest("[data-extraadd]"); if (ea) { const a = state.assets.find((x) => x.id === ea.dataset.extraadd); if (a && a.loan) { a.loan.extra = a.loan.extra || []; a.loan.extra.push({ id: nid(), date: a.loan.startDate, amount: 0 }); scheduleSync(); renderAssets(); } return; }
+  const ea = e.target.closest("[data-extraadd]"); if (ea) { const a = state.assets.find((x) => x.id === ea.dataset.extraadd); if (a && a.loan) { const id = nid(); a.loan.extra = a.loan.extra || []; a.loan.extra.push({ id, date: a.loan.startDate, amount: 0 }); scheduleSync(); renderAssets(); focusNew($("assetList").querySelector(`[data-eid="${id}"][data-ef="amount"]`)); } return; }
   const ed = e.target.closest("[data-extradel]"); if (ed) { const a = state.assets.find((x) => x.id === ed.dataset.aid); if (a && a.loan) { a.loan.extra = (a.loan.extra || []).filter((z) => z.id !== ed.dataset.extradel); scheduleSync(); renderAssets(); } return; }
 });
 
