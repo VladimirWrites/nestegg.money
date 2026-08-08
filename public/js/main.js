@@ -8,7 +8,7 @@ import { scheduleSync, flushSync, autoRefresh, setDataListener } from "./io/stor
 import { renderAll } from "./ui/charts.js";
 import { renderEntries } from "./ui/networth.js";
 import { drawSalaryChart } from "./ui/salary.js";
-import { boot } from "./ui/gate.js";
+import { boot, setDisplayCcy } from "./ui/gate.js";
 import { initI18n, translateDom, t } from "./i18n.js";
 import "./ui/assets.js"; // side-effect: wire its editor listeners
 import "./ui/share.js"; // side-effect: wire the share dialog
@@ -40,7 +40,7 @@ $("importFile").onchange = (e) => {
       if (d.snapshots) {
         const hasData = (state.snapshots && state.snapshots.length) || (state.salaries && state.salaries.length) || (state.assets && state.assets.length);
         if (hasData && !confirm(t("prof.importConfirm"))) { e.target.value = ""; return; }
-        setState(migrate(d)); $("ccySel").value = state.baseCcy; scheduleSync(); renderAll(); toast(t("prof.imported"));
+        setState(migrate(d)); setDisplayCcy(state.baseCcy); scheduleSync(); renderAll(); toast(t("prof.imported"));
         // Refresh FX, live prices and past-year closes for whatever the import brought in.
         try { autoRefresh().then((ch) => { if (ch) { scheduleSync(); renderAll(); } }).catch(() => {}); } catch (err) {}
       } else toast(t("prof.noSnapshots"));
@@ -49,7 +49,7 @@ $("importFile").onchange = (e) => {
   };
   rd.readAsText(f);
 };
-$("resetBtn").onclick = () => { if (confirm(t("prof.resetConfirm"))) { setState(emptyState()); $("ccySel").value = "EUR"; scheduleSync(); renderAll(); toast(t("prof.cleared")); } };
+$("resetBtn").onclick = () => { if (confirm(t("prof.resetConfirm"))) { setState(emptyState()); setDisplayCcy("EUR"); scheduleSync(); renderAll(); toast(t("prof.cleared")); } };
 
 // Flush the pending change immediately when the tab is hidden/closed, so the last edit lands.
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") try { flushSync(); } catch (e) {} });

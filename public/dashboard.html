@@ -238,7 +238,7 @@
     <div class="set-group">
       <div class="set-row">
         <div class="set-text"><div class="set-name" data-i18n="prof.ccyTitle">Display currency</div><div class="set-hint" data-i18n="prof.ccyHint">Every amount is shown in this currency, converted at each year's rate.</div></div>
-        <div class="set-ctl"><select class="select" id="ccySel" aria-label="Display currency" data-i18n-aria-label="prof.ccyTitle"></select></div>
+        <div class="set-ctl"><div class="picker" id="ccyPicker"><button type="button" class="picker-btn" id="ccyBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Display currency" data-i18n-aria-label="prof.ccyTitle"><span id="ccyVal">EUR</span></button><div class="picker-panel hide" id="ccyList" role="listbox" tabindex="-1" aria-label="Display currency" data-i18n-aria-label="prof.ccyTitle"></div></div></div>
       </div>
       <div class="set-row">
         <div class="set-text"><div class="set-name" data-i18n="prof.themeLbl">Appearance</div><div class="set-hint" data-i18n="prof.themeHint">Follows your device unless you pick one here.</div></div>
@@ -286,6 +286,16 @@
       <div class="set-row top">
         <div class="set-text"><div class="set-name" data-i18n="prof.reset">Reset</div><div class="set-hint" data-i18n="prof.resetHint">Empties this ledger and starts again on the same account number.</div></div>
         <div class="set-ctl"><button class="btn btn-sm btn-danger" id="resetBtn" data-i18n="prof.resetCta">Reset</button></div>
+      </div>
+    </div>
+
+    <!-- Free, no ads, nothing held back for a paid tier — so this is the only place that asks
+         for anything, and it asks by linking out rather than by loading anybody's script. -->
+    <div class="sect"><h2 class="t-label" data-i18n="prof.supportTitle">Support</h2></div>
+    <div class="set-group">
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.coffeeName">Buy me a coffee</div><div class="set-hint" data-i18n="prof.coffeeHint">nestegg is free and has no ads, no tracking and nothing held back for a paid tier. If it keeps your ledger straight, you can put something towards the bills.</div></div>
+        <div class="set-ctl"><a class="btn btn-sm" id="coffeeBtn" href="https://buymeacoffee.com/vladimirj.dev" target="_blank" rel="noopener noreferrer" data-i18n="prof.coffeeCta">Buy a coffee</a></div>
       </div>
     </div>
 

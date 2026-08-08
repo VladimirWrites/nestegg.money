@@ -113,3 +113,64 @@ export function setSync(cls, text) {
   if (dot2) dot2.className = "syncdot " + (cls === "ok" ? "ok" : cls === "off" ? "off" : cls === "sync" ? "sync" : "");
   ["syncTxt", "syncTxt2"].forEach((id) => { const x = $(id); if (x) x.textContent = text; });
 }
+
+/* ---------- a picker we draw all of ----------
+   For a choice with more options than a pair of buttons can hold. A native select would do the
+   job, but its popup belongs to the platform — no stylesheet reaches inside it, and on a phone
+   eleven currencies arrive as a full-height wheel. So: a button, a panel, and the keyboard
+   behaviour a listbox is supposed to have.
+
+   Takes the option list and returns a setter, so the caller never touches the markup. */
+export function pickerInit(rootId, btnId, valId, panelId, options, onPick) {
+  const root = $(rootId), btn = $(btnId), val = $(valId), panel = $(panelId);
+  if (!root || !btn || !val || !panel) return { set: () => {} };
+  let current = null, cursor = -1;
+
+  const opts = () => [...panel.querySelectorAll(".picker-opt")];
+  const draw = () => {
+    panel.innerHTML = options.map((o) =>
+      `<button type="button" class="picker-opt" role="option" data-val="${o}" aria-selected="${o === current}">${o}</button>`).join("");
+  };
+  const setCursor = (i) => {
+    const list = opts(); if (!list.length) return;
+    cursor = (i + list.length) % list.length;
+    list.forEach((el, n) => el.classList.toggle("is-cursor", n === cursor));
+    list[cursor].scrollIntoView({ block: "nearest" });
+  };
+  const open = () => {
+    draw();
+    root.setAttribute("data-open", "");
+    panel.classList.remove("hide");
+    btn.setAttribute("aria-expanded", "true");
+    setCursor(Math.max(0, options.indexOf(current)));
+  };
+  const close = () => {
+    root.removeAttribute("data-open");
+    panel.classList.add("hide");
+    btn.setAttribute("aria-expanded", "false");
+    cursor = -1;
+  };
+  const isOpen = () => root.hasAttribute("data-open");
+  const choose = (v) => { current = v; val.textContent = v; close(); btn.focus(); if (onPick) onPick(v); };
+
+  btn.addEventListener("click", () => (isOpen() ? close() : open()));
+  panel.addEventListener("click", (e) => {
+    const o = e.target.closest(".picker-opt"); if (o) choose(o.getAttribute("data-val"));
+  });
+  // A click anywhere else is a dismissal, which is what a platform popup would do.
+  document.addEventListener("pointerdown", (e) => { if (isOpen() && !root.contains(e.target)) close(); });
+  root.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && isOpen()) { e.preventDefault(); close(); btn.focus(); return; }
+    if (!isOpen()) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+      return;
+    }
+    if (e.key === "ArrowDown") { e.preventDefault(); setCursor(cursor + 1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setCursor(cursor - 1); }
+    else if (e.key === "Home") { e.preventDefault(); setCursor(0); }
+    else if (e.key === "End") { e.preventDefault(); setCursor(options.length - 1); }
+    else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); const el = opts()[cursor]; if (el) choose(el.getAttribute("data-val")); }
+  });
+
+  return { set: (v) => { current = v; val.textContent = v; if (isOpen()) draw(); } };
+}

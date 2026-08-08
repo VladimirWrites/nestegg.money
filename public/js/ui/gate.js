@@ -1,6 +1,6 @@
 // The gate (create / sign in), boot + reconcile flow, the home view switcher, the profile
 // overlay, and the forecast/retirement input wiring.
-import { $, showEditor, hideEditor, toast, debounce, relTime } from "./dom.js";
+import { $, showEditor, hideEditor, toast, debounce, relTime, pickerInit } from "./dom.js";
 import { state, setState } from "../domain/store.js";
 import { emptyState, migrate } from "../domain/schema.js";
 import { mergeStates, setBaseline } from "../domain/merge.js";
@@ -197,7 +197,7 @@ function enterApp(skipRefresh) {
     $("gate").classList.add("hide");
     $("app").classList.remove("hide");
     $("dateline").textContent = new Date().toLocaleDateString(getLocale(), { day: "numeric", month: "long", year: "numeric" });
-    $("ccySel").innerHTML = CCYS.map((c) => `<option ${c === state.baseCcy ? "selected" : ""}>${c}</option>`).join("");
+    ccyPicker.set(state.baseCcy);
     armChartAnim();
     renderAll();
     // Refresh live FX + ticker prices (+ past-year closes). Silent; re-render once fresh.
@@ -391,7 +391,13 @@ function applyMastTexts() {
 $("navNet").onclick = () => showView("net");
 $("navBudget").onclick = () => showView("budget");
 $("profLogout").onclick = () => { if (confirm(t("prof.logoutConfirm"))) { LS.rem("nw_token"); LS.rem("nw_state"); LS.rem("nw_state_bak"); location.reload(); } };
-$("ccySel").onchange = (e) => { state.baseCcy = e.target.value; scheduleSync(); renderAll(); };
+// The display currency is a list of eleven, so it gets the drawn picker rather than a select
+// whose popup the platform owns.
+const ccyPicker = pickerInit("ccyPicker", "ccyBtn", "ccyVal", "ccyList", CCYS, (v) => {
+  state.baseCcy = v; scheduleSync(); renderAll();
+});
+// Import and reset replace the whole state, so they have to put the new value on screen too.
+export const setDisplayCcy = (v) => ccyPicker.set(v);
 $("pricesBtn").onclick = refreshPrices;
 
 // Forecast inputs
