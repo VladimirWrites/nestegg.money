@@ -78,6 +78,7 @@ export default {
   },
   net: {
     totalLbl: "Total Net Worth",
+    assetsLbl: "Assets",
     dlChart: "Download chart",
     overTime: "Over time",
     overTimeTin: "— tap a year to edit its assets",

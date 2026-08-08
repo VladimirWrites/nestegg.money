@@ -260,7 +260,7 @@ function histBreakdown(year) {
   const net = snapTotalBase(sn), gross = snapGrossBase(sn), liab = gross - net;
   let html = `<div class="tiph">${sn.year}</div>`;
   rows.forEach((r) => { html += `<div class="tipr"><span class="chip" style="background:${colorOf(r.nm2, names)}"></span><span class="tipn">${esc(r.nm2)}</span><span class="tipv">${money(r.tot)}</span></div>`; });
-  if (liab > 0.005) html += `<div class="tipr"><span class="tipn">${t("net.liabilities")}</span><span class="tipv" style="color:var(--red)">−${money(liab)}</span></div>`;
+  if (liab > 0.005) html += `<div class="tipr"><span class="tipn">${t("net.liabilities")}</span><span class="tipv" style="color:var(--danger)">−${money(liab)}</span></div>`;
   html += `<div class="tipnet">${t("nav.net")} <b>${money(net)}</b></div>`;
   // Year-over-year change vs the previous snapshot (just the balance delta — not a
   // contributions/market split, which yearly balances can't tell apart).
@@ -328,7 +328,9 @@ function drawDonut() {
   const segs = rows.map((row) => ({ v: row.v, color: colorOf(row.name, names), name: row.name }));
   const total = donutArcs(svg, segs, (p, s) => p.setAttribute("data-name", s.name));
   if (total > 0) {
-    txt(svg, 120, 116, t("common.total").toUpperCase(), 10, C.axis, 2, 400); txt(svg, 120, 138, money(total), 16, C.ink, 0, 600);
+    // "Assets", not "Total": the headline above this is net of liabilities, so two different
+    // numbers on one screen were both calling themselves the total.
+    txt(svg, 120, 116, t("net.assetsLbl").toUpperCase(), 10, C.axis, 2, 400); txt(svg, 120, 138, money(total), 16, C.ink, 0, 600);
   }
   svg.classList.toggle("anim", _animOn);
   svg.setAttribute("role", "img");

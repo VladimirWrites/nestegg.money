@@ -96,6 +96,10 @@ function downloadSalary() {
 
 // Shared month axis across all people, and per-(person,month) lookup/creation.
 function salGlobalYms() { const s = new Set(); (state.salaries || []).forEach((p) => (p.entries || []).forEach((e) => s.add(e.ym))); return [...s].sort(); }
+// The tables read newest first. A salary history runs to a hundred and fifty rows, and the row
+// you want is almost always this month or last — at the bottom of an ascending table, behind
+// twelve years of scrolling. The charts stay chronological, because a line has to.
+const salTableYms = () => salGlobalYms().reverse();
 const salEntry = (p, ym) => (p.entries || []).find((e) => e.ym === ym);
 const salPrevEntry = (p, ym) => salMonths(p).filter((e) => e.ym < ym).pop(); // the person's most recent month before ym
 // A new, empty monthly entry, inheriting the previous month's currency.
@@ -168,7 +172,7 @@ export function renderSalary() {
   drawSalaryChart();
   const host = $("salaryTable"), people = state.salaries || [];
   if (!people.length) { host.innerHTML = `<div class="emptyhint">${t("salary.emptyTable")}</div>`; return; }
-  const yms = salGlobalYms(), multi = people.length > 1;
+  const yms = salTableYms(), multi = people.length > 1;
   let head = `<tr><th class="salm-h">${t("salary.impMonth")}</th>`;
   people.forEach((p) => (head += `<th class="r salgsep">${esc(p.name)}</th>`));
   if (multi) head += `<th class="r salgsep">${t("salary.household")}</th>`;
@@ -195,7 +199,7 @@ function renderSalaryEdit() {
   const host = $("salaryList");
   const people = state.salaries || [];
   if (!people.length) { host.innerHTML = `<div class="emptyhint">${t("salary.emptyEdit")}</div>`; return; }
-  const yms = salGlobalYms();
+  const yms = salTableYms();
   let h1 = `<th class="salm-h"></th>`, h2 = `<th class="salm-h">${t("salary.impMonth")}</th>`;
   people.forEach((p) => {
     h1 += `<th colspan="3" class="salp-h salgsep"><span class="salp-hin"><input class="salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${p.id}" title="${esc(t("salary.removeName", { name: p.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></span></th>`;

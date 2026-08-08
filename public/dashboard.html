@@ -136,8 +136,7 @@
 
     <div class="panels">
       <section class="over">
-        <button class="chartdl" id="dlHist" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle"><span data-i18n="net.overTime">Over time</span> <span class="tin" data-i18n="net.overTimeTin">— tap a year to edit its assets</span></div>
+        <div class="sectitle"><span data-i18n="net.overTime">Over time</span> <span class="tin" data-i18n="net.overTimeTin">— tap a year to edit its assets</span><span class="sectools"><button class="chartdl" id="dlHist" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
         <div class="histscroll"><div class="chartwrap"><svg id="histChart"></svg><div id="histTip" class="salflag hide"></div></div></div>
         <div class="chiplegend" id="histLegend"></div>
         <div class="years" id="years"></div>
@@ -145,15 +144,13 @@
       </section>
 
       <section class="alloc">
-        <button class="chartdl" id="dlDonut" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle"><span data-i18n="net.alloc">Allocation</span> <span class="tin" id="allocYear"></span></div>
+        <div class="sectitle"><span data-i18n="net.alloc">Allocation</span> <span class="tin" id="allocYear"></span><span class="sectools"><button class="chartdl" id="dlDonut" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
         <div class="charts"><div style="display:flex;justify-content:center"><div class="chartwrap"><svg id="donut" width="240" height="240" viewBox="0 0 240 240"></svg><div id="donutTip" class="salflag hide"></div></div></div><div class="legend" id="legend"></div></div>
       </section>
     </div>
 
     <section class="forecast">
-      <button class="chartdl" id="dlFc" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-      <div class="sectitle"><span data-i18n="net.forecast">Forecast</span> <span class="tin" data-i18n="net.forecastTin">— where you're headed</span><label class="fcswitch"><input type="checkbox" id="fcOn"><span class="track"></span><em data-i18n="net.show">Show</em></label></div>
+      <div class="sectitle"><span data-i18n="net.forecast">Forecast</span> <span class="tin" data-i18n="net.forecastTin">— where you're headed</span><label class="fcswitch"><input type="checkbox" id="fcOn"><span class="track"></span><em data-i18n="net.show">Show</em></label><span class="sectools"><button class="chartdl" id="dlFc" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
       <div id="fcBody">
         <div class="fcrow">
           <label class="fld"><span class="cap" title="Monthly contribution" data-i18n="net.monthly" data-i18n-title="net.monthly">Monthly contribution</span><input id="fcMonthly" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
@@ -167,7 +164,7 @@
         <label class="fccheck"><input type="checkbox" id="fcBand"><span data-i18n="net.band">Show return range (poor / expected / great)</span></label>
         <div class="fcstats" id="fcStats"></div>
         <div class="histscroll"><svg id="fcChart"></svg></div>
-        <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span><span data-i18n="net.actual">Actual</span></span><span><span class="chip fcdash"></span><span data-i18n="net.projected">Projected</span></span><span><span class="chip" style="background:var(--green)"></span><span data-i18n="net.goal">Goal</span></span></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--signal)"></span><span data-i18n="net.actual">Actual</span></span><span><span class="chip fcdash"></span><span data-i18n="net.projected">Projected</span></span><span><span class="chip" style="background:var(--accent)"></span><span data-i18n="net.goal">Goal</span></span></div>
       </div>
     </section>
 
@@ -189,7 +186,7 @@
         <div class="fchint" style="padding:0 0 4px" data-i18n="net.retireHint">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the pension you expect (in today's value) and when it starts. Germany: pension = points × value (~1 point/yr at the average salary; points accrue while working).</div>
         <div class="fcstats" id="rtStats"></div>
         <div class="histscroll"><svg id="rtChart"></svg></div>
-        <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span><span data-i18n="net.nestEggChip">Nest egg (today's money)</span></span></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--signal)"></span><span data-i18n="net.nestEggChip">Nest egg (today's money)</span></span></div>
       </div>
     </section>
 
@@ -204,8 +201,7 @@
 
     <div id="viewSalary" class="hide">
       <section class="over" style="border:none;padding:8px 0">
-        <button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart" data-i18n-title="salary.dlChart" data-i18n-aria-label="salary.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle" data-i18n="salary.history">Our salary history</div>
+        <div class="sectitle" data-i18n="salary.history">Our salary history<span class="sectools"><button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart" data-i18n-title="salary.dlChart" data-i18n-aria-label="salary.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
         <div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div>
         <div class="chiplegend" id="salaryLegend"></div>
       </section>

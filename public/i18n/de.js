@@ -78,6 +78,7 @@ export default {
   },
   net: {
     totalLbl: "Gesamtvermögen",
+    assetsLbl: "Anlagen",
     dlChart: "Diagramm herunterladen",
     overTime: "Im Zeitverlauf",
     overTimeTin: "— Jahr antippen, um seine Anlagen zu bearbeiten",

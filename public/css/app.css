@@ -109,17 +109,27 @@ h1.title{font-size:clamp(28px,3.4vw,40px);color:var(--text)}
 .ccypick select{font:inherit;font-size:13px;letter-spacing:0;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:6px 8px;color:var(--text)}
 .subt{color:var(--dim);font-size:14px}
 
-.hero{padding:28px 0 24px;border-bottom:1px solid var(--line)}
-.hero .label{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
-.hero .big{font-size:clamp(40px,10vw,76px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:10px;color:var(--amber)}
+.hero{padding:22px 0 24px;border-bottom:1px solid var(--line)}
+.hero .label{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
+.hero .big{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(38px,9vw,68px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:8px;color:var(--signal)}
 .hero .day{margin-top:8px;font-size:14px;font-weight:600}
-.hero .day.up{color:var(--green)} .hero .day.down{color:var(--red)} .hero .day.flat{color:var(--muted)}
-.hero .delta{margin-top:8px;font-size:12.5px;color:var(--muted)}
+.hero .day.up{color:var(--accent)} .hero .day.down{color:var(--danger)} .hero .day.flat{color:var(--dim)}
+.hero .delta{margin-top:6px;font-size:14px;color:var(--dim)}
 
 section{padding:24px 0;border-bottom:1px solid var(--line)}
-.sectitle{font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
-.sectitle::after{content:"";flex:1;height:1px;background:var(--line)}
-.sectitle .tin{letter-spacing:.02em;text-transform:none;font-size:11.5px;color:var(--muted)}
+.sectitle{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-bottom:14px;display:flex;align-items:center;gap:10px;min-height:32px}
+/* The aside carries the sentence that explains the panel, so it reads as prose beside a label
+   rather than as more signage. */
+.sectitle .tin{font-variation-settings:"wdth" 100;font-weight:400;letter-spacing:0;text-transform:none;font-size:13px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Anything the panel can do sits at the end of its own header — the download button used to
+   float over the top-right corner of the chart, overlapping whatever was drawn there. */
+.sectitle .sectools{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+/* The show/hide switch is a control, so it joins the controls at the end of the row. */
+.sectitle .fcswitch{margin-left:auto}
+.sectitle .fcswitch~.sectools{margin-left:8px}
+/* On a phone the header has room for the label and the controls, and that is all. The aside is
+   an explanation of the panel that the panel itself then demonstrates. */
+@media(max-width:619px){.sectitle .tin{display:none}}
 
 .histscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 #fcChart,#rtChart{display:block;width:100%;height:auto}
@@ -130,15 +140,21 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .charts{display:grid;grid-template-columns:240px 1fr;gap:32px;align-items:center}
 @media(max-width:680px){.charts{grid-template-columns:1fr;gap:22px}}
 .legend{display:flex;flex-direction:column;gap:1px}
-.legrow{display:grid;grid-template-columns:13px 1fr auto auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
-.legrow:last-child{border-bottom:none}.swatch{width:10px;height:10px;border-radius:1px}
-.legrow .pct{color:var(--muted);font-size:11.5px;min-width:38px;text-align:right}.legrow .amt{font-weight:600;min-width:92px;text-align:right}
+/* Proportions rather than content widths, so every row in a panel divides at the same two
+   places: the amounts form a column and the percentages form a column. A long name truncates
+   instead of shoving them around. */
+.legrow{display:grid;grid-template-columns:14px minmax(0,1fr) 44px 108px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+.legrow:last-child{border-bottom:none}
+.legrow>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.swatch{width:11px;height:11px;border-radius:2px}
+.legrow .pct{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--dimmer);font-size:12px;text-align:right}
+.legrow .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
 
 .years{display:flex;flex-direction:column;gap:6px}
-.ycard{border:1px solid var(--line);border-radius:3px;background:var(--panel)}
-.yhead{display:flex;align-items:center;gap:12px;padding:11px 13px;cursor:pointer;user-select:none}
-.yhead:hover{background:var(--panel2);border-color:var(--line2)}
-.yhead .yr{font-size:15px;font-weight:600;min-width:46px;color:var(--amber)}
+.ycard{border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+.yhead{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;user-select:none;min-height:52px}
+.yhead:hover{background:var(--panel-2);border-color:var(--dimmer)}
+.yhead .yr{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;min-width:46px;color:var(--signal)}
 .ybar{flex:1;height:11px;border-radius:1px;background:var(--field);display:flex;overflow:hidden;min-width:60px}
 .ybar i{display:block;height:100%}
 .ytot{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;white-space:nowrap}
@@ -153,10 +169,9 @@ button.act.ghost:hover{border-color:var(--amber)}
 
 /* download icon in the top-right corner of each chart */
 .over,.alloc{position:relative}
-.over>.sectitle,.alloc>.sectitle,.forecast>.sectitle{padding-right:40px}
-.chartdl{position:absolute;top:14px;right:0;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line2);border-radius:5px;color:var(--muted);cursor:pointer;z-index:2}
-.chartdl:hover{color:var(--amber);border-color:var(--amber)}
-.chartdl svg{width:15px;height:15px}
+.chartdl{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);color:var(--dim);cursor:pointer;flex:none}
+.chartdl:hover{color:var(--signal);border-color:var(--dimmer)}
+.chartdl svg{width:16px;height:16px}
 
 .editor{position:fixed;inset:0;background:var(--ink);z-index:45;overflow:auto;padding-bottom:110px}
 .ed-bar{position:sticky;top:0;background:var(--bar-bg);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:12px;padding:13px 18px;z-index:2}
@@ -185,10 +200,16 @@ button.act.ghost:hover{border-color:var(--amber)}
 .rcard .rconv{font-size:11px;color:var(--green);min-width:80px;text-align:right}
 .rcard .rconv.liab{color:var(--red)}
 .forecast{position:relative}
-.fcrow{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 14px}
-.fcrow .fld{flex:1 1 150px;min-width:140px;display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted)}
+/* One column on a phone, then as many as fit. Each field owns a full row rather than being
+   squeezed three-across, which is what made these two panels the worst part of a small screen. */
+.fcrow{display:grid;grid-template-columns:1fr;gap:12px;margin:6px 0 16px}
+@media(min-width:620px){.fcrow{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}}
+.fcrow .fld{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--dim);min-width:0}
 .fcrow .fld>.cap{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fcrow .fld input,.fcrow .fld select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:13px}
+.fcrow .fld input,.fcrow .fld select{width:100%;min-height:44px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:var(--r);padding:11px 14px;font-size:16px}
+.fcrow .fld input{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.fcrow .fld input:focus,.fcrow .fld select:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
+.fcrow .fld select{appearance:none;-webkit-appearance:none;background-image:var(--chevron);background-repeat:no-repeat;background-position:right 11px center;background-size:15px;padding-right:34px;cursor:pointer}
 .fcrow .pct{position:relative;display:flex;align-items:center}
 .fcrow .pct input{flex:1;width:100%;padding-right:24px;-moz-appearance:textfield}
 .fcrow .pct input::-webkit-outer-spin-button,.fcrow .pct input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}

@@ -63,7 +63,11 @@ function drawBudgetDonut(s, animate = false) {
   if (total > 0) {
     // Centre shows income (the money coming in) — never the outgoings total, which would read as
     // "expenses in the centre" when overspending. Red when spending exceeds income.
-    const t2 = document.createElementNS(NS, "text"); t2.setAttribute("x", 120); t2.setAttribute("y", 126); t2.setAttribute("text-anchor", "middle"); t2.setAttribute("font-size", "17"); t2.setAttribute("font-weight", "600"); t2.setAttribute("fill", s.leftover < 0 ? C.red : C.ink); t2.textContent = money(s.income);
+    // Say which number this is. A bare figure in the middle of a ring of outgoings reads as the
+    // outgoings total, which is the one thing it isn't.
+    const t1 = document.createElementNS(NS, "text"); t1.setAttribute("x", 120); t1.setAttribute("y", 114); t1.setAttribute("text-anchor", "middle"); t1.setAttribute("font-size", "10"); t1.setAttribute("letter-spacing", "2"); t1.setAttribute("fill", C.axis); t1.textContent = t("budget.income").toUpperCase();
+    svg.appendChild(t1);
+    const t2 = document.createElementNS(NS, "text"); t2.setAttribute("x", 120); t2.setAttribute("y", 136); t2.setAttribute("text-anchor", "middle"); t2.setAttribute("font-size", "17"); t2.setAttribute("font-weight", "600"); t2.setAttribute("fill", s.leftover < 0 ? C.red : C.ink); t2.textContent = money(s.income);
     svg.appendChild(t2);
   }
   svg.classList.toggle("anim", !!animate && total > 0);
@@ -207,7 +211,8 @@ export function renderBudget() {
 
   host.innerHTML = `
     <section class="over" style="border:none;padding:8px 0">
-      <div class="sectitle">${t("budget.title")}</div>
+      <!-- No section title here: the screen is already called Budget and already says what it
+           is for, in the bar on a phone and in the masthead on a desktop. -->
       <div class="bud-card${s.leftover < 0 ? " neg" : ""}" id="budCard">
         <span class="k">${t("budget.leftPerMonth")}</span>
         <span class="v" id="budLeftover">${money(s.leftover)}</span>
