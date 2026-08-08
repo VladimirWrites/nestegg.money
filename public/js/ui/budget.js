@@ -244,7 +244,7 @@ export function renderBudget() {
       <div class="bud-row total"><span class="bud-lbl">${t("budget.totalOutgoings")}</span><span class="bud-val" id="budOutTotal">${money(s.fixed + s.expenses)}</span></div>
     </div>
 
-    ${RO ? "" : `<div class="controls"><button class="act ghost" id="budAddExp">${t("budget.addExpense")}</button><button class="act ghost" id="budAddCat">${t("budget.addCategory")}</button></div>`}
+    ${RO ? "" : `<div class="controls"><button class="btn btn-sm" id="budAddExp">${t("budget.addExpense")}</button><button class="btn btn-sm" id="budAddCat">${t("budget.addCategory")}</button></div>`}
   `;
 
   const dl = $("dlBudget"); if (dl) dl.onclick = downloadBudgetDonut;

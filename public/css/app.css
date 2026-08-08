@@ -169,10 +169,6 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .ychev{color:var(--muted);width:14px;height:14px;flex:none}
 
 .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
-button.act{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:var(--amber);color:var(--on-amber);border:none;padding:11px 15px;cursor:pointer;border-radius:3px;min-height:40px;font-weight:600;font-family:var(--mono);display:inline-flex;align-items:center;justify-content:center;gap:6px}
-.act .ic{width:13px;height:13px;flex:none}
-button.act.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
-button.act.ghost:hover{border-color:var(--amber)}
 .updnote{margin-left:auto;font-size:10px;color:var(--muted)}
 
 /* download icon in the top-right corner of each chart */
@@ -182,12 +178,28 @@ button.act.ghost:hover{border-color:var(--amber)}
 .chartdl svg{width:16px;height:16px}
 
 .editor{position:fixed;inset:0;background:var(--ink);z-index:45;overflow:auto;padding-bottom:110px}
-.ed-bar{position:sticky;top:0;background:var(--bar-bg);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:12px;padding:13px 18px;z-index:2}
-.ed-bar button{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:none;border:none;color:var(--amber);cursor:pointer;padding:6px 0;font-family:var(--mono)}
+/* An editor's top edge is the app's topbar wearing a back arrow: same height, same blur,
+   same inset, so moving into one doesn't move the top of the app. */
+.ed-bar{position:sticky;top:0;z-index:20;padding:calc(10px + var(--edge-t)) 0 10px;
+  background:color-mix(in srgb,var(--ink) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line)}
+.ed-bar-inner{display:flex;align-items:center;gap:12px;min-height:44px;max-width:var(--maxw);margin:0 auto;padding:0 var(--edge-r) 0 var(--edge-l)}
+.ed-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+/* The arrow alone. Its label lives in the title attribute — a word beside it repeated what the
+   glyph already said, and on a phone it crowded out the name of the screen. Pulled into the
+   inset so the glyph lines up with the content below rather than the button's box. */
+.ed-back{flex:none;margin-left:-8px;width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:var(--r);
+  background:none;color:var(--text);cursor:pointer}
+.ed-back:hover{background:var(--panel-2)}
+.ed-back .btn-icon{width:20px;height:20px}
+
 #edDelYear{color:var(--red);margin-left:auto}
-.ed-title{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:9px}
+.ed-title{font-size:17px;color:var(--text);display:flex;align-items:center;gap:9px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The year is edited in place in the bar, so the field is sized to four digits. */
+.ed-year{width:5.5ch;min-height:34px;padding:4px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--text);font-size:16px;text-align:center}
+.ed-year:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
 #edYear{width:88px;font:inherit;font-size:17px;border:1px solid var(--line2);border-radius:3px;padding:7px 8px;background:var(--field);color:var(--amber)}
-.ed-wrap{max-width:var(--maxw);margin:0 auto;padding:18px}
+.ed-wrap{max-width:var(--maxw);margin:0 auto;padding:18px var(--edge-r) calc(40px + var(--edge-b)) var(--edge-l)}
 .ed-total{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px}
 .ed-total .et-k{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 .ed-total .et-v{font-variant-numeric:tabular-nums;font-size:28px;font-weight:600;color:var(--amber)}
@@ -324,9 +336,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 #edBack,#assetBack,#salaryBack,#profileBack{display:inline-flex;align-items:center;gap:7px}
 .prof-sync{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.04em;color:var(--muted);margin-bottom:20px}
 #profAcct{max-width:520px}
-.act.ghost.danger{color:var(--red);border-color:var(--line2)}
-.act.ghost.danger:hover{border-color:var(--red)}
-.ed-bar .ic{width:13px;height:13px;flex:none}
+
 
 /* read-only computed (long-term asset) rows inside the year editor — tap to edit */
 .rcard.auto{background:var(--panel2);border-style:dashed;cursor:pointer}
@@ -360,7 +370,6 @@ button.act.ghost:hover{border-color:var(--amber)}
 .vval,.pstat .v{font-weight:600;font-size:15px;color:var(--amber)}
 .pchead{display:flex;align-items:center;gap:10px}
 .psub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-top:4px;display:flex;align-items:center;gap:10px}
-.act.mini{min-height:26px;padding:4px 10px;font-size:9px}
 .exwrap{display:flex;flex-direction:column;gap:8px}
 .exrow{display:flex;gap:10px;align-items:center}
 .exrow .fin{flex:1}
@@ -494,7 +503,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 @media(prefers-reduced-motion:reduce){.updating .spin{animation:none}}
 
 /* active state for the theme toggle buttons */
-.act.ghost.on{background:var(--amber);color:var(--on-amber);border-color:var(--amber)}
+.btn.on{background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
 
 /* net-worth year tooltip (reuses .salflag box) */
 .salflag .tiph{font-weight:600;color:var(--amber);margin-bottom:4px}
@@ -515,7 +524,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 /* demo/tour banner (shown only in the no-account demo) */
 .demobar{position:relative;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--panel2);border-bottom:1px solid var(--amber);color:var(--text);padding:8px 16px;font-size:12.5px;letter-spacing:.02em}
 .demobar .demobtns{display:flex;gap:8px;align-items:center}
-.demobar .act{min-height:32px;padding:6px 12px;font-size:11px}
+.demobar .btn{min-height:32px;padding:6px 12px;font-size:12.5px}
 .demolink{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
 .demoswitch{margin-top:4px}
 
@@ -699,3 +708,14 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .acctcode .s{color:var(--dimmer)}
 .acctcode .d{color:var(--accent)}
 .acctcode .a{color:var(--signal)}
+
+
+/* A picker with two answers is a pair of buttons, not a dropdown. A native select's popup is
+   the one part of it no stylesheet can reach — it is drawn by the platform, and on a phone it
+   is a full-height wheel for choosing between "Dark" and "Light". Two buttons show both answers
+   at once and take one tap instead of three. */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.seg-btn{padding:8px 14px;min-height:38px;border:0;background:var(--panel-2);color:var(--dim);cursor:pointer;font-size:13px;font-weight:600}
+.seg-btn+.seg-btn{border-left:1px solid var(--line)}
+.seg-btn:hover{color:var(--text)}
+.seg-btn.is-on{background:var(--signal);color:var(--signal-ink)}

@@ -295,7 +295,16 @@ function applyTheme(t) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--ink").trim() || "#0a0a0b");
 }
-function syncThemeSel() { const s = $("themeSel"); if (s) s.value = currentTheme(); }
+// Mark whichever of the two buttons is the current answer.
+function segSync(host, attr, value) {
+  if (!host) return;
+  host.querySelectorAll(".seg-btn").forEach((b) => {
+    const on = b.getAttribute(attr) === value;
+    b.classList.toggle("is-on", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+}
+function syncThemeSel() { segSync($("themeSeg"), "data-theme-opt", currentTheme()); }
 // Recolour the SVG charts (they read theme CSS vars) by re-rendering the visible view.
 // renderAll() would no-op here (state unchanged), so force a repaint for the net view.
 function repaintForTheme() {
@@ -308,8 +317,12 @@ function setTheme(t) {
   try { LS.set("nw_theme", t); } catch (err) {}
   repaintForTheme();
 }
-const themeSel = $("themeSel");
-if (themeSel) themeSel.addEventListener("change", () => setTheme(themeSel.value));
+const themeSeg = $("themeSeg");
+if (themeSeg) themeSeg.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-theme-opt]"); if (!b) return;
+  setTheme(b.getAttribute("data-theme-opt"));
+  syncThemeSel();
+});
 // Share viewer: the profile (and its theme picker) is hidden, so the banner carries a toggle.
 // t() falls back to English literals for the module-load call, which runs before initI18n.
 const shareTheme = $("shareTheme");
@@ -324,11 +337,13 @@ syncShareThemeLabel();
 applyTheme(currentTheme()); // sync the browser UI colour to the theme set by the head script
 
 /* ---- language ---- */
-const langSel = $("langSel");
-function syncLangSel() { if (langSel) langSel.value = getLocale(); }
-if (langSel) langSel.addEventListener("change", async () => {
-  LS.set("nw_lang", langSel.value);
-  await initI18n(langSel.value);
+const langSeg = $("langSeg");
+function syncLangSel() { segSync($("langSeg"), "data-lang-opt", getLocale()); }
+if (langSeg) langSeg.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-lang-opt]"); if (!b) return;
+  const lang = b.getAttribute("data-lang-opt");
+  LS.set("nw_lang", lang);
+  await initI18n(lang);
   translateDom();       // static labels, incl. the open profile
   applyMastTexts();     // the masthead tracks the active tab, so re-derive it
   syncShareThemeLabel();

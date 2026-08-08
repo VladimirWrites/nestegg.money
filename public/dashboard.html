@@ -106,7 +106,7 @@
   <div class="shell-main">
   <div id="demoBanner" class="demobar hide" role="status">
     <span data-i18n="banner.demo">Demo — sample data, nothing is saved.</span>
-    <span class="demobtns"><button type="button" class="act" id="demoCreate" data-i18n="banner.demoCreate">Create an account</button><button type="button" class="demolink" id="demoExit" data-i18n="banner.demoExit">Leave</button></span>
+    <span class="demobtns"><button type="button" class="btn btn-primary btn-sm" id="demoCreate" data-i18n="banner.demoCreate">Create an account</button><button type="button" class="demolink" id="demoExit" data-i18n="banner.demoExit">Leave</button></span>
   </div>
   <div id="shareBanner" class="demobar hide" role="status">
     <span data-i18n="banner.share">Read-only shared snapshot — a point-in-time copy. Nothing here can be edited.</span>
@@ -140,7 +140,7 @@
         <div class="histscroll"><div class="chartwrap"><svg id="histChart"></svg><div id="histTip" class="salflag hide"></div></div></div>
         <div class="chiplegend" id="histLegend"></div>
         <div class="years" id="years"></div>
-        <div class="controls"><button class="act" id="addYear" data-i18n="net.addYear">+ Year</button></div>
+        <div class="controls"><button class="btn btn-primary btn-sm" id="addYear" data-i18n="net.addYear">+ Year</button></div>
       </section>
 
       <section class="alloc">
@@ -192,8 +192,8 @@
 
     <section style="border-bottom:none;padding-top:8px">
       <div class="controls" style="margin-top:0">
-        <button class="act ghost" id="pricesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.prices">Prices</span></button>
-        <button class="act ghost" id="ratesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.rates">Rates</span></button>
+        <button class="btn btn-sm" id="pricesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.prices">Prices</span></button>
+        <button class="btn btn-sm" id="ratesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.rates">Rates</span></button>
         <span class="updnote" id="updNote"></span>
       </div>
     </section>
@@ -206,7 +206,7 @@
         <div class="chiplegend" id="salaryLegend"></div>
       </section>
       <div id="salaryTable"></div>
-      <div class="controls"><button class="act ghost" id="salNext" data-i18n="salary.next">+ Next month</button><button class="act" id="salEdit" data-i18n="salary.edit">Edit salaries</button></div>
+      <div class="controls"><button class="btn btn-sm" id="salNext" data-i18n="salary.next">+ Next month</button><button class="btn btn-primary btn-sm" id="salEdit" data-i18n="salary.edit">Edit salaries</button></div>
     </div>
 
     <div id="viewBudget" class="hide">
@@ -242,11 +242,11 @@
       </div>
       <div class="set-row">
         <div class="set-text"><div class="set-name" data-i18n="prof.themeLbl">Appearance</div><div class="set-hint" data-i18n="prof.themeHint">Follows your device unless you pick one here.</div></div>
-        <div class="set-ctl"><select class="select" id="themeSel" aria-label="Appearance" data-i18n-aria-label="prof.themeLbl"><option value="dark" data-i18n="prof.themeDark">Dark</option><option value="light" data-i18n="prof.themeLight">Light</option></select></div>
+        <div class="set-ctl"><div class="seg" id="themeSeg" role="group" aria-label="Appearance" data-i18n-aria-label="prof.themeLbl"><button type="button" class="seg-btn" data-theme-opt="dark" data-i18n="prof.themeDark">Dark</button><button type="button" class="seg-btn" data-theme-opt="light" data-i18n="prof.themeLight">Light</button></div></div>
       </div>
       <div class="set-row">
         <div class="set-text"><div class="set-name" data-i18n="prof.languageLbl">Language</div><div class="set-hint" data-i18n="prof.langHint">Changes the words in the app. Your data is untouched.</div></div>
-        <div class="set-ctl"><select class="select" id="langSel" aria-label="Language" data-i18n-aria-label="prof.languageLbl"><option value="en">English</option><option value="de">Deutsch</option></select></div>
+        <div class="set-ctl"><div class="seg" id="langSeg" role="group" aria-label="Language" data-i18n-aria-label="prof.languageLbl"><button type="button" class="seg-btn" data-lang-opt="en">English</button><button type="button" class="seg-btn" data-lang-opt="de">Deutsch</button></div></div>
       </div>
       <div class="set-row hide" id="installRow">
         <div class="set-text"><div class="set-name" data-i18n="prof.install">Install app</div><div class="set-hint" data-i18n="prof.installHint">Keeps nestegg on your home screen, and opens it without browser chrome.</div></div>
@@ -315,40 +315,46 @@
 
 <div id="yearEditor" class="editor hide">
   <div class="ed-bar">
-    <button id="edBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="yeared.back">Back</span></button>
-    <div class="ed-title"><span data-i18n="yeared.year">Year</span> <input id="edYear" type="number" inputmode="numeric"></div>
-    <button id="edDelYear" data-i18n="yeared.delYear">Delete year</button>
+    <div class="ed-bar-inner">
+      <button class="ed-back" id="edBack" title="Back" aria-label="Back" data-i18n-title="yeared.back" data-i18n-aria-label="yeared.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="ed-title t-title"><span data-i18n="yeared.year">Year</span> <input id="edYear" class="ed-year num" type="number" inputmode="numeric"></div>
+      <div class="ed-actions"><button class="btn btn-sm btn-danger" id="edDelYear" data-i18n="yeared.delYear">Delete year</button></div>
+    </div>
   </div>
   <div class="ed-wrap">
     <div class="ed-total"><span class="et-k" data-i18n="yeared.total">Year total</span><span class="et-v" id="edTotal">—</span></div>
     <div class="cards" id="edEntries"></div>
-    <div class="controls"><button class="act" id="edAdd" data-i18n="yeared.add">+ Add asset</button><button class="act ghost" id="edAddLongterm" data-i18n="yeared.addLongterm">+ Property / vehicle</button><button class="act ghost" id="edAddLiability" data-i18n="yeared.addLiability">+ Loan / debt</button><button class="act ghost" id="edAddGroup" data-i18n="yeared.addGroup">+ Add group</button><button class="act ghost" id="edCopyPrev" data-i18n="yeared.copyPrev">Copy previous year</button></div>
+    <div class="controls"><button class="btn btn-primary btn-sm" id="edAdd" data-i18n="yeared.add">+ Add asset</button><button class="btn btn-sm" id="edAddLongterm" data-i18n="yeared.addLongterm">+ Property / vehicle</button><button class="btn btn-sm" id="edAddLiability" data-i18n="yeared.addLiability">+ Loan / debt</button><button class="btn btn-sm" id="edAddGroup" data-i18n="yeared.addGroup">+ Add group</button><button class="btn btn-sm" id="edCopyPrev" data-i18n="yeared.copyPrev">Copy previous year</button></div>
   </div>
 </div>
 
 <div id="salaryEditor" class="editor hide">
   <div class="ed-bar">
-    <button id="salaryBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="salary.back">Back</span></button>
-    <div class="ed-title" data-i18n="salary.edit">Edit salaries</div>
+    <div class="ed-bar-inner">
+      <button class="ed-back" id="salaryBack" title="Back" aria-label="Back" data-i18n-title="salary.back" data-i18n-aria-label="salary.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="ed-title t-title" data-i18n="salary.edit">Edit salaries</div>
+    </div>
   </div>
   <div class="ed-wrap">
     <p class="edlede"><span data-i18n="salary.lede1">Type each person's monthly </span><strong data-i18n="salary.net">net</strong><span data-i18n="salary.lede2"> pay side by side; the event field notes a raise or job change. Add a range of months, or import from a spreadsheet below.</span></p>
     <div id="salaryList"></div>
-    <div class="controls"><button class="act" id="addPerson" data-i18n="salary.addPerson">+ Add person</button></div>
+    <div class="controls"><button class="btn btn-primary btn-sm" id="addPerson" data-i18n="salary.addPerson">+ Add person</button></div>
     <details class="salimport">
       <summary data-i18n="salary.importSummary">Import from a spreadsheet</summary>
       <p class="edlede" style="margin:10px 0"><span data-i18n="salary.imp1">In Google Sheets, select the </span><strong data-i18n="salary.impMonth">Month</strong><span data-i18n="salary.imp2"> column and the </span><strong data-i18n="salary.impNet">net amount</strong><span data-i18n="salary.imp3"> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</span></p>
       <div class="controls" style="margin:0 0 8px"><span class="salrlbl" data-i18n="salary.importFor">Import for</span><select id="salImportWho" class="salccy"></select></div>
       <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
-      <div class="controls"><button class="act" id="salImportBtn" data-i18n="salary.importBtn">Import pasted rows</button></div>
+      <div class="controls"><button class="btn btn-primary btn-sm" id="salImportBtn" data-i18n="salary.importBtn">Import pasted rows</button></div>
     </details>
   </div>
 </div>
 
 <div id="assetEditor" class="editor hide">
   <div class="ed-bar">
-    <button id="assetBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="asset.back">Back</span></button>
-    <div class="ed-title" data-i18n="asset.title">Asset</div>
+    <div class="ed-bar-inner">
+      <button class="ed-back" id="assetBack" title="Back" aria-label="Back" data-i18n-title="asset.back" data-i18n-aria-label="asset.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="ed-title t-title" data-i18n="asset.title">Asset</div>
+    </div>
   </div>
   <div class="ed-wrap">
     <p class="edlede"><span data-i18n="asset.lede1">A car, a house, anything that depreciates or carries a loan. Toggle </span><strong data-i18n="asset.ledeDep">Depreciates</strong><span data-i18n="asset.lede2"> to have its value fall a little every day (current year live, past years locked to year-end); toggle </span><strong data-i18n="asset.ledeLoan">Has a loan</strong><span data-i18n="asset.lede3"> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it. Assign a </span><strong data-i18n="asset.ledeCat">Category</strong><span data-i18n="asset.lede4"> to group it on the home screen.</span></p>
@@ -365,10 +371,10 @@
     <label class="share-lbl"><span data-i18n="share.whoFor">Who's it for?</span> <span class="share-hint" data-i18n="share.whoHint">(optional, for your list)</span>
       <input type="text" id="shareLabel" maxlength="60" placeholder="e.g. My advisor" autocomplete="off" data-i18n-placeholder="share.whoPh">
     </label>
-    <div class="controls"><button class="act" id="shareCreate" data-i18n="share.create">Create link</button></div>
+    <div class="controls"><button class="btn btn-primary btn-sm" id="shareCreate" data-i18n="share.create">Create link</button></div>
     <div id="shareResult" class="share-result hide">
       <div class="sectitle" data-i18n="share.yourLink">Your link</div>
-      <div class="acctrow"><input type="text" id="shareLinkOut" class="acctnum" readonly><button class="act ghost" id="shareCopy" data-i18n="share.copy">Copy</button></div>
+      <div class="acctrow"><input type="text" id="shareLinkOut" class="acctnum" readonly><button class="btn btn-sm" id="shareCopy" data-i18n="share.copy">Copy</button></div>
       <div class="synced" data-i18n="share.copyNote">Anyone with this link can view the snapshot until it expires. Copy it now — the key is only in this link and isn't stored anywhere.</div>
     </div>
     <div class="sectitle" style="margin-top:28px" data-i18n="share.active">Active links</div>

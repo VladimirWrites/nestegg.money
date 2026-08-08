@@ -312,6 +312,7 @@ img { max-width: 100%; display: block }
 /* A native select draws its arrow at the padding edge, so padding-right moves the text but
    never the arrow — it stays jammed against the border. Replacing the control with our own
    chevron is the only way to give it room. */
+select,
 .select {
   width: auto;
   min-height: 38px;

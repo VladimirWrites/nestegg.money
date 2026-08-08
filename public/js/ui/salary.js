@@ -228,7 +228,7 @@ function renderSalaryEdit() {
   });
   const dFrom = yms.length ? yms[0] : new Date().getFullYear() + "-01", dTo = salThisMonth();
   host.innerHTML = `<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + people.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>
-    <div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="act ghost mini" data-salgen>${t("salary.addRange")}</button><button class="act ghost mini" data-salnext>${t("salary.next")}</button></div>`;
+    <div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="btn btn-sm" data-salgen>${t("salary.addRange")}</button><button class="btn btn-sm" data-salnext>${t("salary.next")}</button></div>`;
   const who = $("salImportWho"); if (who) { const prev = who.value; who.innerHTML = people.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join(""); if (prev) who.value = prev; }
 }
 
