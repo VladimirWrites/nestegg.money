@@ -5,6 +5,9 @@ const CACHE = "nestegg-v1.2.28";
 const SHELL = [
   "/dashboard.html",
   "/css/base.css", "/css/app.css",
+  // Both subsets: the app is offline-first, and which one a name or an event note needs isn't
+  // knowable ahead of time — a Polish or Czech character falls in the ext range.
+  "/fonts/archivo-latin.woff2", "/fonts/archivo-latin-ext.woff2",
   // ES-module graph: main.js imports domain/ + io/ + ui/. All must be cached for offline.
   "/js/main.js",
   "/js/domain/ids.js", "/js/domain/dates.js", "/js/domain/constants.js", "/js/domain/store.js",
