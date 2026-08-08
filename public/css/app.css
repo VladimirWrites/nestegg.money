@@ -691,3 +691,11 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .token-out .s{color:var(--dimmer)}
 .token-out .d{color:var(--accent)}
 .token-out .a{color:var(--signal)}
+
+/* The revealed account number, inside its settings row rather than as a banner over the page.
+   Breaks at its own dashes so it never runs past a narrow screen. */
+.acctcode{display:block;margin-top:9px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel-2);
+  font-size:13px;letter-spacing:.06em;line-height:1.9;overflow-wrap:break-word}
+.acctcode .s{color:var(--dimmer)}
+.acctcode .d{color:var(--accent)}
+.acctcode .a{color:var(--signal)}

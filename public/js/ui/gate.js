@@ -269,11 +269,16 @@ function shareError(title, body) {
   app.innerHTML = `<div class="sharemsg"><h1>${title}</h1><p>${body}</p><p class="sharemsg-foot"><a href="https://nestegg.money" rel="noopener">${t("share.errFoot")}</a></p></div>`;
 }
 
+/* The account number is not printed when the screen opens. This is the one secret here, the
+   screen is reachable over anybody's shoulder, and nothing else on it needs the number to be
+   legible — Copy works without ever showing it. So the row asks first, and once shown it stays
+   shown until you leave. */
 let profShown = false;
 function renderProfAcct() {
-  const el = $("profAcct"), tok = LS.get("nw_token") || "";
-  if (profShown) showToken(el, tok); else el.textContent = tok.replace(/[0-9A-Za-z]/g, "•") || "…";
-  $("profEye").classList.toggle("on", profShown);
+  const el = $("profAcct"), tok = LS.get("nw_token") || "", btn = $("profEye");
+  el.classList.toggle("hide", !profShown);
+  if (profShown) showToken(el, tok);
+  if (btn) { btn.textContent = t(profShown ? "prof.hideCta" : "prof.showCta"); btn.setAttribute("aria-expanded", String(profShown)); }
   const ls = $("lastSync"); if (ls) ls.textContent = relTime(syncedAt());
 }
 // Profile is a destination on the rail, not something you tap into and back out of — so it

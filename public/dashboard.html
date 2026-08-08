@@ -214,25 +214,23 @@
     </div>
 
     <!-- Settings as a list of named things, each with a sentence saying what it does and its
-         own control beside it — rather than headings with loose rows of buttons under them,
-         where nothing says what pressing one will do. -->
+         own control beside it. The account number is not printed on arrival: it is the one
+         secret here, this screen is reachable over anybody's shoulder, and the row that holds
+         it asks before showing it. -->
     <div id="viewProfile" class="hide">
 
-    <div class="sect"><h2 class="t-label" data-i18n="prof.acctTitle">Your account number</h2></div>
+    <div class="sect"><h2 class="t-label" data-i18n="prof.youTitle">You</h2></div>
     <div class="set-group">
-      <div class="set-row top">
-        <div class="set-text">
-          <div class="acctrow"><div class="token-out num" id="profAcct">…</div><button class="eyebtn" id="profEye" title="Show / hide" aria-label="Show or hide account number" data-i18n-title="prof.eyeTitle" data-i18n-aria-label="prof.eyeAria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-          <div class="set-hint" data-i18n="prof.warn">This number is your only key — it identifies you and decrypts your data. There is no recovery if you lose it. Keep it somewhere safe, and use Export JSON for a real backup.</div>
-        </div>
-        <div class="set-ctl"><button class="btn btn-sm" id="profCopyAcct" data-i18n="prof.copy">Copy</button></div>
-      </div>
       <div class="set-row">
         <div class="set-text">
           <div class="set-name" data-i18n="prof.syncTitle">Sync</div>
           <div class="set-hint"><span class="syncdot" id="syncDot2"></span> <span id="syncTxt2">Local</span> · <span id="lastSync"></span></div>
         </div>
         <div class="set-ctl"><button class="btn btn-sm" id="profSyncNow" data-i18n="prof.syncNow">Sync now</button></div>
+      </div>
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.shareBtn">Share a read-only link</div><div class="set-hint" data-i18n="prof.shareNote">Publish a frozen, read-only snapshot for an advisor. It expires in 30 days and you can revoke it any time. The link's key never reaches the server.</div></div>
+        <div class="set-ctl"><button class="btn btn-sm" id="shareBtn" data-i18n="prof.shareCta">Create a link</button></div>
       </div>
     </div>
 
@@ -250,22 +248,14 @@
         <div class="set-text"><div class="set-name" data-i18n="prof.languageLbl">Language</div><div class="set-hint" data-i18n="prof.langHint">Changes the words in the app. Your data is untouched.</div></div>
         <div class="set-ctl"><select class="select" id="langSel" aria-label="Language" data-i18n-aria-label="prof.languageLbl"><option value="en">English</option><option value="de">Deutsch</option></select></div>
       </div>
-    </div>
-
-    <div class="sect"><h2 class="t-label" data-i18n="prof.share">Share</h2></div>
-    <div class="set-group">
-      <div class="set-row top">
-        <div class="set-text"><div class="set-name" data-i18n="prof.shareBtn">Share a read-only link</div><div class="set-hint" data-i18n="prof.shareNote">Publish a frozen, read-only snapshot for an advisor. It expires in 30 days and you can revoke it any time. The link's key never reaches the server.</div></div>
-        <div class="set-ctl"><button class="btn btn-sm" id="shareBtn" data-i18n="prof.shareCta">Create a link</button></div>
-      </div>
-    </div>
-
-    <div class="sect"><h2 class="t-label" data-i18n="prof.data">Data</h2></div>
-    <div class="set-group">
       <div class="set-row hide" id="installRow">
         <div class="set-text"><div class="set-name" data-i18n="prof.install">Install app</div><div class="set-hint" data-i18n="prof.installHint">Keeps nestegg on your home screen, and opens it without browser chrome.</div></div>
         <div class="set-ctl"><button class="btn btn-sm" id="installBtn" data-i18n="prof.installCta">Install</button></div>
       </div>
+    </div>
+
+    <div class="sect"><h2 class="t-label" data-i18n="prof.data">Your data</h2></div>
+    <div class="set-group">
       <div class="set-row top">
         <div class="set-text"><div class="set-name" data-i18n="prof.export">Export JSON</div><div class="set-hint" data-i18n="prof.exportHint">Every figure in a readable file. This is your real backup — the account number alone cannot recover data the server no longer has.</div></div>
         <div class="set-ctl"><button class="btn btn-sm" id="exportBtn" data-i18n="prof.exportCta">Export</button></div>
@@ -275,16 +265,39 @@
         <div class="set-ctl"><button class="btn btn-sm" id="importBtn" data-i18n="prof.importCta">Import</button><input type="file" id="importFile" accept="application/json" style="display:none"></div>
       </div>
       <div class="set-row top">
+        <div class="set-text">
+          <div class="set-name" data-i18n="prof.acctTitle">Account number</div>
+          <div class="set-hint" data-i18n="prof.acctHint">The only key to your ledger. Anyone who has it can read your figures, and there is no recovery if you lose it.</div>
+          <code class="acctcode t-mono hide" id="profAcct"></code>
+        </div>
+        <div class="set-ctl">
+          <button class="btn btn-sm" id="profEye" data-i18n="prof.showCta">Show</button>
+          <button class="btn btn-sm" id="profCopyAcct" data-i18n="prof.copy">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sect"><h2 class="t-label" data-i18n="prof.dangerTitle">Danger</h2></div>
+    <div class="set-group">
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.logout">Log out on this device</div><div class="set-hint" data-i18n="prof.logoutHint">Forgets the account number here. Your data stays on the server and comes back when you sign in with the number again.</div></div>
+        <div class="set-ctl"><button class="btn btn-sm btn-danger" id="profLogout" data-i18n="prof.logoutCta">Log out</button></div>
+      </div>
+      <div class="set-row top">
         <div class="set-text"><div class="set-name" data-i18n="prof.reset">Reset</div><div class="set-hint" data-i18n="prof.resetHint">Empties this ledger and starts again on the same account number.</div></div>
         <div class="set-ctl"><button class="btn btn-sm btn-danger" id="resetBtn" data-i18n="prof.resetCta">Reset</button></div>
       </div>
     </div>
 
-    <div class="sect"><h2 class="t-label" data-i18n="prof.deviceTitle">This device</h2></div>
+    <!-- The whole promise here is that the server cannot read your figures, and there is no way
+         to check that from outside: the code holding your key is served by the people making the
+         claim. Reading it is what turns a promise into something verifiable, so it belongs in
+         the app rather than only on the page doing the persuading. -->
+    <div class="sect"><h2 class="t-label" data-i18n="prof.codeTitle">The code</h2></div>
     <div class="set-group">
       <div class="set-row top">
-        <div class="set-text"><div class="set-name" data-i18n="prof.logout">Log out on this device</div><div class="set-hint" data-i18n="prof.logoutHint">Forgets the account number here. Your data stays on the server and comes back when you sign in with the number again.</div></div>
-        <div class="set-ctl"><button class="btn btn-sm btn-danger" id="profLogout" data-i18n="prof.logoutCta">Log out</button></div>
+        <div class="set-text"><div class="set-name" data-i18n="prof.sourceName">Source on GitHub</div><div class="set-hint" data-i18n="prof.sourceHint">Everything that runs here, including the encryption and what is sent to the server. Host it yourself if you would rather not take anyone's word for it.</div></div>
+        <div class="set-ctl"><a class="btn btn-sm" href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener noreferrer" data-i18n="prof.sourceCta">Read the code</a></div>
       </div>
     </div>
     </div>
