@@ -73,6 +73,8 @@ export default {
     salarySub: "What you and yours bring home, month by month.",
     budgetTitle: "Budget",
     budgetSub: "Roughly what's left each month.",
+    profileTitle: "Profile",
+    profileSub: "Your account number, and what this device does with it.",
   },
   net: {
     totalLbl: "Total Net Worth",

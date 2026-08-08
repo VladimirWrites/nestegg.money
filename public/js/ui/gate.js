@@ -271,10 +271,10 @@ function renderProfAcct() {
   $("profEye").classList.toggle("on", profShown);
   const ls = $("lastSync"); if (ls) ls.textContent = t("prof.lastSynced", { time: relTime(syncedAt()) });
 }
-function openProfile() { profShown = false; showEditor("profileEditor"); renderProfAcct(); syncThemeSel(); syncLangSel(); }
-function closeProfile() { hideEditor("profileEditor"); }
+// Profile is a destination on the rail, not something you tap into and back out of — so it
+// renders in place like the other three views and keeps the navigation on screen.
+function openProfile() { profShown = false; showView("profile"); }
 $("profileBtn").onclick = openProfile;
-$("profileBack").onclick = closeProfile;
 $("profEye").onclick = () => { profShown = !profShown; renderProfAcct(); };
 
 /* ---- theme ---- */
@@ -330,11 +330,12 @@ $("syncNowHome").onclick = () => pushServer(true);
 
 // Net worth / Salary / Budget are tabs within the home page — switch the visible view in place.
 export function showView(name) {
-  const view = name === "salary" ? "salary" : name === "budget" ? "budget" : "net";
+  const view = name === "salary" ? "salary" : name === "budget" ? "budget" : name === "profile" ? "profile" : "net";
   $("viewNet").classList.toggle("hide", view !== "net");
   $("viewSalary").classList.toggle("hide", view !== "salary");
   $("viewBudget").classList.toggle("hide", view !== "budget");
-  const on = { navNet: view === "net", salaryBtn: view === "salary", navBudget: view === "budget", profileBtn: false };
+  $("viewProfile").classList.toggle("hide", view !== "profile");
+  const on = { navNet: view === "net", salaryBtn: view === "salary", navBudget: view === "budget", profileBtn: view === "profile" };
   Object.entries(on).forEach(([id, active]) => {
     const el = $(id); if (!el) return;
     el.classList.toggle("is-on", active);
@@ -343,19 +344,24 @@ export function showView(name) {
   applyMastTexts();
   if (view === "net") { armChartAnim(); renderAll(); }
   else if (view === "salary") { armSalaryAnim(); renderSalary(); }
-  else renderBudget();
+  else if (view === "budget") renderBudget();
+  else { renderProfAcct(); syncThemeSel(); syncLangSel(); }
   window.scrollTo(0, 0);
 }
 // The masthead title/sub follow the active tab, in the active locale. Reads the view off the
 // DOM so a language change can re-apply it without knowing how the current view was reached.
 function applyMastTexts() {
-  const view = !$("viewSalary").classList.contains("hide") ? "salary" : !$("viewBudget").classList.contains("hide") ? "budget" : "net";
-  const title = t(view === "salary" ? "nav.salaryTitle" : view === "budget" ? "nav.budgetTitle" : "nav.netTitle");
+  const view = !$("viewSalary").classList.contains("hide") ? "salary"
+    : !$("viewBudget").classList.contains("hide") ? "budget"
+    : !$("viewProfile").classList.contains("hide") ? "profile" : "net";
+  const key = { salary: "nav.salaryTitle", budget: "nav.budgetTitle", profile: "nav.profileTitle", net: "nav.netTitle" }[view];
+  const subKey = { salary: "nav.salarySub", budget: "nav.budgetSub", profile: "nav.profileSub", net: "nav.netSub" }[view];
+  const title = t(key);
   $("mastTitle").textContent = title;
   // The same words in both places, because only one of them is on screen at a time: the bar on
   // a phone, the masthead on a desktop.
   const top = $("topTitle"); if (top) top.textContent = title;
-  $("mastSub").textContent = t(view === "salary" ? "nav.salarySub" : view === "budget" ? "nav.budgetSub" : "nav.netSub");
+  $("mastSub").textContent = t(subKey);
 }
 $("navNet").onclick = () => showView("net");
 $("navBudget").onclick = () => showView("budget");

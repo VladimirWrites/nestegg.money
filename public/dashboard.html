@@ -216,6 +216,35 @@
     <div id="viewBudget" class="hide">
       <div id="budgetBody"></div>
     </div>
+
+    <div id="viewProfile" class="hide">
+
+    <div class="prof-sync"><span class="syncdot" id="syncDot2"></span><span id="syncTxt2">Local</span></div>
+    <div class="sectitle" data-i18n="prof.acctTitle">Your account number</div>
+    <div class="acctrow"><div class="acctnum num" id="profAcct">…</div><button class="eyebtn" id="profEye" title="Show / hide" aria-label="Show or hide account number" data-i18n-title="prof.eyeTitle" data-i18n-aria-label="prof.eyeAria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <div class="controls"><button class="act ghost" id="profCopyAcct" data-i18n="prof.copy">Copy</button><button class="act ghost" id="profSyncNow" data-i18n="prof.syncNow">Sync now</button></div>
+    <div class="synced" id="lastSync"></div>
+    <div class="warn" data-i18n="prof.warn">This number is your only key — it identifies you and decrypts your data. There is no recovery if you lose it. Keep it somewhere safe, and use Export JSON for a real backup.</div>
+    <div class="sectitle" style="margin-top:28px" data-i18n="prof.ccyTitle">Display currency</div>
+    <div class="controls"><label class="ccypick"><span data-i18n="prof.ccyLbl">Show amounts in</span> <select id="ccySel"></select></label></div>
+    <div class="sectitle" style="margin-top:28px" data-i18n="prof.theme">Theme</div>
+    <div class="controls"><label class="ccypick"><span data-i18n="prof.themeLbl">Appearance</span> <select id="themeSel"><option value="dark" data-i18n="prof.themeDark">Dark</option><option value="light" data-i18n="prof.themeLight">Light</option></select></label></div>
+    <div class="sectitle" data-i18n="prof.language" style="margin-top:28px">Language</div>
+    <div class="controls"><label class="ccypick"><span data-i18n="prof.languageLbl">Language</span> <select id="langSel"><option value="en">English</option><option value="de">Deutsch</option></select></label></div>
+    <div class="sectitle" style="margin-top:28px" data-i18n="prof.share">Share</div>
+    <div class="controls"><button class="act ghost" id="shareBtn" data-i18n="prof.shareBtn">Share a read-only link</button></div>
+    <div class="synced" data-i18n="prof.shareNote">Publish a frozen, read-only snapshot for an advisor. It expires in 30 days and you can revoke it any time. The link's key never reaches the server.</div>
+
+    <div class="sectitle" style="margin-top:28px" data-i18n="prof.data">Data</div>
+    <div class="controls">
+      <button class="act ghost hide" id="installBtn" data-i18n="prof.install">Install app</button>
+      <button class="act ghost" id="exportBtn" data-i18n="prof.export">Export JSON</button>
+      <button class="act ghost" id="importBtn" data-i18n="prof.import">Import JSON</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+      <button class="act ghost danger" id="resetBtn" data-i18n="prof.reset">Reset</button>
+    </div>
+    <div class="controls" style="margin-top:28px"><button class="act ghost danger" id="profLogout" data-i18n="prof.logout">Log out on this device</button></div>
+    </div>
   </main>
   <div class="foot">
     <span data-i18n="foot.blurb">Your data is encrypted in your browser with a key derived from your account number, and the server stores only ciphertext —
@@ -268,40 +297,6 @@
   <div class="ed-wrap">
     <p class="edlede"><span data-i18n="asset.lede1">A car, a house, anything that depreciates or carries a loan. Toggle </span><strong data-i18n="asset.ledeDep">Depreciates</strong><span data-i18n="asset.lede2"> to have its value fall a little every day (current year live, past years locked to year-end); toggle </span><strong data-i18n="asset.ledeLoan">Has a loan</strong><span data-i18n="asset.lede3"> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it. Assign a </span><strong data-i18n="asset.ledeCat">Category</strong><span data-i18n="asset.lede4"> to group it on the home screen.</span></p>
     <div class="cards" id="assetList"></div>
-  </div>
-</div>
-
-<div id="profileEditor" class="editor hide">
-  <div class="ed-bar">
-    <button id="profileBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="prof.back">Back</span></button>
-    <div class="ed-title" data-i18n="prof.title">Profile</div>
-  </div>
-  <div class="ed-wrap">
-    <div class="prof-sync"><span class="syncdot" id="syncDot2"></span><span id="syncTxt2">Local</span></div>
-    <div class="sectitle" data-i18n="prof.acctTitle">Your account number</div>
-    <div class="acctrow"><div class="acctnum num" id="profAcct">…</div><button class="eyebtn" id="profEye" title="Show / hide" aria-label="Show or hide account number" data-i18n-title="prof.eyeTitle" data-i18n-aria-label="prof.eyeAria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-    <div class="controls"><button class="act ghost" id="profCopyAcct" data-i18n="prof.copy">Copy</button><button class="act ghost" id="profSyncNow" data-i18n="prof.syncNow">Sync now</button></div>
-    <div class="synced" id="lastSync"></div>
-    <div class="warn" data-i18n="prof.warn">This number is your only key — it identifies you and decrypts your data. There is no recovery if you lose it. Keep it somewhere safe, and use Export JSON for a real backup.</div>
-    <div class="sectitle" style="margin-top:28px" data-i18n="prof.ccyTitle">Display currency</div>
-    <div class="controls"><label class="ccypick"><span data-i18n="prof.ccyLbl">Show amounts in</span> <select id="ccySel"></select></label></div>
-    <div class="sectitle" style="margin-top:28px" data-i18n="prof.theme">Theme</div>
-    <div class="controls"><label class="ccypick"><span data-i18n="prof.themeLbl">Appearance</span> <select id="themeSel"><option value="dark" data-i18n="prof.themeDark">Dark</option><option value="light" data-i18n="prof.themeLight">Light</option></select></label></div>
-    <div class="sectitle" data-i18n="prof.language" style="margin-top:28px">Language</div>
-    <div class="controls"><label class="ccypick"><span data-i18n="prof.languageLbl">Language</span> <select id="langSel"><option value="en">English</option><option value="de">Deutsch</option></select></label></div>
-    <div class="sectitle" style="margin-top:28px" data-i18n="prof.share">Share</div>
-    <div class="controls"><button class="act ghost" id="shareBtn" data-i18n="prof.shareBtn">Share a read-only link</button></div>
-    <div class="synced" data-i18n="prof.shareNote">Publish a frozen, read-only snapshot for an advisor. It expires in 30 days and you can revoke it any time. The link's key never reaches the server.</div>
-
-    <div class="sectitle" style="margin-top:28px" data-i18n="prof.data">Data</div>
-    <div class="controls">
-      <button class="act ghost hide" id="installBtn" data-i18n="prof.install">Install app</button>
-      <button class="act ghost" id="exportBtn" data-i18n="prof.export">Export JSON</button>
-      <button class="act ghost" id="importBtn" data-i18n="prof.import">Import JSON</button>
-      <input type="file" id="importFile" accept="application/json" style="display:none">
-      <button class="act ghost danger" id="resetBtn" data-i18n="prof.reset">Reset</button>
-    </div>
-    <div class="controls" style="margin-top:28px"><button class="act ghost danger" id="profLogout" data-i18n="prof.logout">Log out on this device</button></div>
   </div>
 </div>
 

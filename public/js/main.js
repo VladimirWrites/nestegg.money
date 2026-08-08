@@ -68,7 +68,7 @@ window.addEventListener("resize", () => {
 });
 
 // Esc closes the open editor — routed through its Back button so sync + re-render run.
-const EDITOR_BACK = { yearEditor: "edBack", salaryEditor: "salaryBack", assetEditor: "assetBack", profileEditor: "profileBack" };
+const EDITOR_BACK = { yearEditor: "edBack", salaryEditor: "salaryBack", assetEditor: "assetBack" };
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   const im = $("infoModal"); if (im && !im.classList.contains("hide")) return; // the info modal handles its own Esc
