@@ -1,46 +1,400 @@
-:root{
-  --bg:#0a0a0b;--panel:#121214;--panel2:#17171a;--line:#26262a;--line2:#33333a;
-  --ink:#e8e4d8;--muted:#8a867c;--amber:#ffb000;--amber2:#ff8c1a;
-  --blue:#4aa3ff;--green:#3ad17a;--yellow:#ffd23a;--red:#ff4d6d;
-  --field:#000;          /* input / track background */
-  --row-alt:#141416;     /* alternating / header row background */
-  --bar-bg:rgba(10,10,11,.92);  /* sticky editor bar backdrop */
-  --on-amber:#000;       /* text/icon colour on amber-filled surfaces */
-  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;
-  --maxw:1100px;
-}
-/* Light theme — opt in via data-theme="light" on <html>. Same variables, light values;
-   the amber accent is darkened so it stays legible as text on a light background. */
-:root[data-theme="light"]{
-  --bg:#faf9f6;--panel:#ffffff;--panel2:#f2f0ea;--line:#e4e1d9;--line2:#d3cfc4;
-  --ink:#1b1a17;--muted:#6c685e;--amber:#a86a00;--amber2:#c2410c;
-  --blue:#2b6fd6;--green:#1f9d57;--yellow:#b8860b;--red:#d6394f;
-  --field:#ffffff;--row-alt:#f0eee7;--bar-bg:rgba(255,255,255,.9);--on-amber:#fff;
-}
-/* widen the content envelope on large monitors so space isn't wasted.
-   Standard 16:9 desktops top out ~1920; true ultrawides are 21:9 (2560/3440)
-   and 32:9 (5120). Keep scaling up for those, but cap around 2040px — beyond
-   that, stretching financial rows hurts readability more than it helps. */
-@media(min-width:1500px){:root{--maxw:1340px}}
-@media(min-width:1920px){:root{--maxw:1560px}}
-@media(min-width:2560px){:root{--maxw:1800px}}
-@media(min-width:3440px){:root{--maxw:2040px}}
-*{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--mono);line-height:1.5;padding:0 0 90px;min-height:100vh}
-.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.hide{display:none!important}
-/* visually hidden but present in the DOM, so password managers can see credential fields */
-.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-/* dark scrollbars to match the app (instead of the default light ones) */
-html{scrollbar-color:var(--line2) transparent;scrollbar-width:thin}
-.histscroll,.saltable-scroll,.schscroll,.editor,#salImportText{scrollbar-color:var(--line2) transparent;scrollbar-width:thin}
-.histscroll::-webkit-scrollbar,.saltable-scroll::-webkit-scrollbar,.schscroll::-webkit-scrollbar,.editor::-webkit-scrollbar,#salImportText::-webkit-scrollbar{width:10px;height:10px}
-.histscroll::-webkit-scrollbar-track,.saltable-scroll::-webkit-scrollbar-track,.schscroll::-webkit-scrollbar-track,.editor::-webkit-scrollbar-track,#salImportText::-webkit-scrollbar-track{background:var(--panel)}
-.histscroll::-webkit-scrollbar-thumb,.saltable-scroll::-webkit-scrollbar-thumb,.schscroll::-webkit-scrollbar-thumb,.editor::-webkit-scrollbar-thumb,#salImportText::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px;border:2px solid var(--panel)}
-.histscroll::-webkit-scrollbar-thumb:hover,.saltable-scroll::-webkit-scrollbar-thumb:hover,.schscroll::-webkit-scrollbar-thumb:hover,.editor::-webkit-scrollbar-thumb:hover,#salImportText::-webkit-scrollbar-thumb:hover{background:#4a4a52}
-.histscroll::-webkit-scrollbar-corner,.saltable-scroll::-webkit-scrollbar-corner{background:var(--panel)}
+/* nestegg — tokens, reset, typography.
+ *
+ * Shares its design language with nextly.tv: the same token ladder, the same type scale, the
+ * same control sizes. What differs is what the two products are for. This one is a ledger, so
+ * mono is kept for anything you would run your eye down a column of — amounts, tickers, the
+ * account number — and everything that is prose is set in Archivo.
+ *
+ * Two accents, each with exactly one job:
+ *   signal — amber. Anything you can act on, and the total you came to see.
+ *   accent — green. Money that grew: gains, what's left over, a goal reached.
+ * Everything else is neutral, so those two always win the eye. Chart series colours are not
+ * part of this — they live in domain/constants.js because they are data, not brand.
+ */
 
-/* accessibility: visible keyboard focus ring (mouse/touch focus stays clean via :focus-visible) */
-:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:3px}
-[role="button"]{cursor:pointer}
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 400 800;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url("/fonts/archivo-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 400 800;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url("/fonts/archivo-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  color-scheme: dark light;
+
+  --ink: #12141b;
+  --panel: #191c26;
+  --panel-2: #202432;
+  --line: #2b3040;
+  --line-soft: #22263250;
+  --text: #e9ebf2;
+  --dim: #939aae;
+  --dimmer: #666d80;
+
+  --signal: #ffb020;
+  --signal-ink: #1a1200;
+  --signal-soft: #ffb0201f;
+  --accent: #3ad17a;
+  --accent-soft: #3ad17a1f;
+  --danger: #ff6b6b;
+
+  --r-sm: 6px;
+  --r: 10px;
+  --r-lg: 16px;
+
+  --shadow: 0 1px 2px #0006, 0 8px 24px -12px #0009;
+
+  /* Drawn here rather than in three places: any control replacing a platform widget's own
+     arrow uses this one. */
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23939aae' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+
+  --rail: 232px;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace;
+  --sans: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Every document asks for viewport-fit=cover, so the page lays out under the status bar and
+     whatever the hardware takes out of the corners. max() rather than adding: the gutter is
+     already 16px, and a 44px landscape inset should replace it, not sit on top of it. */
+  --edge-t: env(safe-area-inset-top, 0px);
+  --edge-b: env(safe-area-inset-bottom, 0px);
+  --edge-l: max(16px, env(safe-area-inset-left, 0px));
+  --edge-r: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Financial rows genuinely use the width a wide monitor gives them — a household salary table
+   is four people across — so the envelope keeps growing past nextly's fixed column. It stops
+   around 2040 because past that, stretching a row hurts reading more than it helps. */
+:root { --maxw: 1100px }
+@media (min-width: 1500px) { :root { --maxw: 1340px } }
+@media (min-width: 1920px) { :root { --maxw: 1560px } }
+@media (min-width: 2560px) { :root { --maxw: 1800px } }
+@media (min-width: 3440px) { :root { --maxw: 2040px } }
+
+/* ---------- light ----------
+ * Declared twice and applied by either signal: the OS preference, or an explicit choice
+ * stamped on <html>. The explicit one is listed second so it always wins. Before this, light
+ * existed only for somebody who went looking for the toggle in Profile. */
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --ink: #f4f3ef;
+    --panel: #ffffff;
+    --panel-2: #faf9f6;
+    --line: #e4e1d9;
+    --line-soft: #e4e1d980;
+    --text: #1b1a17;
+    --dim: #5f5c54;
+    --dimmer: #86827a;
+
+    --signal: #9a5b00;
+    --signal-ink: #fff8ec;
+    --signal-soft: #9a5b0014;
+    --accent: #1f7a4a;
+    --accent-soft: #1f7a4a14;
+    --danger: #c02626;
+
+    --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a30;
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f5c54' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --ink: #f4f3ef;
+  --panel: #ffffff;
+  --panel-2: #faf9f6;
+  --line: #e4e1d9;
+  --line-soft: #e4e1d980;
+  --text: #1b1a17;
+  --dim: #5f5c54;
+  --dimmer: #86827a;
+
+  --signal: #9a5b00;
+  --signal-ink: #fff8ec;
+  --signal-soft: #9a5b0014;
+  --accent: #1f7a4a;
+  --accent-soft: #1f7a4a14;
+  --danger: #c02626;
+
+  --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a30;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f5c54' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+
+:root[data-theme="dark"] { color-scheme: dark }
+
+/* ---------- transitional aliases ----------
+ * The old names, pointed at the new tokens, so every screen keeps rendering while it is
+ * converted one at a time. Nothing new should use these. They are deleted in the commit that
+ * converts the last screen, and the build fails loudly if anything still refers to them. */
+:root {
+  --muted: var(--dim);
+  --amber: var(--signal);
+  --amber2: var(--signal);
+  --line2: var(--line);
+  --panel2: var(--panel-2);
+  --field: var(--panel);
+  --row-alt: var(--panel-2);
+  --bar-bg: color-mix(in srgb, var(--ink) 88%, transparent);
+  --on-amber: var(--signal-ink);
+  --green: var(--accent);
+  --red: var(--danger);
+  --blue: #4aa3ff;
+  --yellow: #ffd23a;
+}
+
+*, *::before, *::after { box-sizing: border-box }
+html, body { margin: 0; padding: 0 }
+
+/* Behave like an app rather than a page: no double-tap zoom, no grey flash on tap. The
+   scrollbar's room is kept whether or not there is a scrollbar in it, so a page that grows
+   long enough to need one doesn't narrow everything measured against the viewport. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--line) transparent;
+  scrollbar-width: thin;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--sans);
+  font-variation-settings: "wdth" 100;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-wrap: break-word;
+  min-height: 100vh;
+}
+
+h1, h2, h3, p, figure { margin: 0 }
+
+a { color: inherit; text-decoration: none }
+button, input, select, textarea { font: inherit; color: inherit }
+
+img { max-width: 100%; display: block }
+
+/* ---------- typography ---------- */
+
+/* Display voice: Archivo pushed wide and heavy. The width axis is what gives a title weight
+   without reaching for a second typeface. */
+.t-display {
+  font-variation-settings: "wdth" 112;
+  font-weight: 800;
+  letter-spacing: -0.021em;
+  line-height: 1.06;
+}
+
+.t-title {
+  font-variation-settings: "wdth" 106;
+  font-weight: 700;
+  letter-spacing: -0.014em;
+  line-height: 1.16;
+}
+
+/* Section labels: small, wide-tracked, uppercase. They name a region of the page, so they read
+   as signage rather than as headings competing with the content. */
+.t-label {
+  font-variation-settings: "wdth" 88;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* Mono is for anything you would run your eye down a column of: amounts, tickers, month
+   labels, the account number. Tabular figures so those columns actually line up. */
+.t-mono, .num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.t-dim { color: var(--dim) }
+
+/* ---------- controls ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, transform 0.06s ease;
+}
+
+.btn:hover { border-color: var(--dimmer) }
+.btn:active { transform: translateY(1px) }
+.btn:disabled { opacity: 0.45; cursor: not-allowed }
+
+.btn-primary {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: var(--signal-ink);
+}
+.btn-primary:hover { filter: brightness(1.07); border-color: var(--signal) }
+
+.btn-ghost { background: transparent }
+
+.btn-danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
+}
+
+.btn-sm { padding: 6px 11px; min-height: 34px; font-size: 13px }
+
+.btn-icon {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.field {
+  width: 100%;
+  padding: 11px 14px;
+  min-height: 44px;
+  /* iOS zooms the whole page when a focused field is under 16px, and never zooms back out —
+     which left the app permanently scaled up after the first tap on any amount. 16px is the
+     threshold, not a preference. */
+  font-size: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  color: var(--text);
+}
+
+/* Amounts are read in columns, so they stay mono and right-aligned even while being typed. */
+.field.num { text-align: right }
+
+.field::placeholder { color: var(--dimmer) }
+
+.field:focus {
+  outline: none;
+  border-color: var(--signal);
+  box-shadow: 0 0 0 3px var(--signal-soft);
+}
+
+/* A native select draws its arrow at the padding edge, so padding-right moves the text but
+   never the arrow — it stays jammed against the border. Replacing the control with our own
+   chevron is the only way to give it room. */
+select,
+.select {
+  width: auto;
+  min-height: 38px;
+  padding: 6px 34px 6px 12px;
+  font-size: 16px;          /* same iOS focus-zoom threshold as .field */
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 15px;
+  color: var(--text);
+}
+
+/* A date field draws its own picker button hard against the border with no way to give it
+   room — the same fault as the native select, and the same answer. */
+.field-date {
+  position: relative;
+  padding-right: 40px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  background-size: 15px;
+}
+
+.field-date::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ---------- utilities ---------- */
+
+.hide { display: none !important }
+
+/* Visually hidden but present in the DOM, so password managers can still see credential
+   fields. display:none would take them out of the form entirely. */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+::selection { background: var(--signal); color: var(--signal-ink) }
+
+[role="button"] { cursor: pointer }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

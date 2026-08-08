@@ -15,13 +15,18 @@ import { renderBudget, setBudgetReadOnly } from "./budget.js";
 import { setEntriesReadOnly } from "./networth.js";
 import { initI18n, translateDom, t, getLocale } from "../i18n.js";
 
-// Render an account number with digits and letters coloured differently, kept on one line —
-// shrinking the font only if the screen is too narrow.
+/* Render an account number with digits and letters coloured differently.
+   It wraps at its own dashes rather than being squeezed onto one line: the old version shrank
+   the type to fit and stopped at 11px, which on a 320px phone still left the last group cut
+   off — on the one screen whose whole job is getting this number read and saved correctly.
+   Each dash-separated group is kept whole, so a break never falls inside a group. */
 function showToken(el, tok) {
-  el.innerHTML = '<span class="tokline">' + [...tok].map((c) => (c === "-" ? '<span class="s">-</span>' : /[0-9]/.test(c) ? `<span class="d">${c}</span>` : `<span class="a">${c}</span>`)).join("") + "</span>";
-  const line = el.querySelector(".tokline"); line.style.fontSize = "";
-  const cs = getComputedStyle(el), avail = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  if (avail > 0) { const base = parseFloat(getComputedStyle(line).fontSize), w = line.getBoundingClientRect().width; if (w > avail) line.style.fontSize = Math.max(11, (base * avail) / w) + "px"; }
+  const groups = String(tok).split("-");
+  el.innerHTML = groups.map((g, i) => {
+    const chars = [...g].map((c) => (/[0-9]/.test(c) ? `<span class="d">${c}</span>` : `<span class="a">${c}</span>`)).join("");
+    const sep = i < groups.length - 1 ? '<span class="s">-</span>' : "";
+    return `<span class="tokgrp">${chars}${sep}</span>`;
+  }).join("");
 }
 
 /* ---- the password manager ----
@@ -264,17 +269,22 @@ function shareError(title, body) {
   app.innerHTML = `<div class="sharemsg"><h1>${title}</h1><p>${body}</p><p class="sharemsg-foot"><a href="https://nestegg.money" rel="noopener">${t("share.errFoot")}</a></p></div>`;
 }
 
+/* The account number is not printed when the screen opens. This is the one secret here, the
+   screen is reachable over anybody's shoulder, and nothing else on it needs the number to be
+   legible — Copy works without ever showing it. So the row asks first, and once shown it stays
+   shown until you leave. */
 let profShown = false;
 function renderProfAcct() {
-  const el = $("profAcct"), tok = LS.get("nw_token") || "";
-  if (profShown) showToken(el, tok); else el.textContent = tok.replace(/[0-9A-Za-z]/g, "•") || "…";
-  $("profEye").classList.toggle("on", profShown);
-  const ls = $("lastSync"); if (ls) ls.textContent = t("prof.lastSynced", { time: relTime(syncedAt()) });
+  const el = $("profAcct"), tok = LS.get("nw_token") || "", btn = $("profEye");
+  el.classList.toggle("hide", !profShown);
+  if (profShown) showToken(el, tok);
+  if (btn) { btn.textContent = t(profShown ? "prof.hideCta" : "prof.showCta"); btn.setAttribute("aria-expanded", String(profShown)); }
+  const ls = $("lastSync"); if (ls) ls.textContent = relTime(syncedAt());
 }
-function openProfile() { profShown = false; showEditor("profileEditor"); renderProfAcct(); syncThemeSel(); syncLangSel(); }
-function closeProfile() { hideEditor("profileEditor"); }
+// Profile is a destination on the rail, not something you tap into and back out of — so it
+// renders in place like the other three views and keeps the navigation on screen.
+function openProfile() { profShown = false; showView("profile"); }
 $("profileBtn").onclick = openProfile;
-$("profileBack").onclick = closeProfile;
 $("profEye").onclick = () => { profShown = !profShown; renderProfAcct(); };
 
 /* ---- theme ---- */
@@ -283,9 +293,18 @@ function applyTheme(t) {
   if (t === "light") document.documentElement.setAttribute("data-theme", "light");
   else document.documentElement.removeAttribute("data-theme");
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0b");
+  if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--ink").trim() || "#0a0a0b");
 }
-function syncThemeSel() { const s = $("themeSel"); if (s) s.value = currentTheme(); }
+// Mark whichever of the two buttons is the current answer.
+function segSync(host, attr, value) {
+  if (!host) return;
+  host.querySelectorAll(".seg-btn").forEach((b) => {
+    const on = b.getAttribute(attr) === value;
+    b.classList.toggle("is-on", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+}
+function syncThemeSel() { segSync($("themeSeg"), "data-theme-opt", currentTheme()); }
 // Recolour the SVG charts (they read theme CSS vars) by re-rendering the visible view.
 // renderAll() would no-op here (state unchanged), so force a repaint for the net view.
 function repaintForTheme() {
@@ -298,8 +317,12 @@ function setTheme(t) {
   try { LS.set("nw_theme", t); } catch (err) {}
   repaintForTheme();
 }
-const themeSel = $("themeSel");
-if (themeSel) themeSel.addEventListener("change", () => setTheme(themeSel.value));
+const themeSeg = $("themeSeg");
+if (themeSeg) themeSeg.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-theme-opt]"); if (!b) return;
+  setTheme(b.getAttribute("data-theme-opt"));
+  syncThemeSel();
+});
 // Share viewer: the profile (and its theme picker) is hidden, so the banner carries a toggle.
 // t() falls back to English literals for the module-load call, which runs before initI18n.
 const shareTheme = $("shareTheme");
@@ -314,11 +337,13 @@ syncShareThemeLabel();
 applyTheme(currentTheme()); // sync the browser UI colour to the theme set by the head script
 
 /* ---- language ---- */
-const langSel = $("langSel");
-function syncLangSel() { if (langSel) langSel.value = getLocale(); }
-if (langSel) langSel.addEventListener("change", async () => {
-  LS.set("nw_lang", langSel.value);
-  await initI18n(langSel.value);
+const langSeg = $("langSeg");
+function syncLangSel() { segSync($("langSeg"), "data-lang-opt", getLocale()); }
+if (langSeg) langSeg.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-lang-opt]"); if (!b) return;
+  const lang = b.getAttribute("data-lang-opt");
+  LS.set("nw_lang", lang);
+  await initI18n(lang);
   translateDom();       // static labels, incl. the open profile
   applyMastTexts();     // the masthead tracks the active tab, so re-derive it
   syncShareThemeLabel();
@@ -330,25 +355,38 @@ $("syncNowHome").onclick = () => pushServer(true);
 
 // Net worth / Salary / Budget are tabs within the home page — switch the visible view in place.
 export function showView(name) {
-  const view = name === "salary" ? "salary" : name === "budget" ? "budget" : "net";
+  const view = name === "salary" ? "salary" : name === "budget" ? "budget" : name === "profile" ? "profile" : "net";
   $("viewNet").classList.toggle("hide", view !== "net");
   $("viewSalary").classList.toggle("hide", view !== "salary");
   $("viewBudget").classList.toggle("hide", view !== "budget");
-  $("navNet").classList.toggle("on", view === "net");
-  $("salaryBtn").classList.toggle("on", view === "salary");
-  $("navBudget").classList.toggle("on", view === "budget");
+  $("viewProfile").classList.toggle("hide", view !== "profile");
+  const on = { navNet: view === "net", salaryBtn: view === "salary", navBudget: view === "budget", profileBtn: view === "profile" };
+  Object.entries(on).forEach(([id, active]) => {
+    const el = $(id); if (!el) return;
+    el.classList.toggle("is-on", active);
+    if (active) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
+  });
   applyMastTexts();
   if (view === "net") { armChartAnim(); renderAll(); }
   else if (view === "salary") { armSalaryAnim(); renderSalary(); }
-  else renderBudget();
+  else if (view === "budget") renderBudget();
+  else { renderProfAcct(); syncThemeSel(); syncLangSel(); }
   window.scrollTo(0, 0);
 }
 // The masthead title/sub follow the active tab, in the active locale. Reads the view off the
 // DOM so a language change can re-apply it without knowing how the current view was reached.
 function applyMastTexts() {
-  const view = !$("viewSalary").classList.contains("hide") ? "salary" : !$("viewBudget").classList.contains("hide") ? "budget" : "net";
-  $("mastTitle").textContent = t(view === "salary" ? "nav.salaryTitle" : view === "budget" ? "nav.budgetTitle" : "nav.netTitle");
-  $("mastSub").textContent = t(view === "salary" ? "nav.salarySub" : view === "budget" ? "nav.budgetSub" : "nav.netSub");
+  const view = !$("viewSalary").classList.contains("hide") ? "salary"
+    : !$("viewBudget").classList.contains("hide") ? "budget"
+    : !$("viewProfile").classList.contains("hide") ? "profile" : "net";
+  const key = { salary: "nav.salaryTitle", budget: "nav.budgetTitle", profile: "nav.profileTitle", net: "nav.netTitle" }[view];
+  const subKey = { salary: "nav.salarySub", budget: "nav.budgetSub", profile: "nav.profileSub", net: "nav.netSub" }[view];
+  const title = t(key);
+  $("mastTitle").textContent = title;
+  // The same words in both places, because only one of them is on screen at a time: the bar on
+  // a phone, the masthead on a desktop.
+  const top = $("topTitle"); if (top) top.textContent = title;
+  $("mastSub").textContent = t(subKey);
 }
 $("navNet").onclick = () => showView("net");
 $("navBudget").onclick = () => showView("budget");

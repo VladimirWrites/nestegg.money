@@ -2,6 +2,7 @@
 // /api/* Worker endpoints, and notifies the UI via toast/setSync and a data-changed listener.
 import { state } from "../domain/store.js";
 import { stampMtimes, setBaseline } from "../domain/merge.js";
+import { frozenSuperseded } from "../domain/model.js";
 import { encS, decS, keysReady, getAccountId } from "./crypto.js";
 import { toast, setSync } from "../ui/dom.js";
 import { MAX_BLOB } from "../../lib/limits.js";
@@ -82,12 +83,12 @@ export async function pushServer(manual, keepalive = false) {
       if (manual || !syncWarned) { syncWarned = true; toast("Too many new accounts from your network right now — your data is saved on this device. Try syncing again later."); }
     } else {
       console.warn("[nestegg] sync failed: HTTP", r.status, r.statusText, "—", body.length, "byte body");
-      setSync("off", "Sync error");
+      setSync("off", "Offline — saved locally");
       if (manual || !syncWarned) { syncWarned = true; toast("Sync failed — changes are saved on this device only"); }
     }
   } catch (e) {
     console.warn("[nestegg] sync failed:", (e && e.name) || "", (e && e.message) || e, e);
-    setSync("off", "Local only");
+    setSync("off", "Offline — saved locally");
     if (manual || !syncWarned) { syncWarned = true; toast("Sync failed — changes are saved on this device only"); }
   }
 }
@@ -97,7 +98,7 @@ export async function loadServer() {
   try {
     const r = await fetch("/api/vault", { headers: { "X-Vault-Id": getAccountId() } });
     if (r.status === 404) { setSync("ok", "Synced (new)"); return null; }
-    if (!r.ok) { console.warn("[nestegg] load failed: HTTP", r.status, r.statusText); setSync("off", "Local only"); return null; }
+    if (!r.ok) { console.warn("[nestegg] load failed: HTTP", r.status, r.statusText); setSync("off", "Offline — saved locally"); return null; }
     const { blob } = await r.json();
     const o = await decS(blob);
     setSync("ok", "Synced");
@@ -105,7 +106,7 @@ export async function loadServer() {
     return o;
   } catch (e) {
     console.warn("[nestegg] load failed:", (e && e.name) || "", (e && e.message) || e, e);
-    setSync("off", "Local only");
+    setSync("off", "Offline — saved locally");
     return null;
   }
 }
@@ -182,7 +183,9 @@ export async function refreshHistPrices() {
         if (en.px != null && en.pxKey === key) continue;
         if (_histMiss.has(key)) continue; // already known to have no year-end price
         toFetch.push({ en, year: sn.year, key });
-      } else if (en.px != null) {
+      } else if (frozenSuperseded(en, state.prices)) {
+        // Only once a live price is actually in hand. Dropping it first is what turned an
+        // unreachable price API into a net worth that had lost its holdings.
         delete en.px; delete en.pxCcy; delete en.pxKey; changed = true;
       }
     }

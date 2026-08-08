@@ -20,7 +20,7 @@ const currentTheme = () => (document.documentElement.getAttribute("data-theme") 
 function syncThemeBtn() {
   $("themeBtn").textContent = currentTheme() === "light" ? t("bnr.themeDark") : t("bnr.themeLight");
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0b");
+  if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--ink").trim() || "#0a0a0b");
 }
 $("themeBtn").onclick = () => {
   const next = currentTheme() === "light" ? "dark" : "light";

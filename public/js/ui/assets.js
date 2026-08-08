@@ -97,7 +97,7 @@ function assetCardHTML(a) {
         <label class="fld">${t("asset.start")}<input class="fin" type="date" value="${esc(L.startDate)}" data-aid="${a.id}" data-lf="startDate"></label>
         <label class="fld">${t("asset.fixedUntil")}<input class="fin" type="date" value="${esc(L.fixedUntil || "")}" data-aid="${a.id}" data-lf="fixedUntil"></label>
       </div>
-      <div class="exwrap"><div class="psub">${t("asset.extraPayments")}<button class="act ghost mini" data-extraadd="${a.id}">${t("asset.addExtra")}</button></div>${extras || `<div class="exhint">${t("asset.extraHint")}</div>`}</div>
+      <div class="exwrap"><div class="psub">${t("asset.extraPayments")}<button class="btn btn-sm" data-extraadd="${a.id}">${t("asset.addExtra")}</button></div>${extras || `<div class="exhint">${t("asset.extraHint")}</div>`}</div>
       <div class="lcomp">${loanComputedHTML(a)}</div>
     </div>`;
   }

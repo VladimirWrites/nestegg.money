@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Root base so relative asset URLs resolve from / regardless of path (served at /, /dashboard, and /s/). -->
 <base href="/">
 <!-- apply the saved theme before first paint, so there's no flash -->
@@ -33,6 +33,7 @@
 <meta name="twitter:title" content="nestegg — private net worth tracker">
 <meta name="twitter:description" content="Log your assets each year and watch your wealth over time and by allocation. Encrypted in your browser; no email, no password.">
 <meta name="twitter:image" content="https://nestegg.money/assets/og.png">
+<link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
@@ -71,25 +72,60 @@
 </div>
 
 <div id="app" class="hide">
+ <div class="shell">
+  <!-- Four destinations: a bottom bar within thumb reach on a phone, the same four as a left
+       rail on a desktop. Same markup and order at both sizes, so the app doesn't have to be
+       relearned when the window changes. -->
+  <nav class="nav" aria-label="Sections" data-i18n-aria-label="nav.sections">
+    <div class="nav-brand">
+      <!-- The lamp is the sync indicator: amber when the vault is in step, pulsing while a sync
+           is in flight, grey when this device is on its own. Pressing it syncs now. -->
+      <button class="brand" id="syncNowHome" type="button" title="Sync now" data-i18n-title="nav.syncNow">
+        <i class="brand-lamp" id="syncDot"></i><span>nestegg</span>
+      </button>
+      <span class="sr-only" id="syncTxt" role="status" aria-live="polite">Local</span>
+    </div>
+    <button class="nav-item is-on" id="navNet" type="button">
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M7 19V9"/><path d="M12 19V5"/><path d="M17 19v-7"/></svg>
+      <span data-i18n="nav.net">Net worth</span>
+    </button>
+    <button class="nav-item" id="salaryBtn" type="button">
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v10H3z"/><circle cx="12" cy="12" r="2.5"/></svg>
+      <span data-i18n="nav.salary">Salary</span>
+    </button>
+    <button class="nav-item" id="navBudget" type="button">
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M14 3.5A9 9 0 0 1 20.5 10H14z"/></svg>
+      <span data-i18n="nav.budget">Budget</span>
+    </button>
+    <button class="nav-item" id="profileBtn" type="button">
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5"/></svg>
+      <span data-i18n="nav.profile">Profile</span>
+    </button>
+  </nav>
+
+  <div class="shell-main">
   <div id="demoBanner" class="demobar hide" role="status">
     <span data-i18n="banner.demo">Demo — sample data, nothing is saved.</span>
-    <span class="demobtns"><button type="button" class="act" id="demoCreate" data-i18n="banner.demoCreate">Create an account</button><button type="button" class="demolink" id="demoExit" data-i18n="banner.demoExit">Leave</button></span>
+    <span class="demobtns"><button type="button" class="btn btn-primary btn-sm" id="demoCreate" data-i18n="banner.demoCreate">Create an account</button><button type="button" class="demolink" id="demoExit" data-i18n="banner.demoExit">Leave</button></span>
   </div>
   <div id="shareBanner" class="demobar hide" role="status">
     <span data-i18n="banner.share">Read-only shared snapshot — a point-in-time copy. Nothing here can be edited.</span>
     <span class="demobtns"><button class="demolink" id="shareTheme" type="button">Light mode</button><a class="demolink" href="https://nestegg.money" rel="noopener" data-i18n="banner.whatIs">What is nestegg?</a></span>
   </div>
-  <div class="acctbar">
-    <button class="who syncbtn" id="syncNowHome" title="Sync now" data-i18n-title="nav.syncNow"><span class="syncdot" id="syncDot"></span><span id="syncTxt">Local</span></button>
-    <div><button id="profileBtn" data-i18n="nav.profile">Profile</button></div>
-  </div>
+  <!-- The phone's top edge. On a desktop the rail carries the brand and the masthead below
+       carries the name of the screen, so this hides itself unless a screen puts controls in it. -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-title t-title" id="topTitle" data-i18n="nav.netTitle">Net Worth</div>
+      <div class="topbar-actions" id="topActions"></div>
+    </div>
+  </header>
   <header class="masthead">
     <div class="kicker"><span data-i18n="nav.kicker">Personal Ledger</span><span id="dateline">—</span></div>
-    <div class="titlerow"><h1 class="title" id="mastTitle" data-i18n="nav.netTitle">Net Worth</h1></div>
+    <div class="titlerow"><h1 class="title t-display" id="mastTitle" data-i18n="nav.netTitle">Net Worth</h1></div>
     <div class="subt" id="mastSub" data-i18n="nav.netSub">A quiet accounting of what you hold.</div>
-    <nav class="mainnav"><button class="navtab on" id="navNet" data-i18n="nav.net">Net worth</button><button class="navtab" id="salaryBtn" data-i18n="nav.salary">Salary</button><button class="navtab" id="navBudget" data-i18n="nav.budget">Budget</button></nav>
   </header>
-  <main>
+  <main class="main">
     <div id="viewNet">
     <div class="hero">
       <div class="label" data-i18n="net.totalLbl">Total Net Worth</div>
@@ -100,24 +136,21 @@
 
     <div class="panels">
       <section class="over">
-        <button class="chartdl" id="dlHist" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle"><span data-i18n="net.overTime">Over time</span> <span class="tin" data-i18n="net.overTimeTin">— tap a year to edit its assets</span></div>
+        <div class="sectitle"><span data-i18n="net.overTime">Over time</span> <span class="tin" data-i18n="net.overTimeTin">— tap a year to edit its assets</span><span class="sectools"><button class="chartdl" id="dlHist" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
         <div class="histscroll"><div class="chartwrap"><svg id="histChart"></svg><div id="histTip" class="salflag hide"></div></div></div>
         <div class="chiplegend" id="histLegend"></div>
         <div class="years" id="years"></div>
-        <div class="controls"><button class="act" id="addYear" data-i18n="net.addYear">+ Year</button></div>
+        <div class="controls"><button class="btn btn-primary btn-sm" id="addYear" data-i18n="net.addYear">+ Year</button></div>
       </section>
 
       <section class="alloc">
-        <button class="chartdl" id="dlDonut" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle"><span data-i18n="net.alloc">Allocation</span> <span class="tin" id="allocYear"></span></div>
+        <div class="sectitle"><span data-i18n="net.alloc">Allocation</span> <span class="tin" id="allocYear"></span><span class="sectools"><button class="chartdl" id="dlDonut" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
         <div class="charts"><div style="display:flex;justify-content:center"><div class="chartwrap"><svg id="donut" width="240" height="240" viewBox="0 0 240 240"></svg><div id="donutTip" class="salflag hide"></div></div></div><div class="legend" id="legend"></div></div>
       </section>
     </div>
 
     <section class="forecast">
-      <button class="chartdl" id="dlFc" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-      <div class="sectitle"><span data-i18n="net.forecast">Forecast</span> <span class="tin" data-i18n="net.forecastTin">— where you're headed</span><label class="fcswitch"><input type="checkbox" id="fcOn"><span class="track"></span><em data-i18n="net.show">Show</em></label></div>
+      <div class="sectitle"><span data-i18n="net.forecast">Forecast</span> <span class="tin" data-i18n="net.forecastTin">— where you're headed</span><label class="fcswitch"><input type="checkbox" id="fcOn"><span class="track"></span><em data-i18n="net.show">Show</em></label><span class="sectools"><button class="chartdl" id="dlFc" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
       <div id="fcBody">
         <div class="fcrow">
           <label class="fld"><span class="cap" title="Monthly contribution" data-i18n="net.monthly" data-i18n-title="net.monthly">Monthly contribution</span><input id="fcMonthly" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
@@ -131,7 +164,7 @@
         <label class="fccheck"><input type="checkbox" id="fcBand"><span data-i18n="net.band">Show return range (poor / expected / great)</span></label>
         <div class="fcstats" id="fcStats"></div>
         <div class="histscroll"><svg id="fcChart"></svg></div>
-        <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span><span data-i18n="net.actual">Actual</span></span><span><span class="chip fcdash"></span><span data-i18n="net.projected">Projected</span></span><span><span class="chip" style="background:var(--green)"></span><span data-i18n="net.goal">Goal</span></span></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--signal)"></span><span data-i18n="net.actual">Actual</span></span><span><span class="chip fcdash"></span><span data-i18n="net.projected">Projected</span></span><span><span class="chip" style="background:var(--accent)"></span><span data-i18n="net.goal">Goal</span></span></div>
       </div>
     </section>
 
@@ -153,14 +186,14 @@
         <div class="fchint" style="padding:0 0 4px" data-i18n="net.retireHint">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the pension you expect (in today's value) and when it starts. Germany: pension = points × value (~1 point/yr at the average salary; points accrue while working).</div>
         <div class="fcstats" id="rtStats"></div>
         <div class="histscroll"><svg id="rtChart"></svg></div>
-        <div class="chiplegend"><span><span class="chip" style="background:var(--amber)"></span><span data-i18n="net.nestEggChip">Nest egg (today's money)</span></span></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--signal)"></span><span data-i18n="net.nestEggChip">Nest egg (today's money)</span></span></div>
       </div>
     </section>
 
     <section style="border-bottom:none;padding-top:8px">
       <div class="controls" style="margin-top:0">
-        <button class="act ghost" id="pricesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.prices">Prices</span></button>
-        <button class="act ghost" id="ratesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.rates">Rates</span></button>
+        <button class="btn btn-sm" id="pricesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.prices">Prices</span></button>
+        <button class="btn btn-sm" id="ratesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.rates">Rates</span></button>
         <span class="updnote" id="updNote"></span>
       </div>
     </section>
@@ -168,17 +201,105 @@
 
     <div id="viewSalary" class="hide">
       <section class="over" style="border:none;padding:8px 0">
-        <button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart" data-i18n-title="salary.dlChart" data-i18n-aria-label="salary.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
-        <div class="sectitle" data-i18n="salary.history">Our salary history</div>
+        <div class="sectitle" data-i18n="salary.history">Our salary history<span class="sectools"><button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart" data-i18n-title="salary.dlChart" data-i18n-aria-label="salary.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
         <div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div>
         <div class="chiplegend" id="salaryLegend"></div>
       </section>
       <div id="salaryTable"></div>
-      <div class="controls"><button class="act ghost" id="salNext" data-i18n="salary.next">+ Next month</button><button class="act" id="salEdit" data-i18n="salary.edit">Edit salaries</button></div>
+      <div class="controls"><button class="btn btn-sm" id="salNext" data-i18n="salary.next">+ Next month</button><button class="btn btn-primary btn-sm" id="salEdit" data-i18n="salary.edit">Edit salaries</button></div>
     </div>
 
     <div id="viewBudget" class="hide">
       <div id="budgetBody"></div>
+    </div>
+
+    <!-- Settings as a list of named things, each with a sentence saying what it does and its
+         own control beside it. The account number is not printed on arrival: it is the one
+         secret here, this screen is reachable over anybody's shoulder, and the row that holds
+         it asks before showing it. -->
+    <div id="viewProfile" class="hide">
+
+    <div class="sect"><h2 class="t-label" data-i18n="prof.youTitle">You</h2></div>
+    <div class="set-group">
+      <div class="set-row">
+        <div class="set-text">
+          <div class="set-name" data-i18n="prof.syncTitle">Sync</div>
+          <div class="set-hint"><span class="syncdot" id="syncDot2"></span> <span id="syncTxt2">Local</span> · <span id="lastSync"></span></div>
+        </div>
+        <div class="set-ctl"><button class="btn btn-sm" id="profSyncNow" data-i18n="prof.syncNow">Sync now</button></div>
+      </div>
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.shareBtn">Share a read-only link</div><div class="set-hint" data-i18n="prof.shareNote">Publish a frozen, read-only snapshot for an advisor. It expires in 30 days and you can revoke it any time. The link's key never reaches the server.</div></div>
+        <div class="set-ctl"><button class="btn btn-sm" id="shareBtn" data-i18n="prof.shareCta">Create a link</button></div>
+      </div>
+    </div>
+
+    <div class="sect"><h2 class="t-label" data-i18n="prof.prefs">Preferences</h2></div>
+    <div class="set-group">
+      <div class="set-row">
+        <div class="set-text"><div class="set-name" data-i18n="prof.ccyTitle">Display currency</div><div class="set-hint" data-i18n="prof.ccyHint">Every amount is shown in this currency, converted at each year's rate.</div></div>
+        <div class="set-ctl"><select class="select" id="ccySel" aria-label="Display currency" data-i18n-aria-label="prof.ccyTitle"></select></div>
+      </div>
+      <div class="set-row">
+        <div class="set-text"><div class="set-name" data-i18n="prof.themeLbl">Appearance</div><div class="set-hint" data-i18n="prof.themeHint">Follows your device unless you pick one here.</div></div>
+        <div class="set-ctl"><div class="seg" id="themeSeg" role="group" aria-label="Appearance" data-i18n-aria-label="prof.themeLbl"><button type="button" class="seg-btn" data-theme-opt="dark" data-i18n="prof.themeDark">Dark</button><button type="button" class="seg-btn" data-theme-opt="light" data-i18n="prof.themeLight">Light</button></div></div>
+      </div>
+      <div class="set-row">
+        <div class="set-text"><div class="set-name" data-i18n="prof.languageLbl">Language</div><div class="set-hint" data-i18n="prof.langHint">Changes the words in the app. Your data is untouched.</div></div>
+        <div class="set-ctl"><div class="seg" id="langSeg" role="group" aria-label="Language" data-i18n-aria-label="prof.languageLbl"><button type="button" class="seg-btn" data-lang-opt="en">English</button><button type="button" class="seg-btn" data-lang-opt="de">Deutsch</button></div></div>
+      </div>
+      <div class="set-row hide" id="installRow">
+        <div class="set-text"><div class="set-name" data-i18n="prof.install">Install app</div><div class="set-hint" data-i18n="prof.installHint">Keeps nestegg on your home screen, and opens it without browser chrome.</div></div>
+        <div class="set-ctl"><button class="btn btn-sm" id="installBtn" data-i18n="prof.installCta">Install</button></div>
+      </div>
+    </div>
+
+    <div class="sect"><h2 class="t-label" data-i18n="prof.data">Your data</h2></div>
+    <div class="set-group">
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.export">Export JSON</div><div class="set-hint" data-i18n="prof.exportHint">Every figure in a readable file. This is your real backup — the account number alone cannot recover data the server no longer has.</div></div>
+        <div class="set-ctl"><button class="btn btn-sm" id="exportBtn" data-i18n="prof.exportCta">Export</button></div>
+      </div>
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.import">Import JSON</div><div class="set-hint" data-i18n="prof.importHint">A nestegg export. Merged into what's here — the newer entry wins, and nothing is dropped.</div></div>
+        <div class="set-ctl"><button class="btn btn-sm" id="importBtn" data-i18n="prof.importCta">Import</button><input type="file" id="importFile" accept="application/json" style="display:none"></div>
+      </div>
+      <div class="set-row top">
+        <div class="set-text">
+          <div class="set-name" data-i18n="prof.acctTitle">Account number</div>
+          <div class="set-hint" data-i18n="prof.acctHint">The only key to your ledger. Anyone who has it can read your figures, and there is no recovery if you lose it.</div>
+          <code class="acctcode t-mono hide" id="profAcct"></code>
+        </div>
+        <div class="set-ctl">
+          <button class="btn btn-sm" id="profEye" data-i18n="prof.showCta">Show</button>
+          <button class="btn btn-sm" id="profCopyAcct" data-i18n="prof.copy">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sect"><h2 class="t-label" data-i18n="prof.dangerTitle">Danger</h2></div>
+    <div class="set-group">
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.logout">Log out on this device</div><div class="set-hint" data-i18n="prof.logoutHint">Forgets the account number here. Your data stays on the server and comes back when you sign in with the number again.</div></div>
+        <div class="set-ctl"><button class="btn btn-sm btn-danger" id="profLogout" data-i18n="prof.logoutCta">Log out</button></div>
+      </div>
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.reset">Reset</div><div class="set-hint" data-i18n="prof.resetHint">Empties this ledger and starts again on the same account number.</div></div>
+        <div class="set-ctl"><button class="btn btn-sm btn-danger" id="resetBtn" data-i18n="prof.resetCta">Reset</button></div>
+      </div>
+    </div>
+
+    <!-- The whole promise here is that the server cannot read your figures, and there is no way
+         to check that from outside: the code holding your key is served by the people making the
+         claim. Reading it is what turns a promise into something verifiable, so it belongs in
+         the app rather than only on the page doing the persuading. -->
+    <div class="sect"><h2 class="t-label" data-i18n="prof.codeTitle">The code</h2></div>
+    <div class="set-group">
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.sourceName">Source on GitHub</div><div class="set-hint" data-i18n="prof.sourceHint">Everything that runs here, including the encryption and what is sent to the server. Host it yourself if you would rather not take anyone's word for it.</div></div>
+        <div class="set-ctl"><a class="btn btn-sm" href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener noreferrer" data-i18n="prof.sourceCta">Read the code</a></div>
+      </div>
+    </div>
     </div>
   </main>
   <div class="foot">
@@ -188,82 +309,56 @@
     There is no recovery if you lose your account number — Export JSON is your backup.</span>
     <div class="footlinks"><a href="privacy.html" data-i18n="foot.privacy">Privacy Policy</a> · <a href="terms.html" data-i18n="foot.terms">Terms &amp; Conditions</a> · <a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener" data-i18n="foot.source">Source</a> · <a href="https://buymeacoffee.com/vladimirj.dev" target="_blank" rel="noopener" data-i18n="foot.coffee">Buy me a coffee ☕</a></div>
   </div>
+  </div><!-- /shell-main -->
+ </div><!-- /shell -->
 </div>
 
 <div id="yearEditor" class="editor hide">
   <div class="ed-bar">
-    <button id="edBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="yeared.back">Back</span></button>
-    <div class="ed-title"><span data-i18n="yeared.year">Year</span> <input id="edYear" type="number" inputmode="numeric"></div>
-    <button id="edDelYear" data-i18n="yeared.delYear">Delete year</button>
+    <div class="ed-bar-inner">
+      <button class="ed-back" id="edBack" title="Back" aria-label="Back" data-i18n-title="yeared.back" data-i18n-aria-label="yeared.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="ed-title t-title"><span data-i18n="yeared.year">Year</span> <input id="edYear" class="ed-year num" type="number" inputmode="numeric"></div>
+      <div class="ed-actions"><button class="btn btn-sm btn-danger" id="edDelYear" data-i18n="yeared.delYear">Delete year</button></div>
+    </div>
   </div>
   <div class="ed-wrap">
     <div class="ed-total"><span class="et-k" data-i18n="yeared.total">Year total</span><span class="et-v" id="edTotal">—</span></div>
     <div class="cards" id="edEntries"></div>
-    <div class="controls"><button class="act" id="edAdd" data-i18n="yeared.add">+ Add asset</button><button class="act ghost" id="edAddLongterm" data-i18n="yeared.addLongterm">+ Property / vehicle</button><button class="act ghost" id="edAddLiability" data-i18n="yeared.addLiability">+ Loan / debt</button><button class="act ghost" id="edAddGroup" data-i18n="yeared.addGroup">+ Add group</button><button class="act ghost" id="edCopyPrev" data-i18n="yeared.copyPrev">Copy previous year</button></div>
+    <div class="controls"><button class="btn btn-primary btn-sm" id="edAdd" data-i18n="yeared.add">+ Add asset</button><button class="btn btn-sm" id="edAddLongterm" data-i18n="yeared.addLongterm">+ Property / vehicle</button><button class="btn btn-sm" id="edAddLiability" data-i18n="yeared.addLiability">+ Loan / debt</button><button class="btn btn-sm" id="edAddGroup" data-i18n="yeared.addGroup">+ Add group</button><button class="btn btn-sm" id="edCopyPrev" data-i18n="yeared.copyPrev">Copy previous year</button></div>
   </div>
 </div>
 
 <div id="salaryEditor" class="editor hide">
   <div class="ed-bar">
-    <button id="salaryBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="salary.back">Back</span></button>
-    <div class="ed-title" data-i18n="salary.edit">Edit salaries</div>
+    <div class="ed-bar-inner">
+      <button class="ed-back" id="salaryBack" title="Back" aria-label="Back" data-i18n-title="salary.back" data-i18n-aria-label="salary.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="ed-title t-title" data-i18n="salary.edit">Edit salaries</div>
+    </div>
   </div>
   <div class="ed-wrap">
     <p class="edlede"><span data-i18n="salary.lede1">Type each person's monthly </span><strong data-i18n="salary.net">net</strong><span data-i18n="salary.lede2"> pay side by side; the event field notes a raise or job change. Add a range of months, or import from a spreadsheet below.</span></p>
     <div id="salaryList"></div>
-    <div class="controls"><button class="act" id="addPerson" data-i18n="salary.addPerson">+ Add person</button></div>
+    <div class="controls"><button class="btn btn-primary btn-sm" id="addPerson" data-i18n="salary.addPerson">+ Add person</button></div>
     <details class="salimport">
       <summary data-i18n="salary.importSummary">Import from a spreadsheet</summary>
       <p class="edlede" style="margin:10px 0"><span data-i18n="salary.imp1">In Google Sheets, select the </span><strong data-i18n="salary.impMonth">Month</strong><span data-i18n="salary.imp2"> column and the </span><strong data-i18n="salary.impNet">net amount</strong><span data-i18n="salary.imp3"> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</span></p>
       <div class="controls" style="margin:0 0 8px"><span class="salrlbl" data-i18n="salary.importFor">Import for</span><select id="salImportWho" class="salccy"></select></div>
       <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
-      <div class="controls"><button class="act" id="salImportBtn" data-i18n="salary.importBtn">Import pasted rows</button></div>
+      <div class="controls"><button class="btn btn-primary btn-sm" id="salImportBtn" data-i18n="salary.importBtn">Import pasted rows</button></div>
     </details>
   </div>
 </div>
 
 <div id="assetEditor" class="editor hide">
   <div class="ed-bar">
-    <button id="assetBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="asset.back">Back</span></button>
-    <div class="ed-title" data-i18n="asset.title">Asset</div>
+    <div class="ed-bar-inner">
+      <button class="ed-back" id="assetBack" title="Back" aria-label="Back" data-i18n-title="asset.back" data-i18n-aria-label="asset.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="ed-title t-title" data-i18n="asset.title">Asset</div>
+    </div>
   </div>
   <div class="ed-wrap">
     <p class="edlede"><span data-i18n="asset.lede1">A car, a house, anything that depreciates or carries a loan. Toggle </span><strong data-i18n="asset.ledeDep">Depreciates</strong><span data-i18n="asset.lede2"> to have its value fall a little every day (current year live, past years locked to year-end); toggle </span><strong data-i18n="asset.ledeLoan">Has a loan</strong><span data-i18n="asset.lede3"> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it. Assign a </span><strong data-i18n="asset.ledeCat">Category</strong><span data-i18n="asset.lede4"> to group it on the home screen.</span></p>
     <div class="cards" id="assetList"></div>
-  </div>
-</div>
-
-<div id="profileEditor" class="editor hide">
-  <div class="ed-bar">
-    <button id="profileBack"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="prof.back">Back</span></button>
-    <div class="ed-title" data-i18n="prof.title">Profile</div>
-  </div>
-  <div class="ed-wrap">
-    <div class="prof-sync"><span class="syncdot" id="syncDot2"></span><span id="syncTxt2">Local</span></div>
-    <div class="sectitle" data-i18n="prof.acctTitle">Your account number</div>
-    <div class="acctrow"><div class="acctnum num" id="profAcct">…</div><button class="eyebtn" id="profEye" title="Show / hide" aria-label="Show or hide account number" data-i18n-title="prof.eyeTitle" data-i18n-aria-label="prof.eyeAria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-    <div class="controls"><button class="act ghost" id="profCopyAcct" data-i18n="prof.copy">Copy</button><button class="act ghost" id="profSyncNow" data-i18n="prof.syncNow">Sync now</button></div>
-    <div class="synced" id="lastSync"></div>
-    <div class="warn" data-i18n="prof.warn">This number is your only key — it identifies you and decrypts your data. There is no recovery if you lose it. Keep it somewhere safe, and use Export JSON for a real backup.</div>
-    <div class="sectitle" style="margin-top:28px" data-i18n="prof.ccyTitle">Display currency</div>
-    <div class="controls"><label class="ccypick"><span data-i18n="prof.ccyLbl">Show amounts in</span> <select id="ccySel"></select></label></div>
-    <div class="sectitle" style="margin-top:28px" data-i18n="prof.theme">Theme</div>
-    <div class="controls"><label class="ccypick"><span data-i18n="prof.themeLbl">Appearance</span> <select id="themeSel"><option value="dark" data-i18n="prof.themeDark">Dark</option><option value="light" data-i18n="prof.themeLight">Light</option></select></label></div>
-    <div class="sectitle" data-i18n="prof.language" style="margin-top:28px">Language</div>
-    <div class="controls"><label class="ccypick"><span data-i18n="prof.languageLbl">Language</span> <select id="langSel"><option value="en">English</option><option value="de">Deutsch</option></select></label></div>
-    <div class="sectitle" style="margin-top:28px" data-i18n="prof.share">Share</div>
-    <div class="controls"><button class="act ghost" id="shareBtn" data-i18n="prof.shareBtn">Share a read-only link</button></div>
-    <div class="synced" data-i18n="prof.shareNote">Publish a frozen, read-only snapshot for an advisor. It expires in 30 days and you can revoke it any time. The link's key never reaches the server.</div>
-
-    <div class="sectitle" style="margin-top:28px" data-i18n="prof.data">Data</div>
-    <div class="controls">
-      <button class="act ghost hide" id="installBtn" data-i18n="prof.install">Install app</button>
-      <button class="act ghost" id="exportBtn" data-i18n="prof.export">Export JSON</button>
-      <button class="act ghost" id="importBtn" data-i18n="prof.import">Import JSON</button>
-      <input type="file" id="importFile" accept="application/json" style="display:none">
-      <button class="act ghost danger" id="resetBtn" data-i18n="prof.reset">Reset</button>
-    </div>
-    <div class="controls" style="margin-top:28px"><button class="act ghost danger" id="profLogout" data-i18n="prof.logout">Log out on this device</button></div>
   </div>
 </div>
 
@@ -276,10 +371,10 @@
     <label class="share-lbl"><span data-i18n="share.whoFor">Who's it for?</span> <span class="share-hint" data-i18n="share.whoHint">(optional, for your list)</span>
       <input type="text" id="shareLabel" maxlength="60" placeholder="e.g. My advisor" autocomplete="off" data-i18n-placeholder="share.whoPh">
     </label>
-    <div class="controls"><button class="act" id="shareCreate" data-i18n="share.create">Create link</button></div>
+    <div class="controls"><button class="btn btn-primary btn-sm" id="shareCreate" data-i18n="share.create">Create link</button></div>
     <div id="shareResult" class="share-result hide">
       <div class="sectitle" data-i18n="share.yourLink">Your link</div>
-      <div class="acctrow"><input type="text" id="shareLinkOut" class="acctnum" readonly><button class="act ghost" id="shareCopy" data-i18n="share.copy">Copy</button></div>
+      <div class="acctrow"><input type="text" id="shareLinkOut" class="acctnum" readonly><button class="btn btn-sm" id="shareCopy" data-i18n="share.copy">Copy</button></div>
       <div class="synced" data-i18n="share.copyNote">Anyone with this link can view the snapshot until it expires. Copy it now — the key is only in this link and isn't stored anywhere.</div>
     </div>
     <div class="sectitle" style="margin-top:28px" data-i18n="share.active">Active links</div>

@@ -6,12 +6,12 @@ import { t } from "../i18n.js";
 
 // Chart colours, read from the active theme's CSS variables. Mutated by refreshPalette()
 // before each render so a theme switch recolours the SVG charts.
-export const C = { amber: "#ffb000", green: "#3ad17a", grid: "#26262a", axis: "#8a867c", ink: "#e8e4d8", bg: "#0a0a0b", red: "#ff4d6d" };
+export const C = { amber: "#ffb020", green: "#3ad17a", grid: "#2b3040", axis: "#939aae", ink: "#e9ebf2", bg: "#12141b", red: "#ff6b6b" };
 const cssVar = (n, fb) => { try { const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return v || fb; } catch (e) { return fb; } };
 export function refreshPalette() {
-  C.amber = cssVar("--amber", C.amber); C.green = cssVar("--green", C.green);
-  C.grid = cssVar("--line", C.grid); C.axis = cssVar("--muted", C.axis);
-  C.ink = cssVar("--ink", C.ink); C.bg = cssVar("--bg", C.bg); C.red = cssVar("--red", C.red);
+  C.amber = cssVar("--signal", C.amber); C.green = cssVar("--accent", C.green);
+  C.grid = cssVar("--line", C.grid); C.axis = cssVar("--dim", C.axis);
+  C.ink = cssVar("--text", C.ink); C.bg = cssVar("--ink", C.bg); C.red = cssVar("--danger", C.red);
 }
 
 // Round a value up to a "nice" axis maximum. The step sequence is fine-grained on purpose:

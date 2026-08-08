@@ -39,7 +39,7 @@ function roCardHTML(en, i, names, year) {
   const liab = en.kind === "liability", priced = en.kind === "ticker" || en.kind === "crypto";
   const v = entryBase(en, year);
   const p = priced ? tickerPx(en, year) : null;
-  const dot = `<span class="dot" style="background:${liab ? "var(--red)" : colorOf(seriesKey(en), names)}"></span>`;
+  const dot = `<span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>`;
   const mid = priced
     ? `<span class="ro-mid"><span class="ro-sh num">${en.shares != null ? en.shares : 0}</span><span class="ro-tk">${esc(en.ticker || "")}</span></span>`
     : "";
@@ -52,7 +52,7 @@ function roAutoCardHTML(en, names, year) {
   const a = (state.assets || []).find((x) => x.id === en.assetId) || {}, liab = en.kind === "liability";
   const tags = liab ? t("net.tagLiability") : [a.depreciates ? (a.up ? t("net.tagAppreciating") : t("net.tagDepreciating")) : "", a.loan ? t("net.tagLoan") : ""].filter(Boolean).join(" · ") || t("net.tagAsset");
   const v = entryBase(en, year);
-  const dot = `<span class="dot" style="background:${liab ? "var(--red)" : colorOf(seriesKey(en), names)}"></span>`;
+  const dot = `<span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>`;
   return `<div class="rcard ro auto${liab ? " liabcard" : ""}">${dot}<span class="ro-name">${esc(en.name)}</span><span class="autotag">${tags}</span><span class="ro-val${liab ? " liab" : ""}">${liab ? "− " + money(Math.abs(v)) : money(v)}</span></div>`;
 }
 
@@ -77,7 +77,7 @@ function cardHTML(en, i, names, year) {
   }
   const cats = groupNames();
   const catSel = cats.length ? categorySelectHTML("rcat", `data-i="${i}" data-f="group"`, en.group, cats) : "";
-  return `<div class="rcard${liab ? " liabcard" : ""}"><span class="dot" style="background:${liab ? "var(--red)" : colorOf(seriesKey(en), names)}"></span>
+  return `<div class="rcard${liab ? " liabcard" : ""}"><span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>
     <input class="rname" value="${esc(en.name)}" data-i="${i}" data-f="name" placeholder="${liab ? t("net.liabilityName") : t("net.assetName")}">
     <select class="rkind" data-i="${i}" data-f="kind"><option value="fixed" ${!priced && !liab ? "selected" : ""}>${t("net.kindValue")}</option><option value="ticker" ${en.kind === "ticker" ? "selected" : ""}>${t("net.kindTicker")}</option><option value="crypto" ${en.kind === "crypto" ? "selected" : ""}>${t("net.kindCrypto")}</option><option value="liability" ${liab ? "selected" : ""}>${t("net.kindLiability")}</option></select>
     ${valuePart}
@@ -91,7 +91,7 @@ function autoCardHTML(en, names, year) {
   const a = (state.assets || []).find((x) => x.id === en.assetId) || {}, liab = en.kind === "liability";
   const tags = liab ? t("net.tagLiability") : [a.depreciates ? (a.up ? t("net.tagAppreciating") : t("net.tagDepreciating")) : "", a.loan ? t("net.tagLoan") : ""].filter(Boolean).join(" · ") || t("net.tagAsset");
   const v = entryBase(en, year);
-  return `<div class="rcard auto${liab ? " liabcard" : ""}" data-editasset="${en.assetId}" title="${t("common.edit")}"><span class="dot" style="background:${liab ? "var(--red)" : colorOf(seriesKey(en), names)}"></span>` +
+  return `<div class="rcard auto${liab ? " liabcard" : ""}" data-editasset="${en.assetId}" title="${t("common.edit")}"><span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>` +
     `<span class="rname ro">${esc(en.name)}</span>` +
     `<span class="autotag">${tags}</span>` +
     `<span class="rconv${liab ? " liab" : ""}">${liab ? "− " + money(Math.abs(v)) : money(v)}</span>` +

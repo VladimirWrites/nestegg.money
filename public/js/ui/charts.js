@@ -5,7 +5,7 @@ import { state } from "../domain/store.js";
 import { money, ccySym, esc, shortK } from "../domain/money.js";
 import {
   colorOf, allNames, effEntries, seriesKey, snapGrossBase, snapTotalBase,
-  sortedSnaps, latestSnap, entryBase, isLiability, dayChangeBase, allocationRows,
+  sortedSnaps, latestSnap, entryBase, isLiability, dayChangeBase, allocationRows, pricesStale,
 } from "../domain/model.js";
 import { fmtMY } from "../domain/dates.js";
 import { fcCfg, forecastNetAt, fcTarget, fcBandRates, debtSummary } from "../domain/forecast.js";
@@ -237,7 +237,20 @@ function drawHist() {
   const ls = latestSnap(); const nw = ls ? snapTotalBase(ls) : 0;
   setHero(nw);
   const nAssets = ls ? effEntries(ls).filter((e) => !isLiability(e)).length : 0;
-  $("nwNote").textContent = ls ? t("net.asOf", { year: ls.year, count: nAssets }) : t("net.noData");
+  const note = $("nwNote");
+  note.textContent = ls ? t("net.asOf", { year: ls.year, count: nAssets }) : t("net.noData");
+  // Holdings keep their last known price when a refresh can't reach the API, so say when that
+  // price is from rather than let a day-old figure pass for this minute's.
+  const stale = pricesStale();
+  if (ls && stale) {
+    const when = stale.at
+      ? new Date(stale.at).toLocaleDateString(getLocale(), { day: "numeric", month: "short" })
+      : null;
+    const span = document.createElement("span");
+    span.className = "stalepx";
+    span.textContent = " · " + (when ? t("net.pricesFrom", { date: when }) : t("net.pricesUnrefreshed"));
+    note.appendChild(span);
+  }
   const dEl = $("nwDay"); const dc = dayChangeBase(nw);
   if (dc) { const flat = Math.abs(dc.abs) < 0.005, up = dc.abs >= 0; dEl.className = "day " + (flat ? "flat" : up ? "up" : "down"); const sign = up ? "+" : "−", arrow = flat ? "" : up ? "▲ " : "▼ "; dEl.textContent = t("net.dayChange", { arrow, sign, abs: money(Math.abs(dc.abs)), pct: Math.abs(dc.pct).toFixed(2) }); }
   else { dEl.className = "day"; dEl.textContent = ""; }
@@ -260,7 +273,7 @@ function histBreakdown(year) {
   const net = snapTotalBase(sn), gross = snapGrossBase(sn), liab = gross - net;
   let html = `<div class="tiph">${sn.year}</div>`;
   rows.forEach((r) => { html += `<div class="tipr"><span class="chip" style="background:${colorOf(r.nm2, names)}"></span><span class="tipn">${esc(r.nm2)}</span><span class="tipv">${money(r.tot)}</span></div>`; });
-  if (liab > 0.005) html += `<div class="tipr"><span class="tipn">${t("net.liabilities")}</span><span class="tipv" style="color:var(--red)">−${money(liab)}</span></div>`;
+  if (liab > 0.005) html += `<div class="tipr"><span class="tipn">${t("net.liabilities")}</span><span class="tipv" style="color:var(--danger)">−${money(liab)}</span></div>`;
   html += `<div class="tipnet">${t("nav.net")} <b>${money(net)}</b></div>`;
   // Year-over-year change vs the previous snapshot (just the balance delta — not a
   // contributions/market split, which yearly balances can't tell apart).
@@ -328,7 +341,9 @@ function drawDonut() {
   const segs = rows.map((row) => ({ v: row.v, color: colorOf(row.name, names), name: row.name }));
   const total = donutArcs(svg, segs, (p, s) => p.setAttribute("data-name", s.name));
   if (total > 0) {
-    txt(svg, 120, 116, t("common.total").toUpperCase(), 10, C.axis, 2, 400); txt(svg, 120, 138, money(total), 16, C.ink, 0, 600);
+    // "Assets", not "Total": the headline above this is net of liabilities, so two different
+    // numbers on one screen were both calling themselves the total.
+    txt(svg, 120, 116, t("net.assetsLbl").toUpperCase(), 10, C.axis, 2, 400); txt(svg, 120, 138, money(total), 16, C.ink, 0, 600);
   }
   svg.classList.toggle("anim", _animOn);
   svg.setAttribute("role", "img");

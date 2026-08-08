@@ -31,6 +31,31 @@ export const isPriced = (en) => en.kind === "ticker" || en.kind === "crypto"; //
 
 // Effective price for a ticker entry: a frozen historical close (past years) if stored
 // on the entry, otherwise the live fetched price; null when unknown.
+/* A current-year holding carries a frozen price only as a cache of the last live one. Dropping
+   it is right once a live price has arrived and wrong before that: with no live price and no
+   frozen one the holding is worth nothing at all, and a net worth quietly falls by whatever the
+   holdings were worth. The API being unreachable is not the same as the shares being sold.
+
+   Pure so it can be tested without a network: given an entry and the live price table, say
+   whether the cached figure has been superseded. */
+export function frozenSuperseded(en, prices) {
+  if (!en || en.px == null) return false;
+  const live = (prices || {})[en.ticker];
+  return !!(live && live.price != null);
+}
+
+/* Prices are refreshed on open. When that hasn't happened for a while — the app opened
+   offline, or the API is down — the figures on screen are the last ones known rather than the
+   ones now, and the total should say so rather than imply it is live. */
+export const PRICE_STALE_MS = 24 * 60 * 60 * 1000;
+export function pricesStale(now = Date.now()) {
+  const holdings = state.snapshots.some((sn) => (sn.entries || []).some(isPriced));
+  if (!holdings) return null;                       // nothing here is priced; nothing to caveat
+  const at = state.lastPx || 0;
+  if (at && now - at < PRICE_STALE_MS) return null; // refreshed within the day
+  return { at: at || null };
+}
+
 export function tickerPx(en, year) {
   if (en.px != null) return { price: en.px, currency: en.pxCcy || en.ccy || "EUR", frozen: true };
   // For a PAST year with no frozen close, never fall back to the live price — today's price

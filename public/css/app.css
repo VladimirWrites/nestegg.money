@@ -1,60 +1,143 @@
-#gate{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+#gate{position:fixed;inset:0;background:var(--ink);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
 .gatebox{max-width:520px;width:100%}
 .gatebox .kick{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber)}
 .gatebox h1{font-size:clamp(34px,8vw,52px);line-height:.98;letter-spacing:-.01em;font-weight:700;margin:8px 0 4px;color:var(--amber)}
 .gatebox .sub{color:var(--muted);margin-bottom:26px;font-size:13px}
 .gatebox .panel{border-top:1px solid var(--line2);padding-top:20px}
 .gatebox p{font-size:13px;color:var(--muted);margin:10px 0}
-.acctnum{font-size:21px;letter-spacing:.06em;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:16px 14px;white-space:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;text-align:center;margin:14px 0;line-height:1.5;color:var(--green)}
-.acctnum .tokline{display:inline-block;white-space:nowrap}
-.acctnum .d{color:var(--green)}   /* digits */
-.acctnum .a{color:var(--blue)}    /* letters */
-.acctnum .s{color:var(--muted)}   /* separators */
+/* The gate's copy of the number, in the same wrapping box the profile uses. It breaks at its
+   own dashes rather than shrinking: the old box shrank the type to an 11px floor and, at
+   320px, still cut off the last group — on the one screen whose whole job is getting this
+   number read and written down correctly. */
+.acctnum{padding:16px 14px;border:1px dashed var(--signal);border-radius:var(--r);background:var(--signal-soft);font-family:var(--mono);
+  font-size:clamp(14px,4.4vw,19px);letter-spacing:.06em;text-align:center;font-weight:700;margin:14px 0;line-height:1.9;overflow-wrap:break-word}
+/* A dash-separated group never breaks across lines. */
+.tokgrp{display:inline-block;white-space:nowrap}
+.acctnum .d{color:var(--accent)}   /* digits */
+.acctnum .a{color:var(--signal)}   /* letters */
+.acctnum .s{color:var(--dimmer)}   /* separators */
 .gatebtn{font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--amber);color:var(--on-amber);border:none;padding:14px 20px;cursor:pointer;border-radius:3px;min-height:46px;font-weight:600;font-family:var(--mono)}
 .gatebtn.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
-.gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--ink);letter-spacing:.05em;font-family:var(--mono)}
+.gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--text);letter-spacing:.05em;font-family:var(--mono)}
 .gatein:focus{outline:none;border-color:var(--amber)}
 .gaterow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 .gatesaved{font-size:12px;color:var(--green);margin:-6px 0 0}
 .warn{font-size:12px;color:var(--amber2);font-style:normal;margin-top:14px;border-left:2px solid var(--amber2);padding-left:12px}
 .switch{margin-top:24px;font-size:12px;color:var(--muted)}.switch a{color:var(--amber);cursor:pointer;text-decoration:underline}
 
-.acctbar{max-width:var(--maxw);margin:0 auto;padding:12px 18px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:10.5px;color:var(--muted);flex-wrap:wrap;letter-spacing:.04em}
-.acctbar .who{display:flex;align-items:center;gap:8px}
-.syncdot{width:7px;height:7px;border-radius:50%;background:var(--muted)}.syncdot.ok{background:var(--green)}.syncdot.off{background:var(--red)}
-.acctbar button{font:inherit;background:none;border:none;color:var(--muted);cursor:pointer;text-decoration:underline;padding:2px 0}.acctbar button:hover{color:var(--amber)}
+/* ---------- shell ----------
+   One column on a phone with the navigation welded to the bottom edge; a fixed rail beside the
+   content above 900px. */
 
-header.masthead{border-bottom:1px solid var(--line2);padding:14px 18px 16px;max-width:var(--maxw);margin:0 auto}
-.syncbtn{background:none;border:none;cursor:pointer;padding:0;text-decoration:none!important}
-.mainnav{display:flex;gap:8px;margin-top:14px}
-.navtab{font:inherit;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--line2);border-radius:4px;padding:9px 16px;cursor:pointer}
-.navtab:hover{color:var(--amber);border-color:var(--line2)}
-.navtab.on{background:var(--amber);color:var(--on-amber);border-color:var(--amber);font-weight:600}
+.shell{min-height:100dvh;display:grid;grid-template-columns:1fr}
+/* Grid children default to min-width:auto, so they refuse to shrink below their content's
+   intrinsic width — one long asset name was enough to push the column past the viewport,
+   which reads as the app being zoomed in. */
+.shell>*{min-width:0}
+/* The content column composites as one layer, so nothing inside it can paint above the
+   navigation however it is stacked. */
+.shell-main{isolation:isolate}
+
+.main{max-width:var(--maxw);width:100%;min-width:0;margin:0 auto;padding:16px var(--edge-r) calc(88px + var(--edge-b)) var(--edge-l)}
+
+/* ---------- navigation ---------- */
+
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;
+  padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + var(--edge-b)) max(6px,env(safe-area-inset-left,0px));
+  background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+.nav-brand{display:none}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:0;background:none;border-radius:var(--r);
+  color:var(--dim);cursor:pointer;font-size:10.5px;font-variation-settings:"wdth" 92;font-weight:600;letter-spacing:.03em;
+  transition:color .14s ease,background .14s ease}
+.nav-item:hover{color:var(--text)}
+.nav-item.is-on{color:var(--signal);background:var(--signal-soft)}
+.nav-icon{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* Tapped into, not navigated to: while an editor is open the tab bar comes off and the room it
+   was holding goes back to the page. Phones only — the desktop rail is not in anyone's way. */
+@media(max-width:899px){
+  body.no-nav .nav{display:none}
+  body.no-nav .main{padding-bottom:calc(24px + var(--edge-b))}
+}
+
+/* The wordmark, and the lamp that is the sync indicator: amber in step, pulsing while a sync is
+   in flight, grey when this device is on its own. */
+.brand{display:flex;align-items:center;gap:9px;font-variation-settings:"wdth" 118;font-weight:800;letter-spacing:-.03em;
+  font-size:19px;background:none;border:0;color:inherit;cursor:pointer;padding:0}
+.brand-lamp{width:9px;height:9px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 3px var(--signal-soft);flex:none}
+.brand-lamp.sync{animation:lamp 1.1s ease-in-out infinite}
+.brand-lamp.off{background:var(--dimmer);box-shadow:none}
+@keyframes lamp{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ---------- the top edge ---------- */
+
+.topbar{position:sticky;top:0;z-index:20;padding:calc(10px + var(--edge-t)) 0 10px;
+  background:color-mix(in srgb,var(--ink) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.topbar-inner{display:flex;align-items:center;gap:12px;min-height:44px;max-width:var(--maxw);margin:0 auto;padding:0 var(--edge-r) 0 var(--edge-l)}
+.topbar-title{font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.topbar-actions:empty{display:none}
+
+/* The masthead is the tone-setting block — kicker, name of the screen, one line of prose. It
+   costs nothing on a wide screen and is the first thing that should go on a narrow one, where
+   the topbar already names the screen. */
+header.masthead{display:none}
+
+@media(min-width:900px){
+  .shell{grid-template-columns:var(--rail) 1fr}
+  /* The rail is out of flow, so the content has to be told which column it belongs to —
+     otherwise it is auto-placed into the first one and squeezed into the rail's width. */
+  .shell-main{grid-column:2}
+  /* Fixed rather than sticky: a sticky rail exactly one viewport tall exhausts its range at
+     maximum scroll and jitters at the end of a long page. */
+  .nav{position:fixed;top:0;left:0;bottom:auto;width:var(--rail);height:100dvh;grid-template-columns:1fr;grid-auto-rows:max-content;
+    gap:4px;padding:20px 14px;border-top:0;border-right:1px solid var(--line);background:var(--panel);backdrop-filter:none;align-content:start}
+  .nav-brand{display:block;padding:4px 13px 22px}
+  .nav-item{flex-direction:row;justify-content:flex-start;gap:12px;padding:11px 13px;font-size:14px;font-variation-settings:"wdth" 100}
+  .main{padding:24px 32px 64px}
+  /* The rail carries the brand and the masthead below carries the name of the screen, so the
+     bar only appears when a screen has actually put controls in it. */
+  .topbar{display:none}
+  .topbar:has(.topbar-actions:not(:empty)){display:block}
+  header.masthead{display:block;max-width:var(--maxw);margin:0 auto;padding:8px 32px 18px;border-bottom:1px solid var(--line)}
+}
+
 .acctrow{display:flex;align-items:stretch;gap:8px}
 .acctrow .acctnum{flex:1;margin:14px 0;min-width:0}
 .eyebtn{flex:none;align-self:center;width:42px;height:46px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer}
 .eyebtn:hover{color:var(--amber);border-color:var(--amber)}
 .eyebtn.on{color:var(--amber)}
 .eyebtn svg{width:18px;height:18px}
-.kicker{font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.kicker{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--signal);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
 .titlerow{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:10px 0 6px}
-h1.title{font-size:clamp(30px,6.5vw,48px);line-height:1;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+h1.title{font-size:clamp(28px,3.4vw,40px);color:var(--text)}
 .ccypick{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.ccypick select{font:inherit;font-size:13px;letter-spacing:0;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:6px 8px;color:var(--ink)}
-.subt{color:var(--muted);font-size:13px}
-main{max-width:var(--maxw);margin:0 auto;padding:0 18px}
+.ccypick select{font:inherit;font-size:13px;letter-spacing:0;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:6px 8px;color:var(--text)}
+.subt{color:var(--dim);font-size:14px}
 
-.hero{padding:28px 0 24px;border-bottom:1px solid var(--line)}
-.hero .label{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
-.hero .big{font-size:clamp(40px,10vw,76px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:10px;color:var(--amber)}
+.hero{padding:22px 0 24px;border-bottom:1px solid var(--line)}
+.hero .label{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
+.hero .big{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(38px,9vw,68px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:8px;color:var(--signal)}
 .hero .day{margin-top:8px;font-size:14px;font-weight:600}
-.hero .day.up{color:var(--green)} .hero .day.down{color:var(--red)} .hero .day.flat{color:var(--muted)}
-.hero .delta{margin-top:8px;font-size:12.5px;color:var(--muted)}
+.hero .day.up{color:var(--accent)} .hero .day.down{color:var(--danger)} .hero .day.flat{color:var(--dim)}
+.hero .delta{margin-top:6px;font-size:14px;color:var(--dim)}
+/* Says which prices the total was built from, when they are not this minute`s. */
+.stalepx{color:var(--dimmer)}
 
 section{padding:24px 0;border-bottom:1px solid var(--line)}
-.sectitle{font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
-.sectitle::after{content:"";flex:1;height:1px;background:var(--line)}
-.sectitle .tin{letter-spacing:.02em;text-transform:none;font-size:11.5px;color:var(--muted)}
+.sectitle{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-bottom:14px;display:flex;align-items:center;gap:10px;min-height:32px}
+/* The aside carries the sentence that explains the panel, so it reads as prose beside a label
+   rather than as more signage. */
+.sectitle .tin{font-variation-settings:"wdth" 100;font-weight:400;letter-spacing:0;text-transform:none;font-size:13px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Anything the panel can do sits at the end of its own header — the download button used to
+   float over the top-right corner of the chart, overlapping whatever was drawn there. */
+.sectitle .sectools{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+/* The show/hide switch is a control, so it joins the controls at the end of the row. */
+.sectitle .fcswitch{margin-left:auto}
+.sectitle .fcswitch~.sectools{margin-left:8px}
+/* On a phone the header has room for the label and the controls, and that is all. The aside is
+   an explanation of the panel that the panel itself then demonstrates. */
+@media(max-width:619px){.sectitle .tin{display:none}}
 
 .histscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 #fcChart,#rtChart{display:block;width:100%;height:auto}
@@ -65,41 +148,58 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .charts{display:grid;grid-template-columns:240px 1fr;gap:32px;align-items:center}
 @media(max-width:680px){.charts{grid-template-columns:1fr;gap:22px}}
 .legend{display:flex;flex-direction:column;gap:1px}
-.legrow{display:grid;grid-template-columns:13px 1fr auto auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
-.legrow:last-child{border-bottom:none}.swatch{width:10px;height:10px;border-radius:1px}
-.legrow .pct{color:var(--muted);font-size:11.5px;min-width:38px;text-align:right}.legrow .amt{font-weight:600;min-width:92px;text-align:right}
+/* Proportions rather than content widths, so every row in a panel divides at the same two
+   places: the amounts form a column and the percentages form a column. A long name truncates
+   instead of shoving them around. */
+.legrow{display:grid;grid-template-columns:14px minmax(0,1fr) 44px 108px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+.legrow:last-child{border-bottom:none}
+.legrow>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.swatch{width:11px;height:11px;border-radius:2px}
+.legrow .pct{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--dimmer);font-size:12px;text-align:right}
+.legrow .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
 
 .years{display:flex;flex-direction:column;gap:6px}
-.ycard{border:1px solid var(--line);border-radius:3px;background:var(--panel)}
-.yhead{display:flex;align-items:center;gap:12px;padding:11px 13px;cursor:pointer;user-select:none}
-.yhead:hover{background:var(--panel2);border-color:var(--line2)}
-.yhead .yr{font-size:15px;font-weight:600;min-width:46px;color:var(--amber)}
+.ycard{border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+.yhead{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;user-select:none;min-height:52px}
+.yhead:hover{background:var(--panel-2);border-color:var(--dimmer)}
+.yhead .yr{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;min-width:46px;color:var(--signal)}
 .ybar{flex:1;height:11px;border-radius:1px;background:var(--field);display:flex;overflow:hidden;min-width:60px}
 .ybar i{display:block;height:100%}
 .ytot{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;white-space:nowrap}
 .ychev{color:var(--muted);width:14px;height:14px;flex:none}
 
 .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
-button.act{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:var(--amber);color:var(--on-amber);border:none;padding:11px 15px;cursor:pointer;border-radius:3px;min-height:40px;font-weight:600;font-family:var(--mono);display:inline-flex;align-items:center;justify-content:center;gap:6px}
-.act .ic{width:13px;height:13px;flex:none}
-button.act.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
-button.act.ghost:hover{border-color:var(--amber)}
 .updnote{margin-left:auto;font-size:10px;color:var(--muted)}
 
 /* download icon in the top-right corner of each chart */
 .over,.alloc{position:relative}
-.over>.sectitle,.alloc>.sectitle,.forecast>.sectitle{padding-right:40px}
-.chartdl{position:absolute;top:14px;right:0;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line2);border-radius:5px;color:var(--muted);cursor:pointer;z-index:2}
-.chartdl:hover{color:var(--amber);border-color:var(--amber)}
-.chartdl svg{width:15px;height:15px}
+.chartdl{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);color:var(--dim);cursor:pointer;flex:none}
+.chartdl:hover{color:var(--signal);border-color:var(--dimmer)}
+.chartdl svg{width:16px;height:16px}
 
-.editor{position:fixed;inset:0;background:var(--bg);z-index:45;overflow:auto;padding-bottom:110px}
-.ed-bar{position:sticky;top:0;background:var(--bar-bg);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:12px;padding:13px 18px;z-index:2}
-.ed-bar button{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:none;border:none;color:var(--amber);cursor:pointer;padding:6px 0;font-family:var(--mono)}
+.editor{position:fixed;inset:0;background:var(--ink);z-index:45;overflow:auto;padding-bottom:110px}
+/* An editor's top edge is the app's topbar wearing a back arrow: same height, same blur,
+   same inset, so moving into one doesn't move the top of the app. */
+.ed-bar{position:sticky;top:0;z-index:20;padding:calc(10px + var(--edge-t)) 0 10px;
+  background:color-mix(in srgb,var(--ink) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line)}
+.ed-bar-inner{display:flex;align-items:center;gap:12px;min-height:44px;max-width:var(--maxw);margin:0 auto;padding:0 var(--edge-r) 0 var(--edge-l)}
+.ed-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+/* The arrow alone. Its label lives in the title attribute — a word beside it repeated what the
+   glyph already said, and on a phone it crowded out the name of the screen. Pulled into the
+   inset so the glyph lines up with the content below rather than the button's box. */
+.ed-back{flex:none;margin-left:-8px;width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:var(--r);
+  background:none;color:var(--text);cursor:pointer}
+.ed-back:hover{background:var(--panel-2)}
+.ed-back .btn-icon{width:20px;height:20px}
+
 #edDelYear{color:var(--red);margin-left:auto}
-.ed-title{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:9px}
+.ed-title{font-size:17px;color:var(--text);display:flex;align-items:center;gap:9px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The year is edited in place in the bar, so the field is sized to four digits. */
+.ed-year{width:5.5ch;min-height:34px;padding:4px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--text);font-size:16px;text-align:center}
+.ed-year:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
 #edYear{width:88px;font:inherit;font-size:17px;border:1px solid var(--line2);border-radius:3px;padding:7px 8px;background:var(--field);color:var(--amber)}
-.ed-wrap{max-width:var(--maxw);margin:0 auto;padding:18px}
+.ed-wrap{max-width:var(--maxw);margin:0 auto;padding:18px var(--edge-r) calc(40px + var(--edge-b)) var(--edge-l)}
 .ed-total{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px}
 .ed-total .et-k{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 .ed-total .et-v{font-variant-numeric:tabular-nums;font-size:28px;font-weight:600;color:var(--amber)}
@@ -108,22 +208,28 @@ button.act.ghost:hover{border-color:var(--amber)}
 .rcard{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:11px 13px;position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .rcard:hover{border-color:var(--line2)}
 .rcard .dot{width:10px;height:10px;border-radius:1px;flex:none}
-.rcard .rname{flex:1;min-width:120px;font:inherit;font-size:15px;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--ink);padding:3px 0}
+.rcard .rname{flex:1;min-width:120px;font:inherit;font-size:15px;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);padding:3px 0}
 .rcard .rname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.rcard .rval{width:130px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--ink);min-height:40px}
+.rcard .rval{width:130px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text);min-height:40px}
 .rcard .rval:focus{outline:none;border-color:var(--amber)}
-.rcard select{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px;color:var(--ink);min-height:40px}
+.rcard select{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px;color:var(--text);min-height:40px}
 .rcard .rkind{font:inherit;font-size:12px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 6px;color:var(--amber);min-height:40px}
-.rcard .rsh{width:84px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--ink);min-height:40px}
+.rcard .rsh{width:84px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text);min-height:40px}
 .rcard .rtk{width:120px;font:inherit;font-size:14px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--green);min-height:40px;text-transform:uppercase}
 .rcard .rsh:focus,.rcard .rtk:focus{outline:none;border-color:var(--amber)}
 .rcard .rconv{font-size:11px;color:var(--green);min-width:80px;text-align:right}
 .rcard .rconv.liab{color:var(--red)}
 .forecast{position:relative}
-.fcrow{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 14px}
-.fcrow .fld{flex:1 1 150px;min-width:140px;display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted)}
+/* One column on a phone, then as many as fit. Each field owns a full row rather than being
+   squeezed three-across, which is what made these two panels the worst part of a small screen. */
+.fcrow{display:grid;grid-template-columns:1fr;gap:12px;margin:6px 0 16px}
+@media(min-width:620px){.fcrow{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}}
+.fcrow .fld{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--dim);min-width:0}
 .fcrow .fld>.cap{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fcrow .fld input,.fcrow .fld select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:13px}
+.fcrow .fld input,.fcrow .fld select{width:100%;min-height:44px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:var(--r);padding:11px 14px;font-size:16px}
+.fcrow .fld input{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.fcrow .fld input:focus,.fcrow .fld select:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
+.fcrow .fld select{appearance:none;-webkit-appearance:none;background-image:var(--chevron);background-repeat:no-repeat;background-position:right 11px center;background-size:15px;padding-right:34px;cursor:pointer}
 .fcrow .pct{position:relative;display:flex;align-items:center}
 .fcrow .pct input{flex:1;width:100%;padding-right:24px;-moz-appearance:textfield}
 .fcrow .pct input::-webkit-outer-spin-button,.fcrow .pct input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
@@ -147,24 +253,24 @@ button.act.ghost:hover{border-color:var(--amber)}
 .infomodal.hide{display:none}
 .infobox{position:relative;background:var(--panel);border:1px solid var(--line2);border-radius:12px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:22px 24px}
 .infoclose{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer;padding:2px 6px}
-.infoclose:hover{color:var(--ink)}
+.infoclose:hover{color:var(--text)}
 .infobox h3{color:var(--amber);font-size:15px;margin:0 0 12px}
 .infobox p{color:var(--muted);font-size:13px;line-height:1.6;margin:10px 0}
 .infobox ul{list-style:none;padding:0;margin:10px 0;display:flex;flex-direction:column;gap:8px}
 .infobox li{color:var(--muted);font-size:12.5px;line-height:1.6}
-.infobox b{color:var(--ink);font-weight:600}
+.infobox b{color:var(--text);font-weight:600}
 .infobox code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11.5px;color:var(--green);text-transform:none}
 .infobox a{color:var(--amber);text-decoration:none}
 .infobox a:hover{text-decoration:underline}
-.fccheck{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:var(--ink);cursor:pointer}
+.fccheck{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:var(--text);cursor:pointer}
 .fccheck input{width:16px;height:16px;accent-color:var(--amber);cursor:pointer}
 .chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--amber) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
 .fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--muted)}
 .fcswitch input{position:absolute;opacity:0;pointer-events:none}
 .fcswitch .track{width:34px;height:18px;border-radius:10px;background:var(--line2);position:relative;transition:background .15s}
-.fcswitch .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--ink);transition:left .15s}
+.fcswitch .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:left .15s}
 .fcswitch input:checked+.track{background:var(--amber)}
-.fcswitch input:checked+.track::after{left:18px;background:var(--bg)}
+.fcswitch input:checked+.track::after{left:18px;background:var(--ink)}
 .rcard.liabcard{border-left:2px solid rgba(255,77,109,.5)}
 .yliab{color:var(--red);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rcard .rcat{font-size:12px;max-width:150px;color:var(--muted)}
@@ -177,7 +283,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .grphead .dot{width:10px;height:10px;border-radius:1px;flex:none}
 .grpname{flex:1;min-width:80px;font:inherit;font-size:14px;font-weight:600;letter-spacing:.04em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0}
 .grpname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.grpsub{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:var(--ink);white-space:nowrap}
+.grpsub{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:var(--text);white-space:nowrap}
 .grpdel{background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
 .grpdel:hover{color:var(--red)}
 .grpcards{display:flex;flex-direction:column;gap:6px;padding:11px 13px}
@@ -189,10 +295,10 @@ button.act.ghost:hover{border-color:var(--amber)}
 /* standalone legal pages (privacy.html, terms.html) */
 .legal{max-width:760px;margin:0 auto;padding:48px 22px 90px}
 .legal .back{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);text-decoration:none;margin-bottom:26px}
-.legal h1{font-size:clamp(28px,6vw,40px);font-weight:700;color:var(--ink);letter-spacing:-.01em;margin-bottom:6px}
+.legal h1{font-size:clamp(28px,6vw,40px);font-weight:700;color:var(--text);letter-spacing:-.01em;margin-bottom:6px}
 .legal .updated{color:var(--muted);font-size:12px;margin-bottom:30px}
 .legal h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin:30px 0 10px}
-.legal p,.legal li{color:var(--ink);font-size:14px;line-height:1.65;margin-bottom:10px}
+.legal p,.legal li{color:var(--text);font-size:14px;line-height:1.65;margin-bottom:10px}
 .legal ul{padding-left:20px;margin-bottom:10px}
 .legal strong{color:var(--amber2)}
 .legal .note{border-left:2px solid var(--line2);padding-left:14px;color:var(--muted);font-size:12.5px;margin-top:30px}
@@ -230,14 +336,12 @@ button.act.ghost:hover{border-color:var(--amber)}
 #edBack,#assetBack,#salaryBack,#profileBack{display:inline-flex;align-items:center;gap:7px}
 .prof-sync{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.04em;color:var(--muted);margin-bottom:20px}
 #profAcct{max-width:520px}
-.act.ghost.danger{color:var(--red);border-color:var(--line2)}
-.act.ghost.danger:hover{border-color:var(--red)}
-.ed-bar .ic{width:13px;height:13px;flex:none}
+
 
 /* read-only computed (long-term asset) rows inside the year editor — tap to edit */
 .rcard.auto{background:var(--panel2);border-style:dashed;cursor:pointer}
 .rcard.auto:hover{border-color:var(--amber)}
-.rcard.auto .rname.ro{flex:1;min-width:120px;font-size:15px;color:var(--ink)}
+.rcard.auto .rname.ro{flex:1;min-width:120px;font-size:15px;color:var(--text)}
 .autotag{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line2);border-radius:99px;padding:3px 9px;white-space:nowrap}
 .rcard.auto .rconv{color:var(--amber);font-weight:600;font-size:13px}
 .autoedit{width:14px;height:14px;color:var(--muted);flex:none}
@@ -250,15 +354,15 @@ button.act.ghost:hover{border-color:var(--amber)}
 .exhint{padding:10px 12px;border:none;background:none}
 .acard{flex-direction:column;align-items:stretch;gap:12px}
 .toggles{display:flex;flex-wrap:wrap;gap:10px 22px}
-.tgl{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer}
+.tgl{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text);cursor:pointer}
 .tgl input{width:17px;height:17px;accent-color:var(--amber);cursor:pointer}
 .loanbox{border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:13px;display:flex;flex-direction:column;gap:12px}
 .loanwarn{font-size:12px;line-height:1.5;color:var(--red);border-left:2px solid var(--red);padding-left:11px}
 .frow{display:flex;flex-wrap:wrap;gap:12px}
 .fld{display:flex;flex-direction:column;gap:5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex:1;min-width:130px}
-.fin{font:inherit;font-size:15px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--ink);min-height:42px;width:100%}
+.fin{font:inherit;font-size:15px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--text);min-height:42px;width:100%}
 .fin:focus{outline:none;border-color:var(--amber)}
-.fld select{font:inherit;font-size:14px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--ink);min-height:42px;width:100%}
+.fld select{font:inherit;font-size:14px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--text);min-height:42px;width:100%}
 .suffix{display:flex;align-items:center;gap:7px}.suffix i{font-style:normal;color:var(--muted);font-size:12px}
 .vsum,.pstat{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .vsum{border-top:1px solid var(--line);padding-top:11px}
@@ -266,7 +370,6 @@ button.act.ghost:hover{border-color:var(--amber)}
 .vval,.pstat .v{font-weight:600;font-size:15px;color:var(--amber)}
 .pchead{display:flex;align-items:center;gap:10px}
 .psub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-top:4px;display:flex;align-items:center;gap:10px}
-.act.mini{min-height:26px;padding:4px 10px;font-size:9px}
 .exwrap{display:flex;flex-direction:column;gap:8px}
 .exrow{display:flex;gap:10px;align-items:center}
 .exrow .fin{flex:1}
@@ -279,7 +382,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .schtab{width:100%;border-collapse:collapse;font-size:11.5px}
 .schtab th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:600;text-align:right;padding:8px 10px;letter-spacing:.04em;white-space:nowrap}
 .schtab th:first-child{text-align:left}
-.schtab td{padding:7px 10px;text-align:right;border-top:1px solid var(--line);color:var(--ink);white-space:nowrap}
+.schtab td{padding:7px 10px;text-align:right;border-top:1px solid var(--line);color:var(--text);white-space:nowrap}
 .schtab td:first-child{text-align:left;color:var(--muted)}
 .schtab tbody tr:hover{background:var(--panel2)}
 .schtab tr.exline td{background:rgba(255,176,0,.08);color:var(--amber);border-top:1px solid var(--line2)}
@@ -293,7 +396,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 #salaryChart{display:block}
 .chartwrap{position:relative;display:inline-block}
 .saldot{cursor:pointer}
-.salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--amber);border-radius:4px;padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
+.salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--amber);border-radius:4px;padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
 .saltable-scroll{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:4px;margin-bottom:10px}
 .saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -306,7 +409,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .salname{flex:1;min-width:90px;font:inherit;font-size:15px;font-weight:700;letter-spacing:.01em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0;font-family:var(--mono)}
 .salname::placeholder{color:var(--muted);font-weight:400}
 .salname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.salccy{font:inherit;font-size:11px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:4px 6px;color:var(--ink)}
+.salccy{font:inherit;font-size:11px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:4px 6px;color:var(--text)}
 .saltab th.salm-h,.saltab td.salm{position:sticky;left:0;background:var(--panel);z-index:1;border-right:1px solid var(--line2)}
 .saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel2)}
 .saltab td.salm{color:var(--muted);font-size:12px}
@@ -314,12 +417,12 @@ button.act.ghost:hover{border-color:var(--amber)}
 .saltab tr.saly td:first-child{text-align:left;position:sticky;left:0;z-index:1;border-right:1px solid var(--line2)}
 .saltab .salgsep{border-left:2px solid var(--line2)}
 .saltab td.salm{min-width:90px}
-.saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--ink)}
+.saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text)}
 .saltab td .salev{width:100%;min-width:90px;font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--muted)}
 .saltab td .salf:focus,.saltab td .salev:focus{outline:none;border-color:var(--amber)}
 .salx-h{width:34px}
 .saltab td.salxc{text-align:center}
-.salpick{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:7px 9px;color:var(--ink);min-height:38px}
+.salpick{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:7px 9px;color:var(--text);min-height:38px}
 .salpick:focus{outline:none;border-color:var(--amber)}
 .salctrls{align-items:center}
 .salrlbl{font-size:11px;letter-spacing:.04em;color:var(--muted)}
@@ -338,7 +441,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .salimport{margin-top:16px;border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:0 13px}
 .salimport summary{cursor:pointer;padding:12px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
 .salimport[open]{padding-bottom:13px}
-#salImportText{width:100%;min-height:120px;font-family:var(--mono);font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:10px;color:var(--ink);white-space:pre;overflow:auto}
+#salImportText{width:100%;min-height:120px;font-family:var(--mono);font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:10px;color:var(--text);white-space:pre;overflow:auto}
 #salImportText:focus{outline:none;border-color:var(--amber)}
 
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
@@ -393,14 +496,14 @@ button.act.ghost:hover{border-color:var(--amber)}
 .rcard .rhint{flex-basis:100%;width:100%;font-size:10.5px;color:var(--amber2);border-top:1px dashed var(--line2);padding-top:7px;margin-top:1px}
 
 /* PWA auto-update overlay (shown briefly while a new version takes over and reloads) */
-.updating{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:9999}
+.updating{position:fixed;inset:0;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:9999}
 .updating .spin{width:34px;height:34px;border:3px solid var(--line2);border-top-color:var(--amber);border-radius:50%;animation:nw-spin .8s linear infinite}
 .updating .updtxt{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:.04em}
 @keyframes nw-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.updating .spin{animation:none}}
 
 /* active state for the theme toggle buttons */
-.act.ghost.on{background:var(--amber);color:var(--on-amber);border-color:var(--amber)}
+.btn.on{background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
 
 /* net-worth year tooltip (reuses .salflag box) */
 .salflag .tiph{font-weight:600;color:var(--amber);margin-bottom:4px}
@@ -419,9 +522,9 @@ button.act.ghost:hover{border-color:var(--amber)}
 .salflag .tipyoy.down{color:var(--red)}
 
 /* demo/tour banner (shown only in the no-account demo) */
-.demobar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--panel2);border-bottom:1px solid var(--amber);color:var(--ink);padding:8px 16px;font-size:12.5px;letter-spacing:.02em}
+.demobar{position:relative;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--panel2);border-bottom:1px solid var(--amber);color:var(--text);padding:8px 16px;font-size:12.5px;letter-spacing:.02em}
 .demobar .demobtns{display:flex;gap:8px;align-items:center}
-.demobar .act{min-height:32px;padding:6px 12px;font-size:11px}
+.demobar .btn{min-height:32px;padding:6px 12px;font-size:12.5px}
 .demolink{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
 .demoswitch{margin-top:4px}
 
@@ -431,19 +534,19 @@ button.act.ghost:hover{border-color:var(--amber)}
 .bud-card .v{font-size:clamp(30px,8vw,44px);font-weight:700;color:var(--green);font-family:var(--mono);line-height:1}
 .bud-card.neg .v{color:var(--red)}
 .bud-card .sub{font-size:12px;color:var(--muted)}
-.bud-card .sub b{color:var(--ink);font-weight:600}
+.bud-card .sub b{color:var(--text);font-weight:600}
 .bud-rows{margin:0 auto}
 .bud-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
 .bud-row.indent{padding-left:14px}
 .bud-row.total{border-bottom:none;border-top:1px solid var(--line2);font-weight:600}
-.bud-lbl{color:var(--ink);font-size:14px}
+.bud-lbl{color:var(--text);font-size:14px}
 .bud-lbl .hint{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px}
-.bud-val{font-family:var(--mono);font-size:15px;color:var(--ink);white-space:nowrap}
-.bud-input{width:140px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:14px}
+.bud-val{font-family:var(--mono);font-size:15px;color:var(--text);white-space:nowrap}
+.bud-input{width:140px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px}
 .bud-input:focus{outline:none;border-color:var(--amber)}
 .bud-exp-head{margin:18px 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .bud-exp{display:grid;grid-template-columns:1fr 150px 130px 36px;gap:10px;align-items:center;padding:5px 0}
-.bud-exp input{background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:14px;min-width:0}
+.bud-exp input{background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0}
 .bud-exp .bud-exp-amt{text-align:right;font-family:var(--mono)}
 .bud-exp .bud-exp-cat{color:var(--muted)}
 #budgetTip .tippct{color:var(--muted);font-weight:400}
@@ -471,26 +574,26 @@ button.act.ghost:hover{border-color:var(--amber)}
 #budgetDonut.anim .dwedge{stroke-dasharray:1;stroke-dashoffset:1;animation:dwedge-draw .6s ease forwards}
 @keyframes dwedge-draw{to{stroke-dashoffset:0}}
 /* budget category selects + loan rows */
-.bud-exp select{background-color:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 28px 8px 8px;color:var(--ink);font-family:var(--mono);font-size:14px;min-width:0;min-height:40px}
+.bud-exp select{background-color:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 28px 8px 8px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0;min-height:40px}
 .bud-exp select:focus{outline:none;border-color:var(--amber)}
 /* loan row reuses the .bud-exp grid so its category and amount line up with
    the expense rows; the 4th (delete) column is left empty. Spans match the inputs' font + height. */
-.bud-loan-name{color:var(--ink);font-family:var(--mono);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bud-loan-amt{text-align:right;font-family:var(--mono);font-size:14px;color:var(--ink);padding:8px 0}
+.bud-loan-name{color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bud-loan-amt{text-align:right;font-family:var(--mono);font-size:14px;color:var(--text);padding:8px 0}
 @media(max-width:520px){.bud-loan{grid-template-columns:1fr 110px}.bud-loan-amt{grid-column:1 / -1;text-align:right;padding-top:0}}
 
 /* ---- share dialog (profile → Share) ---- */
 .share-secs{display:flex;flex-wrap:wrap;gap:10px 18px;margin:14px 0}
 .share-sec{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
 .share-lbl{display:block;font-size:14px;color:var(--muted);margin:8px 0 14px}
-.share-lbl input{display:block;width:100%;margin-top:6px;background:var(--field);color:var(--ink);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:14px}
+.share-lbl input{display:block;width:100%;margin-top:6px;background:var(--field);color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:14px}
 .share-hint{color:var(--muted)}
 .share-result{margin-top:18px}
 .share-result .acctnum{flex:1;background:var(--field);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-size:13px;overflow:hidden;text-overflow:ellipsis}
 .share-list{margin-top:8px}
 .share-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .share-row:last-child{border-bottom:0}
-.share-row-name{font-size:14px;color:var(--ink)}
+.share-row-name{font-size:14px;color:var(--text)}
 
 /* ---- read-only shared snapshot (/s/) ---- */
 /* Hide every editing affordance. Nothing persists in share mode anyway (demo plumbing),
@@ -541,18 +644,18 @@ body.share #edEntries input,
 body.share #edYear {
   background: transparent !important; border: none !important; box-shadow: none !important;
   padding-left: 0; padding-right: 0; width: auto !important;
-  -webkit-appearance: none; appearance: none; color: var(--ink);
+  -webkit-appearance: none; appearance: none; color: var(--text);
 }
 body.share #edYear::selection { background: transparent; }
 body.share #edYear::-webkit-inner-spin-button,
 body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 /* static read-only entry rows: name (flex) · shares+ticker · value right-aligned */
 .rcard.ro { cursor: default; }
-.rcard.ro .ro-name { flex: 1; min-width: 120px; font-size: 15px; color: var(--ink); }
+.rcard.ro .ro-name { flex: 1; min-width: 120px; font-size: 15px; color: var(--text); }
 .rcard.ro .ro-mid { display: flex; gap: 14px; align-items: baseline; }
 .rcard.ro .ro-sh { color: var(--muted); font-size: 14px; }
 .rcard.ro .ro-tk { color: var(--green); font-size: 14px; text-transform: uppercase; }
-.rcard.ro .ro-val { min-width: 96px; text-align: right; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.rcard.ro .ro-val { min-width: 96px; text-align: right; font-size: 15px; color: var(--text); font-variant-numeric: tabular-nums; }
 .rcard.ro .ro-val.liab { color: var(--red); }
 
 .sharemsg { max-width: 520px; margin: 80px auto; padding: 0 20px; text-align: center; }
@@ -560,3 +663,59 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .sharemsg p { color: var(--muted); }
 .sharemsg-foot { margin-top: 18px; }
 .sharemsg-foot a { color: var(--amber); }
+
+
+/* ---------- profile ----------
+   Ported from nextly.tv's You tab: settings read as a list of named things, each with a
+   sentence saying what it does and its own control beside it — rather than headings with loose
+   rows of buttons under them, where nothing says what pressing one will do. */
+
+.set-group{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.set-group+.set-group{margin-top:14px}
+.set-row{padding:15px;border-top:1px solid var(--line-soft);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.set-row:first-child{border-top:0}
+.set-text{flex:1;min-width:190px}
+.set-name{font-size:14.5px;font-weight:600}
+.set-hint{font-size:12.5px;color:var(--dim);margin-top:3px}
+/* A row whose sentence is long enough that a control centred against it looks adrift. */
+.set-row.top{align-items:flex-start}
+.set-ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.set-ctl .select{min-width:120px}
+/* The sync dot sits inside a sentence here rather than standing on its own. */
+.set-hint .syncdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dimmer);vertical-align:baseline}
+.set-hint .syncdot.ok{background:var(--accent)}
+.set-hint .syncdot.off{background:var(--danger)}
+
+/* The headings above each group. */
+.sect{margin:26px 0 10px}
+.sect:first-child{margin-top:4px}
+.sect h2{margin:0}
+
+/* The account number: the one string here that has to be read character by character and
+   copied without error. It wraps at its own dashes rather than shrinking to fit — at 320px the
+   old single line had shrunk to its 11px floor and still had its last group cut off. */
+.token-out{padding:15px;border:1px dashed var(--signal);border-radius:var(--r);background:var(--signal-soft);
+  font-family:var(--mono);font-size:clamp(13px,4.1vw,16px);letter-spacing:.07em;text-align:center;font-weight:700;
+  width:100%;overflow-wrap:break-word;line-height:1.9}
+.token-out .s{color:var(--dimmer)}
+.token-out .d{color:var(--accent)}
+.token-out .a{color:var(--signal)}
+
+/* The revealed account number, inside its settings row rather than as a banner over the page.
+   Breaks at its own dashes so it never runs past a narrow screen. */
+.acctcode{display:block;margin-top:9px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel-2);
+  font-size:13px;letter-spacing:.06em;line-height:1.9;overflow-wrap:break-word}
+.acctcode .s{color:var(--dimmer)}
+.acctcode .d{color:var(--accent)}
+.acctcode .a{color:var(--signal)}
+
+
+/* A picker with two answers is a pair of buttons, not a dropdown. A native select's popup is
+   the one part of it no stylesheet can reach — it is drawn by the platform, and on a phone it
+   is a full-height wheel for choosing between "Dark" and "Light". Two buttons show both answers
+   at once and take one tap instead of three. */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.seg-btn{padding:8px 14px;min-height:38px;border:0;background:var(--panel-2);color:var(--dim);cursor:pointer;font-size:13px;font-weight:600}
+.seg-btn+.seg-btn{border-left:1px solid var(--line)}
+.seg-btn:hover{color:var(--text)}
+.seg-btn.is-on{background:var(--signal);color:var(--signal-ink)}

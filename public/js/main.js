@@ -68,7 +68,7 @@ window.addEventListener("resize", () => {
 });
 
 // Esc closes the open editor — routed through its Back button so sync + re-render run.
-const EDITOR_BACK = { yearEditor: "edBack", salaryEditor: "salaryBack", assetEditor: "assetBack", profileEditor: "profileBack" };
+const EDITOR_BACK = { yearEditor: "edBack", salaryEditor: "salaryBack", assetEditor: "assetBack" };
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   const im = $("infoModal"); if (im && !im.classList.contains("hide")) return; // the info modal handles its own Esc
@@ -79,21 +79,22 @@ document.addEventListener("keydown", (e) => {
 // we trigger the native prompt. iOS/iPadOS has no install API, so the button opens a short
 // "Add to Home Screen" guide. Hidden only when already running standalone.
 const installBtn = $("installBtn");
+const installRow = $("installRow");
 const onIOS = isIOSUserAgent(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
 let deferredInstall = null;
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstall = e; });
-window.addEventListener("appinstalled", () => { deferredInstall = null; if (installBtn) installBtn.classList.add("hide"); });
+window.addEventListener("appinstalled", () => { deferredInstall = null; if (installBtn) installRow && installRow.classList.add("hide"); });
 
 if (installBtn) {
   // Show whenever not already installed. Some browsers (Brave, Firefox) never fire
   // beforeinstallprompt, so we can't rely on it to reveal the button.
-  if (!isStandalone()) installBtn.classList.remove("hide");
+  if (!isStandalone()) installRow && installRow.classList.remove("hide");
   installBtn.onclick = async () => {
     if (deferredInstall) {
       // Chromium with a captured prompt — trigger the native install dialog.
       deferredInstall.prompt();
       try { await deferredInstall.userChoice; } catch (e) {}
-      deferredInstall = null; installBtn.classList.add("hide");
+      deferredInstall = null; installRow && installRow.classList.add("hide");
       return;
     }
     // No programmatic prompt (iOS, Brave, Firefox, or not yet eligible) — show how to install.

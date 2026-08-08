@@ -72,7 +72,7 @@ function renderList() {
     const when = s.expires ? new Date(s.expires).toLocaleDateString(getLocale()) : "—";
     const status = expired ? t("share.expired", { date: when }) : t("share.expires", { date: when });
     const name = (s.label || t("share.untitled")).replace(/</g, "&lt;");
-    return `<div class="share-row"><div class="share-row-meta"><div class="share-row-name">${name}</div><div class="synced">${status}</div></div><button class="act ghost danger" data-revoke="${s.id}">${t("share.revoke")}</button></div>`;
+    return `<div class="share-row"><div class="share-row-meta"><div class="share-row-name">${name}</div><div class="synced">${status}</div></div><button class="btn btn-sm btn-danger" data-revoke="${s.id}">${t("share.revoke")}</button></div>`;
   }).join("");
   box.querySelectorAll("[data-revoke]").forEach((b) => {
     b.onclick = async () => {
