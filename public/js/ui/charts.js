@@ -5,7 +5,7 @@ import { state } from "../domain/store.js";
 import { money, ccySym, esc, shortK } from "../domain/money.js";
 import {
   colorOf, allNames, effEntries, seriesKey, snapGrossBase, snapTotalBase,
-  sortedSnaps, latestSnap, entryBase, isLiability, dayChangeBase, allocationRows,
+  sortedSnaps, latestSnap, entryBase, isLiability, dayChangeBase, allocationRows, pricesStale,
 } from "../domain/model.js";
 import { fmtMY } from "../domain/dates.js";
 import { fcCfg, forecastNetAt, fcTarget, fcBandRates, debtSummary } from "../domain/forecast.js";
@@ -237,7 +237,20 @@ function drawHist() {
   const ls = latestSnap(); const nw = ls ? snapTotalBase(ls) : 0;
   setHero(nw);
   const nAssets = ls ? effEntries(ls).filter((e) => !isLiability(e)).length : 0;
-  $("nwNote").textContent = ls ? t("net.asOf", { year: ls.year, count: nAssets }) : t("net.noData");
+  const note = $("nwNote");
+  note.textContent = ls ? t("net.asOf", { year: ls.year, count: nAssets }) : t("net.noData");
+  // Holdings keep their last known price when a refresh can't reach the API, so say when that
+  // price is from rather than let a day-old figure pass for this minute's.
+  const stale = pricesStale();
+  if (ls && stale) {
+    const when = stale.at
+      ? new Date(stale.at).toLocaleDateString(getLocale(), { day: "numeric", month: "short" })
+      : null;
+    const span = document.createElement("span");
+    span.className = "stalepx";
+    span.textContent = " · " + (when ? t("net.pricesFrom", { date: when }) : t("net.pricesUnrefreshed"));
+    note.appendChild(span);
+  }
   const dEl = $("nwDay"); const dc = dayChangeBase(nw);
   if (dc) { const flat = Math.abs(dc.abs) < 0.005, up = dc.abs >= 0; dEl.className = "day " + (flat ? "flat" : up ? "up" : "down"); const sign = up ? "+" : "−", arrow = flat ? "" : up ? "▲ " : "▼ "; dEl.textContent = t("net.dayChange", { arrow, sign, abs: money(Math.abs(dc.abs)), pct: Math.abs(dc.pct).toFixed(2) }); }
   else { dEl.className = "day"; dEl.textContent = ""; }

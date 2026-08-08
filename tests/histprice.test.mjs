@@ -49,14 +49,31 @@ test("refreshHistPrices caches a missing year (no price) and won't re-fetch it",
   assert.equal(calls.length, n);
 });
 
-test("refreshHistPrices never freezes the current year and clears a stale frozen price", async () => {
+test("refreshHistPrices drops a current-year cached price once a live one is in hand", async () => {
   stubFetch(() => ok(100, "USD")); // would only be hit if it (wrongly) fetched
-  setState(base([{ year: CY, entries: [{ name: "AAPL", kind: "ticker", ccy: "USD", ticker: "AAPL", shares: 1, px: 90, pxCcy: "USD", pxKey: "AAPL@" + CY }] }]));
+  const st = base([{ year: CY, entries: [{ name: "AAPL", kind: "ticker", ccy: "USD", ticker: "AAPL", shares: 1, px: 90, pxCcy: "USD", pxKey: "AAPL@" + CY }] }]);
+  st.prices = { AAPL: { price: 104.2, currency: "USD" } };
+  setState(st);
 
   const changed = await refreshHistPrices();
   const en = state.snapshots[0].entries[0];
   assert.equal(changed, true);
-  assert.equal(en.px, undefined); // unfrozen -> uses live price instead
+  assert.equal(en.px, undefined); // unfrozen -> uses the live price instead
   assert.equal(en.pxKey, undefined);
   assert.equal(calls.length, 0); // current-year holdings never fetch a historical close
+});
+
+// The bug this guards: with the price API unreachable there is no live price, and clearing the
+// cached one left the holding worth nothing at all — a net worth that silently dropped by
+// whatever the holdings were worth, with no warning anywhere.
+test("refreshHistPrices keeps a current-year cached price while no live price exists", async () => {
+  stubFetch(() => notOk());
+  setState(base([{ year: CY, entries: [{ name: "AAPL", kind: "ticker", ccy: "USD", ticker: "AAPL", shares: 1, px: 90, pxCcy: "USD", pxKey: "AAPL@" + CY }] }]));
+
+  const changed = await refreshHistPrices();
+  const en = state.snapshots[0].entries[0];
+  assert.equal(changed, false);
+  assert.equal(en.px, 90);
+  assert.equal(en.pxCcy, "USD");
+  assert.equal(calls.length, 0);
 });

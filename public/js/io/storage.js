@@ -2,6 +2,7 @@
 // /api/* Worker endpoints, and notifies the UI via toast/setSync and a data-changed listener.
 import { state } from "../domain/store.js";
 import { stampMtimes, setBaseline } from "../domain/merge.js";
+import { frozenSuperseded } from "../domain/model.js";
 import { encS, decS, keysReady, getAccountId } from "./crypto.js";
 import { toast, setSync } from "../ui/dom.js";
 import { MAX_BLOB } from "../../lib/limits.js";
@@ -182,7 +183,9 @@ export async function refreshHistPrices() {
         if (en.px != null && en.pxKey === key) continue;
         if (_histMiss.has(key)) continue; // already known to have no year-end price
         toFetch.push({ en, year: sn.year, key });
-      } else if (en.px != null) {
+      } else if (frozenSuperseded(en, state.prices)) {
+        // Only once a live price is actually in hand. Dropping it first is what turned an
+        // unreachable price API into a net worth that had lost its holdings.
         delete en.px; delete en.pxCcy; delete en.pxKey; changed = true;
       }
     }

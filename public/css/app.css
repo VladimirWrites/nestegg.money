@@ -115,6 +115,8 @@ h1.title{font-size:clamp(28px,3.4vw,40px);color:var(--text)}
 .hero .day{margin-top:8px;font-size:14px;font-weight:600}
 .hero .day.up{color:var(--accent)} .hero .day.down{color:var(--danger)} .hero .day.flat{color:var(--dim)}
 .hero .delta{margin-top:6px;font-size:14px;color:var(--dim)}
+/* Says which prices the total was built from, when they are not this minute`s. */
+.stalepx{color:var(--dimmer)}
 
 section{padding:24px 0;border-bottom:1px solid var(--line)}
 .sectitle{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-bottom:14px;display:flex;align-items:center;gap:10px;min-height:32px}

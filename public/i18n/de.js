@@ -160,6 +160,8 @@ export default {
     histAriaEmpty: "Vermögen im Zeitverlauf — noch keine Daten.",
     asOf: { one: "Stand {year} · {count} Anlage", other: "Stand {year} · {count} Anlagen" },
     noData: "Noch keine Daten",
+    pricesFrom: "Kurse vom {date}",
+    pricesUnrefreshed: "Kurse nicht aktualisiert",
     dayChange: "{arrow}{sign}{abs} · {sign}{pct}% heute",
     liabilities: "Verbindlichkeiten",
     vsYear: "ggü. {year}:",

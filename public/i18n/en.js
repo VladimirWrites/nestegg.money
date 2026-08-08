@@ -160,6 +160,8 @@ export default {
     histAriaEmpty: "Net worth over time — no data yet.",
     asOf: { one: "as of {year} · {count} asset", other: "as of {year} · {count} assets" },
     noData: "No data yet",
+    pricesFrom: "prices from {date}",
+    pricesUnrefreshed: "prices not refreshed",
     dayChange: "{arrow}{sign}{abs} · {sign}{pct}% today",
     liabilities: "Liabilities",
     vsYear: "vs {year}:",
