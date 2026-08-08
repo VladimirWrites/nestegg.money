@@ -5,11 +5,17 @@
 .gatebox .sub{color:var(--muted);margin-bottom:26px;font-size:13px}
 .gatebox .panel{border-top:1px solid var(--line2);padding-top:20px}
 .gatebox p{font-size:13px;color:var(--muted);margin:10px 0}
-.acctnum{font-size:21px;letter-spacing:.06em;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:16px 14px;white-space:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;text-align:center;margin:14px 0;line-height:1.5;color:var(--green)}
-.acctnum .tokline{display:inline-block;white-space:nowrap}
-.acctnum .d{color:var(--green)}   /* digits */
-.acctnum .a{color:var(--blue)}    /* letters */
-.acctnum .s{color:var(--muted)}   /* separators */
+/* The gate's copy of the number, in the same wrapping box the profile uses. It breaks at its
+   own dashes rather than shrinking: the old box shrank the type to an 11px floor and, at
+   320px, still cut off the last group — on the one screen whose whole job is getting this
+   number read and written down correctly. */
+.acctnum{padding:16px 14px;border:1px dashed var(--signal);border-radius:var(--r);background:var(--signal-soft);font-family:var(--mono);
+  font-size:clamp(14px,4.4vw,19px);letter-spacing:.06em;text-align:center;font-weight:700;margin:14px 0;line-height:1.9;overflow-wrap:break-word}
+/* A dash-separated group never breaks across lines. */
+.tokgrp{display:inline-block;white-space:nowrap}
+.acctnum .d{color:var(--accent)}   /* digits */
+.acctnum .a{color:var(--signal)}   /* letters */
+.acctnum .s{color:var(--dimmer)}   /* separators */
 .gatebtn{font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--amber);color:var(--on-amber);border:none;padding:14px 20px;cursor:pointer;border-radius:3px;min-height:46px;font-weight:600;font-family:var(--mono)}
 .gatebtn.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
 .gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--text);letter-spacing:.05em;font-family:var(--mono)}
@@ -648,3 +654,40 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .sharemsg p { color: var(--muted); }
 .sharemsg-foot { margin-top: 18px; }
 .sharemsg-foot a { color: var(--amber); }
+
+
+/* ---------- profile ----------
+   Ported from nextly.tv's You tab: settings read as a list of named things, each with a
+   sentence saying what it does and its own control beside it — rather than headings with loose
+   rows of buttons under them, where nothing says what pressing one will do. */
+
+.set-group{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.set-group+.set-group{margin-top:14px}
+.set-row{padding:15px;border-top:1px solid var(--line-soft);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.set-row:first-child{border-top:0}
+.set-text{flex:1;min-width:190px}
+.set-name{font-size:14.5px;font-weight:600}
+.set-hint{font-size:12.5px;color:var(--dim);margin-top:3px}
+/* A row whose sentence is long enough that a control centred against it looks adrift. */
+.set-row.top{align-items:flex-start}
+.set-ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.set-ctl .select{min-width:120px}
+/* The sync dot sits inside a sentence here rather than standing on its own. */
+.set-hint .syncdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dimmer);vertical-align:baseline}
+.set-hint .syncdot.ok{background:var(--accent)}
+.set-hint .syncdot.off{background:var(--danger)}
+
+/* The headings above each group. */
+.sect{margin:26px 0 10px}
+.sect:first-child{margin-top:4px}
+.sect h2{margin:0}
+
+/* The account number: the one string here that has to be read character by character and
+   copied without error. It wraps at its own dashes rather than shrinking to fit — at 320px the
+   old single line had shrunk to its 11px floor and still had its last group cut off. */
+.token-out{padding:15px;border:1px dashed var(--signal);border-radius:var(--r);background:var(--signal-soft);
+  font-family:var(--mono);font-size:clamp(13px,4.1vw,16px);letter-spacing:.07em;text-align:center;font-weight:700;
+  width:100%;overflow-wrap:break-word;line-height:1.9}
+.token-out .s{color:var(--dimmer)}
+.token-out .d{color:var(--accent)}
+.token-out .a{color:var(--signal)}

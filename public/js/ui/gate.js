@@ -15,13 +15,18 @@ import { renderBudget, setBudgetReadOnly } from "./budget.js";
 import { setEntriesReadOnly } from "./networth.js";
 import { initI18n, translateDom, t, getLocale } from "../i18n.js";
 
-// Render an account number with digits and letters coloured differently, kept on one line —
-// shrinking the font only if the screen is too narrow.
+/* Render an account number with digits and letters coloured differently.
+   It wraps at its own dashes rather than being squeezed onto one line: the old version shrank
+   the type to fit and stopped at 11px, which on a 320px phone still left the last group cut
+   off — on the one screen whose whole job is getting this number read and saved correctly.
+   Each dash-separated group is kept whole, so a break never falls inside a group. */
 function showToken(el, tok) {
-  el.innerHTML = '<span class="tokline">' + [...tok].map((c) => (c === "-" ? '<span class="s">-</span>' : /[0-9]/.test(c) ? `<span class="d">${c}</span>` : `<span class="a">${c}</span>`)).join("") + "</span>";
-  const line = el.querySelector(".tokline"); line.style.fontSize = "";
-  const cs = getComputedStyle(el), avail = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  if (avail > 0) { const base = parseFloat(getComputedStyle(line).fontSize), w = line.getBoundingClientRect().width; if (w > avail) line.style.fontSize = Math.max(11, (base * avail) / w) + "px"; }
+  const groups = String(tok).split("-");
+  el.innerHTML = groups.map((g, i) => {
+    const chars = [...g].map((c) => (/[0-9]/.test(c) ? `<span class="d">${c}</span>` : `<span class="a">${c}</span>`)).join("");
+    const sep = i < groups.length - 1 ? '<span class="s">-</span>' : "";
+    return `<span class="tokgrp">${chars}${sep}</span>`;
+  }).join("");
 }
 
 /* ---- the password manager ----
@@ -269,7 +274,7 @@ function renderProfAcct() {
   const el = $("profAcct"), tok = LS.get("nw_token") || "";
   if (profShown) showToken(el, tok); else el.textContent = tok.replace(/[0-9A-Za-z]/g, "•") || "…";
   $("profEye").classList.toggle("on", profShown);
-  const ls = $("lastSync"); if (ls) ls.textContent = t("prof.lastSynced", { time: relTime(syncedAt()) });
+  const ls = $("lastSync"); if (ls) ls.textContent = relTime(syncedAt());
 }
 // Profile is a destination on the rail, not something you tap into and back out of — so it
 // renders in place like the other three views and keeps the navigation on screen.
