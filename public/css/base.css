@@ -1,6 +1,6 @@
 :root{
-  --bg:#0a0a0b;--panel:#121214;--panel2:#17171a;--line:#26262a;--line2:#33333a;
-  --ink:#e8e4d8;--muted:#8a867c;--amber:#ffb000;--amber2:#ff8c1a;
+  --ink:#0a0a0b;--panel:#121214;--panel2:#17171a;--line:#26262a;--line2:#33333a;
+  --text:#e8e4d8;--muted:#8a867c;--amber:#ffb000;--amber2:#ff8c1a;
   --blue:#4aa3ff;--green:#3ad17a;--yellow:#ffd23a;--red:#ff4d6d;
   --field:#000;          /* input / track background */
   --row-alt:#141416;     /* alternating / header row background */
@@ -12,8 +12,8 @@
 /* Light theme — opt in via data-theme="light" on <html>. Same variables, light values;
    the amber accent is darkened so it stays legible as text on a light background. */
 :root[data-theme="light"]{
-  --bg:#faf9f6;--panel:#ffffff;--panel2:#f2f0ea;--line:#e4e1d9;--line2:#d3cfc4;
-  --ink:#1b1a17;--muted:#6c685e;--amber:#a86a00;--amber2:#c2410c;
+  --ink:#faf9f6;--panel:#ffffff;--panel2:#f2f0ea;--line:#e4e1d9;--line2:#d3cfc4;
+  --text:#1b1a17;--muted:#6c685e;--amber:#a86a00;--amber2:#c2410c;
   --blue:#2b6fd6;--green:#1f9d57;--yellow:#b8860b;--red:#d6394f;
   --field:#ffffff;--row-alt:#f0eee7;--bar-bg:rgba(255,255,255,.9);--on-amber:#fff;
 }
@@ -27,7 +27,7 @@
 @media(min-width:3440px){:root{--maxw:2040px}}
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--mono);line-height:1.5;padding:0 0 90px;min-height:100vh}
+body{background:var(--ink);color:var(--text);font-family:var(--mono);line-height:1.5;padding:0 0 90px;min-height:100vh}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .hide{display:none!important}
 /* visually hidden but present in the DOM, so password managers can see credential fields */

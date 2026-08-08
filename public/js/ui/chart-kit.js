@@ -11,7 +11,7 @@ const cssVar = (n, fb) => { try { const v = getComputedStyle(document.documentEl
 export function refreshPalette() {
   C.amber = cssVar("--amber", C.amber); C.green = cssVar("--green", C.green);
   C.grid = cssVar("--line", C.grid); C.axis = cssVar("--muted", C.axis);
-  C.ink = cssVar("--ink", C.ink); C.bg = cssVar("--bg", C.bg); C.red = cssVar("--red", C.red);
+  C.ink = cssVar("--text", C.ink); C.bg = cssVar("--ink", C.bg); C.red = cssVar("--red", C.red);
 }
 
 // Round a value up to a "nice" axis maximum. The step sequence is fine-grained on purpose:

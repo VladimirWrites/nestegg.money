@@ -1,4 +1,4 @@
-#gate{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+#gate{position:fixed;inset:0;background:var(--ink);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
 .gatebox{max-width:520px;width:100%}
 .gatebox .kick{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber)}
 .gatebox h1{font-size:clamp(34px,8vw,52px);line-height:.98;letter-spacing:-.01em;font-weight:700;margin:8px 0 4px;color:var(--amber)}
@@ -12,7 +12,7 @@
 .acctnum .s{color:var(--muted)}   /* separators */
 .gatebtn{font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--amber);color:var(--on-amber);border:none;padding:14px 20px;cursor:pointer;border-radius:3px;min-height:46px;font-weight:600;font-family:var(--mono)}
 .gatebtn.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
-.gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--ink);letter-spacing:.05em;font-family:var(--mono)}
+.gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--text);letter-spacing:.05em;font-family:var(--mono)}
 .gatein:focus{outline:none;border-color:var(--amber)}
 .gaterow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 .gatesaved{font-size:12px;color:var(--green);margin:-6px 0 0}
@@ -38,9 +38,9 @@ header.masthead{border-bottom:1px solid var(--line2);padding:14px 18px 16px;max-
 .eyebtn svg{width:18px;height:18px}
 .kicker{font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
 .titlerow{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:10px 0 6px}
-h1.title{font-size:clamp(30px,6.5vw,48px);line-height:1;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+h1.title{font-size:clamp(30px,6.5vw,48px);line-height:1;font-weight:700;letter-spacing:-.01em;color:var(--text)}
 .ccypick{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.ccypick select{font:inherit;font-size:13px;letter-spacing:0;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:6px 8px;color:var(--ink)}
+.ccypick select{font:inherit;font-size:13px;letter-spacing:0;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:6px 8px;color:var(--text)}
 .subt{color:var(--muted);font-size:13px}
 main{max-width:var(--maxw);margin:0 auto;padding:0 18px}
 
@@ -93,7 +93,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .chartdl:hover{color:var(--amber);border-color:var(--amber)}
 .chartdl svg{width:15px;height:15px}
 
-.editor{position:fixed;inset:0;background:var(--bg);z-index:45;overflow:auto;padding-bottom:110px}
+.editor{position:fixed;inset:0;background:var(--ink);z-index:45;overflow:auto;padding-bottom:110px}
 .ed-bar{position:sticky;top:0;background:var(--bar-bg);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:12px;padding:13px 18px;z-index:2}
 .ed-bar button{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:none;border:none;color:var(--amber);cursor:pointer;padding:6px 0;font-family:var(--mono)}
 #edDelYear{color:var(--red);margin-left:auto}
@@ -108,13 +108,13 @@ button.act.ghost:hover{border-color:var(--amber)}
 .rcard{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:11px 13px;position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .rcard:hover{border-color:var(--line2)}
 .rcard .dot{width:10px;height:10px;border-radius:1px;flex:none}
-.rcard .rname{flex:1;min-width:120px;font:inherit;font-size:15px;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--ink);padding:3px 0}
+.rcard .rname{flex:1;min-width:120px;font:inherit;font-size:15px;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);padding:3px 0}
 .rcard .rname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.rcard .rval{width:130px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--ink);min-height:40px}
+.rcard .rval{width:130px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text);min-height:40px}
 .rcard .rval:focus{outline:none;border-color:var(--amber)}
-.rcard select{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px;color:var(--ink);min-height:40px}
+.rcard select{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px;color:var(--text);min-height:40px}
 .rcard .rkind{font:inherit;font-size:12px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 6px;color:var(--amber);min-height:40px}
-.rcard .rsh{width:84px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--ink);min-height:40px}
+.rcard .rsh{width:84px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text);min-height:40px}
 .rcard .rtk{width:120px;font:inherit;font-size:14px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--green);min-height:40px;text-transform:uppercase}
 .rcard .rsh:focus,.rcard .rtk:focus{outline:none;border-color:var(--amber)}
 .rcard .rconv{font-size:11px;color:var(--green);min-width:80px;text-align:right}
@@ -123,7 +123,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .fcrow{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 14px}
 .fcrow .fld{flex:1 1 150px;min-width:140px;display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted)}
 .fcrow .fld>.cap{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fcrow .fld input,.fcrow .fld select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:13px}
+.fcrow .fld input,.fcrow .fld select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:13px}
 .fcrow .pct{position:relative;display:flex;align-items:center}
 .fcrow .pct input{flex:1;width:100%;padding-right:24px;-moz-appearance:textfield}
 .fcrow .pct input::-webkit-outer-spin-button,.fcrow .pct input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
@@ -147,24 +147,24 @@ button.act.ghost:hover{border-color:var(--amber)}
 .infomodal.hide{display:none}
 .infobox{position:relative;background:var(--panel);border:1px solid var(--line2);border-radius:12px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:22px 24px}
 .infoclose{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer;padding:2px 6px}
-.infoclose:hover{color:var(--ink)}
+.infoclose:hover{color:var(--text)}
 .infobox h3{color:var(--amber);font-size:15px;margin:0 0 12px}
 .infobox p{color:var(--muted);font-size:13px;line-height:1.6;margin:10px 0}
 .infobox ul{list-style:none;padding:0;margin:10px 0;display:flex;flex-direction:column;gap:8px}
 .infobox li{color:var(--muted);font-size:12.5px;line-height:1.6}
-.infobox b{color:var(--ink);font-weight:600}
+.infobox b{color:var(--text);font-weight:600}
 .infobox code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11.5px;color:var(--green);text-transform:none}
 .infobox a{color:var(--amber);text-decoration:none}
 .infobox a:hover{text-decoration:underline}
-.fccheck{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:var(--ink);cursor:pointer}
+.fccheck{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:var(--text);cursor:pointer}
 .fccheck input{width:16px;height:16px;accent-color:var(--amber);cursor:pointer}
 .chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--amber) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
 .fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--muted)}
 .fcswitch input{position:absolute;opacity:0;pointer-events:none}
 .fcswitch .track{width:34px;height:18px;border-radius:10px;background:var(--line2);position:relative;transition:background .15s}
-.fcswitch .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--ink);transition:left .15s}
+.fcswitch .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:left .15s}
 .fcswitch input:checked+.track{background:var(--amber)}
-.fcswitch input:checked+.track::after{left:18px;background:var(--bg)}
+.fcswitch input:checked+.track::after{left:18px;background:var(--ink)}
 .rcard.liabcard{border-left:2px solid rgba(255,77,109,.5)}
 .yliab{color:var(--red);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rcard .rcat{font-size:12px;max-width:150px;color:var(--muted)}
@@ -177,7 +177,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .grphead .dot{width:10px;height:10px;border-radius:1px;flex:none}
 .grpname{flex:1;min-width:80px;font:inherit;font-size:14px;font-weight:600;letter-spacing:.04em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0}
 .grpname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.grpsub{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:var(--ink);white-space:nowrap}
+.grpsub{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:var(--text);white-space:nowrap}
 .grpdel{background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
 .grpdel:hover{color:var(--red)}
 .grpcards{display:flex;flex-direction:column;gap:6px;padding:11px 13px}
@@ -189,10 +189,10 @@ button.act.ghost:hover{border-color:var(--amber)}
 /* standalone legal pages (privacy.html, terms.html) */
 .legal{max-width:760px;margin:0 auto;padding:48px 22px 90px}
 .legal .back{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);text-decoration:none;margin-bottom:26px}
-.legal h1{font-size:clamp(28px,6vw,40px);font-weight:700;color:var(--ink);letter-spacing:-.01em;margin-bottom:6px}
+.legal h1{font-size:clamp(28px,6vw,40px);font-weight:700;color:var(--text);letter-spacing:-.01em;margin-bottom:6px}
 .legal .updated{color:var(--muted);font-size:12px;margin-bottom:30px}
 .legal h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin:30px 0 10px}
-.legal p,.legal li{color:var(--ink);font-size:14px;line-height:1.65;margin-bottom:10px}
+.legal p,.legal li{color:var(--text);font-size:14px;line-height:1.65;margin-bottom:10px}
 .legal ul{padding-left:20px;margin-bottom:10px}
 .legal strong{color:var(--amber2)}
 .legal .note{border-left:2px solid var(--line2);padding-left:14px;color:var(--muted);font-size:12.5px;margin-top:30px}
@@ -237,7 +237,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 /* read-only computed (long-term asset) rows inside the year editor — tap to edit */
 .rcard.auto{background:var(--panel2);border-style:dashed;cursor:pointer}
 .rcard.auto:hover{border-color:var(--amber)}
-.rcard.auto .rname.ro{flex:1;min-width:120px;font-size:15px;color:var(--ink)}
+.rcard.auto .rname.ro{flex:1;min-width:120px;font-size:15px;color:var(--text)}
 .autotag{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line2);border-radius:99px;padding:3px 9px;white-space:nowrap}
 .rcard.auto .rconv{color:var(--amber);font-weight:600;font-size:13px}
 .autoedit{width:14px;height:14px;color:var(--muted);flex:none}
@@ -250,15 +250,15 @@ button.act.ghost:hover{border-color:var(--amber)}
 .exhint{padding:10px 12px;border:none;background:none}
 .acard{flex-direction:column;align-items:stretch;gap:12px}
 .toggles{display:flex;flex-wrap:wrap;gap:10px 22px}
-.tgl{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer}
+.tgl{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text);cursor:pointer}
 .tgl input{width:17px;height:17px;accent-color:var(--amber);cursor:pointer}
 .loanbox{border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:13px;display:flex;flex-direction:column;gap:12px}
 .loanwarn{font-size:12px;line-height:1.5;color:var(--red);border-left:2px solid var(--red);padding-left:11px}
 .frow{display:flex;flex-wrap:wrap;gap:12px}
 .fld{display:flex;flex-direction:column;gap:5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex:1;min-width:130px}
-.fin{font:inherit;font-size:15px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--ink);min-height:42px;width:100%}
+.fin{font:inherit;font-size:15px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--text);min-height:42px;width:100%}
 .fin:focus{outline:none;border-color:var(--amber)}
-.fld select{font:inherit;font-size:14px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--ink);min-height:42px;width:100%}
+.fld select{font:inherit;font-size:14px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--text);min-height:42px;width:100%}
 .suffix{display:flex;align-items:center;gap:7px}.suffix i{font-style:normal;color:var(--muted);font-size:12px}
 .vsum,.pstat{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .vsum{border-top:1px solid var(--line);padding-top:11px}
@@ -279,7 +279,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .schtab{width:100%;border-collapse:collapse;font-size:11.5px}
 .schtab th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:600;text-align:right;padding:8px 10px;letter-spacing:.04em;white-space:nowrap}
 .schtab th:first-child{text-align:left}
-.schtab td{padding:7px 10px;text-align:right;border-top:1px solid var(--line);color:var(--ink);white-space:nowrap}
+.schtab td{padding:7px 10px;text-align:right;border-top:1px solid var(--line);color:var(--text);white-space:nowrap}
 .schtab td:first-child{text-align:left;color:var(--muted)}
 .schtab tbody tr:hover{background:var(--panel2)}
 .schtab tr.exline td{background:rgba(255,176,0,.08);color:var(--amber);border-top:1px solid var(--line2)}
@@ -293,7 +293,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 #salaryChart{display:block}
 .chartwrap{position:relative;display:inline-block}
 .saldot{cursor:pointer}
-.salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--amber);border-radius:4px;padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
+.salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--amber);border-radius:4px;padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
 .saltable-scroll{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:4px;margin-bottom:10px}
 .saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -306,7 +306,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .salname{flex:1;min-width:90px;font:inherit;font-size:15px;font-weight:700;letter-spacing:.01em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0;font-family:var(--mono)}
 .salname::placeholder{color:var(--muted);font-weight:400}
 .salname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.salccy{font:inherit;font-size:11px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:4px 6px;color:var(--ink)}
+.salccy{font:inherit;font-size:11px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:4px 6px;color:var(--text)}
 .saltab th.salm-h,.saltab td.salm{position:sticky;left:0;background:var(--panel);z-index:1;border-right:1px solid var(--line2)}
 .saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel2)}
 .saltab td.salm{color:var(--muted);font-size:12px}
@@ -314,12 +314,12 @@ button.act.ghost:hover{border-color:var(--amber)}
 .saltab tr.saly td:first-child{text-align:left;position:sticky;left:0;z-index:1;border-right:1px solid var(--line2)}
 .saltab .salgsep{border-left:2px solid var(--line2)}
 .saltab td.salm{min-width:90px}
-.saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--ink)}
+.saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text)}
 .saltab td .salev{width:100%;min-width:90px;font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--muted)}
 .saltab td .salf:focus,.saltab td .salev:focus{outline:none;border-color:var(--amber)}
 .salx-h{width:34px}
 .saltab td.salxc{text-align:center}
-.salpick{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:7px 9px;color:var(--ink);min-height:38px}
+.salpick{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:7px 9px;color:var(--text);min-height:38px}
 .salpick:focus{outline:none;border-color:var(--amber)}
 .salctrls{align-items:center}
 .salrlbl{font-size:11px;letter-spacing:.04em;color:var(--muted)}
@@ -338,7 +338,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .salimport{margin-top:16px;border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:0 13px}
 .salimport summary{cursor:pointer;padding:12px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
 .salimport[open]{padding-bottom:13px}
-#salImportText{width:100%;min-height:120px;font-family:var(--mono);font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:10px;color:var(--ink);white-space:pre;overflow:auto}
+#salImportText{width:100%;min-height:120px;font-family:var(--mono);font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:10px;color:var(--text);white-space:pre;overflow:auto}
 #salImportText:focus{outline:none;border-color:var(--amber)}
 
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
@@ -393,7 +393,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .rcard .rhint{flex-basis:100%;width:100%;font-size:10.5px;color:var(--amber2);border-top:1px dashed var(--line2);padding-top:7px;margin-top:1px}
 
 /* PWA auto-update overlay (shown briefly while a new version takes over and reloads) */
-.updating{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:9999}
+.updating{position:fixed;inset:0;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:9999}
 .updating .spin{width:34px;height:34px;border:3px solid var(--line2);border-top-color:var(--amber);border-radius:50%;animation:nw-spin .8s linear infinite}
 .updating .updtxt{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:.04em}
 @keyframes nw-spin{to{transform:rotate(360deg)}}
@@ -419,7 +419,7 @@ button.act.ghost:hover{border-color:var(--amber)}
 .salflag .tipyoy.down{color:var(--red)}
 
 /* demo/tour banner (shown only in the no-account demo) */
-.demobar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--panel2);border-bottom:1px solid var(--amber);color:var(--ink);padding:8px 16px;font-size:12.5px;letter-spacing:.02em}
+.demobar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--panel2);border-bottom:1px solid var(--amber);color:var(--text);padding:8px 16px;font-size:12.5px;letter-spacing:.02em}
 .demobar .demobtns{display:flex;gap:8px;align-items:center}
 .demobar .act{min-height:32px;padding:6px 12px;font-size:11px}
 .demolink{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
@@ -431,19 +431,19 @@ button.act.ghost:hover{border-color:var(--amber)}
 .bud-card .v{font-size:clamp(30px,8vw,44px);font-weight:700;color:var(--green);font-family:var(--mono);line-height:1}
 .bud-card.neg .v{color:var(--red)}
 .bud-card .sub{font-size:12px;color:var(--muted)}
-.bud-card .sub b{color:var(--ink);font-weight:600}
+.bud-card .sub b{color:var(--text);font-weight:600}
 .bud-rows{margin:0 auto}
 .bud-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
 .bud-row.indent{padding-left:14px}
 .bud-row.total{border-bottom:none;border-top:1px solid var(--line2);font-weight:600}
-.bud-lbl{color:var(--ink);font-size:14px}
+.bud-lbl{color:var(--text);font-size:14px}
 .bud-lbl .hint{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px}
-.bud-val{font-family:var(--mono);font-size:15px;color:var(--ink);white-space:nowrap}
-.bud-input{width:140px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:14px}
+.bud-val{font-family:var(--mono);font-size:15px;color:var(--text);white-space:nowrap}
+.bud-input{width:140px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px}
 .bud-input:focus{outline:none;border-color:var(--amber)}
 .bud-exp-head{margin:18px 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .bud-exp{display:grid;grid-template-columns:1fr 150px 130px 36px;gap:10px;align-items:center;padding:5px 0}
-.bud-exp input{background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:14px;min-width:0}
+.bud-exp input{background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0}
 .bud-exp .bud-exp-amt{text-align:right;font-family:var(--mono)}
 .bud-exp .bud-exp-cat{color:var(--muted)}
 #budgetTip .tippct{color:var(--muted);font-weight:400}
@@ -471,26 +471,26 @@ button.act.ghost:hover{border-color:var(--amber)}
 #budgetDonut.anim .dwedge{stroke-dasharray:1;stroke-dashoffset:1;animation:dwedge-draw .6s ease forwards}
 @keyframes dwedge-draw{to{stroke-dashoffset:0}}
 /* budget category selects + loan rows */
-.bud-exp select{background-color:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 28px 8px 8px;color:var(--ink);font-family:var(--mono);font-size:14px;min-width:0;min-height:40px}
+.bud-exp select{background-color:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 28px 8px 8px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0;min-height:40px}
 .bud-exp select:focus{outline:none;border-color:var(--amber)}
 /* loan row reuses the .bud-exp grid so its category and amount line up with
    the expense rows; the 4th (delete) column is left empty. Spans match the inputs' font + height. */
-.bud-loan-name{color:var(--ink);font-family:var(--mono);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bud-loan-amt{text-align:right;font-family:var(--mono);font-size:14px;color:var(--ink);padding:8px 0}
+.bud-loan-name{color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bud-loan-amt{text-align:right;font-family:var(--mono);font-size:14px;color:var(--text);padding:8px 0}
 @media(max-width:520px){.bud-loan{grid-template-columns:1fr 110px}.bud-loan-amt{grid-column:1 / -1;text-align:right;padding-top:0}}
 
 /* ---- share dialog (profile → Share) ---- */
 .share-secs{display:flex;flex-wrap:wrap;gap:10px 18px;margin:14px 0}
 .share-sec{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
 .share-lbl{display:block;font-size:14px;color:var(--muted);margin:8px 0 14px}
-.share-lbl input{display:block;width:100%;margin-top:6px;background:var(--field);color:var(--ink);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:14px}
+.share-lbl input{display:block;width:100%;margin-top:6px;background:var(--field);color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:14px}
 .share-hint{color:var(--muted)}
 .share-result{margin-top:18px}
 .share-result .acctnum{flex:1;background:var(--field);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-size:13px;overflow:hidden;text-overflow:ellipsis}
 .share-list{margin-top:8px}
 .share-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .share-row:last-child{border-bottom:0}
-.share-row-name{font-size:14px;color:var(--ink)}
+.share-row-name{font-size:14px;color:var(--text)}
 
 /* ---- read-only shared snapshot (/s/) ---- */
 /* Hide every editing affordance. Nothing persists in share mode anyway (demo plumbing),
@@ -541,18 +541,18 @@ body.share #edEntries input,
 body.share #edYear {
   background: transparent !important; border: none !important; box-shadow: none !important;
   padding-left: 0; padding-right: 0; width: auto !important;
-  -webkit-appearance: none; appearance: none; color: var(--ink);
+  -webkit-appearance: none; appearance: none; color: var(--text);
 }
 body.share #edYear::selection { background: transparent; }
 body.share #edYear::-webkit-inner-spin-button,
 body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 /* static read-only entry rows: name (flex) · shares+ticker · value right-aligned */
 .rcard.ro { cursor: default; }
-.rcard.ro .ro-name { flex: 1; min-width: 120px; font-size: 15px; color: var(--ink); }
+.rcard.ro .ro-name { flex: 1; min-width: 120px; font-size: 15px; color: var(--text); }
 .rcard.ro .ro-mid { display: flex; gap: 14px; align-items: baseline; }
 .rcard.ro .ro-sh { color: var(--muted); font-size: 14px; }
 .rcard.ro .ro-tk { color: var(--green); font-size: 14px; text-transform: uppercase; }
-.rcard.ro .ro-val { min-width: 96px; text-align: right; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.rcard.ro .ro-val { min-width: 96px; text-align: right; font-size: 15px; color: var(--text); font-variant-numeric: tabular-nums; }
 .rcard.ro .ro-val.liab { color: var(--red); }
 
 .sharemsg { max-width: 520px; margin: 80px auto; padding: 0 20px; text-align: center; }

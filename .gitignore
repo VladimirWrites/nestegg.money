@@ -12,3 +12,6 @@ networth-*.json
 
 # working notes, not part of the app (repo root only; public/docs/ ships with the site)
 /docs/
+
+# brainstorming companion scratch
+.superpowers/

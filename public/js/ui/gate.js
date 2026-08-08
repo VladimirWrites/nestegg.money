@@ -283,7 +283,7 @@ function applyTheme(t) {
   if (t === "light") document.documentElement.setAttribute("data-theme", "light");
   else document.documentElement.removeAttribute("data-theme");
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0b");
+  if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--ink").trim() || "#0a0a0b");
 }
 function syncThemeSel() { const s = $("themeSel"); if (s) s.value = currentTheme(); }
 // Recolour the SVG charts (they read theme CSS vars) by re-rendering the visible view.
