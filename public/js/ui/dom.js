@@ -27,6 +27,9 @@ export function showEditor(id) {
   const el = $(id);
   el.classList.remove("hide");
   $("app").classList.add("hide");
+  // An editor is tapped into rather than navigated to, so the tab bar steps aside and gives
+  // the room back to the page it was holding.
+  document.body.classList.add("no-nav");
   window.scrollTo(0, 0);
   // Desktop only: focus + select the first field so you can type immediately. Skipped on
   // touch / coarse pointers so it doesn't pop the on-screen keyboard.
@@ -59,6 +62,7 @@ export function flash(el) {
 export function hideEditor(id) {
   $(id).classList.add("hide");
   $("app").classList.remove("hide");
+  document.body.classList.remove("no-nav");
 }
 
 // Trigger a browser download of a Blob, releasing the object URL afterward.
@@ -99,9 +103,13 @@ export function toast(m) {
   toastTimer = setTimeout(() => el.classList.remove("show"), 2300);
 }
 
-// Sync status indicator (two mirrored dots/labels in the masthead + profile).
+// Sync status. In the rail it is the lamp beside the wordmark — amber when the vault is in
+// step, pulsing while a sync is in flight, grey when this device is on its own. The words
+// themselves are for screen readers and for the Profile screen, which has room to say them.
 export function setSync(cls, text) {
-  const dotCls = "syncdot " + (cls === "ok" ? "ok" : cls === "off" ? "off" : cls === "sync" ? "sync" : "");
-  ["syncDot", "syncDot2"].forEach((id) => { const d = $(id); if (d) d.className = dotCls; });
+  const lamp = $("syncDot");
+  if (lamp) lamp.className = "brand-lamp" + (cls === "sync" ? " sync" : cls === "off" ? " off" : "");
+  const dot2 = $("syncDot2");
+  if (dot2) dot2.className = "syncdot " + (cls === "ok" ? "ok" : cls === "off" ? "off" : cls === "sync" ? "sync" : "");
   ["syncTxt", "syncTxt2"].forEach((id) => { const x = $(id); if (x) x.textContent = text; });
 }

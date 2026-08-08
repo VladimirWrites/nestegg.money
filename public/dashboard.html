@@ -72,6 +72,38 @@
 </div>
 
 <div id="app" class="hide">
+ <div class="shell">
+  <!-- Four destinations: a bottom bar within thumb reach on a phone, the same four as a left
+       rail on a desktop. Same markup and order at both sizes, so the app doesn't have to be
+       relearned when the window changes. -->
+  <nav class="nav" aria-label="Sections" data-i18n-aria-label="nav.sections">
+    <div class="nav-brand">
+      <!-- The lamp is the sync indicator: amber when the vault is in step, pulsing while a sync
+           is in flight, grey when this device is on its own. Pressing it syncs now. -->
+      <button class="brand" id="syncNowHome" type="button" title="Sync now" data-i18n-title="nav.syncNow">
+        <i class="brand-lamp" id="syncDot"></i><span>nestegg</span>
+      </button>
+      <span class="sr-only" id="syncTxt" role="status" aria-live="polite">Local</span>
+    </div>
+    <button class="nav-item is-on" id="navNet" type="button">
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M7 19V9"/><path d="M12 19V5"/><path d="M17 19v-7"/></svg>
+      <span data-i18n="nav.net">Net worth</span>
+    </button>
+    <button class="nav-item" id="salaryBtn" type="button">
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v10H3z"/><circle cx="12" cy="12" r="2.5"/></svg>
+      <span data-i18n="nav.salary">Salary</span>
+    </button>
+    <button class="nav-item" id="navBudget" type="button">
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M14 3.5A9 9 0 0 1 20.5 10H14z"/></svg>
+      <span data-i18n="nav.budget">Budget</span>
+    </button>
+    <button class="nav-item" id="profileBtn" type="button">
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5"/></svg>
+      <span data-i18n="nav.profile">Profile</span>
+    </button>
+  </nav>
+
+  <div class="shell-main">
   <div id="demoBanner" class="demobar hide" role="status">
     <span data-i18n="banner.demo">Demo — sample data, nothing is saved.</span>
     <span class="demobtns"><button type="button" class="act" id="demoCreate" data-i18n="banner.demoCreate">Create an account</button><button type="button" class="demolink" id="demoExit" data-i18n="banner.demoExit">Leave</button></span>
@@ -80,17 +112,20 @@
     <span data-i18n="banner.share">Read-only shared snapshot — a point-in-time copy. Nothing here can be edited.</span>
     <span class="demobtns"><button class="demolink" id="shareTheme" type="button">Light mode</button><a class="demolink" href="https://nestegg.money" rel="noopener" data-i18n="banner.whatIs">What is nestegg?</a></span>
   </div>
-  <div class="acctbar">
-    <button class="who syncbtn" id="syncNowHome" title="Sync now" data-i18n-title="nav.syncNow"><span class="syncdot" id="syncDot"></span><span id="syncTxt">Local</span></button>
-    <div><button id="profileBtn" data-i18n="nav.profile">Profile</button></div>
-  </div>
+  <!-- The phone's top edge. On a desktop the rail carries the brand and the masthead below
+       carries the name of the screen, so this hides itself unless a screen puts controls in it. -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-title t-title" id="topTitle" data-i18n="nav.netTitle">Net Worth</div>
+      <div class="topbar-actions" id="topActions"></div>
+    </div>
+  </header>
   <header class="masthead">
     <div class="kicker"><span data-i18n="nav.kicker">Personal Ledger</span><span id="dateline">—</span></div>
-    <div class="titlerow"><h1 class="title" id="mastTitle" data-i18n="nav.netTitle">Net Worth</h1></div>
+    <div class="titlerow"><h1 class="title t-display" id="mastTitle" data-i18n="nav.netTitle">Net Worth</h1></div>
     <div class="subt" id="mastSub" data-i18n="nav.netSub">A quiet accounting of what you hold.</div>
-    <nav class="mainnav"><button class="navtab on" id="navNet" data-i18n="nav.net">Net worth</button><button class="navtab" id="salaryBtn" data-i18n="nav.salary">Salary</button><button class="navtab" id="navBudget" data-i18n="nav.budget">Budget</button></nav>
   </header>
-  <main>
+  <main class="main">
     <div id="viewNet">
     <div class="hero">
       <div class="label" data-i18n="net.totalLbl">Total Net Worth</div>
@@ -189,6 +224,8 @@
     There is no recovery if you lose your account number — Export JSON is your backup.</span>
     <div class="footlinks"><a href="privacy.html" data-i18n="foot.privacy">Privacy Policy</a> · <a href="terms.html" data-i18n="foot.terms">Terms &amp; Conditions</a> · <a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener" data-i18n="foot.source">Source</a> · <a href="https://buymeacoffee.com/vladimirj.dev" target="_blank" rel="noopener" data-i18n="foot.coffee">Buy me a coffee ☕</a></div>
   </div>
+  </div><!-- /shell-main -->
+ </div><!-- /shell -->
 </div>
 
 <div id="yearEditor" class="editor hide">

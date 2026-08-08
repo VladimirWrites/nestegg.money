@@ -82,12 +82,12 @@ export async function pushServer(manual, keepalive = false) {
       if (manual || !syncWarned) { syncWarned = true; toast("Too many new accounts from your network right now — your data is saved on this device. Try syncing again later."); }
     } else {
       console.warn("[nestegg] sync failed: HTTP", r.status, r.statusText, "—", body.length, "byte body");
-      setSync("off", "Sync error");
+      setSync("off", "Offline — saved locally");
       if (manual || !syncWarned) { syncWarned = true; toast("Sync failed — changes are saved on this device only"); }
     }
   } catch (e) {
     console.warn("[nestegg] sync failed:", (e && e.name) || "", (e && e.message) || e, e);
-    setSync("off", "Local only");
+    setSync("off", "Offline — saved locally");
     if (manual || !syncWarned) { syncWarned = true; toast("Sync failed — changes are saved on this device only"); }
   }
 }
@@ -97,7 +97,7 @@ export async function loadServer() {
   try {
     const r = await fetch("/api/vault", { headers: { "X-Vault-Id": getAccountId() } });
     if (r.status === 404) { setSync("ok", "Synced (new)"); return null; }
-    if (!r.ok) { console.warn("[nestegg] load failed: HTTP", r.status, r.statusText); setSync("off", "Local only"); return null; }
+    if (!r.ok) { console.warn("[nestegg] load failed: HTTP", r.status, r.statusText); setSync("off", "Offline — saved locally"); return null; }
     const { blob } = await r.json();
     const o = await decS(blob);
     setSync("ok", "Synced");
@@ -105,7 +105,7 @@ export async function loadServer() {
     return o;
   } catch (e) {
     console.warn("[nestegg] load failed:", (e && e.name) || "", (e && e.message) || e, e);
-    setSync("off", "Local only");
+    setSync("off", "Offline — saved locally");
     return null;
   }
 }

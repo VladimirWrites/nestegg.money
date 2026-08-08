@@ -334,9 +334,12 @@ export function showView(name) {
   $("viewNet").classList.toggle("hide", view !== "net");
   $("viewSalary").classList.toggle("hide", view !== "salary");
   $("viewBudget").classList.toggle("hide", view !== "budget");
-  $("navNet").classList.toggle("on", view === "net");
-  $("salaryBtn").classList.toggle("on", view === "salary");
-  $("navBudget").classList.toggle("on", view === "budget");
+  const on = { navNet: view === "net", salaryBtn: view === "salary", navBudget: view === "budget", profileBtn: false };
+  Object.entries(on).forEach(([id, active]) => {
+    const el = $(id); if (!el) return;
+    el.classList.toggle("is-on", active);
+    if (active) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
+  });
   applyMastTexts();
   if (view === "net") { armChartAnim(); renderAll(); }
   else if (view === "salary") { armSalaryAnim(); renderSalary(); }
@@ -347,7 +350,11 @@ export function showView(name) {
 // DOM so a language change can re-apply it without knowing how the current view was reached.
 function applyMastTexts() {
   const view = !$("viewSalary").classList.contains("hide") ? "salary" : !$("viewBudget").classList.contains("hide") ? "budget" : "net";
-  $("mastTitle").textContent = t(view === "salary" ? "nav.salaryTitle" : view === "budget" ? "nav.budgetTitle" : "nav.netTitle");
+  const title = t(view === "salary" ? "nav.salaryTitle" : view === "budget" ? "nav.budgetTitle" : "nav.netTitle");
+  $("mastTitle").textContent = title;
+  // The same words in both places, because only one of them is on screen at a time: the bar on
+  // a phone, the masthead on a desktop.
+  const top = $("topTitle"); if (top) top.textContent = title;
   $("mastSub").textContent = t(view === "salary" ? "nav.salarySub" : view === "budget" ? "nav.budgetSub" : "nav.netSub");
 }
 $("navNet").onclick = () => showView("net");

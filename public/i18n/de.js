@@ -61,6 +61,7 @@ export default {
   },
   nav: {
     syncNow: "Jetzt synchronisieren",
+    sections: "Bereiche",
     profile: "Profil",
     kicker: "Persönliches Kontobuch",
     netTitle: "Vermögen",

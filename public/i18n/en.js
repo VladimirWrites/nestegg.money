@@ -61,6 +61,7 @@ export default {
   },
   nav: {
     syncNow: "Sync now",
+    sections: "Sections",
     profile: "Profile",
     kicker: "Personal Ledger",
     netTitle: "Net Worth",
