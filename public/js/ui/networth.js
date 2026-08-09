@@ -1,5 +1,5 @@
 // Year editor: the list of snapshots and the per-year entry editing overlay.
-import { $, showEditor, hideEditor, toast, flash, focusNew, pickerInit } from "./dom.js";
+import { $, showEditor, hideEditor, toast, flash, focusNew } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
@@ -18,7 +18,7 @@ let edYearPrev = null;
 function openYearEditor(ri) {
   edIdx = ri;
   edYearPrev = state.snapshots[ri].year;
-  yearPicker.set(String(state.snapshots[ri].year));
+  $("edYearVal").textContent = String(state.snapshots[ri].year);
   showEditor("yearEditor");
   renderEntries();
   ensureHist();
@@ -122,48 +122,78 @@ export function renderEntries() {
 
 $("years").addEventListener("click", (e) => { const h = e.target.closest("[data-open]"); if (h) openYearEditor(+h.dataset.open); });
 $("edBack").onclick = () => { scheduleSync(); closeYearEditor(); };
-/* Which years this snapshot may move to: the ones nobody else is on, plus the one it is on.
+/* Moving a snapshot to another year.
 
    The year is not a label on the record — it is the key the sync merge files it under, so two
    snapshots sharing a year collide the next time two devices reconcile and one absorbs the
-   other. Typing it invited exactly that: the field wrote to state on every keystroke, so
-   replacing 2026 with 2025 passed through the years 2, 20 and 202 on the way, each one saved,
-   and landed on 2025 whether or not 2025 already existed. The check that caught duplicates only
-   ran on commit, which a system Back button never reaches.
+   other. It used to be a number field that wrote to state on every keystroke, so replacing 2026
+   with 2025 passed through the years 2, 20 and 202, saving each, and the duplicate check ran
+   only on commit, which a system Back button never reaches.
 
-   Offering the free years instead makes the collision unrepresentable rather than warned about,
-   and on a phone it is fewer taps than typing four digits. */
-const YEAR_SPAN_BACK = 30, YEAR_SPAN_FORWARD = 5;
+   It is a dialog rather than a dropdown under the title. Moving a year is rare and it takes the
+   whole year's contents with it, so it is worth asking for on purpose; and a decade reads at a
+   glance as a grid, where a list of thirty-six years in a column the width of the button was
+   eight visible at a time and a thousand pixels of scrolling to reach the far end.
 
-function yearOptions() {
+   Years already in the ledger are shown rather than left out, and disabled with a reason. A gap
+   where 2025 should be is a puzzle; 2025 greyed out and labelled is an answer. */
+const YEAR_SPAN_BACK = 24, YEAR_SPAN_FORWARD = 4;
+
+function yearRange() {
   const years = state.snapshots.map((s) => s.year).filter((y) => Number.isFinite(y));
   const cur = state.snapshots[edIdx] ? state.snapshots[edIdx].year : new Date().getFullYear();
   const now = new Date().getFullYear();
   const lo = Math.min(now, cur, ...(years.length ? years : [now])) - YEAR_SPAN_BACK;
   const hi = Math.max(now, cur, ...(years.length ? years : [now])) + YEAR_SPAN_FORWARD;
-  const taken = new Set(state.snapshots.filter((_, i) => i !== edIdx).map((s) => s.year));
   const out = [];
-  for (let y = hi; y >= lo; y--) if (!taken.has(y)) out.push(String(y));   // newest first
+  for (let y = hi; y >= lo; y--) out.push(y);   // newest first, like the years list itself
   return out;
 }
 
-const yearPicker = pickerInit("edYearPick", "edYearBtn", "edYearVal", "edYearList", yearOptions, (v) => {
+function renderYearGrid() {
   const sn = state.snapshots[edIdx]; if (!sn) return;
-  const y = parseInt(v, 10);
-  // Belt and braces: the list cannot offer a taken year, but nothing else may set one either.
+  const taken = new Map();
+  state.snapshots.forEach((s, i) => { if (i !== edIdx) taken.set(s.year, true); });
+  $("yearGrid").innerHTML = yearRange().map((y) => {
+    const isNow = y === sn.year, isTaken = taken.has(y);
+    const cls = "yearopt" + (isNow ? " is-now" : "") + (isTaken ? " is-taken" : "");
+    const title = isTaken ? t("yeared.yearTaken", { year: y }) : isNow ? t("yeared.yearNow", { year: y }) : "";
+    return `<button type="button" class="${cls}" data-year="${y}"${isTaken ? " disabled" : ""}${title ? ` title="${title}"` : ""}${isNow ? ' aria-current="true"' : ""}>${y}</button>`;
+  }).join("");
+}
+
+function openYearModal() {
+  if (edIdx < 0) return;
+  renderYearGrid();
+  $("yearModal").classList.remove("hide");
+  const now = $("yearGrid").querySelector(".is-now");
+  if (now) now.scrollIntoView({ block: "center" });
+}
+const closeYearModal = () => $("yearModal").classList.add("hide");
+
+$("edYearBtn").onclick = openYearModal;
+$("yearClose").onclick = closeYearModal;
+$("yearModal").addEventListener("click", (e) => { if (e.target.id === "yearModal") closeYearModal(); });
+$("yearGrid").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-year]"); if (!b || b.disabled) return;
+  const sn = state.snapshots[edIdx]; if (!sn) return;
+  const y = parseInt(b.dataset.year, 10);
+  // Belt and braces: the grid disables taken years, but nothing else may set one either.
   if (!Number.isFinite(y) || state.snapshots.some((s, idx) => idx !== edIdx && s.year === y)) {
-    yearPicker.set(String(edYearPrev));
-    toast(t("net.yearExists", { year: y }));
-    return;
+    toast(t("net.yearExists", { year: y })); return;
   }
   sn.year = y;
   edYearPrev = y;
+  $("edYearVal").textContent = String(y);
   scheduleSync();
+  closeYearModal();
   // The entries are valued at their year — a holding priced at its year-end close, an asset
   // depreciated to it — so moving the year re-prices everything in it.
   renderEntries();
   ensureHist();
+  toast(t("yeared.moved", { year: y }));
 });
+
 $("edDelYear").onclick = () => { if (edIdx < 0) return; if (confirm(t("net.delYearConfirm", { year: state.snapshots[edIdx].year }))) { state.snapshots.splice(edIdx, 1); scheduleSync(); closeYearEditor(); } };
 // Adding a row lands on a placeholder name — focus and select it so typing replaces it, and
 // bring the new card into view (it renders at the end of the ungrouped list).

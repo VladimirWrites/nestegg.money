@@ -335,14 +335,11 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
   <div class="ed-bar">
     <div class="ed-bar-inner">
       <button class="ed-back" id="edBack" title="Back" aria-label="Back" data-i18n-title="yeared.back" data-i18n-aria-label="yeared.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <!-- The year is the snapshot's identity — the sync merge keys records by it — so it is
-           chosen from the years that are free rather than typed. Two snapshots on the same year
-           collide when devices reconcile, and one absorbs the other. -->
-      <div class="ed-title t-title"><span data-i18n="yeared.year">Year</span>
-        <div class="picker ed-yearpick" id="edYearPick">
-          <button type="button" class="picker-btn" id="edYearBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Year" data-i18n-aria-label="yeared.year"><span id="edYearVal">—</span></button>
-          <div class="picker-panel hide" id="edYearList" role="listbox" tabindex="-1" aria-label="Year" data-i18n-aria-label="yeared.year"></div>
-        </div>
+      <!-- The year is the snapshot's identity — the sync merge keys records by it — so moving one
+           is rare, consequential, and asked for deliberately rather than offered as a dropdown
+           under the title. The bar states the year; the dialog moves it. -->
+      <div class="ed-title t-title"><span data-i18n="yeared.year">Year</span> <span class="ed-yearnow num" id="edYearVal">—</span>
+        <button type="button" class="btn btn-sm ed-yearmove" id="edYearBtn" data-i18n="yeared.move">Move</button>
       </div>
       <div class="ed-actions"><button class="btn btn-sm btn-danger" id="edDelYear" data-i18n="yeared.delYear">Delete year</button></div>
     </div>
@@ -408,6 +405,14 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
   </div>
 </div></div>
 <div id="infoModal" class="infomodal hide"><div class="infobox"><button class="infoclose" id="infoClose" aria-label="Close" data-i18n-aria-label="share.close">×</button><div id="infoBody"></div></div></div>
+<div id="yearModal" class="infomodal hide">
+  <div class="infobox yearbox" role="dialog" aria-modal="true" aria-labelledby="yearModalTitle">
+    <button class="infoclose" id="yearClose" aria-label="Close" data-i18n-aria-label="share.close">×</button>
+    <h3 id="yearModalTitle" data-i18n="yeared.moveTitle">Move this year</h3>
+    <p data-i18n="yeared.moveLede">Everything in this year moves with it, and its holdings are re-priced to the year you pick. A year already in your ledger can't be used twice.</p>
+    <div class="yeargrid" id="yearGrid"></div>
+  </div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- App is an ES-module graph; main.js imports everything (domain / io / ui). No bundler. -->

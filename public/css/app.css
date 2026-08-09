@@ -208,11 +208,21 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 #edDelYear{color:var(--red);margin-left:auto}
 .ed-title{font-size:17px;color:var(--text);display:flex;align-items:center;gap:9px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* The year picker sits in the bar, sized to its four digits. */
-.ed-yearpick .picker-btn{min-height:34px;padding:4px 30px 4px 10px;font-size:16px;background-position:right 8px center}
-/* The bar is sticky and the panel has to come out over the page below it. */
-.ed-bar{overflow:visible}
-.ed-yearpick .picker-panel{max-height:min(52vh,340px)}
+/* The year as the bar states it, and the button that offers to move it. */
+.ed-yearnow{font-weight:700;color:var(--signal)}
+.ed-yearmove{margin-left:2px}
+
+/* The years to move to. A grid, so a decade reads at a glance rather than eight at a time
+   through a column the width of a button. */
+.yearbox{max-width:460px}
+.yeargrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-top:16px;max-height:52vh;overflow-y:auto;padding:2px}
+.yearopt{min-height:44px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel-2);color:var(--text);
+  font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;cursor:pointer}
+.yearopt:hover:not(:disabled){border-color:var(--signal);color:var(--signal)}
+.yearopt.is-now{background:var(--signal);border-color:var(--signal);color:var(--signal-ink);font-weight:700}
+/* Shown rather than left out: a gap where a year should be is a puzzle, a greyed one is an
+   answer — that year is already in the ledger. */
+.yearopt.is-taken,.yearopt:disabled{opacity:.36;cursor:not-allowed;text-decoration:line-through}
 
 /* The year is edited in place in the bar, so the field is sized to four digits. */
 .ed-year{width:5.5ch;min-height:34px;padding:4px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--text);font-size:16px;text-align:center}

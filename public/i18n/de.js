@@ -281,6 +281,12 @@ export default {
   yeared: {
     back: "Zurück",
     year: "Jahr",
+    move: "Verschieben",
+    moveTitle: "Dieses Jahr verschieben",
+    moveLede: "Alles in diesem Jahr wandert mit, und seine Bestände werden auf das gewählte Jahr neu bewertet. Ein Jahr, das bereits in Ihrem Kontobuch steht, kann nicht doppelt vergeben werden.",
+    yearTaken: "{year} steht bereits in Ihrem Kontobuch",
+    yearNow: "{year} ist das aktuelle Jahr dieses Eintrags",
+    moved: "Nach {year} verschoben",
     delYear: "Jahr löschen",
     total: "Jahressumme",
     add: "+ Anlage hinzufügen",

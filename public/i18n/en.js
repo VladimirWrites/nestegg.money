@@ -281,6 +281,12 @@ export default {
   yeared: {
     back: "Back",
     year: "Year",
+    move: "Move",
+    moveTitle: "Move this year",
+    moveLede: "Everything in this year moves with it, and its holdings are re-priced to the year you pick. A year already in your ledger can't be used twice.",
+    yearTaken: "{year} is already in your ledger",
+    yearNow: "{year} is where this one is now",
+    moved: "Moved to {year}",
     delYear: "Delete year",
     total: "Year total",
     add: "+ Add asset",
