@@ -199,6 +199,7 @@ export default {
     kindLiability: "Liability",
     emptyCategoryYear: "Empty — set an item's Category to this to file it here.",
     yearExists: "You already have a {year} — pick another year",
+    yearsFull: "Every year back to the earliest one is already in your ledger.",
     delYearConfirm: "Delete year {year}?",
     noEarlierYear: "No earlier year to copy from",
     replaceEntries: "Replace this year's entries with a copy of {year}?",

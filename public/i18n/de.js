@@ -199,6 +199,7 @@ export default {
     kindLiability: "Verbindlichkeit",
     emptyCategoryYear: "Leer — weisen Sie einem Eintrag diese Kategorie zu, um ihn hier abzulegen.",
     yearExists: "Sie haben bereits ein Jahr {year} — wählen Sie ein anderes",
+    yearsFull: "Jedes Jahr bis zurück zum frühesten steht bereits in Ihrem Kontobuch.",
     delYearConfirm: "Jahr {year} löschen?",
     noEarlierYear: "Kein früheres Jahr zum Kopieren",
     replaceEntries: "Einträge dieses Jahres durch eine Kopie von {year} ersetzen?",

@@ -137,14 +137,24 @@ $("edBack").onclick = () => { scheduleSync(); closeYearEditor(); };
 
    Years already in the ledger are shown rather than left out, and disabled with a reason. A gap
    where 2025 should be is a puzzle; 2025 greyed out and labelled is an answer. */
-const YEAR_SPAN_BACK = 24, YEAR_SPAN_FORWARD = 4;
+const YEAR_SPAN_BACK = 24;
 
+/* A snapshot records what you held, so it cannot be dated later than today.
+
+   Nothing would value it either. A holding in a year at or past the current one is priced at
+   the live price, so a 2029 snapshot would be today's prices wearing a 2029 label; it would
+   also become the latest snapshot, which is what the headline total reads and what the forecast
+   projects forward from — so one stray future year moves the baseline of the whole projection.
+   Where you are heading is the Forecast panel's job, and it does it from the years you have.
+
+   A year already dated in the future — from the free-text field this replaced, or from + Year
+   before it was capped — is still offered, or it could never be moved back. */
 function yearRange() {
   const years = state.snapshots.map((s) => s.year).filter((y) => Number.isFinite(y));
   const cur = state.snapshots[edIdx] ? state.snapshots[edIdx].year : new Date().getFullYear();
   const now = new Date().getFullYear();
   const lo = Math.min(now, cur, ...(years.length ? years : [now])) - YEAR_SPAN_BACK;
-  const hi = Math.max(now, cur, ...(years.length ? years : [now])) + YEAR_SPAN_FORWARD;
+  const hi = Math.max(now, cur);   // today, or wherever a stray snapshot already sits
   const out = [];
   for (let y = hi; y >= lo; y--) out.push(y);   // newest first, like the years list itself
   return out;
@@ -278,4 +288,19 @@ $("edEntries").addEventListener("click", (e) => {
   }
 });
 
-$("addYear").onclick = () => { const ys = state.snapshots.map((s) => s.year); const ny = ys.length ? Math.max(...ys) + 1 : new Date().getFullYear(); state.snapshots.push({ year: ny, entries: [] }); scheduleSync(); openYearEditor(state.snapshots.length - 1); };
+/* The next year worth recording: the newest one not already in the ledger, and never later
+   than this one. It used to be simply the highest year plus one, which minted a year in the
+   future the moment the ledger caught up with the present — a snapshot nothing can value, sitting
+   where the headline total and the forecast's baseline both read from. */
+$("addYear").onclick = () => {
+  const taken = new Set(state.snapshots.map((s) => s.year));
+  const now = new Date().getFullYear();
+  let ny = now;
+  while (taken.has(ny)) ny--;
+  // Every year back to the earliest is spoken for; the gap, if any, is further back than anyone
+  // is likely to mean, so say so rather than guess.
+  if (now - ny > 60) { toast(t("net.yearsFull")); return; }
+  state.snapshots.push({ year: ny, entries: [] });
+  scheduleSync();
+  openYearEditor(state.snapshots.length - 1);
+};
