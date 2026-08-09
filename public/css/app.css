@@ -208,6 +208,12 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 #edDelYear{color:var(--red);margin-left:auto}
 .ed-title{font-size:17px;color:var(--text);display:flex;align-items:center;gap:9px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The year picker sits in the bar, sized to its four digits. */
+.ed-yearpick .picker-btn{min-height:34px;padding:4px 30px 4px 10px;font-size:16px;background-position:right 8px center}
+/* The bar is sticky and the panel has to come out over the page below it. */
+.ed-bar{overflow:visible}
+.ed-yearpick .picker-panel{max-height:min(52vh,340px)}
+
 /* The year is edited in place in the bar, so the field is sized to four digits. */
 .ed-year{width:5.5ch;min-height:34px;padding:4px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--text);font-size:16px;text-align:center}
 .ed-year:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}

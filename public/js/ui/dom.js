@@ -138,8 +138,9 @@ export function pickerInit(rootId, btnId, valId, panelId, options, onPick) {
   let current = null, cursor = -1;
 
   const opts = () => [...panel.querySelectorAll(".picker-opt")];
+  const list = () => (typeof options === "function" ? options() : options);
   const draw = () => {
-    panel.innerHTML = options.map((o) =>
+    panel.innerHTML = list().map((o) =>
       `<button type="button" class="picker-opt" role="option" data-val="${o}" aria-selected="${o === current}">${o}</button>`).join("");
   };
   const setCursor = (i) => {
@@ -153,7 +154,7 @@ export function pickerInit(rootId, btnId, valId, panelId, options, onPick) {
     root.setAttribute("data-open", "");
     panel.classList.remove("hide");
     btn.setAttribute("aria-expanded", "true");
-    setCursor(Math.max(0, options.indexOf(current)));
+    setCursor(Math.max(0, list().indexOf(current)));
   };
   const close = () => {
     root.removeAttribute("data-open");
@@ -179,7 +180,7 @@ export function pickerInit(rootId, btnId, valId, panelId, options, onPick) {
     if (e.key === "ArrowDown") { e.preventDefault(); setCursor(cursor + 1); }
     else if (e.key === "ArrowUp") { e.preventDefault(); setCursor(cursor - 1); }
     else if (e.key === "Home") { e.preventDefault(); setCursor(0); }
-    else if (e.key === "End") { e.preventDefault(); setCursor(options.length - 1); }
+    else if (e.key === "End") { e.preventDefault(); setCursor(list().length - 1); }
     else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); const el = opts()[cursor]; if (el) choose(el.getAttribute("data-val")); }
   });
 

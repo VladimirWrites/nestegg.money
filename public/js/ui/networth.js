@@ -1,5 +1,5 @@
 // Year editor: the list of snapshots and the per-year entry editing overlay.
-import { $, showEditor, hideEditor, toast, flash, focusNew } from "./dom.js";
+import { $, showEditor, hideEditor, toast, flash, focusNew, pickerInit } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
@@ -18,7 +18,7 @@ let edYearPrev = null;
 function openYearEditor(ri) {
   edIdx = ri;
   edYearPrev = state.snapshots[ri].year;
-  $("edYear").value = state.snapshots[ri].year;
+  yearPicker.set(String(state.snapshots[ri].year));
   showEditor("yearEditor");
   renderEntries();
   ensureHist();
@@ -122,15 +122,47 @@ export function renderEntries() {
 
 $("years").addEventListener("click", (e) => { const h = e.target.closest("[data-open]"); if (h) openYearEditor(+h.dataset.open); });
 $("edBack").onclick = () => { scheduleSync(); closeYearEditor(); };
-$("edYear").addEventListener("input", (e) => { const sn = state.snapshots[edIdx]; if (!sn) return; const y = parseInt(e.target.value); if (!isNaN(y)) sn.year = y; scheduleSync(); });
-// On commit, reject a year that's already used by another snapshot (no duplicates).
-$("edYear").addEventListener("change", (e) => {
-  const sn = state.snapshots[edIdx]; if (!sn) return; const y = parseInt(e.target.value);
-  if (isNaN(y) || state.snapshots.some((s, idx) => idx !== edIdx && s.year === y)) {
-    if (!isNaN(y)) toast(t("net.yearExists", { year: y }));
-    sn.year = edYearPrev; e.target.value = edYearPrev; scheduleSync(); return;
+/* Which years this snapshot may move to: the ones nobody else is on, plus the one it is on.
+
+   The year is not a label on the record — it is the key the sync merge files it under, so two
+   snapshots sharing a year collide the next time two devices reconcile and one absorbs the
+   other. Typing it invited exactly that: the field wrote to state on every keystroke, so
+   replacing 2026 with 2025 passed through the years 2, 20 and 202 on the way, each one saved,
+   and landed on 2025 whether or not 2025 already existed. The check that caught duplicates only
+   ran on commit, which a system Back button never reaches.
+
+   Offering the free years instead makes the collision unrepresentable rather than warned about,
+   and on a phone it is fewer taps than typing four digits. */
+const YEAR_SPAN_BACK = 30, YEAR_SPAN_FORWARD = 5;
+
+function yearOptions() {
+  const years = state.snapshots.map((s) => s.year).filter((y) => Number.isFinite(y));
+  const cur = state.snapshots[edIdx] ? state.snapshots[edIdx].year : new Date().getFullYear();
+  const now = new Date().getFullYear();
+  const lo = Math.min(now, cur, ...(years.length ? years : [now])) - YEAR_SPAN_BACK;
+  const hi = Math.max(now, cur, ...(years.length ? years : [now])) + YEAR_SPAN_FORWARD;
+  const taken = new Set(state.snapshots.filter((_, i) => i !== edIdx).map((s) => s.year));
+  const out = [];
+  for (let y = hi; y >= lo; y--) if (!taken.has(y)) out.push(String(y));   // newest first
+  return out;
+}
+
+const yearPicker = pickerInit("edYearPick", "edYearBtn", "edYearVal", "edYearList", yearOptions, (v) => {
+  const sn = state.snapshots[edIdx]; if (!sn) return;
+  const y = parseInt(v, 10);
+  // Belt and braces: the list cannot offer a taken year, but nothing else may set one either.
+  if (!Number.isFinite(y) || state.snapshots.some((s, idx) => idx !== edIdx && s.year === y)) {
+    yearPicker.set(String(edYearPrev));
+    toast(t("net.yearExists", { year: y }));
+    return;
   }
-  edYearPrev = y; scheduleSync();
+  sn.year = y;
+  edYearPrev = y;
+  scheduleSync();
+  // The entries are valued at their year — a holding priced at its year-end close, an asset
+  // depreciated to it — so moving the year re-prices everything in it.
+  renderEntries();
+  ensureHist();
 });
 $("edDelYear").onclick = () => { if (edIdx < 0) return; if (confirm(t("net.delYearConfirm", { year: state.snapshots[edIdx].year }))) { state.snapshots.splice(edIdx, 1); scheduleSync(); closeYearEditor(); } };
 // Adding a row lands on a placeholder name — focus and select it so typing replaces it, and
