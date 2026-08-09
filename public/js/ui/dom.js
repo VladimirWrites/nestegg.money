@@ -27,7 +27,12 @@ export const isStandalone = () => {
 export function showEditor(id) {
   const el = $(id);
   el.classList.remove("hide");
-  $("app").classList.add("hide");
+  /* On a phone the editor is the whole window, so the app behind it is put away. On a desktop
+     the navigation rail lives inside #app, and hiding the lot took the rail with it — an editor
+     is a place you tapped into, not a dialog you have to answer, so the rail stays and the
+     editor takes the column beside it. It is opaque and covers that column exactly, so there is
+     nothing to see behind it either way. */
+  if (!matchMedia("(min-width: 900px)").matches) $("app").classList.add("hide");
   // An editor is tapped into rather than navigated to, so the tab bar steps aside and gives
   // the room back to the page it was holding.
   document.body.classList.add("no-nav");

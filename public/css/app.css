@@ -184,7 +184,13 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .chartdl:hover{color:var(--signal);border-color:var(--dimmer)}
 .chartdl svg{width:16px;height:16px}
 
+/* An editor is a place you tapped into, not a modal interruption — so it takes the content
+   column and leaves the navigation where it is. On a phone that is the whole window, and the
+   tab bar steps aside (body.no-nav); on a desktop the rail stays put and only the column to the
+   right of it changes, which is how nextly.tv treats a screen you tap into. A full cover is for
+   a dialog: something you have to answer before anything else can happen. */
 .editor{position:fixed;inset:0;background:var(--ink);z-index:45;overflow:auto;padding-bottom:110px}
+@media(min-width:900px){.editor{left:var(--rail)}}
 /* An editor's top edge is the app's topbar wearing a back arrow: same height, same blur,
    same inset, so moving into one doesn't move the top of the app. */
 .ed-bar{position:sticky;top:0;z-index:20;padding:calc(10px + var(--edge-t)) 0 10px;
