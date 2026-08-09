@@ -113,8 +113,17 @@ function newToken() {
   askManager(pendingToken, $("gateCreate"));
   stopAcctWatch = watchForSave(pendingToken, acctSaveConfirmed);
 }
-function showCreate() { $("gateCreate").classList.remove("hide"); $("gateSignin").classList.add("hide"); newToken(); }
+/* Put the gate back on screen. Two things can be holding it off: the attribute the head script
+   sets before first paint, and the class boot() adds the moment it finds a token — which it does
+   before it has finished, so a failure anywhere after that used to leave the create form inside
+   a hidden gate, i.e. a blank page with no way in. Both come off together. */
+const revealGate = () => {
+  try { document.documentElement.removeAttribute("data-boot"); } catch (e) {}
+  const g = $("gate"); if (g) g.classList.remove("hide");
+};
+function showCreate() { revealGate(); $("gateCreate").classList.remove("hide"); $("gateSignin").classList.add("hide"); newToken(); }
 function showSignin() {
+  revealGate();
   if (stopAcctWatch) { stopAcctWatch(); stopAcctWatch = null; } // no create screen, nothing to confirm
   $("gateCreate").classList.add("hide"); $("gateSignin").classList.remove("hide");
 }

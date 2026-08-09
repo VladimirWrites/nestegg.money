@@ -7,6 +7,14 @@
 <base href="/">
 <!-- apply the saved theme before first paint, so there's no flash -->
 <script>try{var t=localStorage.getItem("nw_theme");if(t==="light")document.documentElement.setAttribute("data-theme","light");}catch(e){}</script>
+<!-- And decide, before first paint, whether this load is going to the sign-in screen at all.
+     The gate is the first thing in the body, so it is what the browser paints while the module
+     graph is still loading — and boot() only hides it once it has run, by which time somebody
+     already signed in has been shown a login screen they don't need. The three cases that never
+     reach the gate are knowable here and cost one synchronous read between them. -->
+<script>try{var p=location.pathname,h=location.hash;
+if(p==="/s"||p==="/s/"||h==="#demo"||localStorage.getItem("nw_token"))
+document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
 <title>nestegg — private net worth tracker</title>
 <meta name="description" content="Track your net worth privately — log your assets each year and watch your wealth over time and by allocation. Encrypted in your browser; no email, no password, just an account number.">
 <link rel="canonical" href="https://dashboard.nestegg.money/">

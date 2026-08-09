@@ -1,3 +1,9 @@
+/* Held back until boot decides. The head script sets this for the loads that never reach the
+   sign-in screen — already signed in, the demo, a shared snapshot — so the gate is not what the
+   browser paints while the module graph is still loading. Cleared again by showCreate and
+   showSignin, which are also what a failed boot falls back to, so the gate is never unreachable
+   because of an attribute. */
+:root[data-boot="app"] #gate{display:none}
 #gate{position:fixed;inset:0;background:var(--ink);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
 .gatebox{max-width:520px;width:100%}
 .gatebox .kick{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber)}
