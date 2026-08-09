@@ -14,6 +14,7 @@ import { renderSalary, armSalaryAnim } from "./salary.js";
 import { renderBudget, setBudgetReadOnly } from "./budget.js";
 import { setEntriesReadOnly } from "./networth.js";
 import { initI18n, translateDom, t, getLocale } from "../i18n.js";
+import { navView } from "./history.js";
 
 /* Render an account number with digits and letters coloured differently.
    It wraps at its own dashes rather than being squeezed onto one line: the old version shrank
@@ -283,7 +284,7 @@ function renderProfAcct() {
 }
 // Profile is a destination on the rail, not something you tap into and back out of — so it
 // renders in place like the other three views and keeps the navigation on screen.
-function openProfile() { profShown = false; showView("profile"); }
+function openProfile() { profShown = false; navView("profile"); showView("profile"); }
 $("profileBtn").onclick = openProfile;
 $("profEye").onclick = () => { profShown = !profShown; renderProfAcct(); };
 
@@ -388,8 +389,8 @@ function applyMastTexts() {
   const top = $("topTitle"); if (top) top.textContent = title;
   $("mastSub").textContent = t(subKey);
 }
-$("navNet").onclick = () => showView("net");
-$("navBudget").onclick = () => showView("budget");
+$("navNet").onclick = () => { navView("net"); showView("net"); };
+$("navBudget").onclick = () => { navView("budget"); showView("budget"); };
 $("profLogout").onclick = () => { if (confirm(t("prof.logoutConfirm"))) { LS.rem("nw_token"); LS.rem("nw_state"); LS.rem("nw_state_bak"); location.reload(); } };
 // The display currency is a list of eleven, so it gets the drawn picker rather than a select
 // whose popup the platform owns.

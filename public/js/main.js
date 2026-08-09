@@ -8,7 +8,8 @@ import { scheduleSync, flushSync, autoRefresh, setDataListener } from "./io/stor
 import { renderAll } from "./ui/charts.js";
 import { renderEntries } from "./ui/networth.js";
 import { drawSalaryChart } from "./ui/salary.js";
-import { boot, setDisplayCcy } from "./ui/gate.js";
+import { boot, setDisplayCcy, showView } from "./ui/gate.js";
+import { initHistory } from "./ui/history.js";
 import { initI18n, translateDom, t } from "./i18n.js";
 import "./ui/assets.js"; // side-effect: wire its editor listeners
 import "./ui/share.js"; // side-effect: wire the share dialog
@@ -67,8 +68,13 @@ window.addEventListener("resize", () => {
   }, 160);
 });
 
-// Esc closes the open editor — routed through its Back button so sync + re-render run.
-const EDITOR_BACK = { yearEditor: "edBack", salaryEditor: "salaryBack", assetEditor: "assetBack" };
+/* Esc, and the system Back button, close the open editor — routed through its own Back button
+   so the sync and the re-render underneath run exactly as they do when it is pressed.
+
+   Topmost first. An asset opens on top of the year editor that reached it, so both are open at
+   once, and closing them in declaration order shut the year editor out from underneath the
+   asset editor still covering the screen. */
+const EDITOR_BACK = { assetEditor: "assetBack", salaryEditor: "salaryBack", yearEditor: "edBack" };
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   const im = $("infoModal"); if (im && !im.classList.contains("hide")) return; // the info modal handles its own Esc
@@ -110,6 +116,22 @@ if (installBtn) {
 try { await initI18n(); translateDom(); } catch (e) {}
 
 try { boot(); } catch (e) {}
+
+/* The system Back button. Editors close first, then the tab bar walks back to Net worth, and
+   Back from there leaves the app — which is what Back does everywhere else on the platform.
+   Wired after boot, so the entry it records is the view boot actually landed on. */
+initHistory({
+  onView: (v) => showView(v),
+  // Through each editor's own Back button, so closing by the system button runs exactly what
+  // closing by the arrow runs: the sync, and the re-render underneath.
+  onCloseEditor: () => {
+    for (const id in EDITOR_BACK) {
+      const ed = $(id);
+      if (ed && !ed.classList.contains("hide")) { const b = $(EDITOR_BACK[id]); if (b) { b.click(); return true; } }
+    }
+    return false;
+  },
+});
 
 // PWA: offline app shell + auto-update. When a new service worker is found it calls
 // skipWaiting (in sw.js) and takes control; we show a brief "Updating…" overlay and reload

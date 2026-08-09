@@ -15,6 +15,7 @@ import { renderAll } from "./charts.js";
 import { renderEntries } from "./networth.js";
 import { scheduleSync } from "../io/storage.js";
 import { t, getLocale } from "../i18n.js";
+import { pushEditor, popEditor } from "./history.js";
 
 const ymdDay = (d) => d.toLocaleDateString(getLocale(), { day: "numeric", month: "short", year: "numeric" }); // day-precision sibling of fmtMY
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -24,11 +25,16 @@ let curAssetId = null; // the single long-term asset the editor is focused on
 export function openAssetEditor(id, focusName) {
   curAssetId = id;
   $("assetEditor").classList.remove("hide");
+  document.body.classList.add("no-nav");
+  pushEditor("assetEditor");
   window.scrollTo(0, 0);
   renderAssets(focusName);
 }
 function closeAssetEditor() {
   $("assetEditor").classList.add("hide");
+  // The year editor underneath is an editor too, so the bar only comes back with both shut.
+  if ($("yearEditor").classList.contains("hide")) document.body.classList.remove("no-nav");
+  popEditor();
   if (!$("yearEditor").classList.contains("hide")) renderEntries();
   else renderAll();
 }

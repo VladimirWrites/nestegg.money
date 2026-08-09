@@ -1,6 +1,7 @@
 // Leaf DOM helpers. The only layer that touches the document directly besides the
 // renderers/editors. No domain or io imports, so anything may depend on it.
 import { t } from "../i18n.js";
+import { pushEditor, popEditor } from "./history.js";
 
 export const $ = (id) => document.getElementById(id);
 
@@ -30,6 +31,8 @@ export function showEditor(id) {
   // An editor is tapped into rather than navigated to, so the tab bar steps aside and gives
   // the room back to the page it was holding.
   document.body.classList.add("no-nav");
+  // …and it is a place of its own, so the system's Back button closes it rather than the app.
+  pushEditor(id);
   window.scrollTo(0, 0);
   // Desktop only: focus + select the first field so you can type immediately. Skipped on
   // touch / coarse pointers so it doesn't pop the on-screen keyboard.
@@ -63,6 +66,9 @@ export function hideEditor(id) {
   $(id).classList.add("hide");
   $("app").classList.remove("hide");
   document.body.classList.remove("no-nav");
+  // Closed by its own arrow: spend the entry it pushed, so Back doesn't have to be pressed
+  // twice for one screen. A no-op when the close came from Back in the first place.
+  popEditor();
 }
 
 // Trigger a browser download of a Blob, releasing the object URL afterward.

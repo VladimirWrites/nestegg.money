@@ -9,6 +9,7 @@ import { fmtMY } from "../domain/dates.js";
 import { yGrid, C, refreshPalette, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
 import { showView } from "./gate.js";
+import { navView } from "./history.js";
 import { t } from "../i18n.js";
 
 const salTotal = (en) => parseFloat(en.amount) || 0; // raw amount, in the entry's own currency
@@ -194,14 +195,37 @@ export function renderSalary() {
   host.innerHTML = `<div class="saltable-scroll"><table class="saltab rotab"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
 }
 
-// Editable table — rendered into the edit overlay.
+/* Editable table — rendered into the edit overlay.
+
+   Two people side by side is three columns each plus the month, which is 692px of table in the
+   284px a phone has. Every horizontal scroll then slid the amount under the sticky month column,
+   so a right-aligned "3.240,13" read as "0,13".
+
+   Under 900px it shows one person at a time instead, chosen from a switch above the table: all
+   of that person's columns at full width, and no horizontal scrolling at any width. It matches
+   how the data actually gets entered — your own history first, then your partner's — and the
+   read-only Salary tab keeps the side-by-side household table for reading. Above 900px there is
+   room for everyone, so the full grid comes back. */
+const salNarrow = () => { try { return matchMedia("(max-width: 899px)").matches; } catch (e) { return false; } };
+let salWho = 0;   // which person the narrow layout is showing
+
+function salPersonSwitch(people) {
+  if (people.length < 2) return "";
+  return `<div class="seg salwho">` + people.map((p, i) =>
+    `<button type="button" class="seg-btn${i === salWho ? " is-on" : ""}" data-salwho="${i}">${esc(p.name || t("salary.namePh"))}</button>`).join("") + `</div>`;
+}
+
 function renderSalaryEdit() {
   const host = $("salaryList");
   const people = state.salaries || [];
   if (!people.length) { host.innerHTML = `<div class="emptyhint">${t("salary.emptyEdit")}</div>`; return; }
+  const narrow = salNarrow();
+  if (salWho >= people.length) salWho = 0;
+  // One person's column, or everybody's.
+  const shown = narrow ? [people[salWho]] : people;
   const yms = salTableYms();
   let h1 = `<th class="salm-h"></th>`, h2 = `<th class="salm-h">${t("salary.impMonth")}</th>`;
-  people.forEach((p) => {
+  shown.forEach((p) => {
     h1 += `<th colspan="3" class="salp-h salgsep"><span class="salp-hin"><input class="salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${p.id}" title="${esc(t("salary.removeName", { name: p.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></span></th>`;
     h2 += `<th class="salgsep">${t("salary.thNet")}</th><th>${t("salary.thCcy")}</th><th>${t("salary.thEvent")}</th>`;
   });
@@ -211,11 +235,11 @@ function renderSalaryEdit() {
     const y = ym.slice(0, 4);
     if (y !== curY) {
       curY = y; let yr = `<tr class="saly"><td>${y}</td>`;
-      people.forEach((p) => { const tot = (p.entries || []).filter((e) => e.ym.slice(0, 4) === y).reduce((a, e) => a + salBase(p, e), 0); yr += `<td colspan="3" class="num salgsep" data-ytot="${p.id}:${y}">${tot ? money(tot) : "—"}</td>`; });
+      shown.forEach((p) => { const tot = (p.entries || []).filter((e) => e.ym.slice(0, 4) === y).reduce((a, e) => a + salBase(p, e), 0); yr += `<td colspan="3" class="num salgsep" data-ytot="${p.id}:${y}">${tot ? money(tot) : "—"}</td>`; });
       body += yr + `<td></td></tr>`;
     }
     let row = `<tr data-ym="${ym}"><td class="salm">${ymLabel(ym)}</td>`;
-    people.forEach((p) => {
+    shown.forEach((p) => {
       // A zero amount renders blank (the placeholder shows through) so a freshly added month is
       // an empty field to type into, not a "0" to clear first.
       const e = salEntry(p, ym); const amt = e && e.amount ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
@@ -227,10 +251,19 @@ function renderSalaryEdit() {
     body += row + `</tr>`;
   });
   const dFrom = yms.length ? yms[0] : new Date().getFullYear() + "-01", dTo = salThisMonth();
-  host.innerHTML = `<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + people.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>
+  host.innerHTML = (narrow ? salPersonSwitch(people) : "") +
+    `<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + shown.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>
     <div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="btn btn-sm" data-salgen>${t("salary.addRange")}</button><button class="btn btn-sm" data-salnext>${t("salary.next")}</button></div>`;
   const who = $("salImportWho"); if (who) { const prev = who.value; who.innerHTML = people.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join(""); if (prev) who.value = prev; }
 }
+
+/* Crossing the breakpoint changes which layout is right, and the editor can be open while it
+   happens — a desktop window dragged narrow, or a phone turned on its side. */
+try {
+  matchMedia("(max-width: 899px)").addEventListener("change", () => {
+    if (!$("salaryEditor").classList.contains("hide")) renderSalaryEdit();
+  });
+} catch (e) {}
 
 $("salaryList").addEventListener("input", (e) => {
   const t = e.target, sid = t.dataset.sid, f = t.dataset.f; if (!sid || !f) return; const p = state.salaries.find((x) => x.id === sid); if (!p) return;
@@ -243,6 +276,8 @@ $("salaryList").addEventListener("input", (e) => {
 });
 $("salaryList").addEventListener("change", (e) => { if (e.target.dataset.f === "ccy") salKeepScroll($("salaryList"), renderSalaryEdit); });
 $("salaryList").addEventListener("click", (e) => {
+  const sw = e.target.closest("[data-salwho]");
+  if (sw) { salWho = +sw.dataset.salwho; renderSalaryEdit(); return; }
   const pd = e.target.closest("[data-perdel]"); if (pd) { const p = state.salaries.find((x) => x.id === pd.dataset.perdel); if (confirm(t("salary.removePersonConfirm", { name: p ? p.name : t("salary.thisPerson") }))) { state.salaries = state.salaries.filter((x) => x.id !== pd.dataset.perdel); scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); } return; }
   const rd = e.target.closest("[data-salrowdel]"); if (rd) { const ym = rd.dataset.salrowdel; state.salaries.forEach((p) => { p.entries = (p.entries || []).filter((en) => en.ym !== ym); }); scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); return; }
   // New month: blank amounts for everyone, and land on the new row with the first field focused.
@@ -259,6 +294,7 @@ $("salaryList").addEventListener("click", (e) => {
 $("addPerson").onclick = () => {
   const p = { id: nid(), name: state.salaries.length ? t("salary.partner") : t("salary.me"), ccy: state.baseCcy, entries: [] };
   state.salaries.push(p); scheduleSync();
+  salWho = state.salaries.length - 1;   // the one you just added is the one you want to fill in
   salKeepScroll($("salaryList"), renderSalaryEdit);
   const nm = $("salaryList").querySelector(`.salname[data-sid="${p.id}"]`);
   if (nm) { try { nm.focus({ preventScroll: true }); } catch (err) { nm.focus(); } if (nm.select) try { nm.select(); } catch (err) {} }
@@ -282,7 +318,7 @@ function salHideTip() { const t = $("salTip"); if (t) t.classList.add("hide"); }
   document.addEventListener("pointerdown", (e) => { if (!e.target.closest("#salaryChart")) salHideTip(); });
 })();
 $("dlSalary").onclick = downloadSalary;
-$("salaryBtn").onclick = () => showView("salary");
+$("salaryBtn").onclick = () => { navView("salary"); showView("salary"); };
 
 // Salary tab (read-only) actions: quick "+ Next month", and open the edit overlay.
 function openSalaryEdit() { showEditor("salaryEditor"); renderSalaryEdit(); }

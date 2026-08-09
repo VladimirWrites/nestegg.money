@@ -483,7 +483,6 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 #donut path:hover{filter:brightness(1.18)}
 
 /* fade the edges of the horizontally-scrolling tables to signal there's more */
-.saltable-scroll,.schscroll{-webkit-mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent)}
 
 @media(prefers-reduced-motion:reduce){
   .flashed{animation:none!important}
@@ -720,6 +719,27 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    the one part of it no stylesheet can reach — it is drawn by the platform, and on a phone it
    is a full-height wheel for choosing between "Dark" and "Light". Two buttons show both answers
    at once and take one tap instead of three. */
+/* The person switch above the salary table on a phone. Full width, because it is the thing
+   that says whose column you are filling in. */
+.salwho{display:flex;width:100%;margin-bottom:12px}
+.salwho .seg-btn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* One person means the columns can be told to share the width rather than each asking for the
+   space its widest content wants — which is what still pushed a single column past a 358px box
+   and left it scrolling sideways after all. */
+@media(max-width:899px){
+  .salwho ~ .saltable-scroll .saltab{width:100%;table-layout:fixed;border-collapse:collapse}
+  .salwho ~ .saltable-scroll .salm,.salwho ~ .saltable-scroll .salm-h{width:74px}
+  .salwho ~ .saltable-scroll .salmccy{width:100%;min-width:0;padding-right:26px;background-position:right 7px center}
+  .salwho ~ .saltable-scroll .salf,.salwho ~ .saltable-scroll .salev{width:100%;min-width:0}
+  .salwho ~ .saltable-scroll .salxc,.salwho ~ .saltable-scroll .salx-h{width:34px}
+  /* The 2px rule that tells one person from the next has nobody to separate here. Matched at
+     the same strength as the rule that sets it, or it does not win. */
+  .salwho ~ .saltable-scroll .saltab .salgsep{border-left:0}
+  /* The delete button plus the cell padding around it came to 42px in a 34px column, so every
+     row pushed the table two pixels past its box and the whole thing scrolled sideways. */
+  .salwho ~ .saltable-scroll .saltab td.salxc{padding-left:2px;padding-right:2px}
+  .salwho ~ .saltable-scroll .salxc .delbtn{width:28px;height:28px}
+}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .seg-btn{padding:8px 14px;min-height:38px;border:0;background:var(--panel-2);color:var(--dim);cursor:pointer;font-size:13px;font-weight:600}
 .seg-btn+.seg-btn{border-left:1px solid var(--line)}
