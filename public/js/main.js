@@ -133,6 +133,110 @@ initHistory({
   },
 });
 
+
+/* ---------- the update screen ----------
+
+   The one screen this app puts up that is not about anybody's money, so it is the one most at
+   risk of looking like a different program. A borrowed spinner is what it used to be. Drawn in
+   the app's own vocabulary instead: the stacked column chart the home screen draws, arriving a
+   year at a time.
+
+   The run is walked rather than fixed — each year lands within 15% of the one before it, on a
+   gentle upward drift — so the chart is a different ledger every time it appears, and never the
+   suspiciously smooth curve nobody's savings actually make. It is a picture of nothing in
+   particular, which is the point: it is drawn from no one's figures.
+
+   Each column grows up from the axis as it arrives, and they all hold full at the end of the
+   cycle before starting again together. Growing them on their own staggered timers instead
+   would also drain them left to right when the cycle turned over, which on a chart of savings
+   reads as losing it all rather than as an animation repeating.
+
+   It repeats rather than measures: nothing here can know how far along a download is. */
+const UPD_COUNT = 20;
+const UPD_CYCLE = 3.4;   // seconds for the whole run
+const UPD_FILL = 0.74;   // …of which this much is spent arriving, the rest held full
+
+/* A year somewhere between 5% down and 30% up on the one before it — a good decade, which is
+   what a nest egg is drawn as. Multiplicative all the way, and scaled to the tallest year only
+   at the end, so the run keeps its shape whatever it lands on.
+
+   Twenty of them, and the count is doing real work: the first column is only small if the run
+   has had room to compound. Over nine steps these odds multiply about threefold and the first
+   year still stands a third as tall as the last; over nineteen they multiply about ninefold,
+   which puts the first year down near the axis where it belongs. */
+function updWalk(n) {
+  const out = [];
+  let h = 1;
+  for (let i = 0; i < n; i++) {
+    out.push(h);
+    h *= 0.95 + Math.random() * 0.35;   // −5% to +30%
+  }
+  const max = Math.max(...out);
+  // A floor of one pixel-ish, so a first year that lands very low is still a mark on the axis
+  // rather than nothing at all.
+  return out.map((v) => Math.max(2, Math.round((v / max) * 100)));
+}
+
+/* One rule per column, because each starts growing at its own point in the cycle and a keyframe
+   cannot read a custom property for its percentages. Replaced on every show, so a new walk gets
+   new timings. */
+function updKeyframes(n) {
+  let css = "";
+  for (let i = 0; i < n; i++) {
+    const at = ((i / n) * UPD_FILL * 100).toFixed(2);
+    const to = (((i + 0.55) / n) * UPD_FILL * 100).toFixed(2);
+    css += `@keyframes upd-grow-${i}{0%,${at}%{transform:scaleY(0)}${to}%,100%{transform:scaleY(1)}}`;
+  }
+  return css;
+}
+
+function updChart() {
+  const heights = updWalk(UPD_COUNT);
+  let style = document.getElementById("upd-keys");
+  if (!style) { style = document.createElement("style"); style.id = "upd-keys"; document.head.appendChild(style); }
+  style.textContent = updKeyframes(UPD_COUNT);
+
+  const strip = document.createElement("div");
+  strip.className = "upd-chart";
+  strip.setAttribute("aria-hidden", "true");
+  strip.style.setProperty("--count", String(UPD_COUNT));
+  strip.style.setProperty("--cycle", UPD_CYCLE + "s");
+  const bars = document.createElement("div");
+  bars.className = "upd-bars";
+  heights.forEach((h, i) => {
+    const b = document.createElement("i");
+    b.className = "upd-bar";
+    b.style.height = h + "%";
+    b.style.animationName = "upd-grow-" + i;
+    bars.appendChild(b);
+  });
+  strip.appendChild(bars);
+  const axis = document.createElement("i");
+  axis.className = "upd-axis";
+  strip.appendChild(axis);
+  return strip;
+}
+
+function showUpdating() {
+  if (document.querySelector(".updating")) return;
+  const o = document.createElement("div");
+  o.className = "updating";
+  const brand = document.createElement("div");
+  brand.className = "brand";
+  brand.innerHTML = '<i class="brand-lamp sync"></i><span>nestegg</span>';
+  const txt = document.createElement("div");
+  txt.className = "updtxt";
+  txt.setAttribute("role", "status");
+  txt.textContent = t("prof.updating");
+  o.append(brand, updChart(), txt);
+  document.body.appendChild(o);
+}
+
+function hideUpdating() {
+  const el = document.querySelector(".updating");
+  if (el) el.remove();
+}
+
 // PWA: offline app shell + auto-update. When a new service worker is found it calls
 // skipWaiting (in sw.js) and takes control; we show a brief "Updating…" overlay and reload
 // into the fresh build. Guarded so the initial install's clients.claim doesn't reload.
@@ -147,10 +251,17 @@ if ("serviceWorker" in navigator) {
       reg.addEventListener("updatefound", () => {
         if (!hadController) return; // first install this session, not an update
         updating = true;
-        const o = document.createElement("div");
-        o.className = "updating";
-        o.innerHTML = `<div class="spin"></div><div class="updtxt">${t("prof.updating")}</div>`;
-        document.body.appendChild(o);
+        showUpdating();
+        /* An install that never activates would otherwise leave this panel over the app, and
+           it is opaque. A worker going redundant takes it down; a backstop takes it down
+           anyway if the install neither finishes nor reports. */
+        const worker = reg.installing;
+        if (worker) worker.addEventListener("statechange", () => {
+          if (worker.state === "redundant") { updating = false; hideUpdating(); }
+        });
+        setTimeout(() => {
+          if (document.querySelector(".updating")) { updating = false; hideUpdating(); }
+        }, 20000);
       });
       // Installed PWAs rarely navigate, so the browser seldom re-checks sw.js on its own —
       // force a check on load and whenever the app regains focus so updates land promptly.

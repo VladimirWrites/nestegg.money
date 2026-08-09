@@ -498,11 +498,73 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .rcard .rhint{flex-basis:100%;width:100%;font-size:10.5px;color:var(--amber2);border-top:1px dashed var(--line2);padding-top:7px;margin-top:1px}
 
 /* PWA auto-update overlay (shown briefly while a new version takes over and reloads) */
-.updating{position:fixed;inset:0;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:9999}
-.updating .spin{width:34px;height:34px;border:3px solid var(--line2);border-top-color:var(--amber);border-radius:50%;animation:nw-spin .8s linear infinite}
-.updating .updtxt{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:.04em}
-@keyframes nw-spin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.updating .spin{animation:none}}
+.updating{position:fixed;inset:0;background:var(--ink);display:grid;place-items:center;align-content:center;gap:18px;z-index:9999}
+.updating .updtxt{font-size:14px;color:var(--dim)}
+
+/* ---- the update chart ----
+ * The picture the home screen draws, doing the one thing a chart is for. Ten columns on a fixed
+ * pitch, each stacked out of the two accents the way a year is stacked out of what it holds,
+ * growing up from the axis they all stand on.
+ *
+ * The heights and the per-column timings are written by main.js, because the run is walked
+ * fresh each time and a stylesheet cannot roll dice. What belongs here is everything about how
+ * a column looks and how it moves once it has been told when to start.
+ */
+.upd-chart{
+  --pitch:10px;
+  --gap:3px;
+  --bar:calc(var(--pitch) - var(--gap));
+  --axis:2px;
+  position:relative;
+  width:calc(var(--count) * var(--pitch));
+  height:86px;
+  padding-bottom:var(--axis);
+}
+
+.upd-bars{
+  display:flex;
+  align-items:flex-end;
+  gap:var(--gap);
+  height:100%;
+}
+
+/* Each column carries what a year carries: the part that grew, and the rest. The bands are the
+   two accents rather than the chart's series colours — those belong to somebody's actual
+   holdings, and this is a picture of nothing in particular. */
+.upd-bar{
+  width:var(--bar);
+  flex:none;
+  border-radius:1.5px 1.5px 0 0;
+  background:linear-gradient(to top,
+    var(--accent) 0 38%,
+    var(--signal) 38% 82%,
+    color-mix(in srgb, var(--signal) 38%, var(--panel-2)) 82% 100%);
+  /* Grows out of the axis rather than fading in, and every column resets on the same frame. */
+  transform-origin:bottom;
+  transform:scaleY(0);
+  animation-duration:var(--cycle);
+  animation-timing-function:cubic-bezier(.2,.7,.3,1);
+  animation-iteration-count:infinite;
+}
+
+/* The axis they stand on, always full length — the years arrive, the axis does not. */
+.upd-axis{
+  position:absolute;
+  left:-5px;
+  right:-5px;
+  bottom:0;
+  height:var(--axis);
+  border-radius:1px;
+  background:var(--line);
+}
+
+
+}
+/* Reduced motion: the chart is drawn in full and holds still. It still says the app is busy;
+   it just stops filling. */
+/* Reduced motion: the chart is drawn in full and holds still. It still says the app is busy;
+   it just stops filling. */
+@media(prefers-reduced-motion:reduce){.upd-bar{animation:none;transform:none}}
 
 /* active state for the theme toggle buttons */
 .btn.on{background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
