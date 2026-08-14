@@ -37,6 +37,17 @@ const SIZE = {
   wide: { width: 1280, height: 800, scale: 1 },
 };
 
+/* Every combination the landing page can be read in. A German reader looking at an English
+   screenshot is being shown somebody else's app, and a light page carrying dark pictures looks
+   like a page with the lights off — so each of the four is shot rather than approximated.
+   Both are preferences the app already keeps in local storage, which is why this can drive them
+   from the outside without a query string or a special mode. */
+const LANGS = ["en", "de"];
+const THEMES = [
+  { name: "dark", value: null, suffix: "" },
+  { name: "light", value: "light", suffix: "-light" },
+];
+
 // ---- the DevTools protocol, by hand ----
 
 let ws, next = 1;
@@ -94,6 +105,15 @@ const ENTER_DEMO = `
   return !!document.getElementById("app") && !document.getElementById("app").classList.contains("hide");
 `;
 
+/* The language and theme the app is about to boot in. Both are read from local storage on the
+   way up — the language by the i18n runtime, the theme by a script in the document head — so
+   they have to be set on the origin and the page loaded again afterwards. */
+const setPrefs = (lang, theme) => `
+  localStorage.setItem("nw_lang", ${JSON.stringify(lang)});
+  ${theme ? `localStorage.setItem("nw_theme", ${JSON.stringify(theme)});` : `localStorage.removeItem("nw_theme");`}
+  return true;
+`;
+
 // A view, from the same buttons a reader would press, then put where the shot wants it.
 const showView = (id, scroll) => `
   document.getElementById(${JSON.stringify(id)}).click();
@@ -146,31 +166,40 @@ try {
     await sleep(1200);
   };
 
-  mkdirSync(OUT, { recursive: true });
+  let written = 0;
+  for (const lang of LANGS) {
+    const dir = new URL(lang + "/", OUT);
+    mkdirSync(dir, { recursive: true });
 
-  const written = [];
-  for (const shot of SHOTS) {
-    const size = SIZE[shot.form];
-    await send("Emulation.setDeviceMetricsOverride", {
-      ...size, deviceScaleFactor: size.scale, mobile: shot.form === "narrow",
-    });
-    /* Reloaded per shot rather than kept alive across the set. The app is one page with a
-       bottom bar on a phone and a rail on a desktop, and the layout is decided as it boots —
-       resizing a booted one leaves it half in the shape it was born in. */
-    await goto(ORIGIN + "/dashboard.html");
-    const inDemo = await run(ENTER_DEMO);
-    if (!inDemo) await die("could not get into the demo — is the dev server running on " + ORIGIN + "?");
-    await run(showView(shot.view, shot.scroll));
-    await sleep(1500);   // live prices, and the charts' own arithmetic
+    for (const theme of THEMES) {
+      for (const shot of SHOTS) {
+        const size = SIZE[shot.form];
+        await send("Emulation.setDeviceMetricsOverride", {
+          ...size, deviceScaleFactor: size.scale, mobile: shot.form === "narrow",
+        });
+        /* Reloaded per shot rather than kept alive across the set. The app is one page with a
+           bottom bar on a phone and a rail on a desktop, and the layout is decided as it boots —
+           resizing a booted one leaves it half in the shape it was born in. The same reload is
+           what puts the language and theme into effect. */
+        await goto(ORIGIN + "/dashboard.html");
+        await run(setPrefs(lang, theme.value));
+        await goto(ORIGIN + "/dashboard.html");
 
-    const { data } = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
-    const file = `${shot.name}.png`;
-    writeFileSync(new URL(file, OUT), Buffer.from(data, "base64"));
-    written.push({ ...shot, file, w: size.width * size.scale, h: size.height * size.scale });
-    console.log(`  wrote ${file}  ${size.width * size.scale}x${size.height * size.scale}  ${shot.form}`);
+        const inDemo = await run(ENTER_DEMO);
+        if (!inDemo) await die("could not get into the demo — is the dev server running on " + ORIGIN + "?");
+        await run(showView(shot.view, shot.scroll));
+        await sleep(1500);   // live prices, and the charts' own arithmetic
+
+        const { data } = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
+        const file = `${lang}/${shot.name}${theme.suffix}.png`;
+        writeFileSync(new URL(file, OUT), Buffer.from(data, "base64"));
+        written++;
+        console.log(`  wrote ${file}  ${size.width * size.scale}x${size.height * size.scale}  ${shot.form}`);
+      }
+    }
   }
 
-  console.log(`gen-screenshots: ${written.length} written to public/assets/screenshots/`);
+  console.log(`gen-screenshots: ${written} written to public/assets/screenshots/`);
   chrome.kill();
   process.exit(0);
 } catch (e) {

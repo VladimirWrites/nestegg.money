@@ -66,5 +66,6 @@
   "shotBudgetCap": "Was am Monatsende übrig bleibt",
   "shotBudgetAlt": "Die Budgetansicht auf dem Handy: was jeden Monat übrig bleibt und wohin der Rest geht.",
   "shotForecastCap": "Wohin die Reise geht",
-  "shotForecastAlt": "Die Prognose am Desktop: projiziertes Vermögen bis zum Zieljahr, mit Ziellinie und dem Datum, an dem die Kredite abbezahlt sind."
+  "shotForecastAlt": "Die Prognose am Desktop: projiziertes Vermögen bis zum Zieljahr, mit Ziellinie und dem Datum, an dem die Kredite abbezahlt sind.",
+  "shotsLang": "de"
 }

@@ -66,5 +66,6 @@
   "shotBudgetCap": "What's left each month",
   "shotBudgetAlt": "The budget screen on a phone: what is left over each month, and where the rest of the money goes.",
   "shotForecastCap": "Where it's heading",
-  "shotForecastAlt": "The forecast on a desktop: projected net worth out to a target year, with a goal line and the date the loans are paid off."
+  "shotForecastAlt": "The forecast on a desktop: projected net worth out to a target year, with a goal line and the date the loans are paid off.",
+  "shotsLang": "en"
 }

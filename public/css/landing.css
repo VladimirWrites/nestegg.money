@@ -28,11 +28,18 @@ body.lp{padding-bottom:0}
  * Straight after the claim so the claim can be checked, and before the reasons, which nobody
  * reads first.
  *
- * One height for every frame, so the row is a row: a phone is narrow and a desktop is wide, and
- * both being the same height is what stops the rail looking like a broken grid. It scrolls with
- * a finger, a trackpad, a scrollbar, the arrows, or by being pulled. No dots — the frames
- * leaving the edge already say there are more. */
-.lp-shots{--shot-h:clamp(320px,48vh,440px);padding:56px 0;border-bottom:1px solid var(--line)}
+ * Frames are sized by width, and take whatever height that implies.
+ *
+ * The other way round — one height for every frame, so the row is a row — is what the first
+ * version did, and it put the phone frames at 179px across: the app's own 16px type lands under
+ * 7px there, and in the light theme, where the app's background is close to the page's, a frame
+ * that size reads as an empty card. The phone shots are the proof this section is offering, so
+ * they are sized to be read and the row is left ragged. A laptop being shorter than a phone is
+ * tall is what those two things are like.
+ *
+ * It scrolls with a finger, a trackpad, a scrollbar, the arrows, or by being pulled. No dots —
+ * the frames leaving the edge already say there are more. */
+.lp-shots{padding:56px 0;border-bottom:1px solid var(--line)}
 .lp-shots-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding-bottom:20px}
 .lp-shots-head h2{font-size:clamp(20px,3.2vw,26px);font-weight:700;letter-spacing:-.01em;color:var(--text)}
 /* Only where there is a pointer. On a touch screen the gesture is the control, and two buttons
@@ -41,7 +48,7 @@ body.lp{padding-bottom:0}
 @media(hover:hover) and (pointer:fine){.lp-shots-nav{display:flex}}
 .lp-shots-arrow{width:34px;height:34px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--dim);font-size:18px;line-height:1;cursor:pointer}
 .lp-shots-arrow:hover{color:var(--text);border-color:var(--signal)}
-.lp-shots-rail{display:flex;gap:20px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding-bottom:6px;
+.lp-shots-rail{display:flex;align-items:flex-start;gap:20px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding-bottom:6px;
   /* Out to the edge of the screen, back inside the column on a desktop: a rail that stops short
      of the edge does not look like it carries on. */
   margin-inline:-22px;padding-inline:22px;cursor:grab}
@@ -54,33 +61,26 @@ body.lp{padding-bottom:0}
 .lp-shot figcaption{color:var(--dim);font-size:13px;text-align:center}
 /* The device itself: a bezel, a screen, and the shadow of something held. Drawn rather than
    photographed, so it costs nothing to load and stays right in both themes. */
-.lp-frame{height:var(--shot-h);background:var(--panel-2);border:1px solid var(--line);box-shadow:0 18px 40px -24px rgb(0 0 0 /.9);overflow:hidden}
+.lp-frame{background:var(--panel-2);border:1px solid var(--line);box-shadow:0 18px 40px -24px rgb(0 0 0 /.9);overflow:hidden}
 .lp-frame img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;background:var(--ink)}
-.lp-frame-phone{aspect-ratio:824/1830;padding:7px;border-radius:28px}
+.lp-frame-phone{width:min(70vw,286px);aspect-ratio:824/1830;padding:7px;border-radius:28px}
 .lp-frame-phone img{border-radius:21px}
 /* A laptop: wider, a squarer corner, a slightly heavier bezel — the two read as different
    objects without either being labelled. */
-.lp-frame-wide{aspect-ratio:1280/800;padding:10px;border-radius:18px}
+.lp-frame-wide{width:min(92vw,560px);aspect-ratio:1280/800;padding:10px;border-radius:18px}
 .lp-frame-wide img{border-radius:10px}
-/* On a phone, width leads instead.
+/* On a phone the rail snaps a card at a time, so one screen is read at once rather than three
+ * slivers of three.
  *
- * Sized by height, a phone frame works out at 176px across a 375px screen — a picture of a phone
- * at half the width of the phone holding it, with the app's own 16px type landing under 7px.
- * Unreadable, which is the opposite of what a screenshot is for. So here the frame is given a
- * width worth reading and takes whatever height that implies, and the rail snaps one card at a
- * time so only one is being read at once.
- *
- * The desktop shots sit this out. A wide frame at a readable width is a third the height of a
- * phone one, and a row is as tall as its tallest card — so landing on one left the section
- * mostly empty space. They are what the app looks like on the machine you are not holding;
- * whoever wants that is reading this on one, where the row is uniform and they are shown. */
+ * The desktop shots sit this out. They are what the app looks like on the machine you are not
+ * holding, and whoever wants that is reading this on one — where they are shown. Hidden here,
+ * and through the media on their picture sources not downloaded either: a hidden lazy image has
+ * no box to be off-screen from, so the browser fetches it regardless. */
 @media(max-width:900px){
   .lp-shots{padding:44px 0}
   .lp-shots-rail{gap:16px;scroll-snap-type:x mandatory}
   .lp-shot{scroll-snap-align:center}
   .lp-shot-wide{display:none}
-  .lp-frame{height:auto}
-  .lp-frame-phone{width:min(70vw,286px)}
 }
 .lp-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;padding:64px 0}
 .lp-feat{border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:24px}

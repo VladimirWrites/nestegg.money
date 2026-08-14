@@ -69,23 +69,40 @@
     </div>
     <div class="lp-shots-rail" role="region" aria-label="{{shotsTitle}}" tabindex="0">
       <figure class="lp-shot">
-        <div class="lp-frame lp-frame-phone"><img src="/assets/screenshots/networth.png" width="824" height="1830" loading="lazy" decoding="async" alt="{{shotNetAlt}}"></div>
+        <div class="lp-frame lp-frame-phone"><picture>
+          <source data-shot="light" data-base="all" media="(prefers-color-scheme: light)" srcset="/assets/screenshots/{{shotsLang}}/networth-light.png">
+          <img src="/assets/screenshots/{{shotsLang}}/networth.png" width="824" height="1830" loading="lazy" decoding="async" alt="{{shotNetAlt}}">
+        </picture></div>
         <figcaption>{{shotNetCap}}</figcaption>
       </figure>
       <figure class="lp-shot">
-        <div class="lp-frame lp-frame-phone"><img src="/assets/screenshots/salary.png" width="824" height="1830" loading="lazy" decoding="async" alt="{{shotSalaryAlt}}"></div>
+        <div class="lp-frame lp-frame-phone"><picture>
+          <source data-shot="light" data-base="all" media="(prefers-color-scheme: light)" srcset="/assets/screenshots/{{shotsLang}}/salary-light.png">
+          <img src="/assets/screenshots/{{shotsLang}}/salary.png" width="824" height="1830" loading="lazy" decoding="async" alt="{{shotSalaryAlt}}">
+        </picture></div>
         <figcaption>{{shotSalaryCap}}</figcaption>
       </figure>
       <figure class="lp-shot lp-shot-wide">
-        <div class="lp-frame lp-frame-wide"><picture><source media="(min-width:901px)" srcset="/assets/screenshots/networth-wide.png"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="1280" height="800" loading="lazy" decoding="async" alt="{{shotWideAlt}}"></picture></div>
+        <div class="lp-frame lp-frame-wide"><picture>
+          <source data-shot="light" data-base="(min-width:901px)" media="(min-width:901px) and (prefers-color-scheme: light)" srcset="/assets/screenshots/{{shotsLang}}/networth-wide-light.png">
+          <source data-shot="dark" data-base="(min-width:901px)" media="(min-width:901px)" srcset="/assets/screenshots/{{shotsLang}}/networth-wide.png">
+          <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="1280" height="800" loading="lazy" decoding="async" alt="{{shotWideAlt}}">
+        </picture></div>
         <figcaption>{{shotWideCap}}</figcaption>
       </figure>
       <figure class="lp-shot">
-        <div class="lp-frame lp-frame-phone"><img src="/assets/screenshots/budget.png" width="824" height="1830" loading="lazy" decoding="async" alt="{{shotBudgetAlt}}"></div>
+        <div class="lp-frame lp-frame-phone"><picture>
+          <source data-shot="light" data-base="all" media="(prefers-color-scheme: light)" srcset="/assets/screenshots/{{shotsLang}}/budget-light.png">
+          <img src="/assets/screenshots/{{shotsLang}}/budget.png" width="824" height="1830" loading="lazy" decoding="async" alt="{{shotBudgetAlt}}">
+        </picture></div>
         <figcaption>{{shotBudgetCap}}</figcaption>
       </figure>
       <figure class="lp-shot lp-shot-wide">
-        <div class="lp-frame lp-frame-wide"><picture><source media="(min-width:901px)" srcset="/assets/screenshots/forecast-wide.png"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="1280" height="800" loading="lazy" decoding="async" alt="{{shotForecastAlt}}"></picture></div>
+        <div class="lp-frame lp-frame-wide"><picture>
+          <source data-shot="light" data-base="(min-width:901px)" media="(min-width:901px) and (prefers-color-scheme: light)" srcset="/assets/screenshots/{{shotsLang}}/forecast-wide-light.png">
+          <source data-shot="dark" data-base="(min-width:901px)" media="(min-width:901px)" srcset="/assets/screenshots/{{shotsLang}}/forecast-wide.png">
+          <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="1280" height="800" loading="lazy" decoding="async" alt="{{shotForecastAlt}}">
+        </picture></div>
         <figcaption>{{shotForecastCap}}</figcaption>
       </figure>
     </div>
