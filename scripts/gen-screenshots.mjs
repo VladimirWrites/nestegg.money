@@ -161,6 +161,14 @@ try {
   await send("Page.enable");
   await send("Runtime.enable");
 
+  /* Ask for reduced motion, which is how a still picture of an animated chart is taken. The
+     lines and the donut are drawn by animating a dash offset from hidden to whole, and a capture
+     that lands mid-draw gets a salary chart of event dots with nothing joining them. Under this
+     the end state is painted immediately, which is the state worth photographing anyway. */
+  await send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+  });
+
   const goto = async (url) => {
     await send("Page.navigate", { url });
     await sleep(1200);

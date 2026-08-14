@@ -57,15 +57,15 @@
   "shotsTitle": "What it looks like",
   "shotsPrev": "Previous screenshot",
   "shotsNext": "Next screenshot",
-  "shotNetCap": "What you're worth, year by year",
+  "shotNetCap": "Net worth, year by year",
   "shotNetAlt": "The net worth screen on a phone: the total, a stacked bar for each year, and the years listed underneath.",
-  "shotSalaryCap": "Every raise, in one line",
+  "shotSalaryCap": "Salary, month by month",
   "shotSalaryAlt": "The salary screen on a phone: each person's pay plotted across the years, with the months listed under it.",
   "shotWideCap": "On a bigger screen",
   "shotWideAlt": "Net worth on a desktop: the chart over time and the allocation for the year side by side.",
   "shotBudgetCap": "What's left each month",
   "shotBudgetAlt": "The budget screen on a phone: what is left over each month, and where the rest of the money goes.",
-  "shotForecastCap": "Where it's heading",
+  "shotForecastCap": "The forecast",
   "shotForecastAlt": "The forecast on a desktop: projected net worth out to a target year, with a goal line and the date the loans are paid off.",
   "shotsLang": "en"
 }
