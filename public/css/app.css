@@ -525,6 +525,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 @media(prefers-reduced-motion:reduce){
   .editor,.infomodal .infobox,#histChart.anim rect,#fcChart.anim polyline.line,#rtChart.anim polyline.line,#salaryChart.anim polyline.line,#donut.anim path{animation:none!important}
+  /* The line and the ring are drawn by animating a dash offset from hidden to whole. Switching
+     the animation off without also putting the dashes back left them permanently hidden: every
+     chart line and the entire donut were invisible to anybody who asks for less motion. */
+  #fcChart.anim polyline.line,#rtChart.anim polyline.line,#salaryChart.anim polyline.line,#donut.anim path{stroke-dasharray:none;stroke-dashoffset:0}
 }
 
 /* ───────── design polish: recompute flash, hover-brighten, edge-fade ───────── */
