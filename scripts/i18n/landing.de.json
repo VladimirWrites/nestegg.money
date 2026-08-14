@@ -53,5 +53,18 @@
   "hintCta": "Switch to English",
   "privacyHref": "/de/privacy.html",
   "termsHref": "/de/terms.html",
-  "navMenu": "Menü"
+  "navMenu": "Menü",
+  "shotsTitle": "So sieht es aus",
+  "shotsPrev": "Vorheriger Screenshot",
+  "shotsNext": "Nächster Screenshot",
+  "shotNetCap": "Ihr Vermögen, Jahr für Jahr",
+  "shotNetAlt": "Die Vermögensansicht auf dem Handy: die Summe, ein gestapelter Balken je Jahr und die Jahre darunter aufgelistet.",
+  "shotSalaryCap": "Jede Gehaltserhöhung auf einen Blick",
+  "shotSalaryAlt": "Die Gehaltsansicht auf dem Handy: das Gehalt jeder Person über die Jahre, darunter die einzelnen Monate.",
+  "shotWideCap": "Auf einem größeren Bildschirm",
+  "shotWideAlt": "Vermögen am Desktop: der Verlauf über die Jahre und die Aufteilung des Jahres nebeneinander.",
+  "shotBudgetCap": "Was am Monatsende übrig bleibt",
+  "shotBudgetAlt": "Die Budgetansicht auf dem Handy: was jeden Monat übrig bleibt und wohin der Rest geht.",
+  "shotForecastCap": "Wohin die Reise geht",
+  "shotForecastAlt": "Die Prognose am Desktop: projiziertes Vermögen bis zum Zieljahr, mit Ziellinie und dem Datum, an dem die Kredite abbezahlt sind."
 }

@@ -53,6 +53,44 @@
     <div class="lp-note" id="lpNote">{{note}}</div>
   </section>
 
+  <!-- What it actually looks like, straight after the claim so the claim can be checked, and
+       before the reasons, which nobody reads first. The pictures are of the demo ledger, taken
+       from the running app by scripts/gen-screenshots.mjs — nobody's real figures are published. -->
+  <!-- The two wide frames are hidden below 900px, and the picture element is how they are also
+       not downloaded there: a hidden lazy image has no box to be off-screen from, so the browser
+       fetches it anyway. Under the breakpoint the source does not match and the 1x1 stands in. -->
+  <section class="lp-shots" aria-labelledby="lpShotsH">
+    <div class="lp-shots-head">
+      <h2 id="lpShotsH">{{shotsTitle}}</h2>
+      <div class="lp-shots-nav">
+        <button class="lp-shots-arrow" type="button" data-scroll="-1" aria-label="{{shotsPrev}}">&#8249;</button>
+        <button class="lp-shots-arrow" type="button" data-scroll="1" aria-label="{{shotsNext}}">&#8250;</button>
+      </div>
+    </div>
+    <div class="lp-shots-rail" role="region" aria-label="{{shotsTitle}}" tabindex="0">
+      <figure class="lp-shot">
+        <div class="lp-frame lp-frame-phone"><img src="/assets/screenshots/networth.png" width="824" height="1830" loading="lazy" decoding="async" alt="{{shotNetAlt}}"></div>
+        <figcaption>{{shotNetCap}}</figcaption>
+      </figure>
+      <figure class="lp-shot">
+        <div class="lp-frame lp-frame-phone"><img src="/assets/screenshots/salary.png" width="824" height="1830" loading="lazy" decoding="async" alt="{{shotSalaryAlt}}"></div>
+        <figcaption>{{shotSalaryCap}}</figcaption>
+      </figure>
+      <figure class="lp-shot lp-shot-wide">
+        <div class="lp-frame lp-frame-wide"><picture><source media="(min-width:901px)" srcset="/assets/screenshots/networth-wide.png"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="1280" height="800" loading="lazy" decoding="async" alt="{{shotWideAlt}}"></picture></div>
+        <figcaption>{{shotWideCap}}</figcaption>
+      </figure>
+      <figure class="lp-shot">
+        <div class="lp-frame lp-frame-phone"><img src="/assets/screenshots/budget.png" width="824" height="1830" loading="lazy" decoding="async" alt="{{shotBudgetAlt}}"></div>
+        <figcaption>{{shotBudgetCap}}</figcaption>
+      </figure>
+      <figure class="lp-shot lp-shot-wide">
+        <div class="lp-frame lp-frame-wide"><picture><source media="(min-width:901px)" srcset="/assets/screenshots/forecast-wide.png"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="1280" height="800" loading="lazy" decoding="async" alt="{{shotForecastAlt}}"></picture></div>
+        <figcaption>{{shotForecastCap}}</figcaption>
+      </figure>
+    </div>
+  </section>
+
   <section class="lp-features">
     <div class="lp-feat">
       <div class="lp-ficon">
@@ -168,5 +206,6 @@
   } catch (e) {}
 </script>
 <script src="/js/landing-nav.js" defer></script>
+<script src="/js/landing-shots.js" defer></script>
 </body>
 </html>

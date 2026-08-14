@@ -55,6 +55,44 @@
     <div class="lp-note" id="lpNote">Kostenlos · kein Anmeldeformular · auf jedem Gerät</div>
   </section>
 
+  <!-- What it actually looks like, straight after the claim so the claim can be checked, and
+       before the reasons, which nobody reads first. The pictures are of the demo ledger, taken
+       from the running app by scripts/gen-screenshots.mjs — nobody's real figures are published. -->
+  <!-- The two wide frames are hidden below 900px, and the picture element is how they are also
+       not downloaded there: a hidden lazy image has no box to be off-screen from, so the browser
+       fetches it anyway. Under the breakpoint the source does not match and the 1x1 stands in. -->
+  <section class="lp-shots" aria-labelledby="lpShotsH">
+    <div class="lp-shots-head">
+      <h2 id="lpShotsH">So sieht es aus</h2>
+      <div class="lp-shots-nav">
+        <button class="lp-shots-arrow" type="button" data-scroll="-1" aria-label="Vorheriger Screenshot">&#8249;</button>
+        <button class="lp-shots-arrow" type="button" data-scroll="1" aria-label="Nächster Screenshot">&#8250;</button>
+      </div>
+    </div>
+    <div class="lp-shots-rail" role="region" aria-label="So sieht es aus" tabindex="0">
+      <figure class="lp-shot">
+        <div class="lp-frame lp-frame-phone"><img src="/assets/screenshots/networth.png" width="824" height="1830" loading="lazy" decoding="async" alt="Die Vermögensansicht auf dem Handy: die Summe, ein gestapelter Balken je Jahr und die Jahre darunter aufgelistet."></div>
+        <figcaption>Ihr Vermögen, Jahr für Jahr</figcaption>
+      </figure>
+      <figure class="lp-shot">
+        <div class="lp-frame lp-frame-phone"><img src="/assets/screenshots/salary.png" width="824" height="1830" loading="lazy" decoding="async" alt="Die Gehaltsansicht auf dem Handy: das Gehalt jeder Person über die Jahre, darunter die einzelnen Monate."></div>
+        <figcaption>Jede Gehaltserhöhung auf einen Blick</figcaption>
+      </figure>
+      <figure class="lp-shot lp-shot-wide">
+        <div class="lp-frame lp-frame-wide"><picture><source media="(min-width:901px)" srcset="/assets/screenshots/networth-wide.png"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="1280" height="800" loading="lazy" decoding="async" alt="Vermögen am Desktop: der Verlauf über die Jahre und die Aufteilung des Jahres nebeneinander."></picture></div>
+        <figcaption>Auf einem größeren Bildschirm</figcaption>
+      </figure>
+      <figure class="lp-shot">
+        <div class="lp-frame lp-frame-phone"><img src="/assets/screenshots/budget.png" width="824" height="1830" loading="lazy" decoding="async" alt="Die Budgetansicht auf dem Handy: was jeden Monat übrig bleibt und wohin der Rest geht."></div>
+        <figcaption>Was am Monatsende übrig bleibt</figcaption>
+      </figure>
+      <figure class="lp-shot lp-shot-wide">
+        <div class="lp-frame lp-frame-wide"><picture><source media="(min-width:901px)" srcset="/assets/screenshots/forecast-wide.png"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="1280" height="800" loading="lazy" decoding="async" alt="Die Prognose am Desktop: projiziertes Vermögen bis zum Zieljahr, mit Ziellinie und dem Datum, an dem die Kredite abbezahlt sind."></picture></div>
+        <figcaption>Wohin die Reise geht</figcaption>
+      </figure>
+    </div>
+  </section>
+
   <section class="lp-features">
     <div class="lp-feat">
       <div class="lp-ficon">
@@ -170,5 +208,6 @@
   } catch (e) {}
 </script>
 <script src="/js/landing-nav.js" defer></script>
+<script src="/js/landing-shots.js" defer></script>
 </body>
 </html>

@@ -24,6 +24,64 @@ body.lp{padding-bottom:0}
 .lp-sub{max-width:620px;margin:0 auto;color:var(--muted);font-size:clamp(14px,2.2vw,17px);line-height:1.65}
 .lp-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:30px 0 14px}
 .lp-note{font-size:12px;color:var(--muted);letter-spacing:.04em}
+/* ── what it actually looks like ──
+ * Straight after the claim so the claim can be checked, and before the reasons, which nobody
+ * reads first.
+ *
+ * One height for every frame, so the row is a row: a phone is narrow and a desktop is wide, and
+ * both being the same height is what stops the rail looking like a broken grid. It scrolls with
+ * a finger, a trackpad, a scrollbar, the arrows, or by being pulled. No dots — the frames
+ * leaving the edge already say there are more. */
+.lp-shots{--shot-h:clamp(320px,48vh,440px);padding:56px 0;border-bottom:1px solid var(--line)}
+.lp-shots-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding-bottom:20px}
+.lp-shots-head h2{font-size:clamp(20px,3.2vw,26px);font-weight:700;letter-spacing:-.01em;color:var(--text)}
+/* Only where there is a pointer. On a touch screen the gesture is the control, and two buttons
+   sitting there saying so is furniture. */
+.lp-shots-nav{display:none;gap:8px}
+@media(hover:hover) and (pointer:fine){.lp-shots-nav{display:flex}}
+.lp-shots-arrow{width:34px;height:34px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--dim);font-size:18px;line-height:1;cursor:pointer}
+.lp-shots-arrow:hover{color:var(--text);border-color:var(--signal)}
+.lp-shots-rail{display:flex;gap:20px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding-bottom:6px;
+  /* Out to the edge of the screen, back inside the column on a desktop: a rail that stops short
+     of the edge does not look like it carries on. */
+  margin-inline:-22px;padding-inline:22px;cursor:grab}
+.lp-shots-rail::-webkit-scrollbar{display:none}
+.lp-shots-rail:focus-visible{outline:2px solid var(--signal);outline-offset:4px;border-radius:8px}
+.lp-shots-rail.is-dragging{cursor:grabbing;user-select:none}
+/* A frame dragged out of the row is the browser's own gesture, and it cancels ours. */
+.lp-shots-rail img{-webkit-user-drag:none;user-select:none}
+.lp-shot{flex:none;margin:0;display:flex;flex-direction:column;gap:10px}
+.lp-shot figcaption{color:var(--dim);font-size:13px;text-align:center}
+/* The device itself: a bezel, a screen, and the shadow of something held. Drawn rather than
+   photographed, so it costs nothing to load and stays right in both themes. */
+.lp-frame{height:var(--shot-h);background:var(--panel-2);border:1px solid var(--line);box-shadow:0 18px 40px -24px rgb(0 0 0 /.9);overflow:hidden}
+.lp-frame img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;background:var(--ink)}
+.lp-frame-phone{aspect-ratio:824/1830;padding:7px;border-radius:28px}
+.lp-frame-phone img{border-radius:21px}
+/* A laptop: wider, a squarer corner, a slightly heavier bezel — the two read as different
+   objects without either being labelled. */
+.lp-frame-wide{aspect-ratio:1280/800;padding:10px;border-radius:18px}
+.lp-frame-wide img{border-radius:10px}
+/* On a phone, width leads instead.
+ *
+ * Sized by height, a phone frame works out at 176px across a 375px screen — a picture of a phone
+ * at half the width of the phone holding it, with the app's own 16px type landing under 7px.
+ * Unreadable, which is the opposite of what a screenshot is for. So here the frame is given a
+ * width worth reading and takes whatever height that implies, and the rail snaps one card at a
+ * time so only one is being read at once.
+ *
+ * The desktop shots sit this out. A wide frame at a readable width is a third the height of a
+ * phone one, and a row is as tall as its tallest card — so landing on one left the section
+ * mostly empty space. They are what the app looks like on the machine you are not holding;
+ * whoever wants that is reading this on one, where the row is uniform and they are shown. */
+@media(max-width:900px){
+  .lp-shots{padding:44px 0}
+  .lp-shots-rail{gap:16px;scroll-snap-type:x mandatory}
+  .lp-shot{scroll-snap-align:center}
+  .lp-shot-wide{display:none}
+  .lp-frame{height:auto}
+  .lp-frame-phone{width:min(70vw,286px)}
+}
 .lp-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;padding:64px 0}
 .lp-feat{border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:24px}
 .lp-ficon{width:40px;height:40px;border-radius:8px;background:rgba(255,176,0,.1);display:flex;align-items:center;justify-content:center;color:var(--amber);margin-bottom:16px}

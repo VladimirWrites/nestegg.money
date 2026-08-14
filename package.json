@@ -15,6 +15,7 @@
     "gen-docs": "node scripts/gen-calculator-docs.mjs",
     "sync-version": "node scripts/sync-version.mjs",
     "version": "node scripts/sync-version.mjs && git add public/sw.js",
-    "gen-i18n": "node scripts/gen-i18n-pages.mjs"
+    "gen-i18n": "node scripts/gen-i18n-pages.mjs",
+    "gen-shots": "node scripts/gen-screenshots.mjs"
   }
 }
