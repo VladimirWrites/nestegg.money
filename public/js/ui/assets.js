@@ -52,10 +52,60 @@ function loanComputedHTML(a) {
   const calcStat = byPayment
     ? `<div class="pstat"><span class="k">${t("asset.termCalc")}</span><span class="v num">${fmtMonths(n)}</span></div>`
     : `<div class="pstat"><span class="k">${t("asset.monthlyPayment")}</span><span class="v num">${M ? moneyIn(M, a.ccy) : "—"}</span></div>`;
+  /* What a calendar year did to the debt.
+   *
+   * A month tells you what you pay; it does not tell you what you bought. Most of an early
+   * payment is rent on the money, and the question people actually ask at the end of a year —
+   * how much of this is mine now — can only be answered from the monthly rows by adding twelve
+   * numbers up by hand. So each year gets a row of its own, and the figure it leads with is the
+   * amount that came off the loan: scheduled principal and any lump sums together, since both
+   * are the debt shrinking and only their timing differs. Interest is counted separately
+   * because it is the one part of the payment that buys nothing. */
+  const yearly = new Map();
+  for (const r of sched) {
+    const y = r.date.getFullYear();
+    const g = yearly.get(y) || { payment: 0, interest: 0, principal: 0, extra: 0, balance: 0, estimated: true };
+    g.payment += r.payment || 0;
+    g.interest += r.interest || 0;
+    g.principal += r.principal || 0;
+    g.extra += r.extra || 0;
+    g.balance = r.balance;              // the schedule is in order, so the last one seen is year-end
+    g.estimated = g.estimated && !!r.estimated; // only a wholly projected year is marked as one
+    yearly.set(y, g);
+  }
+  /* The same figure for the year in progress, said at the top where it is read without opening
+     anything. Counted only up to today, unlike the year rows: it sits beside "balance today", and
+     a number that quietly included next November would not be what anybody reads it as. */
+  const now = new Date();
+  const nowYear = now.getFullYear();
+  const ytd = sched.reduce((s, r) => (r.date.getFullYear() === nowYear && r.date <= now ? s + (r.principal || 0) + (r.extra || 0) : s), 0);
+  const inYear = sched.some((r) => r.date.getFullYear() === nowYear);
+  const yearRow = (y) => {
+    const g = yearly.get(y);
+    const off = g.principal + g.extra;
+    return `<tr class="yrow${g.estimated ? " est" : ""}"><td>${y}</td><td class="num">${moneyIn(g.payment, a.ccy)}</td><td class="num">${moneyIn(g.interest, a.ccy)}</td><td class="num off">${moneyIn(off, a.ccy)}</td><td class="num sub">${g.extra > 0 ? t("asset.inclExtra", { amount: moneyIn(g.extra, a.ccy) }) : "—"}</td><td class="num">${moneyIn(g.balance, a.ccy)}</td></tr>`;
+  };
+
+  /* Every year of the loan on one screen, which the monthly schedule cannot be: two hundred rows
+     is a document, and this is a shape — the interest falling away, the principal taking over,
+     the balance walking down to nothing. Shown open, above the months, because it is the view
+     somebody wants first and the month-by-month detail is what they open afterwards. */
+  const yearTable = `<div class="yrsched">
+    <div class="yrsched-h">${t("asset.byYear")}</div>
+    <div class="schscroll"><table class="schtab yrtab"><thead><tr><th>${t("asset.thYear")}</th><th>${t("asset.thPaidOff")}</th><th>${t("asset.thInterest")}</th><th>${t("asset.thExtra")}</th><th>${t("asset.thYearEnd")}</th></tr></thead><tbody>${[...yearly.keys()].map((y) => {
+      const g = yearly.get(y);
+      const cls = [g.estimated ? "est" : "", y === nowYear ? "now" : ""].filter(Boolean).join(" ");
+      return `<tr class="${cls}"><td>${y}</td><td class="num off">${moneyIn(g.principal + g.extra, a.ccy)}</td><td class="num dim">${moneyIn(g.interest, a.ccy)}</td><td class="num">${g.extra > 0 ? moneyIn(g.extra, a.ccy) : "—"}</td><td class="num">${moneyIn(g.balance, a.ccy)}</td></tr>`;
+    }).join("")}</tbody></table></div>
+  </div>`;
+
   let divDone = false;
+  let curYear = null;
   const rows = sched.map((r) => {
     let pre = "";
-    if (!divDone && r.estimated) { divDone = true; pre = `<tr class="fxdiv"><td colspan="6">${t("asset.fixedEnds", { date: fmtMY(fixedUntil), amount: moneyIn(balAtChange, a.ccy), rate: L.rate })}</td></tr>`; }
+    const y = r.date.getFullYear();
+    if (y !== curYear) { curYear = y; pre += yearRow(y); }
+    if (!divDone && r.estimated) { divDone = true; pre += `<tr class="fxdiv"><td colspan="6">${t("asset.fixedEnds", { date: fmtMY(fixedUntil), amount: moneyIn(balAtChange, a.ccy), rate: L.rate })}</td></tr>`; }
     const cls = r.estimated ? " est" : "";
     return pre + (r.type === "extra"
       ? `<tr class="exline${cls}"><td>${ymdDay(r.date)}</td><td colspan="3">${t("asset.additionalPayment")}</td><td class="num">${moneyIn(r.extra, a.ccy)}</td><td class="num">${moneyIn(r.balance, a.ccy)}</td></tr>`
@@ -65,10 +115,12 @@ function loanComputedHTML(a) {
     <div class="pstats">
       ${calcStat}
       <div class="pstat"><span class="k">${t("asset.balanceToday")}</span><span class="v num">${moneyIn(bal, a.ccy)}</span></div>
+      ${inYear ? `<div class="pstat"><span class="k">${t("asset.paidOffIn", { year: nowYear })}</span><span class="v num off">${moneyIn(ytd, a.ccy)}</span></div>` : ""}
       ${balAtChange != null ? `<div class="pstat"><span class="k">${t("asset.leftAtRateChange")}</span><span class="v num hilite">${moneyIn(balAtChange, a.ccy)}</span></div>` : ""}
       <div class="pstat"><span class="k">${t("asset.payoff")}</span><span class="v num">${payoff ? fmtMY(payoff) : "—"}</span></div>
       <div class="pstat"><span class="k">${t("asset.totalInterest")}</span><span class="v num">${moneyIn(totInt, a.ccy)}</span></div>
     </div>
+    ${yearly.size ? yearTable : ""}
     ${payRows.length ? `<details class="psched"><summary>${t("asset.schedule", { count: payRows.length })}</summary>
       <div class="schscroll"><table class="schtab"><thead><tr><th>${t("asset.thWhen")}</th><th>${t("asset.thPayment")}</th><th>${t("asset.thInterest")}</th><th>${t("asset.thPrincipal")}</th><th>${t("asset.thExtra")}</th><th>${t("asset.thBalance")}</th></tr></thead><tbody>${rows}</tbody></table></div></details>` : ""}`;
 }
