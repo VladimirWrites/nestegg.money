@@ -23,14 +23,14 @@
 </head>
 <body class="lp">
 
-<header class="lp-nav">
+<header class="lp-nav" data-menu-label="{{navMenu}}">
   <a class="lp-brand" href="/">nestegg</a>
   <nav class="lp-navlinks">
     <a href="{{navCalcHref}}">{{navCalc}}</a>
     <a href="{{privacyHref}}">{{navPrivacy}}</a>
     <a href="{{termsHref}}">{{navTerms}}</a>
     <a id="lpLang" href="{{langLinkHref}}" rel="alternate" hreflang="{{langLinkHreflang}}">{{langLinkLabel}}</a>
-    <button id="lpTheme" type="button" data-light="{{themeLight}}" data-dark="{{themeDark}}" style="background:none;border:none;color:var(--muted);cursor:pointer;font:inherit"></button>
+    <button id="lpTheme" class="lp-linkbtn" type="button" data-light="{{themeLight}}" data-dark="{{themeDark}}"></button>
     <a id="lpNavAuth" class="lp-btn lp-btn-ghost" href="/dashboard#signin">{{navSignin}}</a>
   </nav>
 </header>
@@ -167,5 +167,6 @@
     if (pref && pref !== pageLang) document.getElementById("lpLangHint").classList.remove("hide");
   } catch (e) {}
 </script>
+<script src="/js/landing-nav.js" defer></script>
 </body>
 </html>

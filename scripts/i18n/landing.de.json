@@ -52,5 +52,6 @@
   "hintText": "This page is also available in English.",
   "hintCta": "Switch to English",
   "privacyHref": "/de/privacy.html",
-  "termsHref": "/de/terms.html"
+  "termsHref": "/de/terms.html",
+  "navMenu": "Menü"
 }

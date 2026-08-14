@@ -25,14 +25,14 @@
 </head>
 <body class="lp">
 
-<header class="lp-nav">
+<header class="lp-nav" data-menu-label="Menu">
   <a class="lp-brand" href="/">nestegg</a>
   <nav class="lp-navlinks">
     <a href="/en/german-net-salary-calculator">Net salary calculator</a>
     <a href="/privacy.html">Privacy</a>
     <a href="/terms.html">Terms</a>
     <a id="lpLang" href="/de/" rel="alternate" hreflang="de">Deutsch</a>
-    <button id="lpTheme" type="button" data-light="Light" data-dark="Dark" style="background:none;border:none;color:var(--muted);cursor:pointer;font:inherit"></button>
+    <button id="lpTheme" class="lp-linkbtn" type="button" data-light="Light" data-dark="Dark"></button>
     <a id="lpNavAuth" class="lp-btn lp-btn-ghost" href="/dashboard#signin">Sign in</a>
   </nav>
 </header>
@@ -169,5 +169,6 @@
     if (pref && pref !== pageLang) document.getElementById("lpLangHint").classList.remove("hide");
   } catch (e) {}
 </script>
+<script src="/js/landing-nav.js" defer></script>
 </body>
 </html>

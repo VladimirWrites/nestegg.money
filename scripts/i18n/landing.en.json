@@ -52,5 +52,6 @@
   "hintText": "Diese Seite gibt es auch auf Deutsch.",
   "hintCta": "Zur deutschen Version",
   "privacyHref": "/privacy.html",
-  "termsHref": "/terms.html"
+  "termsHref": "/terms.html",
+  "navMenu": "Menu"
 }

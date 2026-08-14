@@ -5,6 +5,10 @@ body.lp{padding-bottom:0}
 .lp-brand{font-size:20px;font-weight:700;letter-spacing:.02em;color:var(--amber);text-decoration:none}
 .lp-navlinks{display:flex;align-items:center;gap:20px;font-size:13px}
 .lp-navlinks a{color:var(--muted);text-decoration:none}
+/* A button that reads as one of the links beside it — the theme toggle. Its own element because
+   it changes the page rather than going anywhere, and a class because the menu below restyles it. */
+.lp-linkbtn{background:none;border:none;padding:0;color:var(--muted);cursor:pointer;font:inherit}
+.lp-linkbtn:hover{color:var(--text)}
 .lp-navlinks a:hover{color:var(--text)}
 .lp-btn{display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;letter-spacing:.04em;border-radius:4px;padding:13px 22px;cursor:pointer;text-decoration:none;min-height:46px;font-weight:600}
 .lp-btn-primary{background:var(--amber);color:#000;border:1px solid var(--amber)}
@@ -32,6 +36,32 @@ body.lp{padding-bottom:0}
 .lp-foot{max-width:var(--maxw);margin:0 auto;padding:26px 22px 40px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted)}
 .lp-foot a{color:var(--amber);text-decoration:none}
 @media(max-width:560px){.lp-hero{padding:48px 0 44px}.lp-features{padding:44px 0}}
+/* Six links and a button do not fit beside the name on a phone — laid out in a row they ran 135px
+   past the edge of a 375px screen and took the page's width with them. Below the breakpoint they
+   fold into a menu instead.
+
+   Everything here is under .lp-nav-js, the class js/landing-nav.js adds once it has built the
+   button: with no JavaScript the links simply wrap onto a second line, which fits and stays
+   reachable. Nothing is hidden that cannot be opened again. */
+.lp-burger{display:none}
+@media(max-width:700px){
+  .lp-nav{flex-wrap:wrap;padding:16px 18px;gap:12px;position:relative}
+  .lp-navlinks{width:100%;flex-wrap:wrap;gap:12px 18px;font-size:12.5px}
+  .lp-navlinks .lp-btn-ghost{margin-left:auto}
+
+  .lp-nav-js .lp-burger{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;padding:0;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text);cursor:pointer;margin-left:auto}
+  .lp-nav-js .lp-burger:hover{border-color:var(--amber)}
+  .lp-nav-js .lp-burger svg{width:20px;height:20px}
+  /* The panel hangs off the header rather than pushing the hero down, and covers what is under
+     it — a translucent menu over a headline is unreadable at any size. */
+  .lp-nav-js .lp-navlinks{display:none;position:absolute;top:100%;left:0;right:0;width:auto;flex-direction:column;align-items:stretch;gap:0;padding:4px 18px 14px;background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:14.5px;z-index:40}
+  .lp-nav-js.is-open .lp-navlinks{display:flex}
+  /* Each row a full-width tap target of its own, separated rather than spaced: 44px is the size
+     of a fingertip, and a list of links at 12px apart is a list of near misses. */
+  .lp-nav-js .lp-navlinks > *{display:flex;align-items:center;min-height:46px;padding:0;text-align:left;color:var(--muted);box-shadow:inset 0 1px 0 var(--line-soft)}
+  .lp-nav-js .lp-navlinks > *:first-child{box-shadow:none}
+  .lp-nav-js .lp-navlinks .lp-btn-ghost{justify-content:center;margin:12px 0 0;min-height:46px;box-shadow:none;color:var(--amber)}
+}
 
 
 /* tertiary "explore a live demo" link under the hero CTAs */
