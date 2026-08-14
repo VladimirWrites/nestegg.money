@@ -262,6 +262,22 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
       </div>
     </div>
 
+    <!-- Prices and rates refresh themselves when the app opens, which is right nearly always and
+         useless in the one case somebody cares about: a holding just moved and the figure on
+         screen is an hour old. These say when each was last fetched and let it be asked for
+         again — the same two buttons that sit under the net-worth chart, somewhere findable. -->
+    <div class="sect"><h2 class="t-label" data-i18n="prof.marketTitle">Market data</h2></div>
+    <div class="set-group">
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.pricesName">Prices</div><div class="set-hint"><span data-i18n="prof.pricesHint">The live price of every ticker and coin you hold. Past years keep the price they closed at.</span> <span class="set-when" id="profPxWhen"></span></div></div>
+        <div class="set-ctl"><button class="btn btn-sm" id="profPricesBtn" data-i18n="prof.refreshCta">Refresh now</button></div>
+      </div>
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.ratesName">Exchange rates</div><div class="set-hint"><span data-i18n="prof.ratesHint">ECB rates, used to show every amount in your display currency.</span> <span class="set-when" id="profFxWhen"></span></div></div>
+        <div class="set-ctl"><button class="btn btn-sm" id="profRatesBtn" data-i18n="prof.refreshCta">Refresh now</button></div>
+      </div>
+    </div>
+
     <div class="sect"><h2 class="t-label" data-i18n="prof.data">Your data</h2></div>
     <div class="set-group">
       <div class="set-row top">

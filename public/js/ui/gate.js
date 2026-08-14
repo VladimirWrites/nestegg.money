@@ -408,7 +408,25 @@ const ccyPicker = pickerInit("ccyPicker", "ccyBtn", "ccyVal", "ccyList", CCYS, (
 });
 // Import and reset replace the whole state, so they have to put the new value on screen too.
 export const setDisplayCcy = (v) => ccyPicker.set(v);
-$("pricesBtn").onclick = refreshPrices;
+/* Fetching prices and rates by hand, from either place that offers it: the two buttons under the
+   net-worth chart and the rows in Profile. The button is held disabled for the duration — these
+   are network calls against a rate-limited upstream, and a second press starts a second run. */
+async function busy(el, fn) {
+  if (el) el.disabled = true;
+  try { await fn(); } finally { if (el) el.disabled = false; }
+}
+const doPrices = (e) => busy(e.currentTarget, refreshPrices);   // read now: currentTarget is null after an await
+const doRates = (e) => busy(e.currentTarget, async () => {
+  toast(t("net.ratesUpdating"));
+  const ok = await fetchFx();
+  await refreshHistFx();
+  scheduleSync();
+  renderAll();
+  toast(ok ? t("net.ratesUpdated", { date: state.fxDate || "" }) : t("net.ratesOffline"));
+});
+$("pricesBtn").onclick = doPrices;
+$("profPricesBtn").onclick = doPrices;
+$("profRatesBtn").onclick = doRates;
 
 // Forecast inputs
 (() => {
@@ -444,4 +462,4 @@ $("pricesBtn").onclick = refreshPrices;
 $("dlFc") && ($("dlFc").onclick = () => downloadForecast());
 $("dlHist").onclick = () => downloadHist();
 $("dlDonut").onclick = () => downloadDonut();
-$("ratesBtn").onclick = async () => { toast(t("net.ratesUpdating")); const ok = await fetchFx(); await refreshHistFx(); scheduleSync(); renderAll(); toast(ok ? t("net.ratesUpdated", { date: state.fxDate || "" }) : t("net.ratesOffline")); };
+$("ratesBtn").onclick = doRates;

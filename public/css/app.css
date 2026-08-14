@@ -803,6 +803,7 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .set-ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .set-ctl .select{min-width:120px}
 /* The sync dot sits inside a sentence here rather than standing on its own. */
+.set-when{color:var(--dimmer)}  /* when it was last fetched — a fact about the row, not part of what it does */
 .set-hint .syncdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dimmer);vertical-align:baseline}
 .set-hint .syncdot.ok{background:var(--accent)}
 .set-hint .syncdot.off{background:var(--danger)}

@@ -199,9 +199,13 @@ export function renderRetire() {
 }
 
 function updNote() {
-  const px = state.lastPx ? t("net.prices") + " " + new Date(state.lastPx).toLocaleString(getLocale(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) : "";
+  const when = state.lastPx ? new Date(state.lastPx).toLocaleString(getLocale(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) : "";
+  const px = when ? t("net.prices") + " " + when : "";
   const fxd = state.fxDate ? t("net.rates") + " " + state.fxDate : "";
   $("updNote").textContent = [px, fxd].filter(Boolean).join(" · ");
+  // The same two facts said as a sentence, under the refresh rows in Profile.
+  const pxWhen = $("profPxWhen"); if (pxWhen) pxWhen.textContent = when ? t("prof.lastFetched", { when }) : t("prof.neverFetched");
+  const fxWhen = $("profFxWhen"); if (fxWhen) fxWhen.textContent = state.fxDate ? t("prof.ratesDated", { date: state.fxDate }) : t("prof.neverFetched");
 }
 
 /* ---- net-worth history bars ---- */
