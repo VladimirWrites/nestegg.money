@@ -32,6 +32,8 @@ let closeTopEditor = () => false; // shut the open editor, if there is one; true
 let current = HOME;
 let expectPop = false;          // we asked for this pop ourselves
 let inPop = false;              // closing because a pop arrived, rather than the other way round
+let skipped = 0;                // consecutive dead editor entries stepped over
+const MAX_SKIP = 3;             // there are three editors; more than that is a bug, not a stack
 
 const stateOf = () => history.state || {};
 const depth = () => stateOf().depth || 0;
@@ -56,6 +58,15 @@ export function initHistory({ onView, onCloseEditor, view = HOME }) {
     // the entry it would spend is the one that just went.
     inPop = true;
     try { if (closeTopEditor()) return; } finally { inPop = false; }
+    /* An editor's address with nothing open at it.
+     *
+     * Left by tapping a tab rather than by stepping back, so the entry underneath the one that
+     * was rewritten has no screen behind it any more. Stepping over it here is what popEditor
+     * does for the ordinary route out; without it, Back from the tab would land on Net worth and
+     * then need pressing again for nothing to happen. Bounded by the number of editors there
+     * are, so a stack of them cannot turn this into a walk out of the app. */
+    if (stateOf().editor && skipped < MAX_SKIP) { skipped++; expectPop = false; history.back(); return; }
+    skipped = 0;
     const view = stateOf().view || HOME;
     current = view;
     renderView(view);
@@ -82,6 +93,27 @@ export function navView(view) {
 /* An editor opened. It is a place of its own, so it gets an entry of its own. */
 export function pushEditor(id) {
   history.pushState({ view: current, depth: depth() + 1, editor: id }, "");
+}
+
+/* A tab was tapped while an editor was open — a jump out of the layer rather than a step back
+   through it.
+ *
+ * The editor's entry is rewritten as the tab's instead of being spent: going back has to lead
+ * out of the pair, not into an editor that is no longer open. Which means the close routine must
+ * not spend it on the way out either, hence keepingEntry around the closing.
+ */
+export function navOverEditor(view) {
+  if (!stateOf().editor) { navView(view); return; }
+  history.replaceState({ view, depth: depth() }, "");
+  current = view;
+}
+
+/* Run a close routine without letting it spend the entry its editor pushed — for the caller
+   that is about to put something else at that address. */
+export function keepingEntry(fn) {
+  const was = inPop;
+  inPop = true;
+  try { return fn(); } finally { inPop = was; }
 }
 
 /* An editor was closed by its own Back arrow rather than by the system's. The entry it pushed

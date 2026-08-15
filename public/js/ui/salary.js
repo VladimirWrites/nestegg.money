@@ -8,8 +8,7 @@ import { money, moneyIn, esc, convToY, ccySym, shortK } from "../domain/money.js
 import { fmtMY } from "../domain/dates.js";
 import { yGrid, C, refreshPalette, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
-import { showView } from "./gate.js";
-import { navView } from "./history.js";
+import { showView, goTab } from "./gate.js";
 import { t } from "../i18n.js";
 
 const salTotal = (en) => parseFloat(en.amount) || 0; // raw amount, in the entry's own currency
@@ -318,7 +317,7 @@ function salHideTip() { const t = $("salTip"); if (t) t.classList.add("hide"); }
   document.addEventListener("pointerdown", (e) => { if (!e.target.closest("#salaryChart")) salHideTip(); });
 })();
 $("dlSalary").onclick = downloadSalary;
-$("salaryBtn").onclick = () => { navView("salary"); showView("salary"); };
+$("salaryBtn").onclick = () => goTab("salary");
 
 // Salary tab (read-only) actions: quick "+ Next month", and open the edit overlay.
 function openSalaryEdit() { showEditor("salaryEditor"); renderSalaryEdit(); }

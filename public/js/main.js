@@ -4,12 +4,14 @@
 import { state, setState } from "./domain/store.js";
 import { emptyState, migrate } from "./domain/schema.js";
 import { $, toast, downloadBlob, isIOSUserAgent, isStandalone } from "./ui/dom.js";
-import { scheduleSync, flushSync, autoRefresh, setDataListener } from "./io/storage.js";
+import { scheduleSync, flushSync, autoRefresh, setDataListener, deleteVault, LS } from "./io/storage.js";
+import { clearKeys } from "./io/crypto.js";
 import { renderAll } from "./ui/charts.js";
 import { renderEntries } from "./ui/networth.js";
 import { drawSalaryChart } from "./ui/salary.js";
 import { boot, setDisplayCcy, showView } from "./ui/gate.js";
 import { initHistory } from "./ui/history.js";
+import { closeTopEditor } from "./ui/editors.js";
 import { initI18n, translateDom, t } from "./i18n.js";
 import "./ui/assets.js"; // side-effect: wire its editor listeners
 import "./ui/share.js"; // side-effect: wire the share dialog
@@ -27,10 +29,11 @@ let selJustFocused = false;
 document.addEventListener("focusin", (e) => { if (selField(e.target)) { try { e.target.select(); } catch (_) {} selJustFocused = true; } });
 document.addEventListener("mouseup", (e) => { if (selJustFocused && selField(e.target)) e.preventDefault(); selJustFocused = false; });
 
-$("exportBtn").onclick = () => {
+const exportState = () => {
   const b = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   downloadBlob(b, "networth-" + new Date().toISOString().slice(0, 10) + ".json");
 };
+$("exportBtn").onclick = exportState;
 $("importBtn").onclick = () => $("importFile").click();
 $("importFile").onchange = (e) => {
   const f = e.target.files[0]; if (!f) return;
@@ -51,6 +54,33 @@ $("importFile").onchange = (e) => {
   rd.readAsText(f);
 };
 $("resetBtn").onclick = () => { if (confirm(t("prof.resetConfirm"))) { setState(emptyState()); setDisplayCcy("EUR"); scheduleSync(); renderAll(); toast(t("prof.cleared")); } };
+
+/* Delete the vault: the server's copy, and this device's with it.
+ *
+ * A copy is offered before the point of no return rather than after it. Nobody here can give
+ * this back — the server only ever held ciphertext and is about to hold nothing — so a file on
+ * your own disk is the only copy that survives, and the moment somebody is about to delete years
+ * of figures is the moment to say so. Declining is allowed; being asked is not.
+ *
+ * Then the account number is typed back, because a mis-tap should not be able to reach this.
+ *
+ * The keys go before the reload, and that is not tidiness: pagehide flushes whenever keys are in
+ * memory, so without this the reload below re-uploaded the whole ledger milliseconds after the
+ * row was deleted — deleting your data would have put it straight back. */
+$("deleteAllBtn").onclick = async () => {
+  if (confirm(t("prof.deleteBackupAsk"))) {
+    exportState();
+    await new Promise((r) => setTimeout(r, 600));  // let the file get away before the page goes
+  }
+  const want = t("prof.deleteWord");
+  const typed = prompt(t("prof.deletePrompt", { word: want }));
+  if ((typed || "").trim().toUpperCase() !== want.toUpperCase()) return toast(t("prof.deleteCancelled"));
+
+  if (!(await deleteVault())) return toast(t("prof.deleteFailed"));
+  clearKeys();
+  LS.rem("nw_token"); LS.rem("nw_state"); LS.rem("nw_state_bak"); LS.rem("nw_synced_at");
+  location.reload();
+};
 
 // Flush the pending change immediately when the tab is hidden/closed, so the last edit lands.
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") try { flushSync(); } catch (e) {} });
@@ -74,11 +104,10 @@ window.addEventListener("resize", () => {
    Topmost first. An asset opens on top of the year editor that reached it, so both are open at
    once, and closing them in declaration order shut the year editor out from underneath the
    asset editor still covering the screen. */
-const EDITOR_BACK = { assetEditor: "assetBack", salaryEditor: "salaryBack", yearEditor: "edBack" };
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   const im = $("infoModal"); if (im && !im.classList.contains("hide")) return; // the info modal handles its own Esc
-  for (const id in EDITOR_BACK) { const ed = $(id); if (ed && !ed.classList.contains("hide")) { const b = $(EDITOR_BACK[id]); if (b) b.click(); return; } }
+  closeTopEditor();
 });
 
 // PWA install (profile "Install app" button). Chromium/Android fire beforeinstallprompt, so
@@ -124,13 +153,7 @@ initHistory({
   onView: (v) => showView(v),
   // Through each editor's own Back button, so closing by the system button runs exactly what
   // closing by the arrow runs: the sync, and the re-render underneath.
-  onCloseEditor: () => {
-    for (const id in EDITOR_BACK) {
-      const ed = $(id);
-      if (ed && !ed.classList.contains("hide")) { const b = $(EDITOR_BACK[id]); if (b) { b.click(); return true; } }
-    }
-    return false;
-  },
+  onCloseEditor: () => closeTopEditor(),
 });
 
 
