@@ -230,11 +230,30 @@ $("assetList").addEventListener("input", (e) => {
   if (lc && a.loan) lc.innerHTML = loanComputedHTML(a);
 });
 
+/* A loan set aside because its box was unticked.
+ *
+ * Unticking has to clear a.loan — an asset carrying a loan nobody asked for would value itself
+ * against a debt that is not there. But the box is one tap, and behind it are an amount, a rate,
+ * a start, a fixed-until date and every lump sum ever entered; unticking it and ticking it back
+ * used to hand back an empty form. So the object is kept here, in memory, keyed by asset, and
+ * put back if the box returns.
+ *
+ * Not written to the vault, and gone when the tab closes. That is the honest span: it undoes a
+ * mis-tap in the session that made it, and does not resurrect a loan somebody deliberately
+ * removed a week ago. */
+const setAsideLoans = new Map();
+
 $("assetList").addEventListener("change", (e) => {
   const t = e.target, id = t.dataset.aid; if (!id) return; const a = state.assets.find((x) => x.id === id); if (!a) return;
   if (t.dataset.toggle) {
     if (t.dataset.toggle === "depreciates") a.depreciates = t.checked;
-    else a.loan = t.checked ? normLoan(a.loan || { startDate: a.date }, a.date) : null;
+    else if (t.checked) {
+      a.loan = normLoan(a.loan || setAsideLoans.get(id) || { startDate: a.date }, a.date);
+      setAsideLoans.delete(id);
+    } else {
+      if (a.loan) setAsideLoans.set(id, a.loan);
+      a.loan = null;
+    }
     scheduleSync(); renderAssets(); return;
   }
   // Only the Term/Payment mode swap changes structure — rebuild for that; everything else
