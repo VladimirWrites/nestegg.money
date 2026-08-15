@@ -311,6 +311,13 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
         <div class="set-text"><div class="set-name" data-i18n="prof.reset">Reset</div><div class="set-hint" data-i18n="prof.resetHint">Empties this ledger and starts again on the same account number.</div></div>
         <div class="set-ctl"><button class="btn btn-sm btn-danger" id="resetBtn" data-i18n="prof.resetCta">Reset</button></div>
       </div>
+      <!-- Reset empties the ledger but leaves the row on the server, holding your last sync. This
+           is the one that removes it. Last in the section because it is the last thing anybody
+           should reach for. -->
+      <div class="set-row top">
+        <div class="set-text"><div class="set-name" data-i18n="prof.delete">Delete everything</div><div class="set-hint" data-i18n="prof.deleteHint">Removes the encrypted data from the server for good, and clears this device with it. There is no undo, and no copy anybody here could give you back.</div></div>
+        <div class="set-ctl"><button class="btn btn-sm btn-danger" id="deleteAllBtn" data-i18n="prof.deleteCta">Delete</button></div>
+      </div>
     </div>
 
     <!-- Free, no ads, nothing held back for a paid tier — so this is the only place that asks

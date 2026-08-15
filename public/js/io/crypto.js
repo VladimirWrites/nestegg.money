@@ -9,6 +9,11 @@ let accountId = null;
 let cryptoKey = null;
 export const getAccountId = () => accountId;
 export const keysReady = () => !!(accountId && cryptoKey);
+/* Forget the account without reloading. Every write to the server is guarded by keysReady, so
+   dropping these is what stops one: after the vault has been deleted, the flush that fires when
+   the page goes away would otherwise put the whole thing straight back — from the very device
+   it was deleted on. */
+export function clearKeys() { accountId = null; cryptoKey = null; }
 
 // Two-character Fletcher-style checksum over the base32 body: rejects typos and any string
 // that isn't a genuine generated account number.

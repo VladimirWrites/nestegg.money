@@ -111,6 +111,23 @@ export async function loadServer() {
   }
 }
 
+/* Take the vault off the server for good.
+ *
+ * The row is keyed by the account hash and holds nothing but ciphertext, so this is the whole
+ * of what the server has: after it, an account number opens an empty ledger rather than a
+ * locked one. Nobody here can undo it — there is no copy on this side to restore from, which is
+ * why the caller offers an export first. */
+export async function deleteVault() {
+  if (!keysReady()) return false;
+  try {
+    const r = await fetch("/api/vault", { method: "DELETE", headers: { "X-Vault-Id": getAccountId() } });
+    return r.ok;
+  } catch (e) {
+    console.warn("[nestegg] delete failed:", (e && e.message) || e);
+    return false;
+  }
+}
+
 /* ---- FX rates ---- */
 export async function fetchFx() {
   try {
