@@ -2,10 +2,10 @@
 // the PNG export of each. Pulls computed values from the domain layer; only touches the DOM.
 import { $, toast, syncVal, reduceMotion } from "./dom.js";
 import { state } from "../domain/store.js";
-import { money, ccySym, esc, shortK } from "../domain/money.js";
+import { money, moneyIn, ccySym, esc, shortK } from "../domain/money.js";
 import {
   colorOf, allNames, effEntries, seriesKey, snapGrossBase, snapTotalBase,
-  sortedSnaps, latestSnap, entryBase, isLiability, dayChangeBase, allocationRows, pricesStale,
+  sortedSnaps, latestSnap, entryBase, isLiability, dayChangeBase, dayChangeRows, allocationRows, pricesStale,
 } from "../domain/model.js";
 import { fmtMY } from "../domain/dates.js";
 import { fcCfg, forecastNetAt, fcTarget, fcBandRates, debtSummary } from "../domain/forecast.js";
@@ -256,9 +256,70 @@ function drawHist() {
     note.appendChild(span);
   }
   const dEl = $("nwDay"); const dc = dayChangeBase(nw);
-  if (dc) { const flat = Math.abs(dc.abs) < 0.005, up = dc.abs >= 0; dEl.className = "day " + (flat ? "flat" : up ? "up" : "down"); const sign = up ? "+" : "−", arrow = flat ? "" : up ? "▲ " : "▼ "; dEl.textContent = t("net.dayChange", { arrow, sign, abs: money(Math.abs(dc.abs)), pct: Math.abs(dc.pct).toFixed(2) }); }
-  else { dEl.className = "day"; dEl.textContent = ""; }
+  if (dc) {
+    const flat = Math.abs(dc.abs) < 0.005, up = dc.abs >= 0;
+    dEl.className = "day " + (flat ? "flat" : up ? "up" : "down");
+    const sign = up ? "+" : "−", arrow = flat ? "" : up ? "▲ " : "▼ ";
+    dEl.textContent = t("net.dayChange", { arrow, sign, abs: money(Math.abs(dc.abs)), pct: Math.abs(dc.pct).toFixed(2) });
+    /* The figure is also the way in to what is behind it. Only while there is something behind
+       it: the breakdown of a day on which nothing had a live price is an empty box. */
+    const rows = dayChangeRows().length;
+    dEl.classList.toggle("is-tap", rows > 0);
+    // The label itself is in the markup, so a change of language repaints it with everything
+    // else; only whether this reads as a button at all is decided here.
+    if (rows > 0) { dEl.setAttribute("role", "button"); dEl.setAttribute("tabindex", "0"); }
+    else { dEl.removeAttribute("role"); dEl.removeAttribute("tabindex"); }
+  }
+  else { dEl.className = "day"; dEl.textContent = ""; dEl.removeAttribute("role"); dEl.removeAttribute("tabindex"); }
 }
+
+/* ---- what moved today ----
+   The rows behind the day's change, in the order they moved the total. Rendered on open rather
+   than kept up to date in the background: prices land while this is shut far more often than
+   while it is open, and a box that is not on screen is not worth re-rendering. */
+function renderDayModal() {
+  const rows = dayChangeRows();
+  const total = rows.reduce((n, r) => n + r.abs, 0);
+  const tone = (v) => (Math.abs(v) < 0.005 ? "flat" : v > 0 ? "up" : "down");
+  const signed = (v, s) => (v > 0 ? "+" : v < 0 ? "−" : "") + s;
+
+  const tEl = $("dayTotal");
+  if (tEl) {
+    tEl.className = "daytotal num " + tone(total);
+    tEl.textContent = signed(total, money(Math.abs(total)));
+  }
+  const list = $("dayList");
+  if (!list) return;
+  list.innerHTML = rows.map((r) => `
+    <div class="dayrow">
+      <div class="daywhat">
+        <div class="dayname">${esc(r.name)}</div>
+        <div class="daysub t-mono">${esc(r.ticker)} · ${fmtShares(r.shares)} × ${esc(moneyIn(r.price, r.ccy))}</div>
+      </div>
+      <div class="daynums">
+        <div class="daymoney num ${tone(r.abs)}">${signed(r.abs, money(Math.abs(r.abs)))}</div>
+        <div class="daypct num ${tone(r.pct)}">${signed(r.pct, Math.abs(r.pct).toFixed(2) + "%")}</div>
+      </div>
+    </div>`).join("");
+}
+
+// Shares print as typed — 100, not 100.00, and 0.5 of a coin stays 0.5.
+const fmtShares = (n) => (Number.isInteger(n) ? String(n) : String(+(+n).toFixed(6)));
+
+const openDayModal = () => { renderDayModal(); $("dayModal").classList.remove("hide"); };
+const closeDayModal = () => $("dayModal").classList.add("hide");
+
+(() => {
+  const dEl = $("nwDay"); if (!dEl) return;
+  dEl.addEventListener("click", () => { if (dEl.classList.contains("is-tap")) openDayModal(); });
+  // Reachable the same way by keyboard, since it is announced as a button.
+  dEl.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && dEl.classList.contains("is-tap")) { e.preventDefault(); openDayModal(); }
+  });
+  $("dayClose").onclick = closeDayModal;
+  $("dayModal").addEventListener("click", (e) => { if (e.target.id === "dayModal") closeDayModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDayModal(); });
+})();
 function drawHistLegend() {
   const el = $("histLegend"); if (!el) return;
   const names = allNames();

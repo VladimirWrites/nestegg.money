@@ -109,6 +109,47 @@ export function dayChangeBase(nw) {
   return { abs, pct: prev > 0 ? (abs / prev) * 100 : 0 };
 }
 
+/* The same day's change, holding by holding.
+ *
+ * "Up 5%" is a fact about the whole ledger and says nothing about which part of it moved, which
+ * is the thing anybody actually wants to know. These are the rows behind that figure.
+ *
+ * The filter is deliberately identical to dayChangeBase above — same holdings, same skips — so
+ * the rows always add up to the headline rather than nearly adding up to it. Whatever is left
+ * out of one is left out of both: cash and property have no market, a past year's holding is
+ * frozen at that year's close, and a price from before today is yesterday's news on a day the
+ * market never opened.
+ *
+ * Sorted by what each one did to the total, in money rather than by percent: a 9% move on a
+ * small position is a smaller answer to "what is up" than a 1% move on a large one. Signed, so
+ * the biggest gain is at the top and the biggest loss at the bottom. */
+export function dayChangeRows() {
+  const ls = latestSnap();
+  if (!ls) return [];
+  const out = [];
+  ls.entries.forEach((en) => {
+    if (!isPriced(en) || en.px != null) return;
+    const p = state.prices[en.ticker];
+    if (!p || p.prevClose == null || !priceIsToday(p)) return;
+    const sh = parseFloat(en.shares) || 0;
+    out.push({
+      id: en.id,
+      name: en.name || en.ticker,
+      ticker: en.ticker,
+      shares: sh,
+      price: p.price,
+      prevClose: p.prevClose,
+      ccy: p.currency,
+      // In base currency, because that is the currency the headline is in.
+      abs: convTo(sh * (p.price - p.prevClose), p.currency, state.baseCcy),
+      value: convTo(sh * p.price, p.currency, state.baseCcy),
+      // The instrument's own move, which is not the same as its share of the total.
+      pct: p.prevClose > 0 ? ((p.price - p.prevClose) / p.prevClose) * 100 : 0,
+    });
+  });
+  return out.sort((x, y) => y.abs - x.abs);
+}
+
 /* ---- long-term assets injected as synthetic per-year entries ----
    Each asset's net value (gross minus loan) for the years it is owned, so net worth
    always reflects vehicles/property/standalone loans without manual re-entry. */

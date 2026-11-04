@@ -107,6 +107,7 @@ window.addEventListener("resize", () => {
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   const im = $("infoModal"); if (im && !im.classList.contains("hide")) return; // the info modal handles its own Esc
+  const dm = $("dayModal"); if (dm && !dm.classList.contains("hide")) return; // so does the day breakdown
   closeTopEditor();
 });
 

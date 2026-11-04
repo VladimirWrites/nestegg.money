@@ -138,7 +138,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     <div class="hero">
       <div class="label" data-i18n="net.totalLbl">Total Net Worth</div>
       <div class="big num" id="nwTotal">—</div>
-      <div class="day num" id="nwDay"></div>
+      <div class="day num" id="nwDay" data-i18n-aria-label="net.dayOpenAria"></div>
       <div class="delta" id="nwNote"></div>
     </div>
 
@@ -444,6 +444,18 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
   </div>
 </div></div>
 <div id="infoModal" class="infomodal hide"><div class="infobox"><button class="infoclose" id="infoClose" aria-label="Close" data-i18n-aria-label="share.close">×</button><div id="infoBody"></div></div></div>
+<!-- What moved today. The headline says the ledger is up or down by a figure; this says which
+     holdings did it, which is the question that follows. Read-only, so it is an overlay rather
+     than a screen of its own: nothing here is edited and there is nowhere further to go. -->
+<div id="dayModal" class="infomodal hide">
+  <div class="infobox daybox" role="dialog" aria-modal="true" aria-labelledby="dayModalTitle">
+    <button class="infoclose" id="dayClose" aria-label="Close" data-i18n-aria-label="share.close">&times;</button>
+    <h3 id="dayModalTitle" data-i18n="net.dayTitle">What moved today</h3>
+    <div class="daytotal num" id="dayTotal"></div>
+    <div class="daylist" id="dayList"></div>
+    <p class="dayfoot" data-i18n="net.dayFoot">Only holdings with a live price can move today. Cash, property, loans and anything held at a past year's close sit still.</p>
+  </div>
+</div>
 <div id="yearModal" class="infomodal hide">
   <div class="infobox yearbox" role="dialog" aria-modal="true" aria-labelledby="yearModalTitle">
     <button class="infoclose" id="yearClose" aria-label="Close" data-i18n-aria-label="share.close">×</button>
