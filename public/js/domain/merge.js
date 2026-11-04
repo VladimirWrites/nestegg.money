@@ -153,6 +153,25 @@ function mergeSal(la, ra, del) {
   return mergeParented(la, ra, (p) => p.id, (e) => e.ym, del.sper, (k, e) => k + "|" + e.ym, del.sent, (p) => +p.m || 0);
 }
 
+/* Prices and year-end rates are nobody's edits, so they carry no m and none of the per-record
+   merging above applies to them. They rode along with whichever document happened to have the
+   newer updatedAt, and the other side's were dropped — which is how a holding added on one
+   machine arrived on the second as a row with no price. A row with no price is worth nothing,
+   so the position appeared in the year and not in the total.
+
+   A price is keyed by ticker and stamped with the moment it was fetched, so the fresher of the
+   two wins. A year-end rate is a historical constant: either side having one is enough. */
+function mergePrices(a, b) {
+  const out = { ...(a || {}) };
+  Object.entries(b || {}).forEach(([tk, p]) => {
+    const cur = out[tk];
+    if (!cur || (+(p && p.t) || 0) > (+cur.t || 0)) out[tk] = p;
+  });
+  return out;
+}
+
+const mergeFxHist = (a, b) => ({ ...(b || {}), ...(a || {}) });
+
 // Merge two whole states per record (newest m wins; tombstones win over older edits).
 export function mergeStates(a, b) {
   const out = cloneState((+a.updatedAt || 0) >= (+b.updatedAt || 0) ? a : b);
@@ -162,6 +181,10 @@ export function mergeStates(a, b) {
   out.snapshots = mergeSnaps(a.snapshots, b.snapshots, del);
   out.salaries = mergeSal(a.salaries, b.salaries, del);
   out.categories = [...new Set([...(a.categories || []), ...(b.categories || [])])];
+  out.prices = mergePrices(a.prices, b.prices);
+  out.fxHist = mergeFxHist(a.fxHist, b.fxHist);
+  const lastPx = Math.max(+a.lastPx || 0, +b.lastPx || 0);
+  if (lastPx) out.lastPx = lastPx;
   out.updatedAt = Math.max(+a.updatedAt || 0, +b.updatedAt || 0);
   return out;
 }

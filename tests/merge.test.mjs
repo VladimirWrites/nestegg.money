@@ -49,3 +49,40 @@ test("stampMtimes: assigns m to new/changed records and tombstones removals", ()
   assert.ok(state.assets.find((a) => a.id === "a3").m > 0, "new record stamped");
   assert.ok(state.del.asset.a2 > 0, "deleted record tombstoned");
 });
+
+/* Prices are not edits and carry no mtime, so nothing above merges them. They used to travel
+   with whichever document had the newer updatedAt, which lost the other side's — and a holding
+   whose price was lost is valued at zero, so it showed in its year and not in the total. */
+
+test("merge: a price fetched on one device survives the other's newer document", () => {
+  const withPrice = doc([], null, { updatedAt: 1000, prices: { AAPL: { price: 200, currency: "USD", t: 500 } } });
+  const without = doc([], null, { updatedAt: 9000, prices: {} });
+  assert.equal(mergeStates(without, withPrice).prices.AAPL.price, 200, "local newer, remote has the price");
+  assert.equal(mergeStates(withPrice, without).prices.AAPL.price, 200, "and the other way round");
+});
+
+test("merge: the fresher price of the two wins", () => {
+  const older = doc([], null, { prices: { AAPL: { price: 100, t: 100 } } });
+  const newer = doc([], null, { prices: { AAPL: { price: 250, t: 900 } } });
+  assert.equal(mergeStates(older, newer).prices.AAPL.price, 250);
+  assert.equal(mergeStates(newer, older).prices.AAPL.price, 250);
+});
+
+test("merge: each device keeps the tickers the other never had", () => {
+  const a = doc([], null, { prices: { AAPL: { price: 1, t: 1 } } });
+  const b = doc([], null, { prices: { MSFT: { price: 2, t: 1 } } });
+  assert.deepEqual(Object.keys(mergeStates(a, b).prices).sort(), ["AAPL", "MSFT"]);
+});
+
+test("merge: year-end rates are historical, so either side having them is enough", () => {
+  const a = doc([], null, { updatedAt: 9000, fxHist: {} });
+  const b = doc([], null, { updatedAt: 1000, fxHist: { 2023: { EUR: 1, USD: 1.1 } } });
+  assert.equal(mergeStates(a, b).fxHist[2023].USD, 1.1);
+});
+
+test("merge: the last price refresh is the later of the two", () => {
+  const a = doc([], null, { lastPx: 500 });
+  const b = doc([], null, { lastPx: 900 });
+  assert.equal(mergeStates(a, b).lastPx, 900);
+  assert.equal(mergeStates(b, a).lastPx, 900);
+});
