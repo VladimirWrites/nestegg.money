@@ -234,6 +234,26 @@ export async function autoRefresh() {
   return changed;
 }
 
+/* Prices for tickers that arrived in somebody else's edit.
+ *
+ * autoRefresh reads the list of tickers once, as the app enters — and the app enters from the
+ * local cache, before the server's copy has been merged in. A holding added on another machine
+ * is therefore not in that list: it lands a moment later with no price, and an entry with no
+ * price is worth zero, so it shows in its year and is missing from the total. Nothing went
+ * looking for it again, because nothing was watching the list change.
+ *
+ * Called after a reconcile with whatever the merge produced. Only the gaps are fetched, so when
+ * the two devices already agree this costs nothing. */
+export async function ensurePrices() {
+  if (!state.prices) state.prices = {};
+  const want = tickersInUse().filter((t) => !state.prices[t]);
+  if (!want.length) return false;
+  const oks = await Promise.all(want.map((t) => fetchPrice(t)));   // independent -> parallel
+  if (!oks.some(Boolean)) return false;
+  state.lastPx = Date.now();
+  return true;
+}
+
 // Make sure past-year holdings are valued at that year's price + FX, then re-render the
 // active view only if something was actually fetched (so it won't disrupt typing).
 export function ensureHist() {

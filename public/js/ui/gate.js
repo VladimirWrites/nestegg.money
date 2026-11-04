@@ -8,7 +8,7 @@ import { CCYS } from "../domain/constants.js";
 import { fcCfg } from "../domain/forecast.js";
 import { retCfg } from "../domain/retirement.js";
 import { generateToken, validToken, canonToken, normTok, deriveKeys, copyText, decWith, importShareKey } from "../io/crypto.js";
-import { LS, syncedAt, setDemo, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
+import { LS, syncedAt, setDemo, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, ensurePrices, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
 import { renderAll, repaintCharts, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut, armChartAnim } from "./charts.js";
 import { renderSalary, armSalaryAnim } from "./salary.js";
 import { renderBudget, setBudgetReadOnly } from "./budget.js";
@@ -196,6 +196,10 @@ export async function boot() {
     // First paint already happened from local; otherwise enter now. renderAll() no-ops when
     // nothing chart-relevant changed, so this reconcile never cuts or replays the entrance.
     if ($("app").classList.contains("hide")) enterApp(); else renderAll();
+    /* Anything the merge brought in that has no price yet. The refresh enterApp fires reads the
+       ticker list before this point, so a holding added on another device would otherwise sit at
+       zero until something else happened to ask. */
+    try { ensurePrices().then((ch) => { if (ch) { scheduleSync(); renderAll(); } }).catch(() => {}); } catch (e) {}
     if (repair) { try { pushServer(); } catch (e) {} }
   } catch (e) {
     try { setState(emptyState()); } catch (_) {}
