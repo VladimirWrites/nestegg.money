@@ -1039,3 +1039,23 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    the same mono column every other amount in the app uses. */
 .bud-exp.ro{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:0 2px}
 .bud-exp.ro .bud-loan-amt{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ── salary: a year folds behind its own total ──
+ * Phones only. On a desktop there is room for the whole history and it stays open, which is
+ * also why the fold is done with a class rather than by leaving rows out: every row is in the
+ * DOM at every width, and Ctrl+F still finds a month inside a folded year on a desktop.
+ */
+.saly[data-ytoggle]{cursor:pointer}
+.salytog{display:inline-flex;align-items:center;gap:6px}
+.salychev{width:13px;height:13px;flex:none;color:var(--dim);transition:transform .15s ease}
+.saly.is-open .salychev{transform:rotate(90deg)}
+.saly[data-ytoggle]:hover{background:var(--panel)}
+.saly[data-ytoggle]:focus-visible{outline:2px solid var(--signal);outline-offset:-2px}
+@media(max-width:899px){
+  .saltab tr.salmonth.is-folded{display:none}
+}
+@media(min-width:900px){
+  /* Nothing folds here, so the handle would be a control that does nothing visible. */
+  .salychev{display:none}
+  .saly[data-ytoggle]{cursor:default}
+}

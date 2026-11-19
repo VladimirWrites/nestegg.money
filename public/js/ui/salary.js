@@ -194,6 +194,16 @@ function renderSalaryHero(people) {
     + (names.length > 1 ? " · " + names.join(" + ") : "");
 }
 
+/* Which past years are expanded on a phone.
+ *
+ * The table is every month anybody has ever been paid — eight thousand pixels of it by the
+ * time a couple has a few years of history — and all of it is equally open, so this year's
+ * figures compete with 2019's. The year rows were already in the table as subtotals; they
+ * become the handle. The current year stays open, the rest fold behind their own totals, and
+ * nothing is removed: the whole table is still in the DOM, and on a desktop, where there is
+ * room for it, every row is shown as before. */
+const openYears = new Set();
+
 // Read-only table shown on the Salary tab; all edits happen in the edit overlay.
 export function renderSalary() {
   drawSalaryChart();
@@ -205,21 +215,43 @@ export function renderSalary() {
   people.forEach((p) => (head += `<th class="r salgsep">${esc(p.name)}</th>`));
   if (multi) head += `<th class="r salgsep">${t("salary.household")}</th>`;
   head += `</tr>`;
-  let body = "", curY = null;
+  let body = "", curY = null, latestYear = null;
   yms.forEach((ym) => {
     const y = ym.slice(0, 4);
     if (y !== curY) {
-      curY = y; let yr = `<tr class="saly"><td>${y}</td>`, ht = 0;
+      curY = y;
+      if (latestYear == null) latestYear = y;         // the first year listed is the newest
+      if (y === latestYear) openYears.add(y);
+      const open = openYears.has(y);
+      let yr = `<tr class="saly${open ? " is-open" : ""}" data-ytoggle="${y}" role="button" tabindex="0" aria-expanded="${open}"><td><span class="salytog"><svg class="salychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>${y}</span></td>`, ht = 0;
       people.forEach((p) => { const t = (p.entries || []).filter((e) => e.ym.slice(0, 4) === y).reduce((a, e) => a + salBase(p, e), 0); ht += t; yr += `<td class="num salgsep">${t ? money(t) : "—"}</td>`; });
       if (multi) yr += `<td class="num salgsep">${ht ? money(ht) : "—"}</td>`;
       body += yr + `</tr>`;
     }
-    let row = `<tr data-ym="${ym}"><td class="salm">${ymLabel(ym)}</td>`, hh = 0;
+    let row = `<tr class="salmonth${openYears.has(y) ? "" : " is-folded"}" data-ym="${ym}" data-y="${y}"><td class="salm">${ymLabel(ym)}</td>`, hh = 0;
     people.forEach((p) => { const e = salEntry(p, ym); if (e) hh += salBase(p, e); row += `<td class="num salgsep">${e && e.event ? `<span class="evtag">${esc(e.event)}</span>` : ""}${e && e.amount ? moneyIn(salTotal(e), salEccy(p, e)) : "—"}</td>`; });
     if (multi) row += `<td class="num salgsep">${hh ? money(hh) : "—"}</td>`;
     body += row + `</tr>`;
   });
   host.innerHTML = `<div class="saltable-scroll"><table class="saltab rotab"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+
+  /* Folding is a view state, not data, so it redraws the table rather than touching the
+     ledger — and the whole table is already in the DOM, so this only toggles classes. */
+  const toggleYear = (y) => {
+    if (openYears.has(y)) openYears.delete(y); else openYears.add(y);
+    renderSalary();
+  };
+  /* Only a phone folds, so only a phone gets the control: on a desktop the row would offer to
+     do something and then visibly do nothing. */
+  const folds = window.matchMedia("(max-width: 899px)").matches;
+  host.querySelectorAll("[data-ytoggle]").forEach((tr) => {
+    if (!folds) { tr.removeAttribute("role"); tr.removeAttribute("tabindex"); tr.removeAttribute("aria-expanded"); return; }
+    const y = tr.getAttribute("data-ytoggle");
+    tr.onclick = () => toggleYear(y);
+    tr.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleYear(y); }
+    };
+  });
 }
 
 /* Editable table — rendered into the edit overlay.
