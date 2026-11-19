@@ -217,6 +217,9 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
         <div class="label" data-i18n="salary.heroLbl">Latest month</div>
         <div class="big num" id="salHeroAmt">—</div>
         <div class="delta" id="salHeroNote"></div>
+        <!-- The two things you came here to do, next to the figure you came to see. They used
+             to sit under the table, which on a phone is several thousand pixels down. -->
+        <div class="controls"><button class="btn btn-primary btn-sm" id="salNext" data-i18n="salary.next">+ Next month</button><button class="btn btn-sm" id="salEdit" data-i18n="salary.edit">Edit salaries</button></div>
       </div>
       <section class="over" style="border:none;padding:8px 0">
         <div class="sectitle" data-i18n="salary.history">Our salary history<span class="sectools"><button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart" data-i18n-title="salary.dlChart" data-i18n-aria-label="salary.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
@@ -224,7 +227,6 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
         <div class="chiplegend" id="salaryLegend"></div>
       </section>
       <div id="salaryTable"></div>
-      <div class="controls"><button class="btn btn-sm" id="salNext" data-i18n="salary.next">+ Next month</button><button class="btn btn-primary btn-sm" id="salEdit" data-i18n="salary.edit">Edit salaries</button></div>
     </div>
 
     <div id="viewBudget" class="hide">
