@@ -64,8 +64,17 @@ export function drawSalaryChart() {
   // Left axis (per-person monthly) reuses the shared grid; the right axis (combined yearly) is overlaid.
   let s = yGrid(W, padL, padR, padT, plotH, nmL, sym);
   for (let g = 0; g <= 5; g++) { const yy = padT + plotH - (g / 5) * plotH; s += `<text x="${W - padR + 8}" y="${yy + 3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${shortK((nmR * g) / 5)}</text>`; }
-  const minYr = Math.floor(minI / 12), maxYr = Math.floor(maxI / 12), stepYr = Math.max(1, Math.ceil((maxYr - minYr + 1) / 14));
-  for (let yr = minYr; yr <= maxYr; yr += stepYr) { const xc = X(yr * 12); if (xc >= padL - 1 && xc <= W - padR + 1) s += `<text x="${xc}" y="${H - 9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${yr}</text>`; }
+  /* How many years the axis can name is a question about width, not about how many years
+     there are. A four-digit label needs about 34px of its own; fitting one per year into a
+     phone's 248px of plot printed "2014" through "2026" on top of each other. */
+  const minYr = Math.floor(minI / 12), maxYr = Math.floor(maxI / 12);
+  const pxPerYear = plotW / Math.max(1, maxYr - minYr);
+  const stepYr = Math.max(1, Math.ceil(34 / Math.max(1, pxPerYear)));
+  /* A four-digit year is about 26px wide and is centred on its tick, so a tick within half
+     that of either edge loses half its label — which is how the axis came to start with
+     "18". The bound is the label's own width, not the plot area's. */
+  const YR_HALF = 15;
+  for (let yr = minYr; yr <= maxYr; yr += stepYr) { const xc = X(yr * 12); if (xc - YR_HALF >= 1 && xc + YR_HALF <= W - 1) s += `<text x="${xc}" y="${H - 9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${yr}</text>`; }
   // monthly per-person lines (left axis) + event dots
   people.forEach((p, pi) => {
     const ms = salMonths(p); if (!ms.length) return; const col = salColor(pi);
@@ -77,7 +86,11 @@ export function drawSalaryChart() {
   s += `<polyline class="line" pathLength="1" points="${cpts.map((p) => p.x.toFixed(1) + "," + p.yy.toFixed(1)).join(" ")}" fill="none" stroke="${SAL_COMB}" stroke-width="2.4"/>`;
   cpts.forEach((p) => {
     s += `<circle class="saldot" cx="${p.x.toFixed(1)}" cy="${p.yy.toFixed(1)}" r="3.5" fill="${SAL_COMB}" data-lbl="${esc(p.y0 + " · " + t("salary.combined") + " · " + sym + Math.round(p.v).toLocaleString())}"></circle>`;
-    s += `<text x="${p.x.toFixed(1)}" y="${(p.yy - 8).toFixed(1)}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${p.y0}</text>`;
+    /* The year beside each combined-salary point is written on the line it belongs to. With
+       the room a phone gives the chart, "2014" through "2025" land directly on top of that
+       line and on each other, so the labels cost more than they say. The x-axis already
+       carries the years, and tapping a point still names it. */
+    if (!salNarrow()) s += `<text x="${p.x.toFixed(1)}" y="${(p.yy - 8).toFixed(1)}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${p.y0}</text>`;
   });
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = s;
   svg.setAttribute("role", "img");
