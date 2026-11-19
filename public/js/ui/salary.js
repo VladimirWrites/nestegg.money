@@ -241,9 +241,6 @@ export function renderSalary() {
     if (openYears.has(y)) openYears.delete(y); else openYears.add(y);
     renderSalary();
   };
-  /* Only a phone folds, so only a phone gets the control: on a desktop the row would offer to
-     do something and then visibly do nothing. */
-  const folds = window.matchMedia("(max-width: 899px)").matches;
   /* On a phone the note is a dot, and a dot's tooltip is unreachable by touch — which would
      mean the note is simply gone at the width most people read this on. Pressing it opens the
      word under the amount in that cell, and pressing it again closes it. */
@@ -256,8 +253,11 @@ export function renderSalary() {
     };
   });
 
+  /* Every width folds. This started as a phone-only control, on the reasoning that a desktop
+     has room for the whole history — but "has room for" turned out to mean 7,347px of money
+     columns with nothing naming them, which is not a better way to read a decade of salary
+     than a list of years you can open. */
   host.querySelectorAll("[data-ytoggle]").forEach((tr) => {
-    if (!folds) { tr.removeAttribute("role"); tr.removeAttribute("tabindex"); tr.removeAttribute("aria-expanded"); return; }
     const y = tr.getAttribute("data-ytoggle");
     tr.onclick = () => toggleYear(y);
     tr.onkeydown = (e) => {

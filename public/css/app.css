@@ -1083,14 +1083,7 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .saly.is-open .salychev{transform:rotate(90deg)}
 .saly[data-ytoggle]:hover{background:var(--panel)}
 .saly[data-ytoggle]:focus-visible{outline:2px solid var(--signal);outline-offset:-2px}
-@media(max-width:899px){
-  .saltab tr.salmonth.is-folded{display:none}
-}
-@media(min-width:900px){
-  /* Nothing folds here, so the handle would be a control that does nothing visible. */
-  .salychev{display:none}
-  .saly[data-ytoggle]{cursor:default}
-}
+.saltab tr.salmonth.is-folded{display:none}
 
 /* On a phone these were fifteen full-width boxes stacked down the page, each label a line
    above its own value and the whole forecast four thousand pixels tall. The same fields become
