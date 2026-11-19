@@ -67,3 +67,56 @@ export function shortK(v) {
   if (a >= 1e3) return +(v / 1e3).toFixed(a >= 1e4 ? 0 : 1) + "k";
   return Math.round(v);
 }
+
+/* Reading a number a person typed.
+ *
+ * The app always *prints* en-IE — comma groups, dot decimal — but people type what their
+ * keyboard and their habits give them, and the two languages this ships in disagree about
+ * what a dot means: "15.000" is fifteen thousand to a German reader and fifteen to an English
+ * one. Getting that backwards changes somebody's net worth by a factor of a thousand, so the
+ * rules are written down and tested rather than guessed at per call site.
+ *
+ *   both separators present   the later one is the decimal mark   1.234,56 and 1,234.56 → 1234.56
+ *   one separator, 3 digits after   grouping                      15.000 and 15,000     → 15000
+ *   one separator, 1-2 digits after   decimal                     2,5 and 39.32         → 2.5, 39.32
+ *   one separator, 4+ digits after    decimal — malformed either way, so take the
+ *                                     smaller reading: too small is visible, too large is not
+ *
+ * Returns null for anything it cannot read, so a caller can tell "nothing" from zero.
+ */
+export function parseNum(s) {
+  if (typeof s === "number") return Number.isFinite(s) ? s : null;
+  if (s == null) return null;
+  let t = String(s).trim().replace(/[\s  ]/g, "");
+  if (!t) return null;
+  const neg = /^[-−]/.test(t);
+  if (neg) t = t.slice(1);
+  t = t.replace(/[^\d.,]/g, "");           // currency symbols, percent signs, stray letters
+  if (!t || !/\d/.test(t)) return null;
+
+  const lastDot = t.lastIndexOf("."), lastComma = t.lastIndexOf(",");
+  let dec = -1;
+  if (lastDot >= 0 && lastComma >= 0) {
+    dec = Math.max(lastDot, lastComma);
+  } else {
+    const i = lastDot >= 0 ? lastDot : lastComma;
+    if (i >= 0) {
+      const mark = t[i];
+      const only = t.indexOf(mark) === i;
+      const after = t.length - i - 1;
+      if (only && after !== 3) dec = i;
+    }
+  }
+  const intPart = (dec >= 0 ? t.slice(0, dec) : t).replace(/[.,]/g, "");
+  const frac = (dec >= 0 ? t.slice(dec + 1) : "").replace(/[.,]/g, "");
+  const n = parseFloat((intPart || "0") + (frac ? "." + frac : ""));
+  if (!Number.isFinite(n)) return null;
+  return neg ? -n : n;
+}
+
+// The canonical way to write a number back into a field: grouped, en-IE, like every figure
+// the app prints beside it.
+export function fmtNum(n, maxFrac = 2) {
+  if (n == null || n === "" || !Number.isFinite(Number(n))) return "";
+  return new Intl.NumberFormat("en-IE", { maximumFractionDigits: maxFrac }).format(Number(n));
+}

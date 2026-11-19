@@ -257,7 +257,11 @@ export function renderBudget() {
           <input id="budOverride" class="bud-input" type="number" inputmode="decimal" value="${b.incomeOverride == null ? "" : b.incomeOverride}" placeholder="${t("budget.autoPh", { amount: money(auto) })}" aria-label="${t("budget.overrideIncome")}">
         </span>
       </div>`}
-      <div class="bud-exp-head">${t("budget.outgoings")}${RO ? "" : `<button type="button" class="btn btn-sm bud-editbtn" id="budEdit">${EDITING ? t("budget.done") : t("common.edit")}</button>`} <span class="hint">${t("budget.outgoingsHint")}</span></div>
+      <!-- Two explicit cells: the title and its explanation on the left, the switch on the
+           right. Written as a bare text node plus an auto margin, the title, the button and
+           the whitespace between them became three anonymous flex items and the button
+           settled wherever that arithmetic put it — 836px into a 1354px row. -->
+      <div class="bud-exp-head"><div class="bud-exp-headtext"><span class="bud-exp-title">${t("budget.outgoings")}</span><span class="hint">${t("budget.outgoingsHint")}</span></div>${RO ? "" : `<button type="button" class="btn btn-sm bud-editbtn" id="budEdit">${EDITING ? t("budget.done") : t("common.edit")}</button>`}</div>
       <div id="budItems">${itemsHTML(s, b)}</div>
       <div class="bud-row total"><span class="bud-lbl">${t("budget.totalOutgoings")}</span><span class="bud-val" id="budOutTotal">${money(s.fixed + s.expenses)}</span></div>
     </div>

@@ -2,7 +2,7 @@
 // the PNG export of each. Pulls computed values from the domain layer; only touches the DOM.
 import { $, toast, syncVal, reduceMotion } from "./dom.js";
 import { state } from "../domain/store.js";
-import { money, moneyIn, ccySym, esc, shortK } from "../domain/money.js";
+import { money, moneyIn, ccySym, esc, shortK, fmtNum } from "../domain/money.js";
 import {
   colorOf, allNames, effEntries, seriesKey, snapGrossBase, snapTotalBase,
   sortedSnaps, latestSnap, entryBase, isLiability, dayChangeBase, dayChangeRows, allocationRows, pricesStale,
@@ -72,13 +72,13 @@ function setHero(nw) {
 /* ---- forecast ---- */
 export function fcSyncInputs() {
   const fc = fcCfg();
-  syncVal("fcMonthly", fc.monthly);
-  syncVal("fcGrowth", fc.growth ? +(fc.growth * 100).toFixed(2) : "");
+  syncVal("fcMonthly", fmtNum(fc.monthly));
+  syncVal("fcGrowth", fc.growth ? fmtNum(+(fc.growth * 100).toFixed(2)) : "");
   const gm = $("fcGoalMode"); if (gm) gm.value = fc.goalMode;
   const lbl = $("fcGoalLbl"); if (lbl) { lbl.textContent = fc.goalMode === "spend" ? t("net.annualSpend") : t("net.goalAmount"); lbl.title = lbl.textContent; }
-  syncVal("fcGoalVal", (fc.goalMode === "spend" ? fc.annualSpending : fc.goalAmount) || "");
+  syncVal("fcGoalVal", fmtNum((fc.goalMode === "spend" ? fc.annualSpending : fc.goalAmount) || ""));
   const rd = $("fcRedirect"); if (rd) rd.checked = !!fc.redirectLoans;
-  syncVal("fcContribGrowth", fc.contribGrowth ? +(fc.contribGrowth * 100).toFixed(2) : "");
+  syncVal("fcContribGrowth", fc.contribGrowth ? fmtNum(+(fc.contribGrowth * 100).toFixed(2)) : "");
   const bd = $("fcBand"); if (bd) bd.checked = !!fc.band;
   syncVal("fcHorizon", fc.horizonYear);
 }
@@ -165,9 +165,9 @@ export function retSyncInputs() {
   const set = (id, val, fmt) => { const el = $(id); if (el && document.activeElement !== el) el.value = (fmt ? fmt(val) : val) || (val === 0 ? "" : val) || ""; };
   const on = $("rtOn"); if (on) on.checked = r.on;
   const body = $("rtBody"); if (body) body.classList.toggle("hide", !r.on);
-  set("rtYear", r.retireYear); set("rtSpend", r.spending); set("rtPension", r.pension);
-  set("rtPts", r.points); set("rtPtsYr", r.ptsPerYear != null ? r.ptsPerYear : ""); set("rtPtVal", r.ptValue != null ? r.ptValue : "");
-  set("rtPensStart", r.pensionStart); set("rtUntil", r.untilYear); set("rtInfl", r.inflation, (v) => (v ? +(v * 100).toFixed(2) : ""));
+  set("rtYear", r.retireYear); set("rtSpend", r.spending, fmtNum); set("rtPension", r.pension, fmtNum);
+  set("rtPts", r.points, fmtNum); set("rtPtsYr", r.ptsPerYear != null ? r.ptsPerYear : "", fmtNum); set("rtPtVal", r.ptValue != null ? r.ptValue : "", fmtNum);
+  set("rtPensStart", r.pensionStart); set("rtUntil", r.untilYear); set("rtInfl", r.inflation, (v) => (v ? fmtNum(+(v * 100).toFixed(2)) : ""));
   const pm = $("rtPmode"); if (pm) pm.value = r.pmode; const de = r.pmode === "de";
   const amt = $("rtAmtFld"); if (amt) amt.classList.toggle("hide", de);
   document.querySelectorAll(".rt-de").forEach((el) => el.classList.toggle("hide", !de));

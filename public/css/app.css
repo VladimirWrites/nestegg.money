@@ -1056,10 +1056,17 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
 /* The Edit / Done switch in the Outgoings header. It sits at the end of the title line, where
    a panel's controls live on every other screen, and the explanation below it stays prose. */
-.bud-exp-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.bud-exp-head{row-gap:4px}
-.bud-exp-head .bud-editbtn{margin-left:auto;order:2;align-self:center}
-.bud-exp-head .hint{order:3;flex:1 0 100%;margin:0}
+.bud-exp-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:nowrap}
+.bud-exp-headtext{min-width:0}
+.bud-exp-head .bud-editbtn{flex:none;align-self:center}
+.bud-exp-head .hint{display:block;margin:0;font-size:13px;font-weight:400;letter-spacing:0;color:var(--dim);max-width:68ch}
+/* The title carries the heading size; the wrapper must not, or the hint inherits 18/21px. */
+.bud-exp-title{display:block;font-size:inherit;font-weight:inherit;letter-spacing:inherit;color:var(--text)}
+.bud-exp-headtext{font-size:18px;font-weight:600;letter-spacing:-.01em}
+@media(min-width:900px){.bud-exp-headtext{font-size:21px}}
+/* The income rows sit outside the category cards, so give them the cards' inner padding or
+   their amounts end 12px right of every amount underneath them. */
+.bud-rows>.bud-row{padding-left:16px;padding-right:16px}
 /* A read row is a line in a list, not a form row: name on the left, amount right-aligned in
    the same mono column every other amount in the app uses. */
 .bud-exp.ro{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:0 2px}
