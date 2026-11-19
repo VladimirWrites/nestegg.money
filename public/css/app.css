@@ -916,22 +916,40 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    that says whose column you are filling in. */
 .salwho{display:flex;width:100%;margin-bottom:12px}
 .salwho .seg-btn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* One person means the columns can be told to share the width rather than each asking for the
-   space its widest content wants — which is what still pushed a single column past a 358px box
-   and left it scrolling sideways after all. */
+/* The columns are told to share the width rather than each asking for the space its widest
+   content wants — which is what pushed the table past its 358px box and left it scrolling
+   sideways. These rules used to be written as `.salwho ~ .saltable-scroll`, so they only
+   applied when the person-switch happened to be on screen; with one person the switch is not
+   rendered, the rules never matched, and that is the version of the screen people actually
+   saw — a table scrolling in both directions with its notes column cut off at the edge. */
 @media(max-width:899px){
-  .salwho ~ .saltable-scroll .saltab{width:100%;table-layout:fixed;border-collapse:collapse}
-  .salwho ~ .saltable-scroll .salm,.salwho ~ .saltable-scroll .salm-h{width:74px}
-  .salwho ~ .saltable-scroll .salmccy{width:100%;min-width:0;padding-right:26px;background-position:right 7px center}
-  .salwho ~ .saltable-scroll .salf,.salwho ~ .saltable-scroll .salev{width:100%;min-width:0}
-  .salwho ~ .saltable-scroll .salxc,.salwho ~ .saltable-scroll .salx-h{width:34px}
+  /* No scroll inside a scroll. The box was capped at 60vh, so the page scrolled, and then the
+     table scrolled again inside it, slicing whichever row the cap landed on through the middle
+     of its glyphs. The page is the only thing that scrolls now. */
+  .saltable-scroll{max-height:none;overflow:visible}
+  .saltable-scroll .saltab{width:100%;table-layout:fixed;border-collapse:collapse}
+  .saltable-scroll .salm,.saltable-scroll .salm-h{width:74px}
+  .saltable-scroll .salmccy{width:100%;min-width:0;padding-right:26px;background-position:right 7px center}
+  .saltable-scroll .salf,.saltable-scroll .salev{width:100%;min-width:0}
+  .saltable-scroll .salxc,.saltable-scroll .salx-h{width:34px}
+  /* A month's note and its amount share one cell. Side by side in a 90px column they printed
+     over each other — "€5,41€3,6039.84" — so the note goes on its own line above the figure,
+     right-aligned with it, and truncates instead of running past the column. A figure has no
+     spaces to break at, so letting the cell wrap costs the amount nothing. */
+  /* white-space:normal is what lets the block-level note sit above the figure. On its own it
+     also hands the figure to the body's overflow-wrap:break-word, which broke amounts between
+     their own digits — "€24,74 / 0". A figure is one word; it may overflow, it may not break. */
+  .saltab td.num{white-space:normal;overflow-wrap:normal;word-break:normal}
+  .saltab td.num,.saltab tr.saly td{font-size:12.5px}
+  .saltable-scroll .salm,.saltable-scroll .salm-h{width:62px}
+  .saltab td.num .evtag{display:block;width:max-content;max-width:100%;margin:0 0 4px auto;overflow:hidden;text-overflow:ellipsis}
   /* The 2px rule that tells one person from the next has nobody to separate here. Matched at
      the same strength as the rule that sets it, or it does not win. */
-  .salwho ~ .saltable-scroll .saltab .salgsep{border-left:0}
+  .saltable-scroll .saltab .salgsep{border-left:0}
   /* The delete button plus the cell padding around it came to 42px in a 34px column, so every
      row pushed the table two pixels past its box and the whole thing scrolled sideways. */
-  .salwho ~ .saltable-scroll .saltab td.salxc{padding-left:2px;padding-right:2px}
-  .salwho ~ .saltable-scroll .salxc .delbtn{width:28px;height:28px}
+  .saltable-scroll .saltab td.salxc{padding-left:2px;padding-right:2px}
+  .saltable-scroll .salxc .delbtn{width:28px;height:28px}
 }
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .seg-btn{padding:8px 14px;min-height:38px;border:0;background:var(--panel-2);color:var(--dim);cursor:pointer;font-size:13px;font-weight:600}
