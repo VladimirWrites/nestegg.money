@@ -380,8 +380,9 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .foot{max-width:var(--maxw);margin:22px auto 0;padding:0 var(--edge-r) calc(88px + var(--edge-b)) var(--edge-l);
   color:var(--dim);font-size:12.5px;line-height:1.6}
 /* The paragraph used to start 16px left of every card and heading above it, and run the full
-   width of a 1440px window. It belongs on the same grid as the content, at a readable measure. */
-.foot>p{max-width:68ch}
+   width of a 1440px window. It belongs on the same grid as the content, at a readable measure.
+   Written as `.foot>p` first, which matched nothing: the blurb is a <span>. */
+.foot>p,.foot>span{display:block;max-width:68ch}
 @media(min-width:900px){.foot{padding-left:32px;padding-right:32px;font-size:13px}}
 .foot a{color:var(--signal);text-decoration:underline}
 .footlinks{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px 10px}
@@ -722,11 +723,16 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .demoswitch{margin-top:4px}
 
 /* ---- Budget tab ---- */
-.bud-card{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 16px;margin:8px 0 18px}
-.bud-card .k{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
-.bud-card .v{font-size:clamp(30px,8vw,44px);font-weight:700;color:var(--accent);font-family:var(--mono);line-height:1}
+/* Budget's headline is the same block Net worth and Salary use: a micro-label, the figure,
+   one line under it, all ranged left. It used to be a third shape — centred inside its own
+   card, in green at about two-thirds the size — so the three tabs opened three different ways.
+   Green is money that grew, and what is left over at the end of a month is exactly that, so
+   the figure keeps it; overspending turns it red. */
+.bud-card{padding:22px 0 24px;border-bottom:1px solid var(--line)}
+.bud-card .k{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);display:block}
+.bud-card .v{display:block;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(38px,9vw,68px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:8px;color:var(--accent)}
 .bud-card.neg .v{color:var(--danger)}
-.bud-card .sub{font-size:12px;color:var(--dim)}
+.bud-card .sub{display:block;margin-top:8px;font-size:14px;color:var(--dim)}
 .bud-card .sub b{color:var(--text);font-weight:600}
 .bud-rows{margin:0 auto}
 .bud-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
@@ -735,14 +741,15 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .bud-lbl{color:var(--text);font-size:14px}
 .bud-lbl .hint{display:block;color:var(--dim);font-size:11px;font-weight:400;margin-top:2px}
 .bud-val{font-family:var(--mono);font-size:15px;color:var(--text);white-space:nowrap}
-.bud-input{width:140px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px}
+.bud-input{min-width:16ch;width:140px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px}
 .bud-input:focus{outline:none;border-color:var(--signal)}
 .bud-exp-head{margin:24px 0 10px;font-size:18px;font-weight:600;letter-spacing:-.01em;text-transform:none;color:var(--text)}
 @media(min-width:900px){.bud-exp-head{font-size:21px}}
 /* The explanation is prose under the title, not more of the title. */
 .bud-exp-head .hint{display:block;margin-top:4px;font-size:13px;font-weight:400;letter-spacing:0;color:var(--dim);max-width:68ch}
 .bud-exp{display:grid;grid-template-columns:1fr 150px 130px 36px;gap:10px;align-items:center;padding:5px 0}
-.bud-exp input{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0}
+.bud-exp input{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-family:var(--sans);font-size:14px;min-width:0}
+.bud-exp input.bud-exp-amt{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
 .bud-exp .bud-exp-amt{text-align:right;font-family:var(--mono)}
 .bud-exp .bud-exp-cat{color:var(--dim)}
 #budgetTip .tippct{color:var(--dim);font-weight:400}
