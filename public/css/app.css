@@ -178,6 +178,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .chiplegend span{display:flex;align-items:center;gap:6px}.chip{width:10px;height:10px;border-radius:1px}
 
 .charts{display:grid;grid-template-columns:240px 1fr;gap:32px;align-items:center}
+@media(min-width:900px){.bud-chart-main{display:grid;grid-template-columns:minmax(240px,1fr) minmax(320px,1fr);gap:40px;align-items:center}}
 @media(max-width:680px){.charts{grid-template-columns:1fr;gap:22px}}
 .legend{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-card)}
 /* Proportions rather than content widths, so every row in a panel divides at the same two
@@ -293,10 +294,14 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .fcrow .fld input{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
 .fcrow .fld input:focus,.fcrow .fld select:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
 .fcrow .fld select{appearance:none;-webkit-appearance:none;background-image:var(--chevron);background-repeat:no-repeat;background-position:right 11px center;background-size:15px;padding-right:34px;cursor:pointer}
-.fcrow .pct{position:relative;display:flex;align-items:center}
-.fcrow .pct input{flex:1;width:100%;padding-right:24px;-moz-appearance:textfield}
+.fcrow .pct{display:flex;align-items:center;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding-right:11px;min-height:44px;overflow:hidden}
+.fcrow .pct:focus-within{border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
+.fcrow .pct input{flex:1 1 auto;min-width:0;width:auto;border:0;background:transparent;
+  box-shadow:none;-moz-appearance:textfield}
+.fcrow .pct input:focus{outline:none;border:0;box-shadow:none}
 .fcrow .pct input::-webkit-outer-spin-button,.fcrow .pct input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.fcrow .pct i{position:absolute;right:10px;color:var(--dim);font-style:normal;font-size:12px;pointer-events:none}
+.fcrow .pct i{position:static;flex:none;margin-left:3px;color:var(--dim);font-style:normal;font-size:12px;pointer-events:none}
 .fcstats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
 .fcstat{flex:1 1 150px;min-width:140px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-lg);padding:10px 12px;display:flex;flex-direction:column;gap:3px}
 .fcstat .k{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
@@ -733,8 +738,13 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    the figure keeps it; overspending turns it red. */
 .bud-card{padding:22px 0 24px;border-bottom:1px solid var(--line)}
 .bud-card .k{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);display:block}
-.bud-card .v{display:block;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(38px,9vw,68px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:8px;color:var(--accent)}
+/* Amber, like the other two heroes. The rule is that amber marks the headline figure you
+   came to the screen for, and on this screen that is what is left at the end of the month —
+   green belongs to the savings rate underneath it, which is the thing that grew. Overspending
+   still turns the figure red. */
+.bud-card .v{display:block;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(38px,9vw,68px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:8px;color:var(--signal)}
 .bud-card.neg .v{color:var(--danger)}
+.bud-card .sub b{color:var(--accent)}
 .bud-card .sub{display:block;margin-top:8px;font-size:14px;color:var(--dim)}
 .bud-card .sub b{color:var(--text);font-weight:600}
 .bud-rows{margin:0 auto}
@@ -1098,11 +1108,9 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .fcrow .fld>.cap{flex:1 1 auto;min-width:0;white-space:normal;overflow:visible;text-overflow:clip;color:var(--text)}
   .fcrow .fld input,.fcrow .fld select{flex:0 0 11.5ch;width:auto;min-height:40px;padding:8px 10px}
   .fcrow .fld select{flex:0 0 auto;max-width:52%}
-  .fcrow .pct{flex:0 0 12.5ch}
-  /* The "%" is positioned inside this box, so the field has to keep room for it. Setting a
-     flat padding on every field in this layout took that room away, and a right-aligned
-     value printed straight under the suffix — "2.5" with the 5 beneath the %. */
-  .fcrow .pct input{flex:1 1 auto;width:100%;padding-right:24px}
+  /* The suffix shell is a field like the others, so it is the same height as the others. */
+  .fcrow .pct{flex:0 0 12.5ch;min-height:40px}
+  .fcrow .pct input{flex:1 1 auto;width:100%;padding-right:4px}
   /* A long option ("Germany (Rentenpunkte)") shortens with an ellipsis instead of being cut
      mid-word by the chevron. German runs longer again. */
   .fcrow .fld select{text-overflow:ellipsis}
