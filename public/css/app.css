@@ -1053,7 +1053,18 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
  * the distance a laptop is actually read from.
  */
 @media(min-width:900px){
-  .legrow{font-size:15px}
+  /* A laptop is not a big phone. The step-up above raised the figures; this raises the things
+     around them, so a 1440px window is not the phone's rhythm with more air around it:
+     roomier rows, a larger small-button, and section labels that are legible rather than
+     merely present. */
+  .set-row{padding:18px 20px}
+  .set-group+.set-group{margin-top:18px}
+  .btn-sm{min-height:38px;font-size:14px;padding:8px 14px}
+  .sect h2,.t-label{font-size:12px}
+  .bud-row{padding:14px 16px}
+  .bud-exp.ro{min-height:56px}
+  .yhead{padding:16px 20px;min-height:60px}
+  .legrow{font-size:15px;padding:14px 20px;min-height:56px}
   .legrow .pct{font-size:13px}
   .ytot,.yhead .yr{font-size:15px}
   .fcstat{padding:14px 16px}
