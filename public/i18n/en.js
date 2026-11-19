@@ -511,6 +511,7 @@ export default {
     errFoot: "nestegg — private net-worth tracker",
   },
   budget: {
+    done: "Done",
     leftOver: "Left over",
     uncategorized: "Uncategorized",
     breakdown: "Budget breakdown",

@@ -511,6 +511,7 @@ export default {
     errFoot: "nestegg — privater Vermögens-Tracker",
   },
   budget: {
+    done: "Fertig",
     leftOver: "Übrig",
     uncategorized: "Ohne Kategorie",
     breakdown: "Budget-Aufschlüsselung",

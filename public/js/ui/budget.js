@@ -20,6 +20,17 @@ let _segs = [];
 let RO = false;
 export const setBudgetReadOnly = (v) => { RO = !!v; };
 
+/* Budget used to be an edit form that happened to show your figures: every outgoing was a
+ * name box, a category select and an amount box, permanently open, about 2,000px of controls
+ * on a phone. Reading what you spend and changing what you spend are different jobs, and the
+ * first one is why people open this screen.
+ *
+ * The read rows already existed for shared snapshots (RO). This puts the same rows in front
+ * of the owner too, behind an Edit button — nothing is hidden, the figures are all still
+ * there, they are just not all wearing form controls. */
+let EDITING = false;
+const reading = () => RO || !EDITING;
+
 // A read-only outgoing row: just the name and the formatted amount (the category is already
 // conveyed by the section the row sits in).
 function roItemRow(name, amount) {
@@ -153,7 +164,7 @@ function refreshTotals() {
 }
 
 function expenseRow(e) {
-  if (RO) return roItemRow(e.name || t("budget.expense"), +e.amount || 0);
+  if (reading()) return roItemRow(e.name || t("budget.expense"), +e.amount || 0);
   return `<div class="bud-exp" data-id="${e.id}">
     <input class="bud-exp-name" data-id="${e.id}" type="text" value="${esc(e.name || "")}" placeholder="${t("budget.expense")}" aria-label="${t("budget.expenseName")}">
     ${catSelect("bud-exp-cat", `data-id="${e.id}"`, e.group)}
@@ -164,7 +175,7 @@ function expenseRow(e) {
 
 // A loan row: the loan name (from your assets), a category picker, and its monthly payment (fixed).
 function loanRow(l, loanCats) {
-  if (RO) return roItemRow(l.name, l.monthly);
+  if (reading()) return roItemRow(l.name, l.monthly);
   return `<div class="bud-exp bud-loan" data-lid="${l.id}">
     <span class="bud-loan-name" title="${t("budget.loanTitle")}">${esc(l.name)}</span>
     ${catSelect("bud-loan-cat", `data-lid="${l.id}"`, loanCats[l.id])}
@@ -196,7 +207,7 @@ function itemsHTML(s, b) {
     const sub = ex.reduce((a, e) => a + (+e.amount || 0), 0) + lo.reduce((a, l) => a + l.monthly, 0);
     const cards = lo.map(loanRowH).join("") + ex.map(expRow).join("");
     if (RO && !cards) return;   // a category with nothing in it is editor scaffolding, not data
-    html += RO ? roGroupSection(g, catColor(g, s.categories), money(sub), cards)
+    html += reading() ? roGroupSection(g, catColor(g, s.categories), money(sub), cards)
                : groupSectionHTML(g, catColor(g, s.categories), money(sub), cards);
   });
   return html;
@@ -236,25 +247,32 @@ export function renderBudget() {
 
     <div class="bud-rows">
       <div class="bud-row"><span class="bud-lbl">${t("budget.income")} <span class="hint">${t("budget.latestSalary", { amount: money(auto) })}</span></span><span class="bud-val" id="budIncome">${money(s.income)}</span></div>
-      ${RO ? "" : `<div class="bud-row indent">
+      ${reading() ? "" : `<div class="bud-row indent">
         <span class="bud-lbl">${t("budget.overrideIncome")}</span>
         <span class="bud-ovr">
           <button id="budUseSalary" class="bud-reset${b.incomeOverride == null ? " hide" : ""}" type="button" title="${t("budget.useSalaryAgain")}">${t("budget.useSalary")}</button>
           <input id="budOverride" class="bud-input" type="number" inputmode="decimal" value="${b.incomeOverride == null ? "" : b.incomeOverride}" placeholder="${t("budget.autoPh", { amount: money(auto) })}" aria-label="${t("budget.overrideIncome")}">
         </span>
       </div>`}
-      <div class="bud-exp-head">${t("budget.outgoings")} <span class="hint">${t("budget.outgoingsHint")}</span></div>
+      <div class="bud-exp-head">${t("budget.outgoings")}${RO ? "" : `<button type="button" class="btn btn-sm bud-editbtn" id="budEdit">${EDITING ? t("budget.done") : t("common.edit")}</button>`} <span class="hint">${t("budget.outgoingsHint")}</span></div>
       <div id="budItems">${itemsHTML(s, b)}</div>
       <div class="bud-row total"><span class="bud-lbl">${t("budget.totalOutgoings")}</span><span class="bud-val" id="budOutTotal">${money(s.fixed + s.expenses)}</span></div>
     </div>
 
-    ${RO ? "" : `<div class="controls"><button class="btn btn-sm" id="budAddExp">${t("budget.addExpense")}</button><button class="btn btn-sm" id="budAddCat">${t("budget.addCategory")}</button></div>`}
+    ${reading() ? "" : `<div class="controls"><button class="btn btn-sm" id="budAddExp">${t("budget.addExpense")}</button><button class="btn btn-sm" id="budAddCat">${t("budget.addCategory")}</button></div>`}
   `;
 
   const dl = $("dlBudget"); if (dl) dl.onclick = downloadBudgetDonut;
   drawBudgetDonut(s, true);   // animate on tab entry
   wireBudgetTip();
   if (RO) return;             // read-only viewer: nothing below exists to wire
+
+  /* The Edit switch is wired before anything else and guarded on its own: the rest of this
+     function reaches for controls that exist only while editing, so anything that throws down
+     there would take the one button that gets you out of read mode with it. */
+  const eb = $("budEdit");
+  if (eb) eb.onclick = () => { EDITING = !EDITING; renderBudget(); };
+  if (reading()) return;
 
   // Override income: live, no rebuild (keeps focus while typing). Empty field = use salary.
   $("budOverride").oninput = (ev) => {

@@ -533,9 +533,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .salname:focus{outline:none;border-bottom:1px solid var(--signal)}
 .salccy{font:inherit;font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 6px;color:var(--text)}
 .saltab th.salm-h,.saltab td.salm{position:sticky;left:0;background:var(--panel);z-index:1;border-right:1px solid var(--line)}
+@media(max-width:899px){.saltab th.salm-h,.saltab td.salm{position:static;background:transparent}}
 .saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel-2)}
 .saltab td.salm{color:var(--dim);font-size:12px}
-.saltab tr.saly td{background:var(--panel-2);color:var(--signal);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;text-align:right;font-variant-numeric:tabular-nums}
+.saltab tr.saly td{background:var(--panel-2);color:var(--text);font-weight:600;font-size:12px;letter-spacing:.02em;text-transform:none;text-align:right;font-variant-numeric:tabular-nums}
 .saltab tr.saly td:first-child{text-align:left;position:sticky;left:0;z-index:1;border-right:1px solid var(--line)}
 .saltab .salgsep{border-left:2px solid var(--line)}
 .saltab td.salm{min-width:90px}
@@ -559,7 +560,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .saltab.rotab th.salm-h,.saltab.rotab td.salm{text-align:left}
 .saltab.rotab thead th{position:sticky;top:0;background:var(--panel-2);color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.04em}
 .saltab.rotab tbody td{font-size:13.5px;font-variant-numeric:tabular-nums}
-.evtag{display:inline-block;margin-right:8px;font-size:9.5px;letter-spacing:.03em;color:var(--signal);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px 8px;vertical-align:middle}
+.evtag{display:inline-block;margin-right:8px;font-size:9.5px;letter-spacing:.03em;color:var(--dim);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px 8px;vertical-align:middle}
 .salimport{margin-top:16px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel-2);padding:0 13px}
 .salimport summary{cursor:pointer;padding:12px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal)}
 .salimport[open]{padding-bottom:13px}
@@ -953,7 +954,10 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .saltab td.num{white-space:normal;overflow-wrap:normal;word-break:normal}
   .saltab td.num,.saltab tr.saly td{font-size:12.5px}
   .saltable-scroll .salm,.saltable-scroll .salm-h{width:62px}
-  .saltab td.num .evtag{display:block;width:max-content;max-width:100%;margin:0 0 4px auto;overflow:hidden;text-overflow:ellipsis}
+  .saltab td.num .evtag{display:block;width:max-content;max-width:100%;margin:0 0 3px auto;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:1px 6px;line-height:1.5}
+  /* The month ran straight into the figure beside it with no gutter. */
+  .saltable-scroll .salm,.saltable-scroll .salm-h{width:70px;padding-right:10px}
   /* The 2px rule that tells one person from the next has nobody to separate here. Matched at
      the same strength as the rule that sets it, or it does not win. */
   .saltable-scroll .saltab .salgsep{border-left:0}
@@ -1010,3 +1014,13 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   /* Prose stops at a comfortable measure instead of running the full width of the column. */
   .fchint,.subt,.bud-note,.emptyhint,.exhint{max-width:68ch}
 }
+
+/* The Edit / Done switch in the Outgoings header. It sits at the end of the title line, where
+   a panel's controls live on every other screen, and the explanation below it stays prose. */
+.bud-exp-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bud-exp-head .bud-editbtn{margin-left:auto;order:2}
+.bud-exp-head .hint{order:3;flex:1 0 100%}
+/* A read row is a line in a list, not a form row: name on the left, amount right-aligned in
+   the same mono column every other amount in the app uses. */
+.bud-exp.ro{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:0 2px}
+.bud-exp.ro .bud-loan-amt{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
