@@ -51,7 +51,7 @@ export default {
     savedToManager: "Im Passwort-Manager gespeichert.",
   },
   banner: {
-    demo: "Demo — Beispieldaten, nichts wird gespeichert.",
+    demo: "Demo — nichts wird gespeichert.",
     demoCreate: "Konto erstellen",
     demoExit: "Verlassen",
     share: "Schreibgeschützter geteilter Schnappschuss — eine Momentaufnahme. Hier kann nichts bearbeitet werden.",

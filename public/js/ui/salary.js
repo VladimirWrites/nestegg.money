@@ -63,9 +63,9 @@ export function drawSalaryChart() {
   const X = (i) => padL + ((i - minI) / span) * plotW, YL = (v) => padT + plotH - (v / nmL) * plotH, YR = (v) => padT + plotH - (v / nmR) * plotH, sym = ccySym();
   // Left axis (per-person monthly) reuses the shared grid; the right axis (combined yearly) is overlaid.
   let s = yGrid(W, padL, padR, padT, plotH, nmL, sym);
-  for (let g = 0; g <= 5; g++) { const yy = padT + plotH - (g / 5) * plotH; s += `<text x="${W - padR + 8}" y="${yy + 3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${shortK((nmR * g) / 5)}</text>`; }
+  for (let g = 0; g <= 5; g++) { const yy = padT + plotH - (g / 5) * plotH; s += `<text x="${W - padR + 8}" y="${yy + 3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${shortK((nmR * g) / 5)}</text>`; }
   const minYr = Math.floor(minI / 12), maxYr = Math.floor(maxI / 12), stepYr = Math.max(1, Math.ceil((maxYr - minYr + 1) / 14));
-  for (let yr = minYr; yr <= maxYr; yr += stepYr) { const xc = X(yr * 12); if (xc >= padL - 1 && xc <= W - padR + 1) s += `<text x="${xc}" y="${H - 9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${C.axis}">${yr}</text>`; }
+  for (let yr = minYr; yr <= maxYr; yr += stepYr) { const xc = X(yr * 12); if (xc >= padL - 1 && xc <= W - padR + 1) s += `<text x="${xc}" y="${H - 9}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${yr}</text>`; }
   // monthly per-person lines (left axis) + event dots
   people.forEach((p, pi) => {
     const ms = salMonths(p); if (!ms.length) return; const col = salColor(pi);

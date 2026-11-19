@@ -12,9 +12,9 @@
 /* The headline is the page's voice, not a control. Amber is kept for the two things on this
    screen you can act on — the account number and the primary button — so they lead. */
 .gatebox h1{font-size:clamp(34px,8vw,52px);line-height:.98;letter-spacing:-.018em;font-weight:800;margin:8px 0 4px;color:var(--text)}
-.gatebox .sub{color:var(--dim);margin-bottom:26px;font-size:13px}
+.gatebox .sub{color:var(--dim);margin-bottom:26px;font-size:15px}
 .gatebox .panel{border-top:1px solid var(--line);padding-top:20px}
-.gatebox p{font-size:13px;color:var(--dim);margin:10px 0}
+.gatebox p{font-size:15px;color:var(--dim);margin:12px 0;max-width:68ch}
 /* The gate's copy of the number, in the same wrapping box the profile uses. It breaks at its
    own dashes rather than shrinking: the old box shrank the type to an 11px floor and, at
    320px, still cut off the last group — on the one screen whose whole job is getting this
@@ -179,11 +179,11 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 .charts{display:grid;grid-template-columns:240px 1fr;gap:32px;align-items:center}
 @media(max-width:680px){.charts{grid-template-columns:1fr;gap:22px}}
-.legend{display:flex;flex-direction:column;gap:1px}
+.legend{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-card)}
 /* Proportions rather than content widths, so every row in a panel divides at the same two
    places: the amounts form a column and the percentages form a column. A long name truncates
    instead of shoving them around. */
-.legrow{display:grid;grid-template-columns:14px minmax(0,1fr) 44px 108px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+.legrow{display:grid;grid-template-columns:14px minmax(0,1fr) 44px 108px;gap:10px;align-items:center;padding:12px 16px;min-height:52px;border-bottom:1px solid var(--line-soft);font-size:14px}
 .legrow:last-child{border-bottom:none}
 .legrow>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .swatch{width:11px;height:11px;border-radius:2px}
@@ -197,7 +197,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .ycard+.ycard{border-top:1px solid var(--line-soft)}
 .yhead{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;min-height:56px}
 .yhead:hover{background:var(--panel-2)}
-.yhead .yr{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;min-width:46px;color:var(--signal)}
+.yhead .yr{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;min-width:46px;color:var(--text)}
 /* The track holds the column open at a constant width; .yfill inside it is the year's size.
    A recessed track rather than a bar floating on the card, so a short year still reads as a
    proportion of something rather than as a stub. */
@@ -300,7 +300,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .fcstat{flex:1 1 150px;min-width:140px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-lg);padding:10px 12px;display:flex;flex-direction:column;gap:3px}
 .fcstat .k{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
 .fcstat .v{font-size:18px;font-variant-numeric:tabular-nums}
-.fcstat .v.ok{color:var(--accent)}
+/* Green is money that grew. These cards also carry dates and statuses — "Apr 2041",
+   "~2043 · in 17 yrs" — which are facts, not gains, and in green they shouted over the
+   figure they belonged to. */
+.fcstat .v.ok{color:var(--text)}
 .fcstat .v.bad{color:var(--danger)}
 .fcstat .v.dim{color:var(--dim);font-size:13px}
 .fcstat .sub{font-size:10.5px;color:var(--dim)}
@@ -365,7 +368,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .grp{border:1px solid var(--line);border-radius:var(--r-lg);margin-top:6px;background:var(--panel-2)}
 .grphead{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--line)}
 .grphead .dot{width:10px;height:10px;border-radius:1px;flex:none}
-.grpname{flex:1;min-width:80px;font:inherit;font-size:14px;font-weight:600;letter-spacing:.04em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--signal);padding:3px 0}
+.grpname{flex:1;min-width:80px;font:inherit;font-size:14px;font-weight:600;letter-spacing:.04em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);padding:3px 0}
 .grpname:focus{outline:none;border-bottom:1px solid var(--signal)}
 .grpsub{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:var(--text);white-space:nowrap}
 .grpdel{background:none;border:none;color:var(--dim);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
@@ -376,6 +379,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* Last thing in the column, so it carries the room the fixed tab bar needs. */
 .foot{max-width:var(--maxw);margin:22px auto 0;padding:0 var(--edge-r) calc(88px + var(--edge-b)) var(--edge-l);
   color:var(--dim);font-size:12.5px;line-height:1.6}
+/* The paragraph used to start 16px left of every card and heading above it, and run the full
+   width of a 1440px window. It belongs on the same grid as the content, at a readable measure. */
+.foot>p{max-width:68ch}
+@media(min-width:900px){.foot{padding-left:32px;padding-right:32px;font-size:13px}}
 .foot a{color:var(--signal);text-decoration:underline}
 .footlinks{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px 10px}
 /* standalone legal pages (privacy.html, terms.html) */
@@ -710,7 +717,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .demobar .demobtns{flex:none}
 .demobar .demobtns{display:flex;gap:8px;align-items:center}
 .demobar .btn{min-height:32px;padding:6px 12px;font-size:12.5px}
-.demolink{background:none;border:none;color:var(--dim);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
+.demolink{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;background:none;border:none;color:var(--dim);cursor:pointer;font:inherit;font-size:13px;text-decoration:underline}
 .demoswitch{margin-top:4px}
 
 /* ---- Budget tab ---- */
@@ -729,7 +736,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .bud-val{font-family:var(--mono);font-size:15px;color:var(--text);white-space:nowrap}
 .bud-input{width:140px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px}
 .bud-input:focus{outline:none;border-color:var(--signal)}
-.bud-exp-head{margin:18px 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.bud-exp-head{margin:24px 0 10px;font-size:18px;font-weight:600;letter-spacing:-.01em;text-transform:none;color:var(--text)}
+@media(min-width:900px){.bud-exp-head{font-size:21px}}
+/* The explanation is prose under the title, not more of the title. */
+.bud-exp-head .hint{display:block;margin-top:4px;font-size:13px;font-weight:400;letter-spacing:0;color:var(--dim);max-width:68ch}
 .bud-exp{display:grid;grid-template-columns:1fr 150px 130px 36px;gap:10px;align-items:center;padding:5px 0}
 .bud-exp input{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0}
 .bud-exp .bud-exp-amt{text-align:right;font-family:var(--mono)}
@@ -763,7 +773,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .bud-exp select:focus{outline:none;border-color:var(--signal)}
 /* loan row reuses the .bud-exp grid so its category and amount line up with
    the expense rows; the 4th (delete) column is left empty. Spans match the inputs' font + height. */
-.bud-loan-name{color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bud-loan-name{color:var(--text);font-family:var(--sans);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bud-loan-amt{text-align:right;font-family:var(--mono);font-size:14px;color:var(--text);padding:8px 0}
 @media(max-width:520px){.bud-loan{grid-template-columns:1fr 110px}.bud-loan-amt{grid-column:1 / -1;text-align:right;padding-top:0}}
 
@@ -863,8 +873,9 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .set-row{padding:15px;border-top:1px solid var(--line-soft);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .set-row:first-child{border-top:0}
 .set-text{flex:1;min-width:190px}
-.set-name{font-size:14.5px;font-weight:600}
-.set-hint{font-size:12.5px;color:var(--dim);margin-top:3px}
+.set-name{font-size:15px;font-weight:600}
+.set-hint{font-size:13px;color:var(--dim);margin-top:3px}
+@media(min-width:900px){.set-name{font-size:17px}.set-hint{font-size:14px}.set-hint,.set-text>p{max-width:68ch}}
 /* A row whose sentence is long enough that a control centred against it looks adrift. */
 .set-row.top{align-items:flex-start}
 .set-ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}

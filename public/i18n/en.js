@@ -51,7 +51,7 @@ export default {
     savedToManager: "Saved to your password manager.",
   },
   banner: {
-    demo: "Demo — sample data, nothing is saved.",
+    demo: "Demo — nothing is saved.",
     demoCreate: "Create an account",
     demoExit: "Leave",
     share: "Read-only shared snapshot — a point-in-time copy. Nothing here can be edited.",
