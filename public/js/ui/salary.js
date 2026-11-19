@@ -86,11 +86,9 @@ export function drawSalaryChart() {
   s += `<polyline class="line" pathLength="1" points="${cpts.map((p) => p.x.toFixed(1) + "," + p.yy.toFixed(1)).join(" ")}" fill="none" stroke="${SAL_COMB}" stroke-width="2.4"/>`;
   cpts.forEach((p) => {
     s += `<circle class="saldot" cx="${p.x.toFixed(1)}" cy="${p.yy.toFixed(1)}" r="3.5" fill="${SAL_COMB}" data-lbl="${esc(p.y0 + " · " + t("salary.combined") + " · " + sym + Math.round(p.v).toLocaleString())}"></circle>`;
-    /* The year beside each combined-salary point is written on the line it belongs to. With
-       the room a phone gives the chart, "2014" through "2025" land directly on top of that
-       line and on each other, so the labels cost more than they say. The x-axis already
-       carries the years, and tapping a point still names it. */
-    if (!salNarrow()) s += `<text x="${p.x.toFixed(1)}" y="${(p.yy - 8).toFixed(1)}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${SAL_COMB}">${p.y0}</text>`;
+    /* No year written beside the point. The label sits on the line it belongs to, so at any
+       width some of them print through it — it was only more obvious on a phone. The x-axis
+       carries the years already, and tapping a point still names it. */
   });
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = s;
   svg.setAttribute("role", "img");

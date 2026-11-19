@@ -308,7 +308,9 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .fcstats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
 .fcstat{flex:1 1 150px;min-width:140px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-lg);padding:10px 12px;display:flex;flex-direction:column;gap:3px}
 .fcstat .k{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
-.fcstat .v{font-size:18px;font-variant-numeric:tabular-nums}
+/* A figure is mono and tabular wherever it appears. These tiles were the one place money was
+   set in the prose face, so a column of them did not line up with anything else on the page. */
+.fcstat .v{font-size:18px;font-family:var(--mono);font-variant-numeric:tabular-nums}
 /* Green is money that grew. These cards also carry dates and statuses — "Apr 2041",
    "~2043 · in 17 yrs" — which are facts, not gains, and in green they shouted over the
    figure they belonged to. */
@@ -529,7 +531,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .chartwrap{position:relative;display:inline-block}
 .saldot{cursor:pointer}
 .salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--signal);border-radius:var(--r-sm);padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
-.saltable-scroll{overflow:visible;border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:10px}
+.saltable-scroll{overflow:clip;border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:10px}
 .saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
 .saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel-2);z-index:2}
@@ -542,13 +544,13 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .salname::placeholder{color:var(--dim);font-weight:400}
 .salname:focus{outline:none;border-bottom:1px solid var(--signal)}
 .salccy{font:inherit;font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 6px;color:var(--text)}
-.saltab th.salm-h,.saltab td.salm{position:sticky;left:0;background:var(--panel);z-index:1;border-right:1px solid var(--line)}
-@media(max-width:899px){.saltab th.salm-h,.saltab td.salm{position:static;background:transparent}}
+.saltab th.salm-h,.saltab td.salm{background:transparent}
 .saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel-2)}
 .saltab td.salm{color:var(--dim);font-size:12px}
 .saltab tr.saly td{background:var(--panel-2);color:var(--text);font-weight:600;font-size:12px;letter-spacing:.02em;text-transform:none;text-align:right;font-variant-numeric:tabular-nums}
 .saltab tr.saly td:first-child{text-align:left;position:sticky;left:0;z-index:1;border-right:1px solid var(--line)}
-.saltab .salgsep{border-left:2px solid var(--line)}
+.saltab .salgsep{border-left:1px solid var(--line-soft)}
+.saltab tr>.salgsep:nth-child(2){border-left:0}
 .saltab td.salm{min-width:90px}
 .saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--text)}
 .saltab td .salev{width:100%;min-width:90px;font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--dim)}
@@ -753,7 +755,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .bud-rows{margin:0 auto}
 .bud-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
 .bud-row.indent{padding-left:14px}
-.bud-row.total{border-bottom:none;border-top:1px solid var(--line);font-weight:600}
+.bud-row.total{border-bottom:none;border-top:1px solid var(--line);font-weight:600;margin-top:16px}
 .bud-lbl{color:var(--text);font-size:14px}
 .bud-lbl .hint{display:block;color:var(--dim);font-size:11px;font-weight:400;margin-top:2px}
 .bud-val{font-family:var(--mono);font-size:15px;color:var(--text);white-space:nowrap}
@@ -775,7 +777,8 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .bud-exp-del:hover{color:var(--danger);border-color:var(--danger)}
 .bud-chart{margin:10px 0 16px}
 .bud-chart-main{display:flex;flex-direction:column;align-items:center;gap:14px}
-.bud-chart .legend{width:100%;max-width:340px}
+.bud-chart .legend{width:100%}
+@media(min-width:620px){.bud-chart .legend{max-width:340px}}
 @media(min-width:640px){
   .bud-chart-main{flex-direction:row;justify-content:center;align-items:center;gap:30px}
   .bud-chart .legend{width:auto;min-width:230px;max-width:none}
@@ -1081,6 +1084,8 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 /* A read row is a line in a list, not a form row: name on the left, amount right-aligned in
    the same mono column every other amount in the app uses. */
 .bud-exp.ro{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:0 2px}
+.bud-exp.ro{min-height:52px}
+.bud-exp.ro .bud-loan-name,.bud-exp.ro .bud-loan-amt{padding:0;line-height:1.45}
 .bud-exp.ro .bud-loan-amt{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* ── salary: a year folds behind its own total ──
