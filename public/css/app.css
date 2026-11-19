@@ -967,8 +967,12 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .saltable-scroll .salm,.saltable-scroll .salm-h{width:62px}
   .saltab td.num .evtag{display:block;width:max-content;max-width:100%;margin:0 0 3px auto;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:1px 6px;line-height:1.5}
-  /* The month ran straight into the figure beside it with no gutter. */
-  .saltable-scroll .salm,.saltable-scroll .salm-h{width:70px;padding-right:10px}
+  /* The month ran straight into the figure beside it. The cell is nowrap and the table is
+     fixed-layout, so a column too narrow for "Sept 2024" does not wrap or ellipse it — it
+     just prints it over the next column. 86px is what the longest label needs at this size,
+     plus a gutter the figures can be read against. */
+  .saltable-scroll .salm,.saltable-scroll .salm-h{width:86px;padding-right:12px;font-size:12px;white-space:nowrap}
+  .saltab td.num,.saltab .salh2 th,.saltab.rotab thead th:not(.salm-h){padding-left:12px}
   /* The 2px rule that tells one person from the next has nobody to separate here. Matched at
      the same strength as the rule that sets it, or it does not win. */
   .saltable-scroll .saltab .salgsep{border-left:0}
