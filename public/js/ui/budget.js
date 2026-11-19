@@ -218,12 +218,16 @@ export function renderBudget() {
         <span class="v" id="budLeftover">${money(s.leftover)}</span>
         <span class="sub">${t("budget.savingsRate")} <b id="budSavings">${s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%"}</b></span>
       </div>
+      <!-- The donut gets the same header every other panel has. Its download button used to
+           live inside the chart wrapper, which left it floating under the donut aligned to
+           nothing, while the identical button on every other section sits top-right beside a
+           title. There was no title here to sit beside; now there is. -->
+      <div class="sectitle">${t("budget.breakdown")}<span class="sectools"><button class="chartdl" id="dlBudget" title="${t("net.dlChart")}" aria-label="${t("net.dlChart")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
       <div class="bud-chart">
         <div class="bud-chart-main">
           <div class="bud-chartwrap">
             <svg id="budgetDonut" viewBox="0 0 240 240" width="240" height="240" aria-label="${t("budget.breakdown")}"></svg>
             <div id="budgetTip" class="salflag hide"></div>
-            <button class="chartdl" id="dlBudget" title="${t("net.dlChart")}" aria-label="${t("net.dlChart")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button>
           </div>
           <div class="legend" id="budgetLegend"></div>
         </div>
