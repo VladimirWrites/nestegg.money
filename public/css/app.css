@@ -1109,3 +1109,21 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .fcrow .fld select{flex:0 0 auto;max-width:52%}
   .fcrow .pct{flex:0 0 11.5ch}
   .fcrow .pct input{flex:1 1 auto;width:100%}
+
+/* The note a month carries, where the chip has shrunk to a dot.
+ * A dot's tooltip is a mouse affordance; on a touch screen it is nothing at all, so the dot
+ * is a button and pressing it writes the word under the amount. The row grows only while a
+ * reader has asked it to, which is the one time a ledger row may change height. */
+.saltab td.num .evnote{display:none}
+@media(max-width:559px){
+  .saltab td.num .evtag{cursor:pointer;appearance:none;-webkit-appearance:none}
+  /* A 7px dot is not a touch target. The hit area is grown around it without moving it. */
+  .saltab td.num .evtag::after{content:"";position:absolute;left:-9px;top:-13px;width:26px;height:34px}
+  .saltab td.num.is-note-open .evnote{display:block;font-size:10px;line-height:1.3;color:var(--dim);
+    margin-top:2px;white-space:normal;overflow-wrap:break-word}
+  .saltab td.num.is-note-open .evtag{background:var(--signal)}
+}
+@media(min-width:560px){
+  /* The word itself is on screen here, so the dot's button is just the chip. */
+  .saltab td.num .evtag{cursor:default;pointer-events:none}
+}
