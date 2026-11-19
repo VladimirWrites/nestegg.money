@@ -520,7 +520,8 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .chartwrap{position:relative;display:inline-block}
 .saldot{cursor:pointer}
 .salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--signal);border-radius:var(--r-sm);padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
-.saltable-scroll{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:10px}
+.saltable-scroll{overflow-x:auto;overflow-y:visible;border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:10px}
+@media(min-width:900px){.saltable-scroll{max-width:900px}}
 .saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
 .saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel-2);z-index:2}
@@ -559,7 +560,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* read-only salary table (Salary tab) */
 .saltab.rotab th,.saltab.rotab td{text-align:right;padding:8px 14px;white-space:nowrap}
 .saltab.rotab th.salm-h,.saltab.rotab td.salm{text-align:left}
-.saltab.rotab thead th{position:sticky;top:0;background:var(--panel-2);color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.04em}
+.saltab.rotab thead th{position:sticky;top:0;z-index:3;background:var(--panel-2);color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.04em;
+  box-shadow:0 1px 0 var(--line)}
+/* Below the topbar on a phone, which is the thing it would otherwise hide behind. */
+@media(max-width:899px){.saltab.rotab thead th{top:calc(60px + var(--edge-t))}}
 .saltab.rotab tbody td{font-size:13.5px;font-variant-numeric:tabular-nums}
 .evtag{display:inline-block;margin-right:8px;font-size:9.5px;letter-spacing:.03em;color:var(--dim);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px 8px;vertical-align:middle}
 .salimport{margin-top:16px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel-2);padding:0 13px}
