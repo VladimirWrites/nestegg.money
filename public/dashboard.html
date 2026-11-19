@@ -49,7 +49,10 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
 
 <div id="gate">
   <div class="gatebox">
-    <div class="kick" data-i18n="gate.kick">Personal Ledger</div><h1 data-i18n="gate.title">Net Worth</h1>
+    <!-- The door says which product it is. It used to open on the words "Net Worth", which are
+         also the name of the first tab, so nothing on the first screen a stranger sees ever
+         named nestegg. -->
+    <div class="gatebrand"><i class="brand-lamp"></i><span>nestegg</span></div><h1 data-i18n="gate.title">Net Worth</h1>
     <div class="sub" data-i18n="gate.sub">No email. No password. Just an account number.</div>
     <form class="panel" id="gateCreate" autocomplete="on">
       <p data-i18n="gate.createLede">Your account number is your only key. It identifies you and unlocks your data, which is encrypted in your browser before it ever leaves. Write it down somewhere safe.</p>

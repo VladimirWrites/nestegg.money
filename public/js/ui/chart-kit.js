@@ -43,7 +43,7 @@ export function yGrid(W, padL, padR, padT, plotH, nm, sym) {
     const val = (nm * i) / 5;
     const y = padT + plotH - (val / nm) * plotH;
     s += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${C.grid}" stroke-width="1"/>`;
-    s += `<text x="${padL - 8}" y="${y + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="${C.axis}">${sym}${shortK(val)}</text>`;
+    s += `<text x="${padL - 8}" y="${y + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${sym}${shortK(val)}</text>`;
   }
   return s;
 }

@@ -6,11 +6,15 @@
 :root[data-boot="app"] #gate{display:none}
 #gate{position:fixed;inset:0;background:var(--ink);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
 .gatebox{max-width:520px;width:100%}
-.gatebox .kick{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber)}
-.gatebox h1{font-size:clamp(34px,8vw,52px);line-height:.98;letter-spacing:-.01em;font-weight:700;margin:8px 0 4px;color:var(--amber)}
-.gatebox .sub{color:var(--muted);margin-bottom:26px;font-size:13px}
-.gatebox .panel{border-top:1px solid var(--line2);padding-top:20px}
-.gatebox p{font-size:13px;color:var(--muted);margin:10px 0}
+.gatebox .kick{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
+/* The wordmark, set exactly as the app's own brand lockup in the rail. */
+.gatebrand{display:flex;align-items:center;gap:9px;font-variation-settings:"wdth" 118;font-weight:800;letter-spacing:-.03em;font-size:19px;color:var(--text);margin-bottom:18px}
+/* The headline is the page's voice, not a control. Amber is kept for the two things on this
+   screen you can act on — the account number and the primary button — so they lead. */
+.gatebox h1{font-size:clamp(34px,8vw,52px);line-height:.98;letter-spacing:-.018em;font-weight:800;margin:8px 0 4px;color:var(--text)}
+.gatebox .sub{color:var(--dim);margin-bottom:26px;font-size:13px}
+.gatebox .panel{border-top:1px solid var(--line);padding-top:20px}
+.gatebox p{font-size:13px;color:var(--dim);margin:10px 0}
 /* The gate's copy of the number, in the same wrapping box the profile uses. It breaks at its
    own dashes rather than shrinking: the old box shrank the type to an 11px floor and, at
    320px, still cut off the last group — on the one screen whose whole job is getting this
@@ -22,14 +26,31 @@
 .acctnum .d{color:var(--accent)}   /* digits */
 .acctnum .a{color:var(--signal)}   /* letters */
 .acctnum .s{color:var(--dimmer)}   /* separators */
-.gatebtn{font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--amber);color:var(--on-amber);border:none;padding:14px 20px;cursor:pointer;border-radius:3px;min-height:46px;font-weight:600;font-family:var(--mono)}
-.gatebtn.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
-.gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--text);letter-spacing:.05em;font-family:var(--mono)}
-.gatein:focus{outline:none;border-color:var(--amber)}
-.gaterow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.gatesaved{font-size:12px;color:var(--green);margin:-6px 0 0}
-.warn{font-size:12px;color:var(--amber2);font-style:normal;margin-top:14px;border-left:2px solid var(--amber2);padding-left:12px}
-.switch{margin-top:24px;font-size:12px;color:var(--muted)}.switch a{color:var(--amber);cursor:pointer;text-decoration:underline}
+/* The same button the rest of the app uses. These were 12px mono small-caps at .1em, a
+   different control from every button behind the door. */
+.gatebtn{font-size:15px;letter-spacing:0;text-transform:none;background:var(--signal);color:var(--signal-ink);border:1px solid var(--signal);padding:13px 20px;cursor:pointer;border-radius:var(--r);min-height:48px;font-weight:600;font-family:var(--sans)}
+.gatebtn.ghost{background:var(--panel-2);color:var(--text);border:1px solid var(--line)}
+.gatebtn.ghost:hover{border-color:var(--dimmer)}
+.gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--text);letter-spacing:.05em;font-family:var(--mono)}
+.gatein:focus{outline:none;border-color:var(--signal)}
+/* One right edge. The three buttons used to size to their own labels and wrap where they
+   fell, so the row ended at three different places down the same 520px column: the two
+   secondary actions share a line and split it evenly, and the primary takes its own. */
+.gaterow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.gaterow .gatebtn.ghost{flex:1 1 140px}
+.gaterow .gatebtn:not(.ghost){flex:1 1 100%}
+/* The demo is how most people will want to look around first, so it is a control, not a
+   sentence with an underlined phrase buried in it. */
+/* Written as .switch.demoswitch so it outranks the generic `.switch a` link styling declared
+   further down, which would otherwise paint this underlined amber again. */
+.switch.demoswitch{margin-top:14px}
+.switch.demoswitch a{display:flex;align-items:center;justify-content:center;min-height:48px;padding:13px 20px;
+  border:1px solid var(--line);border-radius:var(--r);background:var(--panel-2);color:var(--text);
+  font-size:15px;font-weight:600;text-decoration:none;cursor:pointer}
+.switch.demoswitch a:hover{border-color:var(--dimmer)}
+.gatesaved{font-size:12px;color:var(--accent);margin:-6px 0 0}
+.warn{font-size:12px;color:var(--signal);font-style:normal;margin-top:14px;border-left:2px solid var(--signal);padding-left:12px}
+.switch{margin-top:24px;font-size:12px;color:var(--dim)}.switch a{color:var(--signal);cursor:pointer;text-decoration:underline}
 
 /* ---------- shell ----------
    One column on a phone with the navigation welded to the bottom edge; a fixed rail beside the
@@ -50,7 +71,7 @@
 
 .nav{position:fixed;bottom:0;left:0;right:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;
   padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + var(--edge-b)) max(6px,env(safe-area-inset-left,0px));
-  background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+  background:var(--chrome);border-top:1px solid var(--line)}
 .nav-brand{display:none}
 .nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:0;background:none;border-radius:var(--r);
   color:var(--dim);cursor:pointer;font-size:10.5px;font-variation-settings:"wdth" 92;font-weight:600;letter-spacing:.03em;
@@ -78,7 +99,7 @@
 /* ---------- the top edge ---------- */
 
 .topbar{position:sticky;top:0;z-index:20;padding:calc(10px + var(--edge-t)) 0 10px;
-  background:color-mix(in srgb,var(--ink) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  background:var(--chrome-page);border-bottom:1px solid var(--line)}
 .topbar-inner{display:flex;align-items:center;gap:12px;min-height:44px;max-width:var(--maxw);margin:0 auto;padding:0 var(--edge-r) 0 var(--edge-l)}
 .topbar-title{font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
@@ -111,15 +132,15 @@ header.masthead{display:none}
 
 .acctrow{display:flex;align-items:stretch;gap:8px}
 .acctrow .acctnum{flex:1;margin:14px 0;min-width:0}
-.eyebtn{flex:none;align-self:center;width:42px;height:46px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer}
-.eyebtn:hover{color:var(--amber);border-color:var(--amber)}
-.eyebtn.on{color:var(--amber)}
+.eyebtn{flex:none;align-self:center;width:42px;height:46px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--dim);cursor:pointer}
+.eyebtn:hover{color:var(--signal);border-color:var(--signal)}
+.eyebtn.on{color:var(--signal)}
 .eyebtn svg{width:18px;height:18px}
-.kicker{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--signal);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.kicker{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
 .titlerow{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:10px 0 6px}
 h1.title{font-size:clamp(28px,3.4vw,40px);color:var(--text)}
-.ccypick{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.ccypick select{font:inherit;font-size:13px;letter-spacing:0;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:6px 8px;color:var(--text)}
+.ccypick{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.ccypick select{font:inherit;font-size:13px;letter-spacing:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 8px;color:var(--text)}
 .subt{color:var(--dim);font-size:14px}
 
 .hero{padding:22px 0 24px;border-bottom:1px solid var(--line)}
@@ -132,7 +153,11 @@ h1.title{font-size:clamp(28px,3.4vw,40px);color:var(--text)}
 .stalepx{color:var(--dimmer)}
 
 section{padding:24px 0;border-bottom:1px solid var(--line)}
-.sectitle{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-bottom:14px;display:flex;align-items:center;gap:10px;min-height:32px}
+/* A panel's name is a heading, not signage. It used to be an 11px uppercase micro-label in
+   --dim, which put it *below* the field labels inside the panel it was naming — the hierarchy
+   ran backwards. Now it is the largest thing in its section after the figures. */
+.sectitle{font-weight:600;font-size:18px;letter-spacing:-.01em;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:10px;min-height:32px}
+@media(min-width:900px){.sectitle{font-size:21px}}
 /* The aside carries the sentence that explains the panel, so it reads as prose beside a label
    rather than as more signage. */
 .sectitle .tin{font-variation-settings:"wdth" 100;font-weight:400;letter-spacing:0;text-transform:none;font-size:13px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -149,7 +174,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .histscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 #fcChart,#rtChart{display:block;width:100%;height:auto}
 #histChart{display:block;height:auto}
-.chiplegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;margin-bottom:22px;font-size:11.5px;color:var(--muted)}
+.chiplegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;margin-bottom:22px;font-size:11.5px;color:var(--dim)}
 .chiplegend span{display:flex;align-items:center;gap:6px}.chip{width:10px;height:10px;border-radius:1px}
 
 .charts{display:grid;grid-template-columns:240px 1fr;gap:32px;align-items:center}
@@ -165,18 +190,26 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .legrow .pct{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--dimmer);font-size:12px;text-align:right}
 .legrow .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
 
-.years{display:flex;flex-direction:column;gap:6px}
-.ycard{border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
-.yhead{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;user-select:none;min-height:52px}
-.yhead:hover{background:var(--panel-2);border-color:var(--dimmer)}
+/* One grouped list with inset dividers, not eight floating cards. Eight separately-bordered
+   boxes six pixels apart read as eight objects; the years are one list of one kind of thing. */
+.years{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-card)}
+.ycard{border:0;border-radius:0;background:transparent}
+.ycard+.ycard{border-top:1px solid var(--line-soft)}
+.yhead{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;min-height:56px}
+.yhead:hover{background:var(--panel-2)}
 .yhead .yr{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;min-width:46px;color:var(--signal)}
-.ybar{flex:1;height:11px;border-radius:1px;background:var(--field);display:flex;overflow:hidden;min-width:60px}
+/* The track holds the column open at a constant width; .yfill inside it is the year's size.
+   A recessed track rather than a bar floating on the card, so a short year still reads as a
+   proportion of something rather than as a stub. */
+.ybar{flex:1;height:10px;border-radius:var(--r-pill);background:var(--panel-2);display:flex;overflow:hidden;min-width:48px}
+.yfill{display:flex;height:100%;border-radius:var(--r-pill);overflow:hidden;min-width:3px}
 .ybar i{display:block;height:100%}
-.ytot{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;white-space:nowrap}
-.ychev{color:var(--muted);width:14px;height:14px;flex:none}
+/* Right-aligned and tabular, so every year's total lands in one column. */
+.ytot{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;white-space:nowrap;text-align:right;flex:none}
+.ychev{color:var(--dim);width:14px;height:14px;flex:none}
 
 .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
-.updnote{margin-left:auto;font-size:10px;color:var(--muted)}
+.updnote{margin-left:auto;font-size:10px;color:var(--dim)}
 
 /* download icon in the top-right corner of each chart */
 .over,.alloc{position:relative}
@@ -194,7 +227,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* An editor's top edge is the app's topbar wearing a back arrow: same height, same blur,
    same inset, so moving into one doesn't move the top of the app. */
 .ed-bar{position:sticky;top:0;z-index:20;padding:calc(10px + var(--edge-t)) 0 10px;
-  background:color-mix(in srgb,var(--ink) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  background:var(--chrome-page);
   border-bottom:1px solid var(--line)}
 .ed-bar-inner{display:flex;align-items:center;gap:12px;min-height:44px;max-width:var(--maxw);margin:0 auto;padding:0 var(--edge-r) 0 var(--edge-l)}
 .ed-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -206,7 +239,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .ed-back:hover{background:var(--panel-2)}
 .ed-back .btn-icon{width:20px;height:20px}
 
-#edDelYear{color:var(--red);margin-left:auto}
+#edDelYear{color:var(--danger);margin-left:auto}
 .ed-title{font-size:17px;color:var(--text);display:flex;align-items:center;gap:9px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* The year as the bar states it, and the button that offers to move it. */
 .ed-yearnow{font-weight:700;color:var(--signal)}
@@ -227,27 +260,27 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* The year is edited in place in the bar, so the field is sized to four digits. */
 .ed-year{width:5.5ch;min-height:34px;padding:4px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--text);font-size:16px;text-align:center}
 .ed-year:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
-#edYear{width:88px;font:inherit;font-size:17px;border:1px solid var(--line2);border-radius:3px;padding:7px 8px;background:var(--field);color:var(--amber)}
+#edYear{width:88px;font:inherit;font-size:17px;border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 8px;background:var(--panel);color:var(--signal)}
 .ed-wrap{max-width:var(--maxw);margin:0 auto;padding:18px var(--edge-r) calc(40px + var(--edge-b)) var(--edge-l)}
 .ed-total{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px}
-.ed-total .et-k{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
-.ed-total .et-v{font-variant-numeric:tabular-nums;font-size:28px;font-weight:600;color:var(--amber)}
+.ed-total .et-k{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.ed-total .et-v{font-variant-numeric:tabular-nums;font-size:28px;font-weight:600;color:var(--signal)}
 
 .cards{display:flex;flex-direction:column;gap:6px}
-.rcard{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:11px 13px;position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.rcard:hover{border-color:var(--line2)}
+.rcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rcard:hover{border-color:var(--line)}
 .rcard .dot{width:10px;height:10px;border-radius:1px;flex:none}
 .rcard .rname{flex:1;min-width:120px;font:inherit;font-size:15px;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);padding:3px 0}
-.rcard .rname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.rcard .rval{width:130px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text);min-height:40px}
-.rcard .rval:focus{outline:none;border-color:var(--amber)}
-.rcard select{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px;color:var(--text);min-height:40px}
-.rcard .rkind{font:inherit;font-size:12px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 6px;color:var(--amber);min-height:40px}
-.rcard .rsh{width:84px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text);min-height:40px}
-.rcard .rtk{width:120px;font:inherit;font-size:14px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--green);min-height:40px;text-transform:uppercase}
-.rcard .rsh:focus,.rcard .rtk:focus{outline:none;border-color:var(--amber)}
-.rcard .rconv{font-size:11px;color:var(--green);min-width:80px;text-align:right}
-.rcard .rconv.liab{color:var(--red)}
+.rcard .rname:focus{outline:none;border-bottom:1px solid var(--signal)}
+.rcard .rval{width:130px;font:inherit;font-size:15px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--text);min-height:40px}
+.rcard .rval:focus{outline:none;border-color:var(--signal)}
+.rcard select{font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px;color:var(--text);min-height:40px}
+.rcard .rkind{font:inherit;font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 6px;color:var(--signal);min-height:40px}
+.rcard .rsh{width:84px;font:inherit;font-size:15px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--text);min-height:40px}
+.rcard .rtk{width:120px;font:inherit;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--accent);min-height:40px;text-transform:uppercase}
+.rcard .rsh:focus,.rcard .rtk:focus{outline:none;border-color:var(--signal)}
+.rcard .rconv{font-size:11px;color:var(--accent);min-width:80px;text-align:right}
+.rcard .rconv.liab{color:var(--danger)}
 .forecast{position:relative}
 /* One column on a phone, then as many as fit. Each field owns a full row rather than being
    squeezed three-across, which is what made these two panels the worst part of a small screen. */
@@ -262,33 +295,33 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .fcrow .pct{position:relative;display:flex;align-items:center}
 .fcrow .pct input{flex:1;width:100%;padding-right:24px;-moz-appearance:textfield}
 .fcrow .pct input::-webkit-outer-spin-button,.fcrow .pct input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.fcrow .pct i{position:absolute;right:10px;color:var(--muted);font-style:normal;font-size:12px;pointer-events:none}
+.fcrow .pct i{position:absolute;right:10px;color:var(--dim);font-style:normal;font-size:12px;pointer-events:none}
 .fcstats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
-.fcstat{flex:1 1 150px;min-width:140px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
-.fcstat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.fcstat{flex:1 1 150px;min-width:140px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-lg);padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.fcstat .k{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
 .fcstat .v{font-size:18px;font-variant-numeric:tabular-nums}
-.fcstat .v.ok{color:var(--green)}
-.fcstat .v.bad{color:var(--red)}
-.fcstat .v.dim{color:var(--muted);font-size:13px}
-.fcstat .sub{font-size:10.5px;color:var(--muted)}
-.fcstat.hero{border-color:var(--amber);background:linear-gradient(180deg,rgba(255,176,0,.08),transparent)}
+.fcstat .v.ok{color:var(--accent)}
+.fcstat .v.bad{color:var(--danger)}
+.fcstat .v.dim{color:var(--dim);font-size:13px}
+.fcstat .sub{font-size:10.5px;color:var(--dim)}
+.fcstat.hero{border-color:var(--line);background:var(--panel-2)}
 .fcstat.hero .v{font-size:20px}
-.fchint{color:var(--muted);font-size:13px;padding:8px 0}
+.fchint{color:var(--dim);font-size:13px;padding:8px 0}
 .rcard .rtkwrap{position:relative;display:inline-flex;align-items:center}
 .rcard .rtkwrap .rtk{padding-right:28px}
-.rcard .rinfo{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:17px;height:17px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--muted);font:italic 600 11px/1 Georgia,'Times New Roman',serif;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
-.rcard .rinfo:hover{color:var(--amber);border-color:var(--amber)}
+.rcard .rinfo{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:17px;height:17px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--dim);font:italic 600 11px/1 Georgia,'Times New Roman',serif;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.rcard .rinfo:hover{color:var(--signal);border-color:var(--signal)}
 .infomodal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:20px}
 .infomodal.hide{display:none}
-.infobox{position:relative;background:var(--panel);border:1px solid var(--line2);border-radius:12px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:22px 24px}
-.infoclose{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer;padding:2px 6px}
+.infobox{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-xl);max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:22px 24px}
+.infoclose{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--dim);font-size:24px;line-height:1;cursor:pointer;padding:2px 6px}
 /* ── what moved today ──
    The day's change, holding by holding. The headline figure it opens from is a button in all
    but appearance: it keeps its colour and weight, and says it can be pressed by underlining on
    hover rather than by growing a border it would wear all day. */
 .hero .day.is-tap{cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;transition:text-decoration-color .12s ease}
 .hero .day.is-tap:hover{text-decoration-color:currentColor}
-.hero .day.is-tap:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:3px}
+.hero .day.is-tap:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:var(--r-sm)}
 .daybox{max-width:480px}
 .daytotal{font-size:26px;font-weight:700;letter-spacing:-.01em;margin:2px 0 14px}
 .daylist{display:flex;flex-direction:column}
@@ -305,38 +338,38 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .daymoney.flat,.daypct.flat{color:var(--dim)}
 .dayfoot{margin-top:14px;font-size:11.5px;line-height:1.5;color:var(--dimmer)}
 .infoclose:hover{color:var(--text)}
-.infobox h3{color:var(--amber);font-size:15px;margin:0 0 12px}
-.infobox p{color:var(--muted);font-size:13px;line-height:1.6;margin:10px 0}
+.infobox h3{color:var(--signal);font-size:15px;margin:0 0 12px}
+.infobox p{color:var(--dim);font-size:13px;line-height:1.6;margin:10px 0}
 .infobox ul{list-style:none;padding:0;margin:10px 0;display:flex;flex-direction:column;gap:8px}
-.infobox li{color:var(--muted);font-size:12.5px;line-height:1.6}
+.infobox li{color:var(--dim);font-size:12.5px;line-height:1.6}
 .infobox b{color:var(--text);font-weight:600}
-.infobox code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11.5px;color:var(--green);text-transform:none}
-.infobox a{color:var(--amber);text-decoration:none}
+.infobox code{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-xs);padding:1px 5px;font-size:11.5px;color:var(--accent);text-transform:none}
+.infobox a{color:var(--signal);text-decoration:none}
 .infobox a:hover{text-decoration:underline}
 .fccheck{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:var(--text);cursor:pointer}
-.fccheck input{width:16px;height:16px;accent-color:var(--amber);cursor:pointer}
-.chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--amber) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
-.fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--muted)}
+.fccheck input{width:16px;height:16px;accent-color:var(--signal);cursor:pointer}
+.chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--signal) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
+.fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--dim)}
 .fcswitch input{position:absolute;opacity:0;pointer-events:none}
-.fcswitch .track{width:34px;height:18px;border-radius:10px;background:var(--line2);position:relative;transition:background .15s}
+.fcswitch .track{width:34px;height:18px;border-radius:var(--r-lg);background:var(--line);position:relative;transition:background .15s}
 .fcswitch .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:left .15s}
-.fcswitch input:checked+.track{background:var(--amber)}
+.fcswitch input:checked+.track{background:var(--signal)}
 .fcswitch input:checked+.track::after{left:18px;background:var(--ink)}
 .rcard.liabcard{border-left:2px solid rgba(255,77,109,.5)}
-.yliab{color:var(--red);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.rcard .rcat{font-size:12px;max-width:150px;color:var(--muted)}
-.rcard .rdel{background:none;border:none;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 4px}
-.rcard .rdel:hover{color:var(--red)}
+.yliab{color:var(--danger);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rcard .rcat{font-size:12px;max-width:150px;color:var(--dim)}
+.rcard .rdel{background:none;border:none;color:var(--dim);font-size:19px;line-height:1;cursor:pointer;padding:2px 4px}
+.rcard .rdel:hover{color:var(--danger)}
 
 /* asset groups in the year editor */
-.grp{border:1px solid var(--line2);border-radius:4px;margin-top:6px;background:var(--panel2)}
+.grp{border:1px solid var(--line);border-radius:var(--r-lg);margin-top:6px;background:var(--panel-2)}
 .grphead{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--line)}
 .grphead .dot{width:10px;height:10px;border-radius:1px;flex:none}
-.grpname{flex:1;min-width:80px;font:inherit;font-size:14px;font-weight:600;letter-spacing:.04em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0}
-.grpname:focus{outline:none;border-bottom:1px solid var(--amber)}
+.grpname{flex:1;min-width:80px;font:inherit;font-size:14px;font-weight:600;letter-spacing:.04em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--signal);padding:3px 0}
+.grpname:focus{outline:none;border-bottom:1px solid var(--signal)}
 .grpsub{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:var(--text);white-space:nowrap}
-.grpdel{background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
-.grpdel:hover{color:var(--red)}
+.grpdel{background:none;border:none;color:var(--dim);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
+.grpdel:hover{color:var(--danger)}
 .grpcards{display:flex;flex-direction:column;gap:6px;padding:11px 13px}
 .grpcards .rcard{background:var(--panel)}
 
@@ -347,17 +380,17 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .footlinks{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px 10px}
 /* standalone legal pages (privacy.html, terms.html) */
 .legal{max-width:760px;margin:0 auto;padding:48px 22px 90px}
-.legal .back{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);text-decoration:none;margin-bottom:26px}
+.legal .back{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal);text-decoration:none;margin-bottom:26px}
 .legal h1{font-size:clamp(28px,6vw,40px);font-weight:700;color:var(--text);letter-spacing:-.01em;margin-bottom:6px}
-.legal .updated{color:var(--muted);font-size:12px;margin-bottom:30px}
-.legal h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin:30px 0 10px}
+.legal .updated{color:var(--dim);font-size:12px;margin-bottom:30px}
+.legal h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--signal);margin:30px 0 10px}
 .legal p,.legal li{color:var(--text);font-size:14px;line-height:1.65;margin-bottom:10px}
 .legal ul{padding-left:20px;margin-bottom:10px}
-.legal strong{color:var(--amber2)}
-.legal .note{border-left:2px solid var(--line2);padding-left:14px;color:var(--muted);font-size:12.5px;margin-top:30px}
-.legal a{color:var(--amber)}
+.legal strong{color:var(--signal)}
+.legal .note{border-left:2px solid var(--line);padding-left:14px;color:var(--dim);font-size:12.5px;margin-top:30px}
+.legal a{color:var(--signal)}
 
-.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--amber);color:var(--on-amber);font-size:12px;font-weight:600;padding:10px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:all .3s;z-index:60;max-width:90vw;text-align:center}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--signal);color:var(--signal-ink);font-size:12px;font-weight:600;padding:10px 18px;border-radius:var(--r);opacity:0;pointer-events:none;transition:all .3s;z-index:60;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* On wide screens, sit Allocation beside Over time instead of stacking,
@@ -387,80 +420,83 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 /* SVG back button (replaces the text "←") */
 #edBack,#assetBack,#salaryBack,#profileBack{display:inline-flex;align-items:center;gap:7px}
-.prof-sync{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.04em;color:var(--muted);margin-bottom:20px}
+.prof-sync{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.04em;color:var(--dim);margin-bottom:20px}
 #profAcct{max-width:520px}
 
 
 /* read-only computed (long-term asset) rows inside the year editor — tap to edit */
-.rcard.auto{background:var(--panel2);border-style:dashed;cursor:pointer}
-.rcard.auto:hover{border-color:var(--amber)}
+.rcard.auto{background:var(--panel-2);border-style:dashed;cursor:pointer}
+.rcard.auto:hover{border-color:var(--signal)}
 .rcard.auto .rname.ro{flex:1;min-width:120px;font-size:15px;color:var(--text)}
-.autotag{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line2);border-radius:99px;padding:3px 9px;white-space:nowrap}
-.rcard.auto .rconv{color:var(--amber);font-weight:600;font-size:13px}
-.autoedit{width:14px;height:14px;color:var(--muted);flex:none}
-.rcard.auto:hover .autoedit{color:var(--amber)}
+.autotag{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 9px;white-space:nowrap}
+.rcard.auto .rconv{color:var(--signal);font-weight:600;font-size:13px}
+.autoedit{width:14px;height:14px;color:var(--dim);flex:none}
+.rcard.auto:hover .autoedit{color:var(--signal)}
 
 /* long-term assets editor */
-.edlede{color:var(--muted);font-size:12.5px;line-height:1.6;margin-bottom:18px;max-width:680px}
-.edlede strong{color:var(--amber2);font-weight:600}
-.emptyhint,.exhint{color:var(--muted);font-size:12.5px;line-height:1.6;border:1px dashed var(--line2);border-radius:4px;padding:16px;background:var(--panel)}
+.edlede{color:var(--dim);font-size:12.5px;line-height:1.6;margin-bottom:18px;max-width:680px}
+.edlede strong{color:var(--signal);font-weight:600}
+.emptyhint,.exhint{color:var(--dim);font-size:12.5px;line-height:1.6;border:1px dashed var(--line);border-radius:var(--r-lg);padding:16px;background:var(--panel)}
 .exhint{padding:10px 12px;border:none;background:none}
 /* nowrap undoes the wrap .rcard sets for its row form: in a column container, wrapping sizes the
    card to its widest child instead of to the screen, which pushed the whole editor off a phone. */
 .acard{flex-direction:column;align-items:stretch;gap:12px;flex-wrap:nowrap}
 .toggles{display:flex;flex-wrap:wrap;gap:10px 22px}
 .tgl{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text);cursor:pointer}
-.tgl input{width:17px;height:17px;accent-color:var(--amber);cursor:pointer}
+.tgl input{width:17px;height:17px;accent-color:var(--signal);cursor:pointer}
 /* min-width:0 so a wide schedule scrolls inside its own box instead of stretching the column —
    a flex item's floor is its content, and a five-column money table is wider than a phone. */
-.loanbox{border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:13px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.loanbox{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel-2);padding:13px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .loanbox > *{min-width:0}
-.loanwarn{font-size:12px;line-height:1.5;color:var(--red);border-left:2px solid var(--red);padding-left:11px}
+.loanwarn{font-size:12px;line-height:1.5;color:var(--danger);border-left:2px solid var(--danger);padding-left:11px}
 .frow{display:flex;flex-wrap:wrap;gap:12px}
-.fld{display:flex;flex-direction:column;gap:5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex:1;min-width:130px}
-.fin{font:inherit;font-size:15px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--text);min-height:42px;width:100%}
-.fin:focus{outline:none;border-color:var(--amber)}
-.fld select{font:inherit;font-size:14px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--text);min-height:42px;width:100%}
-.suffix{display:flex;align-items:center;gap:7px}.suffix i{font-style:normal;color:var(--muted);font-size:12px}
+/* A field label names the box under it. It is read once, at reading speed, so it is set as
+   prose — not as the 9.5px uppercase .14em signage it used to be, which both cost legibility
+   and outranked the section heading above it. */
+.fld{display:flex;flex-direction:column;gap:6px;font-size:13px;letter-spacing:0;text-transform:none;color:var(--dim);flex:1;min-width:130px}
+.fin{font:inherit;font-size:15px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 10px;color:var(--text);min-height:42px;width:100%}
+.fin:focus{outline:none;border-color:var(--signal)}
+.fld select{font:inherit;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 10px;color:var(--text);min-height:42px;width:100%}
+.suffix{display:flex;align-items:center;gap:7px}.suffix i{font-style:normal;color:var(--dim);font-size:12px}
 .vsum,.pstat{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .vsum{border-top:1px solid var(--line);padding-top:11px}
-.vsum .k,.pstat .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-.vval,.pstat .v{font-weight:600;font-size:15px;color:var(--amber)}
+.vsum .k,.pstat .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.vval,.pstat .v{font-weight:600;font-size:15px;color:var(--signal)}
 .pchead{display:flex;align-items:center;gap:10px}
-.psub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-top:4px;display:flex;align-items:center;gap:10px}
+.psub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--signal);margin-top:4px;display:flex;align-items:center;gap:10px}
 .exwrap{display:flex;flex-direction:column;gap:8px}
 .exrow{display:flex;gap:10px;align-items:center}
 .exrow .fin{flex:1}
 .pstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 22px;border-top:1px solid var(--line);padding-top:13px}
 .pstat{flex-direction:column;align-items:flex-start;gap:3px}
 .psched{border-top:1px solid var(--line);padding-top:6px}
-.psched summary{cursor:pointer;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 0}
-.psched summary:hover{color:var(--amber)}
-.schscroll{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:3px}
+.psched summary{cursor:pointer;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:6px 0}
+.psched summary:hover{color:var(--signal)}
+.schscroll{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:var(--r-lg)}
 .schtab{width:100%;border-collapse:collapse;font-size:11.5px}
-.schtab th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:600;text-align:right;padding:8px 10px;letter-spacing:.04em;white-space:nowrap}
+.schtab th{position:sticky;top:0;background:var(--panel-2);color:var(--dim);font-weight:600;text-align:right;padding:8px 10px;letter-spacing:.04em;white-space:nowrap}
 .schtab th:first-child{text-align:left}
 .schtab td{padding:7px 10px;text-align:right;border-top:1px solid var(--line);color:var(--text);white-space:nowrap}
-.schtab td:first-child{text-align:left;color:var(--muted)}
-.schtab tbody tr:hover{background:var(--panel2)}
-.schtab tr.exline td{background:rgba(255,176,0,.08);color:var(--amber);border-top:1px solid var(--line2)}
-.schtab tr.exline td:nth-child(2){color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-size:10px}
+.schtab td:first-child{text-align:left;color:var(--dim)}
+.schtab tbody tr:hover{background:var(--panel-2)}
+.schtab tr.exline td{background:rgba(255,176,0,.08);color:var(--signal);border-top:1px solid var(--line)}
+.schtab tr.exline td:nth-child(2){color:var(--dim);letter-spacing:.04em;text-transform:uppercase;font-size:10px}
 .schtab tr.exline:hover td{background:rgba(255,176,0,.12)}
-.schtab tr.est td{color:var(--muted);font-style:italic}
-.schtab tr.fxdiv td{background:var(--panel);color:var(--amber2);font-size:10px;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:9px;border-top:1px solid var(--line2)}
+.schtab tr.est td{color:var(--dim);font-style:italic}
+.schtab tr.fxdiv td{background:var(--panel);color:var(--signal);font-size:10px;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:9px;border-top:1px solid var(--line)}
 /* A year's totals, leading the months that make them up. Heavier than a month on purpose: this is
    the row somebody scrolls to find, and the one figure it exists for — what came off the loan —
    is the only coloured number in the table. */
-.schtab tr.yrow td{background:var(--panel2);border-top:1px solid var(--line2);font-weight:600;color:var(--text)}
+.schtab tr.yrow td{background:var(--panel-2);border-top:1px solid var(--line);font-weight:600;color:var(--text)}
 .schtab tr.yrow td:first-child{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--signal);letter-spacing:.02em}
 .schtab tr.yrow td.off{color:var(--accent)}
 .schtab tr.yrow td.sub{font-weight:400;color:var(--dimmer);font-size:10.5px}
 .schtab tr.yrow.est td{font-style:italic;opacity:.85}
-.schtab tr.yrow:hover td{background:var(--panel2)}
+.schtab tr.yrow:hover td{background:var(--panel-2)}
 /* The whole loan, one row per year. Taller rows than the monthly table and no scroll cap: this
    one is meant to be read down, not searched. */
 .yrsched{border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
-.yrsched-h{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:2px 0 6px}
+.yrsched-h{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:2px 0 6px}
 .yrsched .schscroll{max-height:none}
 .schtab.yrtab td{padding:9px 10px;font-size:12px}
 .schtab.yrtab td:first-child{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--text)}
@@ -468,60 +504,60 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .schtab.yrtab td.dim{color:var(--dim)}
 .schtab.yrtab tr.now td{background:rgba(255,176,0,.07)}
 .schtab.yrtab tr.now td:first-child{color:var(--signal)}
-.pstat .v.hilite{color:var(--amber2)}
+.pstat .v.hilite{color:var(--signal)}
 .pstat .v.off{color:var(--accent)}
 
 /* salary history page — one side-by-side table (months as rows, people as column groups) */
 #salaryChart{display:block}
 .chartwrap{position:relative;display:inline-block}
 .saldot{cursor:pointer}
-.salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--amber);border-radius:4px;padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
-.saltable-scroll{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:4px;margin-bottom:10px}
+.salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--signal);border-radius:var(--r-sm);padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
+.saltable-scroll{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:10px}
 .saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
-.saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel2);z-index:2}
+.saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel-2);z-index:2}
 .saltab .salh1 th{top:0}
-.saltab .salh2 th{top:41px;color:var(--muted);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;text-align:right;border-bottom:1px solid var(--line2)}
+.saltab .salh2 th{top:41px;color:var(--dim);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;text-align:right;border-bottom:1px solid var(--line)}
 .saltab .salh2 th:first-child{text-align:left}
-.salp-h{text-align:left;border-left:2px solid var(--line2)!important;border-bottom:1px solid var(--line2)!important;background:var(--panel2);padding:9px 12px}
+.salp-h{text-align:left;border-left:2px solid var(--line)!important;border-bottom:1px solid var(--line)!important;background:var(--panel-2);padding:9px 12px}
 .salp-hin{display:flex;align-items:center;gap:8px}
-.salname{flex:1;min-width:90px;font:inherit;font-size:15px;font-weight:700;letter-spacing:.01em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0;font-family:var(--mono)}
-.salname::placeholder{color:var(--muted);font-weight:400}
-.salname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.salccy{font:inherit;font-size:11px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:4px 6px;color:var(--text)}
-.saltab th.salm-h,.saltab td.salm{position:sticky;left:0;background:var(--panel);z-index:1;border-right:1px solid var(--line2)}
-.saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel2)}
-.saltab td.salm{color:var(--muted);font-size:12px}
-.saltab tr.saly td{background:var(--row-alt);color:var(--amber);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;text-align:right;font-variant-numeric:tabular-nums}
-.saltab tr.saly td:first-child{text-align:left;position:sticky;left:0;z-index:1;border-right:1px solid var(--line2)}
-.saltab .salgsep{border-left:2px solid var(--line2)}
+.salname{flex:1;min-width:90px;font:inherit;font-size:15px;font-weight:700;letter-spacing:.01em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--signal);padding:3px 0;font-family:var(--mono)}
+.salname::placeholder{color:var(--dim);font-weight:400}
+.salname:focus{outline:none;border-bottom:1px solid var(--signal)}
+.salccy{font:inherit;font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 6px;color:var(--text)}
+.saltab th.salm-h,.saltab td.salm{position:sticky;left:0;background:var(--panel);z-index:1;border-right:1px solid var(--line)}
+.saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel-2)}
+.saltab td.salm{color:var(--dim);font-size:12px}
+.saltab tr.saly td{background:var(--panel-2);color:var(--signal);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;text-align:right;font-variant-numeric:tabular-nums}
+.saltab tr.saly td:first-child{text-align:left;position:sticky;left:0;z-index:1;border-right:1px solid var(--line)}
+.saltab .salgsep{border-left:2px solid var(--line)}
 .saltab td.salm{min-width:90px}
-.saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text)}
-.saltab td .salev{width:100%;min-width:90px;font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--muted)}
-.saltab td .salf:focus,.saltab td .salev:focus{outline:none;border-color:var(--amber)}
+.saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--text)}
+.saltab td .salev{width:100%;min-width:90px;font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--dim)}
+.saltab td .salf:focus,.saltab td .salev:focus{outline:none;border-color:var(--signal)}
 .salx-h{width:34px}
 .saltab td.salxc{text-align:center}
-.salpick{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:7px 9px;color:var(--text);min-height:38px}
-.salpick:focus{outline:none;border-color:var(--amber)}
+.salpick{font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px;color:var(--text);min-height:38px}
+.salpick:focus{outline:none;border-color:var(--signal)}
 .salctrls{align-items:center}
-.salrlbl{font-size:11px;letter-spacing:.04em;color:var(--muted)}
-.salmccy{width:100%;min-width:72px;font:inherit;font-size:12px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 24px 8px 8px;color:var(--muted);min-height:38px}
-.salmccy:focus{outline:none;border-color:var(--amber)}
+.salrlbl{font-size:11px;letter-spacing:.04em;color:var(--dim)}
+.salmccy{width:100%;min-width:72px;font:inherit;font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 24px 8px 8px;color:var(--dim);min-height:38px}
+.salmccy:focus{outline:none;border-color:var(--signal)}
 /* trash-style delete button (replaces the bare ×) */
-.delbtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:5px}
-.delbtn:hover{color:var(--red);background:rgba(255,77,109,.12)}
+.delbtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;background:none;border:none;color:var(--dim);cursor:pointer;border-radius:var(--r-sm)}
+.delbtn:hover{color:var(--danger);background:rgba(255,77,109,.12)}
 .delbtn svg{width:15px;height:15px}
 /* read-only salary table (Salary tab) */
 .saltab.rotab th,.saltab.rotab td{text-align:right;padding:8px 14px;white-space:nowrap}
 .saltab.rotab th.salm-h,.saltab.rotab td.salm{text-align:left}
-.saltab.rotab thead th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.04em}
+.saltab.rotab thead th{position:sticky;top:0;background:var(--panel-2);color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.04em}
 .saltab.rotab tbody td{font-size:13.5px;font-variant-numeric:tabular-nums}
-.evtag{display:inline-block;margin-right:8px;font-size:9.5px;letter-spacing:.03em;color:var(--amber2);border:1px solid var(--line2);border-radius:99px;padding:2px 8px;vertical-align:middle}
-.salimport{margin-top:16px;border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:0 13px}
-.salimport summary{cursor:pointer;padding:12px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
+.evtag{display:inline-block;margin-right:8px;font-size:9.5px;letter-spacing:.03em;color:var(--signal);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px 8px;vertical-align:middle}
+.salimport{margin-top:16px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel-2);padding:0 13px}
+.salimport summary{cursor:pointer;padding:12px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal)}
 .salimport[open]{padding-bottom:13px}
-#salImportText{width:100%;min-height:120px;font-family:var(--mono);font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:10px;color:var(--text);white-space:pre;overflow:auto}
-#salImportText:focus{outline:none;border-color:var(--amber)}
+#salImportText{width:100%;min-height:120px;font-family:var(--mono);font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px;color:var(--text);white-space:pre;overflow:auto}
+#salImportText:focus{outline:none;border-color:var(--signal)}
 
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
 .ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select,.salccy,.salmccy,.bud-exp select{
@@ -555,7 +591,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 /* ───────── design polish: recompute flash, hover-brighten, edge-fade ───────── */
 @keyframes flashUpd{from{background:rgba(255,176,0,.30)}to{background:transparent}}
-.flashed{animation:flashUpd .6s ease;border-radius:3px}
+.flashed{animation:flashUpd .6s ease;border-radius:var(--r-sm)}
 
 /* lift the hovered bar / donut slice slightly */
 #histChart rect,#donut path{transition:filter .12s ease}
@@ -571,11 +607,11 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 /* sync dot: pulse while saving to the server */
 @keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.35}}
-.syncdot.sync{background:var(--amber);animation:syncPulse 1s ease-in-out infinite}
+.syncdot.sync{background:var(--signal);animation:syncPulse 1s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){.syncdot.sync{animation:none!important}}
 
 /* full-width note inside an entry card (e.g. no historical price for a past year) */
-.rcard .rhint{flex-basis:100%;width:100%;font-size:10.5px;color:var(--amber2);border-top:1px dashed var(--line2);padding-top:7px;margin-top:1px}
+.rcard .rhint{flex-basis:100%;width:100%;font-size:10.5px;color:var(--signal);border-top:1px dashed var(--line);padding-top:7px;margin-top:1px}
 
 /* PWA auto-update overlay (shown briefly while a new version takes over and reloads) */
 .updating{position:fixed;inset:0;background:var(--ink);display:grid;place-items:center;align-content:center;gap:18px;z-index:9999}
@@ -650,54 +686,59 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .btn.on{background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
 
 /* net-worth year tooltip (reuses .salflag box) */
-.salflag .tiph{font-weight:600;color:var(--amber);margin-bottom:4px}
+.salflag .tiph{font-weight:600;color:var(--signal);margin-bottom:4px}
 .salflag .tipr{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .salflag .tipr .chip{width:8px;height:8px;border-radius:2px;flex:none}
 .salflag .tipr .tipn{flex:1;overflow:hidden;text-overflow:ellipsis}
 .salflag .tipr .tipv{margin-left:10px;font-variant-numeric:tabular-nums}
-.salflag .tipnet{margin-top:5px;padding-top:5px;border-top:1px solid var(--line2)}
+.salflag .tipnet{margin-top:5px;padding-top:5px;border-top:1px solid var(--line)}
 
 /* "last synced" line in profile */
-.synced{font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:.02em}
+.synced{font-size:11px;color:var(--dim);margin-top:8px;letter-spacing:.02em}
 
 /* year-over-year change line in the net-worth tooltip */
 .salflag .tipyoy{margin-top:3px;font-size:11px;letter-spacing:.02em}
-.salflag .tipyoy.up{color:var(--green)}
-.salflag .tipyoy.down{color:var(--red)}
+.salflag .tipyoy.up{color:var(--accent)}
+.salflag .tipyoy.down{color:var(--danger)}
 
 /* demo/tour banner (shown only in the no-account demo) */
-.demobar{position:relative;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--panel2);border-bottom:1px solid var(--amber);color:var(--text);padding:8px 16px;font-size:12.5px;letter-spacing:.02em}
+/* One row, never two. It used to wrap, which on a phone cost 160px — a fifth of the screen —
+   before the reader reached the number they came for. The sentence truncates; the buttons
+   never do. */
+.demobar{position:relative;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap;min-height:44px;background:var(--panel-2);border-bottom:1px solid var(--line);color:var(--dim);padding:0 var(--edge-r) 0 var(--edge-l);font-size:12.5px;letter-spacing:.02em}
+.demobar>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.demobar .demobtns{flex:none}
 .demobar .demobtns{display:flex;gap:8px;align-items:center}
 .demobar .btn{min-height:32px;padding:6px 12px;font-size:12.5px}
-.demolink{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
+.demolink{background:none;border:none;color:var(--dim);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
 .demoswitch{margin-top:4px}
 
 /* ---- Budget tab ---- */
-.bud-card{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:22px 16px;margin:8px 0 18px}
-.bud-card .k{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
-.bud-card .v{font-size:clamp(30px,8vw,44px);font-weight:700;color:var(--green);font-family:var(--mono);line-height:1}
-.bud-card.neg .v{color:var(--red)}
-.bud-card .sub{font-size:12px;color:var(--muted)}
+.bud-card{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 16px;margin:8px 0 18px}
+.bud-card .k{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+.bud-card .v{font-size:clamp(30px,8vw,44px);font-weight:700;color:var(--accent);font-family:var(--mono);line-height:1}
+.bud-card.neg .v{color:var(--danger)}
+.bud-card .sub{font-size:12px;color:var(--dim)}
 .bud-card .sub b{color:var(--text);font-weight:600}
 .bud-rows{margin:0 auto}
 .bud-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
 .bud-row.indent{padding-left:14px}
-.bud-row.total{border-bottom:none;border-top:1px solid var(--line2);font-weight:600}
+.bud-row.total{border-bottom:none;border-top:1px solid var(--line);font-weight:600}
 .bud-lbl{color:var(--text);font-size:14px}
-.bud-lbl .hint{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px}
+.bud-lbl .hint{display:block;color:var(--dim);font-size:11px;font-weight:400;margin-top:2px}
 .bud-val{font-family:var(--mono);font-size:15px;color:var(--text);white-space:nowrap}
-.bud-input{width:140px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px}
-.bud-input:focus{outline:none;border-color:var(--amber)}
-.bud-exp-head{margin:18px 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.bud-input{width:140px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px}
+.bud-input:focus{outline:none;border-color:var(--signal)}
+.bud-exp-head{margin:18px 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 .bud-exp{display:grid;grid-template-columns:1fr 150px 130px 36px;gap:10px;align-items:center;padding:5px 0}
-.bud-exp input{background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0}
+.bud-exp input{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0}
 .bud-exp .bud-exp-amt{text-align:right;font-family:var(--mono)}
-.bud-exp .bud-exp-cat{color:var(--muted)}
-#budgetTip .tippct{color:var(--muted);font-weight:400}
+.bud-exp .bud-exp-cat{color:var(--dim)}
+#budgetTip .tippct{color:var(--dim);font-weight:400}
 @media(max-width:520px){.bud-exp{grid-template-columns:1fr 96px 34px}.bud-exp .bud-exp-cat{grid-column:1 / -1;order:5}}
-.bud-exp input:focus{outline:none;border-color:var(--amber)}
-.bud-exp-del{background:none;border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer;height:36px}
-.bud-exp-del:hover{color:var(--red);border-color:var(--red)}
+.bud-exp input:focus{outline:none;border-color:var(--signal)}
+.bud-exp-del{background:none;border:1px solid var(--line);border-radius:var(--r-sm);color:var(--dim);cursor:pointer;height:36px}
+.bud-exp-del:hover{color:var(--danger);border-color:var(--danger)}
 .bud-chart{margin:10px 0 16px}
 .bud-chart-main{display:flex;flex-direction:column;align-items:center;gap:14px}
 .bud-chart .legend{width:100%;max-width:340px}
@@ -706,8 +747,8 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
   .bud-chart .legend{width:auto;min-width:230px;max-width:none}
 }
 .bud-ovr{display:flex;align-items:center;gap:8px}
-.bud-reset{background:var(--field);border:1px solid var(--line2);border-radius:999px;color:var(--muted);cursor:pointer;font:inherit;font-size:11px;padding:5px 10px;white-space:nowrap;line-height:1}
-.bud-reset:hover{color:var(--amber);border-color:var(--amber)}
+.bud-reset{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-pill);color:var(--dim);cursor:pointer;font:inherit;font-size:11px;padding:5px 10px;white-space:nowrap;line-height:1}
+.bud-reset:hover{color:var(--signal);border-color:var(--signal)}
 .bud-reset.hide{display:none}
 /* budget donut: download button, hover tip, entrance animation (mirrors the allocation donut) */
 .bud-chartwrap{position:relative;width:240px;flex:none}
@@ -718,8 +759,8 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 #budgetDonut.anim .dwedge{stroke-dasharray:1;stroke-dashoffset:1;animation:dwedge-draw .6s ease forwards}
 @keyframes dwedge-draw{to{stroke-dashoffset:0}}
 /* budget category selects + loan rows */
-.bud-exp select{background-color:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 28px 8px 8px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0;min-height:40px}
-.bud-exp select:focus{outline:none;border-color:var(--amber)}
+.bud-exp select{background-color:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 28px 8px 8px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0;min-height:40px}
+.bud-exp select:focus{outline:none;border-color:var(--signal)}
 /* loan row reuses the .bud-exp grid so its category and amount line up with
    the expense rows; the 4th (delete) column is left empty. Spans match the inputs' font + height. */
 .bud-loan-name{color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -729,11 +770,11 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* ---- share dialog (profile → Share) ---- */
 .share-secs{display:flex;flex-wrap:wrap;gap:10px 18px;margin:14px 0}
 .share-sec{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
-.share-lbl{display:block;font-size:14px;color:var(--muted);margin:8px 0 14px}
-.share-lbl input{display:block;width:100%;margin-top:6px;background:var(--field);color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:14px}
-.share-hint{color:var(--muted)}
+.share-lbl{display:block;font-size:14px;color:var(--dim);margin:8px 0 14px}
+.share-lbl input{display:block;width:100%;margin-top:6px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;font-family:var(--mono);font-size:14px}
+.share-hint{color:var(--dim)}
 .share-result{margin-top:18px}
-.share-result .acctnum{flex:1;background:var(--field);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.share-result .acctnum{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;overflow:hidden;text-overflow:ellipsis}
 .share-list{margin-top:8px}
 .share-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .share-row:last-child{border-bottom:0}
@@ -797,16 +838,16 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .rcard.ro { cursor: default; }
 .rcard.ro .ro-name { flex: 1; min-width: 120px; font-size: 15px; color: var(--text); }
 .rcard.ro .ro-mid { display: flex; gap: 14px; align-items: baseline; }
-.rcard.ro .ro-sh { color: var(--muted); font-size: 14px; }
-.rcard.ro .ro-tk { color: var(--green); font-size: 14px; text-transform: uppercase; }
+.rcard.ro .ro-sh { color: var(--dim); font-size: 14px; }
+.rcard.ro .ro-tk { color: var(--accent); font-size: 14px; text-transform: uppercase; }
 .rcard.ro .ro-val { min-width: 96px; text-align: right; font-size: 15px; color: var(--text); font-variant-numeric: tabular-nums; }
-.rcard.ro .ro-val.liab { color: var(--red); }
+.rcard.ro .ro-val.liab { color: var(--danger); }
 
 .sharemsg { max-width: 520px; margin: 80px auto; padding: 0 20px; text-align: center; }
 .sharemsg h1 { font-size: 20px; margin-bottom: 10px; }
-.sharemsg p { color: var(--muted); }
+.sharemsg p { color: var(--dim); }
 .sharemsg-foot { margin-top: 18px; }
-.sharemsg-foot a { color: var(--amber); }
+.sharemsg-foot a { color: var(--signal); }
 
 
 /* ---------- profile ----------
@@ -814,7 +855,7 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    sentence saying what it does and its own control beside it — rather than headings with loose
    rows of buttons under them, where nothing says what pressing one will do. */
 
-.set-group{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.set-group{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);overflow:hidden;box-shadow:var(--shadow-card)}
 /* The clip keeps the rows inside the rounded corners, but it would also cut off a picker panel
    opening out of the last row. While one is open, the group lets it through. */
 .set-group:has(.picker[data-open]){overflow:visible}
@@ -828,6 +869,15 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .set-row.top{align-items:flex-start}
 .set-ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .set-ctl .select{min-width:120px}
+/* On a phone the control goes under the sentence rather than beside it. Side by side, a
+   120px button left the explanation about 200px to live in, so every row squeezed its two
+   lines of prose into four or five. It also settles an inconsistency inside one card, where
+   Appearance's segmented control sat inline-right while Language's sat full-width below. */
+@media(max-width:559px){
+  .set-row{flex-direction:column;align-items:stretch;gap:10px}
+  .set-row .set-text{min-width:0}
+  .set-ctl{justify-content:flex-start}
+}
 /* The sync dot sits inside a sentence here rather than standing on its own. */
 .set-when{color:var(--dimmer)}  /* when it was last fetched — a fact about the row, not part of what it does */
 .set-hint .syncdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dimmer);vertical-align:baseline}
@@ -909,3 +959,25 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .picker-opt[aria-selected="true"]{color:var(--signal);font-weight:700}
 /* The tick marks the current one without moving the label, so the column of codes stays a column. */
 .picker-opt[aria-selected="true"]::after{content:"✓"}
+
+/* ---------- desktop reading scale ----------
+ * The app was laid out phone-first and then simply given a wider frame: 1440px of window
+ * showing 10–13px body text, 20px figures and paragraphs running 175 characters to the line.
+ * A bigger screen is not a reason to set smaller type. These are the same components, read at
+ * the distance a laptop is actually read from.
+ */
+@media(min-width:900px){
+  .legrow{font-size:15px}
+  .legrow .pct{font-size:13px}
+  .ytot,.yhead .yr{font-size:15px}
+  .fcstat{padding:14px 16px}
+  .fcstat .k{font-size:11px;letter-spacing:.06em}
+  .fcstat .v{font-size:28px}
+  .fcstat.hero .v{font-size:28px}
+  .fcstat .sub,.fcstat .v.dim{font-size:12.5px}
+  .fcrow .fld{font-size:13.5px}
+  .chiplegend{font-size:12.5px}
+  .updnote{font-size:11.5px}
+  /* Prose stops at a comfortable measure instead of running the full width of the column. */
+  .fchint,.subt,.bud-note,.emptyhint,.exhint{max-width:68ch}
+}

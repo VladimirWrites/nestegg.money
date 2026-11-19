@@ -53,11 +53,37 @@
   --accent-soft: #3ad17a1f;
   --danger: #ff6b6b;
 
-  --r-sm: 6px;
-  --r: 10px;
-  --r-lg: 16px;
+  /* One radius family, used everywhere. Before this the app drew ten different corners —
+     3px on twenty-seven controls, 1px on bars and chips, 4px, 10px, 12px — and a 3px corner on
+     a 44px control is what makes an interface read as a web form rather than as an app. The
+     ladder is: inside a row, a row, a control, a card, a sheet. Nothing picks a number. */
+  --r-xs: 6px;    /* swatches, chips, bar segments — a corner you only half-see */
+  --r-sm: 10px;   /* small controls: .btn-sm, icon buttons, segmented items */
+  --r: 14px;      /* the default: buttons, fields, selects */
+  --r-lg: 20px;   /* cards and grouped lists */
+  --r-xl: 28px;   /* sheets and modals */
+  --r-pill: 999px;
 
+  /* A spacing scale, so panels stop inventing their own gaps. */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+
+  /* Two elevations rather than a blur. Depth here comes from a card sitting on a recessed
+     page, which is why the shadows are soft and nearly free — they separate, they don't
+     decorate. */
   --shadow: 0 1px 2px #0006, 0 8px 24px -12px #0009;
+  --shadow-card: 0 1px 2px #00000040;
+
+  /* Chrome is opaque. The bars used to be a colour-mix at 88–92% with a backdrop-filter behind
+     them, so a heading or a form label scrolling underneath printed straight through the tab
+     bar. This is the transparency the product is meant to have turned down. */
+  --chrome: var(--panel);
+  --chrome-page: var(--ink);
 
   /* Drawn here rather than in three places: any control replacing a platform widget's own
      arrow uses this one. */
@@ -93,14 +119,14 @@
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --ink: #f4f3ef;
+    --ink: #f1f1f5;
     --panel: #ffffff;
-    --panel-2: #faf9f6;
-    --line: #e4e1d9;
-    --line-soft: #e4e1d980;
-    --text: #1b1a17;
-    --dim: #5f5c54;
-    --dimmer: #86827a;
+    --panel-2: #f7f7fa;
+    --line: #dededf;
+    --line-soft: #dededf80;
+    --text: #16171a;
+    --dim: #5c5f68;
+    --dimmer: #8a8d97;
 
     --signal: #9a5b00;
     --signal-ink: #fff8ec;
@@ -109,22 +135,23 @@
     --accent-soft: #1f7a4a14;
     --danger: #c02626;
 
-    --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a30;
-    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f5c54' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a24;
+    --shadow-card: 0 1px 2px #0f172a14;
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235c5f68' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   }
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --ink: #f4f3ef;
+  --ink: #f1f1f5;
   --panel: #ffffff;
-  --panel-2: #faf9f6;
-  --line: #e4e1d9;
-  --line-soft: #e4e1d980;
-  --text: #1b1a17;
-  --dim: #5f5c54;
-  --dimmer: #86827a;
+  --panel-2: #f7f7fa;
+  --line: #dededf;
+  --line-soft: #dededf80;
+  --text: #16171a;
+  --dim: #5c5f68;
+  --dimmer: #8a8d97;
 
   --signal: #9a5b00;
   --signal-ink: #fff8ec;
@@ -133,8 +160,9 @@
   --accent-soft: #1f7a4a14;
   --danger: #c02626;
 
-  --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a30;
-  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f5c54' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a24;
+    --shadow-card: 0 1px 2px #0f172a14;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235c5f68' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 
 :root[data-theme="dark"] { color-scheme: dark }

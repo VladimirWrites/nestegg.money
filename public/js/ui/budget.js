@@ -175,7 +175,7 @@ function loanRow(l, loanCats) {
 // Colour a category to match its doughnut wedge (same index/palette).
 function catColor(name, cats) {
   const i = (cats || []).findIndex((c) => c.category === name);
-  return i >= 0 ? PALETTE[i % PALETTE.length] : "var(--muted)";
+  return i >= 0 ? PALETTE[i % PALETTE.length] : "var(--dim)";
 }
 
 // The outgoings list, grouped by category exactly like the net-worth editor: ungrouped items first,

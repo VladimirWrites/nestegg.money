@@ -115,8 +115,16 @@ export function renderForecast() {
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   const sym = ccySym(); let s = yGrid(W, padL, padR, padT, plotH, nm, sym);
   // x labels — first, last, and a sparse set between
-  const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) { s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.axis}">${y}</text>`; }
-  if ((maxY - minY) % step !== 0) s += `<text x="${X(maxY)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.axis}">${maxY}</text>`;
+  /* The last year is always labelled — it is the end of the forecast, the one date the reader
+     is looking for. The tick before it is dropped when the two would collide: the ladder used
+     to be drawn from minY and the final year then added on top of it, so a horizon one year
+     past the last step printed "2054" and "2055" over each other. */
+  const step = Math.max(1, Math.ceil(span / 8));
+  const ticks = []; for (let y = minY; y < maxY; y += step) ticks.push(y);
+  const MIN_GAP = 34;   // a four-digit label at this size, plus air
+  while (ticks.length && X(maxY) - X(ticks[ticks.length - 1]) < MIN_GAP) ticks.pop();
+  ticks.push(maxY);
+  for (const y of ticks) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${y}</text>`;
   // soft area fill under the actual + projected trajectory
   { const areaPts = actual.concat(proj.slice(1)), by = Y(0);
     s += `<defs><linearGradient id="fcArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.amber}" stop-opacity="0.20"/><stop offset="1" stop-color="${C.amber}" stop-opacity="0"/></linearGradient></defs>`;
@@ -126,7 +134,7 @@ export function renderForecast() {
     const gy = Y(target); s += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="${C.green}" stroke-width="1.4" stroke-dasharray="2 4"/>`;
     const lbl = t("net.goalLine", { amount: sym + shortK(target) }), lw = lbl.length * 5.6 + 10, above = gy > padT + 18, ty = above ? gy - 5 : gy + 12, ry = above ? gy - 15 : gy + 2;
     s += `<rect x="${padL + 2}" y="${ry}" width="${lw}" height="14" rx="3" fill="${C.bg}" opacity="0.78"/>`;
-    s += `<text x="${padL + 7}" y="${ty}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.green}">${lbl}</text>`;
+    s += `<text x="${padL + 7}" y="${ty}" text-anchor="start" font-family="ui-monospace,monospace" font-size="11" fill="${C.green}">${lbl}</text>`;
   }
   // scenario band fill (poor -> great), drawn under the lines
   if (band) {
@@ -180,8 +188,8 @@ export function renderRetire() {
     const X = (y) => padL + ((y - minY) / span) * innerW, Y = (v) => padT + plotH - (Math.max(0, v) / nm) * plotH;
     svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     const sym = ccySym(); let s = yGrid(W, padL, padR, padT, plotH, nm, sym);
-    const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.axis}">${y}</text>`;
-    if (sim.pensY > minY && sim.pensY <= maxY && sim.pensionAnnual > 0) { const px = X(sim.pensY); s += `<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT + plotH}" stroke="${C.green}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`; s += `<text x="${px + 4}" y="${padT + 10}" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.green}">${t("net.pensionStarts", { year: sim.pensY })}</text>`; }
+    const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${y}</text>`;
+    if (sim.pensY > minY && sim.pensY <= maxY && sim.pensionAnnual > 0) { const px = X(sim.pensY); s += `<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT + plotH}" stroke="${C.green}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`; s += `<text x="${px + 4}" y="${padT + 10}" font-family="ui-monospace,monospace" font-size="11" fill="${C.green}">${t("net.pensionStarts", { year: sim.pensY })}</text>`; }
     s += `<defs><linearGradient id="rtArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.amber}" stop-opacity="0.22"/><stop offset="1" stop-color="${C.amber}" stop-opacity="0"/></linearGradient></defs>`;
     s += `<polygon points="${X(minY)},${Y(0)} ${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")} ${X(maxY)},${Y(0)}" fill="url(#rtArea)"/>`;
     s += `<polyline class="line" pathLength="1" points="${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2.4"/>`;
@@ -227,8 +235,8 @@ function drawHist() {
     names.forEach((nm2) => { const tot = ents.filter((e) => seriesKey(e) === nm2).reduce((a, e) => a + entryBase(e, sn.year), 0); if (tot <= 0) return; const h = (tot / nm) * plotH; yTop -= h; s += `<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2, names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`; });
     const net = snapTotalBase(sn), gross = snapGrossBase(sn);
     if (gross - net > 0.005) { const ny = padT + plotH - (Math.max(0, net) / nm) * plotH; s += `<line x1="${x - 3}" y1="${ny}" x2="${x + bw + 3}" y2="${ny}" stroke="${C.red}" stroke-width="2"><title>${t("net.histNetTitle", { year: sn.year, net: money(net), liab: money(gross - net) })}</title></line>`; }
-    s += `<text x="${cx}" y="${yTop - 6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="${C.axis}">${sym}${shortK(net)}</text>`;
-    s += `<text x="${cx}" y="${H - padB + 16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${C.ink}">${sn.year}</text>`;
+    s += `<text x="${cx}" y="${yTop - 6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${C.axis}">${sym}${shortK(net)}</text>`;
+    s += `<text x="${cx}" y="${H - padB + 16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="${C.ink}">${sn.year}</text>`;
     // full-height transparent hit area: hover/tap a year to see its breakdown
     s += `<rect class="histhit" x="${(padL + idx * slot).toFixed(1)}" y="${padT}" width="${slot.toFixed(1)}" height="${plotH}" fill="transparent" style="pointer-events:all" data-year="${sn.year}" data-cx="${cx.toFixed(1)}" data-cy="${yTop.toFixed(1)}"></rect>`;
   });
@@ -449,7 +457,11 @@ function renderYears() {
     const segs = names.map((k) => (agg[k] > 0 ? `<i style="width:${(agg[k] / (gross || 1)) * 100}%;background:${colorOf(k, names)}"></i>` : "")).join("");
     const liab = gross - tot, liabHtml = liab > 0.005 ? `<span class="yliab num" title="${t("net.liabilities")}">−${money(liab)}</span>` : "";
     const card = document.createElement("div"); card.className = "ycard";
-    card.innerHTML = `<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar" style="max-width:${Math.max(8, (gross / maxV) * 100)}%">${segs}</span>${liabHtml}<span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
+    /* The track is always the full width of its column; the fill inside it is what carries the
+       year's size. Before this the bar itself was capped at the proportional width, so the
+       amount and the chevron started wherever the bar happened to stop — 2019's total sat a
+       third of the way across the row and nothing in the column lined up with anything. */
+    card.innerHTML = `<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar"><span class="yfill" style="width:${Math.max(2, (gross / maxV) * 100)}%">${segs}</span></span>${liabHtml}<span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
     host.appendChild(card);
   });
 }
