@@ -286,6 +286,8 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    squeezed three-across, which is what made these two panels the worst part of a small screen. */
 .fcrow{display:grid;grid-template-columns:1fr;gap:12px;margin:6px 0 16px}
 @media(min-width:620px){.fcrow{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}}
+
+}
 .fcrow .fld{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--dim);min-width:0}
 .fcrow .fld>.cap{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fcrow .fld input,.fcrow .fld select{width:100%;min-height:44px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:var(--r);padding:11px 14px;font-size:16px}
@@ -1082,3 +1084,21 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .salychev{display:none}
   .saly[data-ytoggle]{cursor:default}
 }
+
+/* On a phone these were fifteen full-width boxes stacked down the page, each label a line
+   above its own value and the whole forecast four thousand pixels tall. The same fields become
+   one grouped inset list — label left, value right, a divider between — which is the pattern
+   the year list and Profile already use.
+   The label takes the room that is left rather than a fixed share of it, so a long German
+   caption wraps inside its own row instead of squeezing the figure. */
+@media(max-width:619px){
+  .fcrow{display:block;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
+    overflow:hidden;box-shadow:var(--shadow-card);margin:10px 0 16px}
+  .fcrow .fld{display:flex;flex-direction:row;align-items:center;justify-content:space-between;
+    gap:12px;padding:8px 14px;min-height:56px;font-size:14px;color:var(--text)}
+  .fcrow .fld+.fld{border-top:1px solid var(--line-soft)}
+  .fcrow .fld>.cap{flex:1 1 auto;min-width:0;white-space:normal;overflow:visible;text-overflow:clip;color:var(--text)}
+  .fcrow .fld input,.fcrow .fld select{flex:0 0 11.5ch;width:auto;min-height:40px;padding:8px 10px}
+  .fcrow .fld select{flex:0 0 auto;max-width:52%}
+  .fcrow .pct{flex:0 0 11.5ch}
+  .fcrow .pct input{flex:1 1 auto;width:100%}
