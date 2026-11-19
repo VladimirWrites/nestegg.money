@@ -19,8 +19,11 @@
    own dashes rather than shrinking: the old box shrank the type to an 11px floor and, at
    320px, still cut off the last group — on the one screen whose whole job is getting this
    number read and written down correctly. */
-.acctnum{padding:16px 14px;border:1px dashed var(--signal);border-radius:var(--r);background:var(--signal-soft);font-family:var(--mono);
-  font-size:clamp(14px,4.4vw,19px);letter-spacing:.06em;text-align:center;font-weight:700;margin:14px 0;line-height:1.9;overflow-wrap:break-word}
+/* A grid of groups rather than a wrapping line. The number breaks where showToken() decided
+   it breaks, four groups to a line, so no line ever ends on a dash. */
+.acctnum{display:grid;grid-template-columns:repeat(4,max-content);justify-content:center;gap:2px 0;
+  padding:16px 14px;border:1px solid var(--signal);border-radius:var(--r);background:var(--signal-soft);font-family:var(--mono);
+  font-size:clamp(14px,4.4vw,19px);letter-spacing:.06em;text-align:center;font-weight:700;margin:14px 0;line-height:1.9}
 /* A dash-separated group never breaks across lines. */
 .tokgrp{display:inline-block;white-space:nowrap}
 .acctnum .d{color:var(--accent)}   /* digits */

@@ -23,11 +23,20 @@ import { closeAllEditors } from "./editors.js";
    the type to fit and stopped at 11px, which on a 320px phone still left the last group cut
    off — on the one screen whose whole job is getting this number read and saved correctly.
    Each dash-separated group is kept whole, so a break never falls inside a group. */
+const TOK_COLS = 4;   // groups per line; the CSS grid uses the same number
+
 function showToken(el, tok) {
   const groups = String(tok).split("-");
   el.innerHTML = groups.map((g, i) => {
     const chars = [...g].map((c) => (/[0-9]/.test(c) ? `<span class="d">${c}</span>` : `<span class="a">${c}</span>`)).join("");
-    const sep = i < groups.length - 1 ? '<span class="s">-</span>' : "";
+    /* The dash joins this group to the next one, so it is only drawn when there *is* a next
+       one on the same line. Letting the text wrap on its own left a dash hanging off the end
+       of a line, which on the one screen whose job is getting this number written down
+       correctly reads as part of the number. A fixed number of columns is what makes that
+       knowable: the break positions are chosen here rather than discovered by the browser. */
+    const endsLine = (i + 1) % TOK_COLS === 0;
+    const isLast = i === groups.length - 1;
+    const sep = (!isLast && !endsLine) ? '<span class="s">-</span>' : "";
     return `<span class="tokgrp">${chars}${sep}</span>`;
   }).join("");
 }
