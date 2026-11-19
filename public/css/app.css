@@ -28,7 +28,7 @@
 .acctnum .s{color:var(--dimmer)}   /* separators */
 /* The same button the rest of the app uses. These were 12px mono small-caps at .1em, a
    different control from every button behind the door. */
-.gatebtn{font-size:15px;letter-spacing:0;text-transform:none;background:var(--signal);color:var(--signal-ink);border:1px solid var(--signal);padding:13px 20px;cursor:pointer;border-radius:var(--r);min-height:48px;font-weight:600;font-family:var(--sans)}
+.gatebtn{font-size:15px;letter-spacing:0;text-transform:none;background:var(--signal-fill);color:var(--signal-ink);border:1px solid var(--signal-fill);padding:13px 20px;cursor:pointer;border-radius:var(--r);min-height:48px;font-weight:600;font-family:var(--sans)}
 .gatebtn.ghost{background:var(--panel-2);color:var(--text);border:1px solid var(--line)}
 .gatebtn.ghost:hover{border-color:var(--dimmer)}
 .gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--text);letter-spacing:.05em;font-family:var(--mono)}
@@ -252,7 +252,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .yearopt{min-height:44px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel-2);color:var(--text);
   font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;cursor:pointer}
 .yearopt:hover:not(:disabled){border-color:var(--signal);color:var(--signal)}
-.yearopt.is-now{background:var(--signal);border-color:var(--signal);color:var(--signal-ink);font-weight:700}
+.yearopt.is-now{background:var(--signal-fill);border-color:var(--signal-fill);color:var(--signal-ink);font-weight:700}
 /* Shown rather than left out: a gap where a year should be is a puzzle, a greyed one is an
    answer — that year is already in the ledger. */
 .yearopt.is-taken,.yearopt:disabled{opacity:.36;cursor:not-allowed;text-decoration:line-through}
@@ -390,7 +390,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .legal .note{border-left:2px solid var(--line);padding-left:14px;color:var(--dim);font-size:12.5px;margin-top:30px}
 .legal a{color:var(--signal)}
 
-.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--signal);color:var(--signal-ink);font-size:12px;font-weight:600;padding:10px 18px;border-radius:var(--r);opacity:0;pointer-events:none;transition:all .3s;z-index:60;max-width:90vw;text-align:center}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--signal-fill);color:var(--signal-ink);font-size:12px;font-weight:600;padding:10px 18px;border-radius:var(--r);opacity:0;pointer-events:none;transition:all .3s;z-index:60;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* On wide screens, sit Allocation beside Over time instead of stacking,
@@ -683,7 +683,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 @media(prefers-reduced-motion:reduce){.upd-bar{animation:none;transform:none}}
 
 /* active state for the theme toggle buttons */
-.btn.on{background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
+.btn.on{background:var(--signal-fill);color:var(--signal-ink);border-color:var(--signal-fill)}
 
 /* net-worth year tooltip (reuses .salflag box) */
 .salflag .tiph{font-weight:600;color:var(--signal);margin-bottom:4px}
@@ -937,7 +937,7 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .seg-btn{padding:8px 14px;min-height:38px;border:0;background:var(--panel-2);color:var(--dim);cursor:pointer;font-size:13px;font-weight:600}
 .seg-btn+.seg-btn{border-left:1px solid var(--line)}
 .seg-btn:hover{color:var(--text)}
-.seg-btn.is-on{background:var(--signal);color:var(--signal-ink)}
+.seg-btn.is-on{background:var(--signal-fill);color:var(--signal-ink)}
 
 
 /* ---------- a picker we draw all of ----------

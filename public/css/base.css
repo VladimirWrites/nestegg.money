@@ -49,6 +49,11 @@
   --signal: #ffb020;
   --signal-ink: #1a1200;
   --signal-soft: #ffb0201f;
+  /* --signal is tuned to be READ: in light it is a deep amber that clears AA against the page.
+     Using that same value to FILL a button gave light mode a dark brown slab. --signal-fill is
+     the painted version — saturated, with --signal-ink on top of it — so a primary button,
+     the selected tab and a segmented control look the same brightness in both themes. */
+  --signal-fill: #ffb020;
   --accent: #3ad17a;
   --accent-soft: #3ad17a1f;
   --danger: #ff6b6b;
@@ -129,8 +134,9 @@
     --dimmer: #8a8d97;
 
     --signal: #9a5b00;
-    --signal-ink: #fff8ec;
-    --signal-soft: #9a5b0014;
+    --signal-ink: #2a1a00;
+    --signal-soft: #9a5b0021;
+    --signal-fill: #f5a524;
     --accent: #1f7a4a;
     --accent-soft: #1f7a4a14;
     --danger: #c02626;
@@ -154,8 +160,9 @@
   --dimmer: #8a8d97;
 
   --signal: #9a5b00;
-  --signal-ink: #fff8ec;
-  --signal-soft: #9a5b0014;
+  --signal-ink: #2a1a00;
+  --signal-soft: #9a5b0021;
+  --signal-fill: #f5a524;
   --accent: #1f7a4a;
   --accent-soft: #1f7a4a14;
   --danger: #c02626;
@@ -286,8 +293,8 @@ img { max-width: 100%; display: block }
 .btn:disabled { opacity: 0.45; cursor: not-allowed }
 
 .btn-primary {
-  background: var(--signal);
-  border-color: var(--signal);
+  background: var(--signal-fill);
+  border-color: var(--signal-fill);
   color: var(--signal-ink);
 }
 .btn-primary:hover { filter: brightness(1.07); border-color: var(--signal) }
