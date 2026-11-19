@@ -229,7 +229,7 @@ export function renderSalary() {
       body += yr + `</tr>`;
     }
     let row = `<tr class="salmonth${openYears.has(y) ? "" : " is-folded"}" data-ym="${ym}" data-y="${y}"><td class="salm">${ymLabel(ym)}</td>`, hh = 0;
-    people.forEach((p) => { const e = salEntry(p, ym); if (e) hh += salBase(p, e); row += `<td class="num salgsep">${e && e.event ? `<span class="evtag">${esc(e.event)}</span>` : ""}${e && e.amount ? moneyIn(salTotal(e), salEccy(p, e)) : "—"}</td>`; });
+    people.forEach((p) => { const e = salEntry(p, ym); if (e) hh += salBase(p, e); row += `<td class="num salgsep">${e && e.event ? `<span class="evtag" title="${esc(e.event)}" aria-label="${esc(e.event)}">${esc(e.event)}</span>` : ""}${e && e.amount ? moneyIn(salTotal(e), salEccy(p, e)) : "—"}</td>`; });
     if (multi) row += `<td class="num salgsep">${hh ? money(hh) : "—"}</td>`;
     body += row + `</tr>`;
   });

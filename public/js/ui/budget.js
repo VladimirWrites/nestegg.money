@@ -39,7 +39,10 @@ function roItemRow(name, amount) {
 
 // A read-only category section: static header (no rename input, no delete ×).
 function roGroupSection(name, color, subtotalHTML, cardsHTML) {
-  return `<div class="grp"><div class="grphead"><span class="dot" style="background:${color}"></span><span class="grpname">${esc(name)}</span><span class="grpsub num">${subtotalHTML}</span></div><div class="grpcards">${cardsHTML}</div></div>`;
+  /* A category with nothing in it rendered its header and then an empty 30px strip below —
+     a card with a floor and no contents. With nothing to list there is nothing to open. */
+  const body = cardsHTML && cardsHTML.trim() ? `<div class="grpcards">${cardsHTML}</div>` : "";
+  return `<div class="grp${body ? "" : " is-empty"}"><div class="grphead"><span class="dot" style="background:${color}"></span><span class="grpname">${esc(name)}</span><span class="grpsub num">${subtotalHTML}</span></div>${body}</div>`;
 }
 
 // Where the income goes, at the top level: one wedge per category (expenses + loans grouped by the

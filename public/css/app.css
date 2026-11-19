@@ -187,7 +187,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .legrow:last-child{border-bottom:none}
 .legrow>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .swatch{width:11px;height:11px;border-radius:2px}
-.legrow .pct{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--dimmer);font-size:12px;text-align:right}
+.legrow .pct{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--dim);font-size:12.5px;text-align:right}
 .legrow .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
 
 /* One grouped list with inset dividers, not eight floating cards. Eight separately-bordered
@@ -964,8 +964,31 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .saltab td.num{white-space:normal;overflow-wrap:normal;word-break:normal}
   .saltab td.num,.saltab tr.saly td{font-size:12.5px}
   .saltable-scroll .salm,.saltable-scroll .salm-h{width:62px}
-  .saltab td.num .evtag{display:block;width:max-content;max-width:100%;margin:0 0 3px auto;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:1px 6px;line-height:1.5}
+  /* The note sits on the amount's own line, so a month that has one is exactly as tall as a
+     month that doesn't. Stacked above the figure it made that row a quarter taller and left
+     the three people's amounts at three different heights across one row — in a ledger, the
+     one thing a row has to do is line up. */
+  .saltab td.num .evtag{display:inline-block;vertical-align:middle;margin:0 6px 0 0;
+    max-width:7.5em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:1px 6px;line-height:1.5}
+}
+/* Narrower than this there is no width for both a word and a figure, and the word is the one
+   that would be cut to "Xmas bon…". It becomes a dot that carries the note in its tooltip and
+   its accessible name, so nothing is truncated and German fits as well as English. */
+@media(max-width:559px){
+  /* The dot is taken out of the inline flow and given the cell's left edge. The figure is
+     right-aligned, so the two never meet, and the figure keeps the whole width — which it
+     needs, because a German amount ("5.418,61 €") is longer than an English one and this is
+     the narrowest the table ever gets. */
+  .saltab td.num .evtag{position:absolute;left:3px;top:calc(50% - 3.5px);
+    width:7px;height:7px;max-width:none;padding:0;margin:0;border-radius:50%;
+    background:var(--dim);border:0;color:transparent;overflow:hidden;text-indent:-9999px}
+  /* Wrapping was only ever there to let a block-level chip sit above the figure. Nothing in
+     this cell wraps now — and the figure is one unbreakable word, so wrapping could only ever
+     have pushed it onto a second line and knocked the row off its neighbours' baseline. */
+  .saltab td.num{position:relative;white-space:nowrap;padding-left:14px;font-size:12px}
+  .saltable-scroll .salm,.saltable-scroll .salm-h{width:68px}
+}
+@media(max-width:899px){
   /* The month ran straight into the figure beside it. The cell is nowrap and the table is
      fixed-layout, so a column too narrow for "Sept 2024" does not wrap or ellipse it — it
      just prints it over the next column. 86px is what the longest label needs at this size,
