@@ -167,10 +167,38 @@ function importSalary() {
   toast(n ? t("salary.imported", { count: n }) + (bad ? " · " + t("salary.skipped", { count: bad }) : "") : t("salary.nothingParsed"));
 }
 
+/* The figure the Salary tab is opened for: what the household last took home, with the year
+ * so far under it and who it is counting. The most recent month that anybody has an amount in
+ * — not simply the last row, which may be a month nobody has filled in yet. */
+function renderSalaryHero(people) {
+  const amtEl = $("salHeroAmt"), noteEl = $("salHeroNote");
+  if (!amtEl) return;
+  const withAmt = [];
+  people.forEach((p) => (p.entries || []).forEach((e) => { if (e && e.amount) withAmt.push(e.ym); }));
+  if (!withAmt.length) {
+    amtEl.textContent = "—"; noteEl.textContent = ""; return;
+  }
+  const ym = withAmt.sort()[withAmt.length - 1], year = ym.slice(0, 4);
+  let month = 0, ytd = 0;
+  people.forEach((p) => (p.entries || []).forEach((e) => {
+    if (!e || !e.amount) return;
+    if (e.ym === ym) month += salBase(p, e);
+    if (e.ym.slice(0, 4) === year) ytd += salBase(p, e);
+  }));
+  amtEl.textContent = money(month);
+  /* The month goes in this line rather than in the label above, because that label carries a
+     data-i18n key: translateDom would put the generic string back over anything written here
+     the moment somebody switched language. */
+  const names = people.filter((p) => (p.entries || []).some((e) => e && e.amount)).map((p) => p.name).filter(Boolean);
+  noteEl.textContent = ymLabel(ym) + " · " + t("salary.heroNote", { total: money(ytd), year })
+    + (names.length > 1 ? " · " + names.join(" + ") : "");
+}
+
 // Read-only table shown on the Salary tab; all edits happen in the edit overlay.
 export function renderSalary() {
   drawSalaryChart();
   const host = $("salaryTable"), people = state.salaries || [];
+  renderSalaryHero(people);
   if (!people.length) { host.innerHTML = `<div class="emptyhint">${t("salary.emptyTable")}</div>`; return; }
   const yms = salTableYms(), multi = people.length > 1;
   let head = `<tr><th class="salm-h">${t("salary.impMonth")}</th>`;

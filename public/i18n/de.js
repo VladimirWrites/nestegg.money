@@ -234,6 +234,8 @@ export default {
   },
   salary: {
     dlChart: "Diagramm herunterladen",
+    heroLbl: "Letzter Monat",
+    heroNote: "{total} bisher in {year}",
     history: "Unsere Gehaltshistorie",
     next: "+ Nächster Monat",
     edit: "Gehälter bearbeiten",

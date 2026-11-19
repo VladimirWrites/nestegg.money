@@ -234,6 +234,8 @@ export default {
   },
   salary: {
     dlChart: "Download chart",
+    heroLbl: "Latest month",
+    heroNote: "{total} so far in {year}",
     history: "Our salary history",
     next: "+ Next month",
     edit: "Edit salaries",
