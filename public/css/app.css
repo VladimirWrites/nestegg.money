@@ -1100,8 +1100,14 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .fcrow .fld>.cap{flex:1 1 auto;min-width:0;white-space:normal;overflow:visible;text-overflow:clip;color:var(--text)}
   .fcrow .fld input,.fcrow .fld select{flex:0 0 11.5ch;width:auto;min-height:40px;padding:8px 10px}
   .fcrow .fld select{flex:0 0 auto;max-width:52%}
-  .fcrow .pct{flex:0 0 11.5ch}
-  .fcrow .pct input{flex:1 1 auto;width:100%}
+  .fcrow .pct{flex:0 0 12.5ch}
+  /* The "%" is positioned inside this box, so the field has to keep room for it. Setting a
+     flat padding on every field in this layout took that room away, and a right-aligned
+     value printed straight under the suffix — "2.5" with the 5 beneath the %. */
+  .fcrow .pct input{flex:1 1 auto;width:100%;padding-right:24px}
+  /* A long option ("Germany (Rentenpunkte)") shortens with an ellipsis instead of being cut
+     mid-word by the chevron. German runs longer again. */
+  .fcrow .fld select{text-overflow:ellipsis}
 
 /* The note a month carries, where the chip has shrunk to a dot.
  * A dot's tooltip is a mouse affordance; on a touch screen it is nothing at all, so the dot
