@@ -520,8 +520,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .chartwrap{position:relative;display:inline-block}
 .saldot{cursor:pointer}
 .salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--signal);border-radius:var(--r-sm);padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
-.saltable-scroll{overflow-x:auto;overflow-y:visible;border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:10px}
-@media(min-width:900px){.saltable-scroll{max-width:900px}}
+.saltable-scroll{overflow:visible;border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:10px}
 .saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
 .saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel-2);z-index:2}
@@ -739,7 +738,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .bud-card .sub{display:block;margin-top:8px;font-size:14px;color:var(--dim)}
 .bud-card .sub b{color:var(--text);font-weight:600}
 .bud-rows{margin:0 auto}
-.bud-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
+.bud-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
 .bud-row.indent{padding-left:14px}
 .bud-row.total{border-bottom:none;border-top:1px solid var(--line);font-weight:600}
 .bud-lbl{color:var(--text);font-size:14px}
@@ -1033,8 +1032,9 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 /* The Edit / Done switch in the Outgoings header. It sits at the end of the title line, where
    a panel's controls live on every other screen, and the explanation below it stays prose. */
 .bud-exp-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.bud-exp-head .bud-editbtn{margin-left:auto;order:2}
-.bud-exp-head .hint{order:3;flex:1 0 100%}
+.bud-exp-head{row-gap:4px}
+.bud-exp-head .bud-editbtn{margin-left:auto;order:2;align-self:center}
+.bud-exp-head .hint{order:3;flex:1 0 100%;margin:0}
 /* A read row is a line in a list, not a form row: name on the left, amount right-aligned in
    the same mono column every other amount in the app uses. */
 .bud-exp.ro{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:0 2px}

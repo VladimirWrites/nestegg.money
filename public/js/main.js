@@ -3,7 +3,7 @@
 // background data refreshes to a re-render, boots the app, and registers the service worker.
 import { state, setState } from "./domain/store.js";
 import { emptyState, migrate } from "./domain/schema.js";
-import { $, toast, downloadBlob, isIOSUserAgent, isStandalone } from "./ui/dom.js";
+import { $, toast, downloadBlob, isIOSUserAgent, isStandalone, keepNumberLocale } from "./ui/dom.js";
 import { scheduleSync, flushSync, autoRefresh, setDataListener, deleteVault, LS } from "./io/storage.js";
 import { clearKeys } from "./io/crypto.js";
 import { renderAll } from "./ui/charts.js";
@@ -144,6 +144,7 @@ if (installBtn) {
 // Resolve the locale and translate the static page before first paint (module scripts run
 // pre-render), so boot never flashes English at a German user. Failure = English fallback.
 try { await initI18n(); translateDom(); } catch (e) {}
+try { keepNumberLocale(); } catch (e) {}
 
 try { boot(); } catch (e) {}
 

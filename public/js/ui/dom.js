@@ -186,3 +186,32 @@ export function pickerInit(rootId, btnId, valId, panelId, options, onPick) {
 
   return { set: (v) => { current = v; val.textContent = v; if (isOpen()) draw(); } };
 }
+
+/* Keep every numeric field speaking the same number language as the figures beside it.
+ *
+ * money() is pinned to en-IE, so an amount always reads "€3,376,466" whatever the interface
+ * language is. A <input type="number"> ignores that and renders its value in the *element's*
+ * language, which inherits from <html lang>. On the German interface that put "39,32" and
+ * "2,5" in the forecast fields a few lines under "€3,376,466" — three number formats on one
+ * screen, from one ledger.
+ *
+ * The inputs are stamped rather than <html> being changed, because the document's language is
+ * what tells a screen reader which language to pronounce the prose in, and the prose really
+ * is German. Only the figures are en-IE.
+ *
+ * An observer rather than a pass per render: these fields are built by half a dozen different
+ * screens, and one of them would eventually be added without remembering to call it. */
+export function keepNumberLocale(root = document) {
+  const stamp = (el) => { if (el.lang !== "en-IE") el.lang = "en-IE"; };
+  const all = (n) => {
+    if (n.nodeType !== 1) return;
+    if (n.matches && n.matches('input[type="number"]')) stamp(n);
+    if (n.querySelectorAll) n.querySelectorAll('input[type="number"]').forEach(stamp);
+  };
+  all(root.documentElement || root);
+  try {
+    new MutationObserver((recs) => {
+      for (const r of recs) r.addedNodes.forEach(all);
+    }).observe(root.body || root, { childList: true, subtree: true });
+  } catch (e) { /* no observer: the one-off pass above still covered what exists */ }
+}
