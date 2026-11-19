@@ -287,7 +287,6 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .fcrow{display:grid;grid-template-columns:1fr;gap:12px;margin:6px 0 16px}
 @media(min-width:620px){.fcrow{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}}
 
-}
 .fcrow .fld{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--dim);min-width:0}
 .fcrow .fld>.cap{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fcrow .fld input,.fcrow .fld select{width:100%;min-height:44px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:var(--r);padding:11px 14px;font-size:16px}
@@ -566,7 +565,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* Below the topbar on a phone, which is the thing it would otherwise hide behind. */
 @media(max-width:899px){.saltab.rotab thead th{top:calc(60px + var(--edge-t))}}
 .saltab.rotab tbody td{font-size:13.5px;font-variant-numeric:tabular-nums}
-.evtag{display:inline-block;margin-right:8px;font-size:9.5px;letter-spacing:.03em;color:var(--dim);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px 8px;vertical-align:middle}
+.evtag{appearance:none;-webkit-appearance:none;background:transparent;font:inherit;display:inline-block;margin-right:8px;font-size:9.5px;letter-spacing:.03em;color:var(--dim);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px 8px;vertical-align:middle}
 .salimport{margin-top:16px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel-2);padding:0 13px}
 .salimport summary{cursor:pointer;padding:12px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal)}
 .salimport[open]{padding-bottom:13px}
@@ -689,7 +688,6 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 }
 
 
-}
 /* Reduced motion: the chart is drawn in full and holds still. It still says the app is busy;
    it just stops filling. */
 /* Reduced motion: the chart is drawn in full and holds still. It still says the app is busy;
@@ -1108,6 +1106,7 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   /* A long option ("Germany (Rentenpunkte)") shortens with an ellipsis instead of being cut
      mid-word by the chevron. German runs longer again. */
   .fcrow .fld select{text-overflow:ellipsis}
+}
 
 /* The note a month carries, where the chip has shrunk to a dot.
  * A dot's tooltip is a mouse affordance; on a touch screen it is nothing at all, so the dot
