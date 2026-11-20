@@ -339,6 +339,8 @@ export function renderSalary() {
    read-only Salary tab keeps the side-by-side household table for reading. Above 900px there is
    room for everyone, so the full grid comes back. */
 const salNarrow = () => { try { return matchMedia("(max-width: 899px)").matches; } catch (e) { return false; } };
+/* Narrower again: the width at which five columns stop being readable at all. */
+const salCards = () => { try { return matchMedia("(max-width: 619px)").matches; } catch (e) { return false; } };
 let salWho = 0;   // which person the narrow layout is showing
 
 function salPersonSwitch(people) {
@@ -347,11 +349,50 @@ function salPersonSwitch(people) {
     `<button type="button" class="seg-btn${i === salWho ? " is-on" : ""}" data-salwho="${i}">${esc(p.name || t("salary.namePh"))}</button>`).join("") + `</div>`;
 }
 
+/* Below 620px the editor is a list of months, not a table.
+ *
+ * A row of this table is a month, a net amount, a currency, a note and a delete button. At
+ * 320px those five columns leave 43px each for the amount, the currency and the note, so a
+ * salary rendered as "5,4:" with its last glyph cut in half, the currency as "E", and the
+ * note as "Rais". No amount of tightening fixes that: five columns do not fit, and the thing
+ * being edited is money, where a half-read figure is worse than none.
+ *
+ * So each month becomes a card: the month and its delete button on one line, the amount and
+ * its currency on the next, the note under them. Same fields, same data attributes, same
+ * handlers — the only thing that changes is the shape. */
+function salMonthCards(p, yms) {
+  let out = "", curY = null;
+  yms.forEach((ym) => {
+    const y = ym.slice(0, 4);
+    if (y !== curY) {
+      curY = y;
+      const tot = (p.entries || []).filter((e) => e.ym.slice(0, 4) === y).reduce((a, e) => a + salBase(p, e), 0);
+      /* The subtotal says what it is. In the table it was a bare figure under the Event
+         column, 250px from the amounts it sums, in the weight of a column heading. */
+      out += `<div class="smy"><span class="smy-y">${y}</span><span class="smy-t" data-ytot="${p.id}:${y}">${tot ? t("salary.yearTotal", { amount: money(tot) }) : t("salary.yearNone")}</span></div>`;
+    }
+    const e = salEntry(p, ym);
+    const amt = e && e.amount ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
+    const del = `<button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${t("salary.removeMonthAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>`;
+    const tag = amt === "" ? `<span class="smon-tag">${t("salary.notFilled")}</span>` : "";
+    out += `<div class="smon${amt === "" ? " is-empty" : ""}" data-ym="${ym}">`
+      + `<div class="smon-h"><span class="smon-m">${ymLabel(ym)}</span>${tag}${del}</div>`
+      + `<div class="smon-row">`
+      + `<label class="smon-f smon-amt"><span class="smon-cap">${t("salary.thNet")}</span><input class="salf num" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0.00"></label>`
+      + `<label class="smon-f smon-ccy"><span class="smon-cap">${t("salary.thCcy")}</span><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select></label>`
+      + `</div>`
+      + `<label class="smon-f smon-ev"><span class="smon-cap">${t("salary.thEvent")}</span><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="${t("salary.eventPh")}" title="${t("salary.eventTitle")}"></label>`
+      + `</div>`;
+  });
+  return out;
+}
+
 function renderSalaryEdit() {
   const host = $("salaryList");
   const people = state.salaries || [];
   if (!people.length) { host.innerHTML = `<div class="emptyhint">${t("salary.emptyEdit")}</div>`; return; }
   const narrow = salNarrow();
+  const cards = salCards();
   if (salWho >= people.length) salWho = 0;
   // One person's column, or everybody's.
   const shown = narrow ? [people[salWho]] : people;
@@ -386,9 +427,13 @@ function renderSalaryEdit() {
     body += row + `</tr>`;
   });
   const dFrom = yms.length ? yms[0] : new Date().getFullYear() + "-01", dTo = salThisMonth();
-  host.innerHTML = (narrow ? salPersonSwitch(people) : "") +
-    `<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + shown.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>
-    <div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="btn btn-sm" data-salgen>${t("salary.addRange")}</button><button class="btn btn-sm" data-salnext>${t("salary.next")}</button></div>`;
+  const person = shown[0];
+  const cardHead = `<div class="smon-head"><input class="salname" value="${esc(person.name)}" data-sid="${person.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${person.id}" title="${esc(t("salary.removeName", { name: person.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;
+  const nextBtn = `<button class="btn btn-sm btn-primary smon-next" data-salnext>${t("salary.next")}</button>`;
+  const cardList = `${cardHead}<div class="smon-top">${nextBtn}</div><div class="smons">${yms.length ? salMonthCards(person, yms) : `<div class="exhint">${t("salary.noMonths")}</div>`}</div>`;
+  const tableHTML = `<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + shown.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>`;
+  host.innerHTML = (narrow ? salPersonSwitch(people) : "") + (cards ? cardList : tableHTML) +
+    `<div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="btn btn-sm" data-salgen>${t("salary.addRange")}</button>${cards ? "" : `<button class="btn btn-sm btn-primary" data-salnext>${t("salary.next")}</button>`}</div>`;
   const who = $("salImportWho"); if (who) { const prev = who.value; who.innerHTML = people.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join(""); if (prev) who.value = prev; }
 }
 

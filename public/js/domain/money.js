@@ -116,7 +116,10 @@ export function parseNum(s) {
 
 // The canonical way to write a number back into a field: grouped, en-IE, like every figure
 // the app prints beside it.
-export function fmtNum(n, maxFrac = 2) {
+export function fmtNum(n, maxFrac = 2, minFrac = 0) {
   if (n == null || n === "" || !Number.isFinite(Number(n))) return "";
-  return new Intl.NumberFormat("en-IE", { maximumFractionDigits: maxFrac }).format(Number(n));
+  /* minFrac is for columns of money: without it a formatter drops trailing zeros, so
+     "3,687.80" is written "3,687.8" and sits a character short of the figures above and
+     below it, which in a right-aligned ledger means the decimal points do not line up. */
+  return new Intl.NumberFormat("en-IE", { maximumFractionDigits: Math.max(maxFrac, minFrac), minimumFractionDigits: minFrac }).format(Number(n));
 }

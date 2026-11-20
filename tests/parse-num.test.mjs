@@ -96,3 +96,16 @@ test("fmtNum gives an empty field for nothing, rather than NaN or 0", () => {
   assert.equal(fmtNum(undefined), "");
   assert.equal(fmtNum(NaN), "");
 });
+
+test("fmtNum holds a minimum number of decimals when a column asks for one", () => {
+  /* A ledger column lines up on the decimal point, which it cannot do if the formatter
+     drops trailing zeros: 3687.8 has to be written "3,687.80" beside "5,418.61". */
+  assert.equal(fmtNum(3687.8, 2, 2), "3,687.80");
+  assert.equal(fmtNum(626, 2, 2), "626.00");
+  assert.equal(fmtNum(5418.61, 2, 2), "5,418.61");
+  assert.equal(fmtNum(0, 2, 2), "0.00");
+  // and a round trip still lands on the same number
+  assert.equal(parseNum(fmtNum(3687.8, 2, 2)), 3687.8);
+  // the default is unchanged
+  assert.equal(fmtNum(3687.8), "3,687.8");
+});

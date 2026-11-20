@@ -44,5 +44,12 @@ export function refDateForYear(y) {
 }
 
 // Short "Mon YYYY" label for a Date (en-GB); empty string for a missing date.
-export const fmtMY = (d) =>
-  d ? d.toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "";
+export const fmtMY = (d) => {
+  if (!d) return "";
+  /* en-GB abbreviates September as "Sept" and every other month to three letters, so one
+     row in a column of months was a character longer than the rest. Trimmed to three, and
+     the trailing stop some locales add ("Okt.") goes with it. */
+  const s = d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+  const i = s.indexOf(" ");
+  return i < 0 ? s : s.slice(0, i).replace(/\.$/, "").slice(0, 3) + s.slice(i);
+};

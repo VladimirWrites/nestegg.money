@@ -44,8 +44,12 @@ export function showEditor(id) {
   try {
     if (matchMedia("(hover:hover) and (pointer:fine)").matches) {
       requestAnimationFrame(() => {
-        const f = el.querySelector("input:not([type=checkbox]):not([type=radio]),select,textarea");
-        if (f) { f.focus(); if (f.select) try { f.select(); } catch (e) {} }
+        /* The first field is not always the one you came to type in: in the salary editor it
+           is the person's name, selected, so the first keystroke renamed Alex instead of
+           entering a salary. A field can opt in by carrying data-autofocus; nothing else is
+           focused, and nothing is ever pre-selected. */
+        const f = el.querySelector("[data-autofocus]");
+        if (f) f.focus();
       });
     }
   } catch (e) {}
