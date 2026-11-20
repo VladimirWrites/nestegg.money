@@ -594,6 +594,8 @@ export default {
     errFoot: "nestegg — privater Vermögens-Tracker",
   },
   budget: {
+    removeExpenseConfirm: "{name} entfernen?",
+    thisExpense: "diese Ausgabe",
     done: "Fertig",
     leftOver: "Übrig",
     uncategorized: "Ohne Kategorie",
@@ -625,6 +627,9 @@ export default {
     },
   },
   common: {
+    categoryNeedsName: "Eine Kategorie braucht einen Namen.",
+    categoryExists: "Es gibt bereits eine Kategorie namens {name}.",
+    categoryReserved: "{name} ist der Name für alles ohne Kategorie — bitte einen anderen wählen.",
     never: "nie",
     justNow: "gerade eben",
     minAgo: "vor {count} Min.",

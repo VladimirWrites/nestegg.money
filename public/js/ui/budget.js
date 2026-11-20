@@ -6,7 +6,7 @@ import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { PALETTE } from "../domain/constants.js";
 import { money, esc } from "../domain/money.js";
-import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, renameBudgetCategory, removeBudgetCategory, budgetCategoryUsage } from "../domain/budget.js";
+import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, renameBudgetCategory, removeBudgetCategory, budgetCategoryUsage, UNCATEGORIZED } from "../domain/budget.js";
 import { C, refreshPalette, donutArcs, exportChart, positionTip } from "./chart-kit.js";
 import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
 import { scheduleSync } from "../io/storage.js";
@@ -37,19 +37,34 @@ function roItemRow(name, amount) {
   return `<div class="bud-exp ro"><span class="bud-loan-name">${esc(name)}</span><span class="bud-loan-amt">${money(amount)}</span></div>`;
 }
 
+/* Give focus back to the equivalent control after a re-render. Every edit on this screen
+   rebuilds the whole body, which destroys whatever the reader had just used. */
+function budRefocus(selector) {
+  setTimeout(() => {
+    const el = selector && document.querySelector(selector);
+    if (el && !el.closest("[inert]")) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+  }, 0);
+}
+
 // A read-only category section: static header (no rename input, no delete ×).
 function roGroupSection(name, color, subtotalHTML, cardsHTML) {
   /* A category with nothing in it rendered its header and then an empty 30px strip below —
      a card with a floor and no contents. With nothing to list there is nothing to open. */
   const body = cardsHTML && cardsHTML.trim() ? `<div class="grpcards">${cardsHTML}</div>` : "";
-  return `<div class="grp${body ? "" : " is-empty"}"><div class="grphead"><span class="dot" style="background:${color}"></span><span class="grpname">${esc(name)}</span><span class="grpsub num">${subtotalHTML}</span></div>${body}</div>`;
+  /* `grptitle`, not `grpname`: the static label shared a class with the rename input, so a
+     rule written for field edges painted a text input's underline across a word you cannot
+     type in — a hairline from the name to the subtotal on every category, which also read as
+     a second divider. A different class is what stops an input rule reaching it again. */
+  return `<section class="grp grp-ro${body ? "" : " is-empty"}" aria-label="${esc(name)}">`
+    + `<div class="grphead"><span class="dot" style="background:${color}" aria-hidden="true"></span>`
+    + `<h3 class="grptitle">${esc(name)}</h3><span class="grpsub num">${subtotalHTML}</span></div>${body}</section>`;
 }
 
 // Where the income goes, at the top level: one wedge per category (expenses + loans grouped by the
 // domain) plus the leftover. Each carries its `items` so the tooltip can break it down on hover.
 // The "Uncategorized" sentinel comes from domain/budget.js (which stays i18n-free), so it's
 // mapped to the active locale here, at the UI boundary. Real category names are user data.
-const dispCat = (name) => (name === "Uncategorized" ? t("budget.uncategorized") : name);
+const dispCat = (name) => (name === UNCATEGORIZED ? t("budget.uncategorized") : name);
 
 function breakdownSegments(s) {
   /* What is left is not a category of spending, and green is this palette's documented
@@ -57,7 +72,7 @@ function breakdownSegments(s) {
      to a neutral grey because the third category was painted the identical green and a 3%
      sliver could not be told from a 17% arc. So the categories give that green up instead:
      the screen is named after the leftover, and it was the dullest wedge on it. */
-  const left = C.green;
+  const left = LEFTOVER_HEX;
   const pal = budgetPalette();
   const segs = [];
   (s.categories || []).forEach((c, i) => { if (c.total > 0) segs.push({ name: dispCat(c.category), v: c.total, color: pal[i % pal.length], items: c.items }); });
@@ -195,7 +210,15 @@ function loanRow(l, loanCats) {
 
 /* Colour a category to match its doughnut wedge — through the same filtered palette the
    wedges use, or the legend and the ring disagree about which colour is whose. */
-const budgetPalette = () => PALETTE.filter((c) => c.toLowerCase() !== String(C.green).toLowerCase());
+/* A fixed index, not a themed comparison.
+ *
+ * This filtered PALETTE against `C.green`, which is rebound per theme — so in dark it removed
+ * an entry and in light it removed nothing. The palette was eleven long in one theme and
+ * twelve in the other, every category from the third onward changed colour between themes,
+ * and in light a spending category was painted the very green that "Left over" uses, which
+ * is the collision this filter exists to prevent. */
+const LEFTOVER_HEX = "#3ad17a";
+const budgetPalette = () => PALETTE.filter((c) => c.toLowerCase() !== LEFTOVER_HEX);
 function catColor(name, cats) {
   const i = (cats || []).findIndex((c) => c.category === name);
   const pal = budgetPalette();
@@ -275,7 +298,7 @@ export function renderBudget() {
            right. Written as a bare text node plus an auto margin, the title, the button and
            the whitespace between them became three anonymous flex items and the button
            settled wherever that arithmetic put it — 836px into a 1354px row. -->
-      <div class="bud-exp-head"><div class="bud-exp-headtext"><span class="bud-exp-title">${t("budget.outgoings")}</span><span class="hint">${t("budget.outgoingsHint")}</span></div>${RO ? "" : `<button type="button" class="btn btn-sm bud-editbtn" id="budEdit">${EDITING ? t("budget.done") : t("common.edit")}</button>`}</div>
+      <div class="bud-exp-head"><div class="bud-exp-headtext"><span class="bud-exp-title">${t("budget.outgoings")}</span>${reading() ? "" : `<span class="hint">${t("budget.outgoingsHint")}</span>`}</div>${RO ? "" : `<button type="button" class="btn btn-sm bud-editbtn${EDITING ? " btn-primary" : ""}" id="budEdit" aria-pressed="${EDITING}">${EDITING ? t("budget.done") : t("common.edit")}</button>`}</div>
       <div id="budItems">${itemsHTML(s, b)}</div>
       <div class="bud-row total"><span class="bud-lbl">${t("budget.totalOutgoings")}</span><span class="bud-val" id="budOutTotal">${money(s.fixed + s.expenses)}</span></div>
     </div>
@@ -292,7 +315,9 @@ export function renderBudget() {
      function reaches for controls that exist only while editing, so anything that throws down
      there would take the one button that gets you out of read mode with it. */
   const eb = $("budEdit");
-  if (eb) eb.onclick = () => { EDITING = !EDITING; renderBudget(); };
+  /* The button that was pressed is inside the markup the re-render replaces, so focus fell
+     to <body> and a keyboard reader was returned to the top of the page with nothing said. */
+  if (eb) eb.onclick = () => { EDITING = !EDITING; renderBudget(); budRefocus("#budEdit"); };
   if (reading()) return;
 
   // Override income: live, no rebuild (keeps focus while typing). Empty field = use salary.
@@ -325,10 +350,19 @@ export function renderBudget() {
 
   // Inline rename + delete on the category section headers (same as net worth).
   const items = $("budItems");
+  /* The same guards the net worth editor has carried since its own review, which this copy
+     of the pattern never received. Without them: clearing the field was silently refused and
+     the input stayed blank over a category that still had its name; and typing a name that
+     already existed merged the two for good — two identical cards, each listing the same
+     rows, each headed the same total, the list summing to twice the ring, and no undo. */
   items.addEventListener("change", (ev) => {
     if (!ev.target.classList.contains("grpname")) return;
-    const old = ev.target.dataset.grp, nw = ev.target.value.trim();
-    if (nw && nw !== old) { renameBudgetCategory(old, nw); scheduleSync(); renderBudget(); }
+    const was = ev.target.dataset.grp, nw = ev.target.value.trim();
+    if (nw === was) { ev.target.value = was; return; }
+    if (!nw) { toast(t("common.categoryNeedsName")); ev.target.value = was; return; }
+    if (nw === UNCATEGORIZED || nw === t("budget.uncategorized")) { toast(t("common.categoryReserved", { name: nw })); ev.target.value = was; return; }
+    if (budgetCategoryNames().some((g) => g !== was && g === nw)) { toast(t("common.categoryExists", { name: nw })); ev.target.value = was; return; }
+    renameBudgetCategory(was, nw); scheduleSync(); renderBudget();
   });
   items.addEventListener("click", (ev) => {
     const gd = ev.target.closest("[data-grpdel]");
@@ -338,7 +372,11 @@ export function renderBudget() {
       return;
     }
     const del = ev.target.closest(".bud-exp-del");
-    if (del) { b.expenses = b.expenses.filter((x) => x.id !== del.dataset.id); scheduleSync(); renderBudget(); }
+    if (del) {
+      const row = b.expenses.find((x) => x.id === del.dataset.id);
+      if (row && !confirm(t("budget.removeExpenseConfirm", { name: row.name || t("budget.thisExpense") }))) return;
+      b.expenses = b.expenses.filter((x) => x.id !== del.dataset.id); scheduleSync(); renderBudget();
+    }
   });
 
   $("budAddExp").onclick = () => {

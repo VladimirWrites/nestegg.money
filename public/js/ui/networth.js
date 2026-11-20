@@ -310,8 +310,8 @@ $("edEntries").addEventListener("change", async (e) => {
   if (el.dataset.grp != null) {
     const was = el.dataset.grp, now = el.value.trim();
     if (now === was) { el.value = was; return; }
-    if (!now) { toast(t("net.categoryNeedsName")); el.value = was; return; }
-    if (groupNames().some((g) => g !== was && g === now)) { toast(t("net.categoryExists", { name: now })); el.value = was; return; }
+    if (!now) { toast(t("common.categoryNeedsName")); el.value = was; return; }
+    if (groupNames().some((g) => g !== was && g === now)) { toast(t("common.categoryExists", { name: now })); el.value = was; return; }
     renameCategory(was, now);   // the global tag, in the list and across every year and asset
     scheduleSync(); renderEntries(); return;
   }

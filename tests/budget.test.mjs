@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { setState } from "../public/js/domain/store.js";
-import { salaryIncome, monthlyLoanOutflow, loanOutflows, budgetCategories, budgetSummary } from "../public/js/domain/budget.js";
+import { salaryIncome, monthlyLoanOutflow, loanOutflows, budgetCategories, budgetSummary, UNCATEGORIZED } from "../public/js/domain/budget.js";
 
 const near = (a, b, eps = 1e-2) => assert.ok(Math.abs(a - b) <= eps, `${a} !~= ${b}`);
 
@@ -87,7 +87,7 @@ test("budgetCategories: expenses (by group) and loans (by loanCats) grouped toge
   near(housing.total, 300 + 1199.10, 1e-2);      // expense + the mortgage loan
   assert.equal(housing.items.length, 2);          // Rent help (expense) + Home (loan)
   assert.ok(housing.items.some((i) => i.kind === "loan" && i.name === "Home"));
-  assert.ok(cats.some((c) => c.category === "Uncategorized")); // the un-grouped Misc
+  assert.ok(cats.some((c) => c.category === UNCATEGORIZED)); // the un-grouped Misc
   assert.equal(budgetSummary().categories.length, 3); // Housing, Food, Uncategorized
 });
 
@@ -105,4 +105,11 @@ test("budgetSummary: negative leftover allowed; null savings rate when income is
   assert.equal(s.income, 0);
   assert.equal(s.leftover, -1500);
   assert.equal(s.savingsRatePct, null);
+});
+
+test("the untagged bucket is keyed on a name nobody can type", () => {
+  /* It used to be the plain word "Uncategorized", which is also the obvious name for a
+     reader to give a category — and naming one that merged it with everything untagged. */
+  assert.ok(UNCATEGORIZED.includes("\u0000"), "the sentinel is not typeable");
+  assert.notEqual(UNCATEGORIZED, "Uncategorized");
 });

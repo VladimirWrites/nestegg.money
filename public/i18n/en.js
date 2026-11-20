@@ -592,6 +592,8 @@ export default {
     errFoot: "nestegg — private net-worth tracker",
   },
   budget: {
+    removeExpenseConfirm: "Remove {name}?",
+    thisExpense: "this outgoing",
     done: "Done",
     leftOver: "Left over",
     uncategorized: "Uncategorized",
@@ -623,6 +625,9 @@ export default {
     },
   },
   common: {
+    categoryNeedsName: "A category needs a name.",
+    categoryExists: "There is already a category called {name}.",
+    categoryReserved: "{name} is the name for everything with no category — pick another.",
     never: "never",
     justNow: "just now",
     minAgo: "{count} min ago",

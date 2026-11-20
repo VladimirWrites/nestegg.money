@@ -2166,3 +2166,45 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 .salpick[type="month"]::-webkit-calendar-picker-indicator{
   position:absolute;inset:0;width:auto;height:auto;margin:0;padding:0;opacity:0;cursor:pointer;
 }
+/* ── the Budget screen's category groups ──────────────────────────────── */
+
+/* The reading label is its own element now, so no input rule can reach it. The underline it
+   was wearing came from a field-edge rule written for the asset editors. */
+.grptitle{flex:1;min-width:0;margin:0;font-size:15px;font-weight:600;letter-spacing:0;
+  line-height:1.3;color:var(--text);overflow-wrap:anywhere}
+span.grpname,.grptitle{border-bottom:0}
+/* …and the rules that style the rename field are scoped to the field. */
+input.grpname{font-size:15px}
+
+/* An empty category was the loudest object on the screen — a rounded capsule with an
+   underline and a bold figure, and nothing to press. */
+.grp.is-empty .grptitle,.grp.is-empty .grpsub{color:var(--dim);font-weight:500}
+
+/* A name and its amount sat a thousand pixels apart on a laptop with nothing between them,
+   while the legend directly above ruled every row. */
+.grpcards>.bud-exp.ro{border-top:1px solid var(--line-soft)}
+.grpcards>.bud-exp.ro:first-child{border-top:0}
+
+/* Editing has to be visible without hunting for a 12px glyph: the header is tinted, the
+   name is a real boxed field like every other, and deleting a category is a bordered
+   control rather than the faintest mark in the card. */
+.grp:has(input.grpname) .grphead{background:var(--panel-2)}
+input.grpname{flex:0 1 28ch;min-height:40px;padding:0 10px;background:var(--panel);
+  border:1px solid var(--field-edge);border-radius:var(--r-sm)}
+.grpdel{border:1px solid var(--line);border-radius:var(--r-sm)}
+.grpdel:hover{border-color:var(--danger)}
+
+/* Three fixes made on the sibling screens that never reached this one. */
+@media(max-width:899px){
+  #budItems .grptitle,#budItems input.grpname,#budItems .bud-exp input,
+  #budItems .bud-exp select,.bud-input{font-size:16px}
+}
+.bud-exp input:focus-visible,.bud-exp select:focus-visible,.bud-input:focus-visible,
+.bud-exp-del:focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-color:var(--signal)}
+.bud-exp input,.bud-exp select,.bud-input{border-color:var(--field-edge)}
+.bud-exp-del{min-width:44px;min-height:44px}
+/* The total of everything should not be quieter than the total of one category. */
+.bud-row.total .bud-val{font-size:17px;font-weight:700}
+/* A dot on a white card at 1.4:1 is the only link between a row and its wedge. */
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]) .grphead .dot{box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}}
+:root[data-theme="light"] .grphead .dot{box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}

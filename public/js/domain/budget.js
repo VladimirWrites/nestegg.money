@@ -91,11 +91,20 @@ export function removeBudgetCategory(name) {
 // loanCats map, keyed by asset id) grouped together — so a "Transportation" category can hold both
 // the car loan and the fuel expense. Uncategorized items fall under "Uncategorized". Each category
 // carries its items for the tooltip. Insertion order preserved.
+/* The bucket for money with no category, keyed on something nobody can type.
+ *
+ * It used to be the plain string "Uncategorized", which is also the obvious word for a
+ * reader to name a category — and in German the ring already says "Ohne Kategorie", so the
+ * English word looks free. Naming one that merged it with everything untagged: the section
+ * header painted its own sum and then a refresh overwrote it with a total that included
+ * items from somewhere else on the page. */
+export const UNCATEGORIZED = "\u0000uncategorized";
+
 export function budgetCategories() {
   const map = new Map();
   const add = (cat, name, amount, kind) => {
     if (!(amount > 0)) return;
-    const c = (cat && String(cat).trim()) || "Uncategorized";
+    const c = (cat && String(cat).trim()) || UNCATEGORIZED;
     let g = map.get(c);
     if (!g) { g = { category: c, total: 0, items: [] }; map.set(c, g); }
     g.total = round2(g.total + amount);
