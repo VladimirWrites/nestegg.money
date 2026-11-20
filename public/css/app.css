@@ -1111,7 +1111,11 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .saltable-scroll .saltab{width:100%;table-layout:fixed;border-collapse:collapse}
   .saltable-scroll .salm,.saltable-scroll .salm-h{width:74px}
   .saltable-scroll .salmccy{width:100%;min-width:0;padding-right:26px;background-position:right 7px center}
-  .saltable-scroll .salf,.saltable-scroll .salev{width:100%;min-width:0}
+  /* `.saltab td .salf` carries a min-width of its own and outranks a rule written as
+     `.saltable-scroll .salf`, so in edit mode the amount field ran under the currency
+     select and the event field ran under the delete button. Matched at full strength. */
+  .saltable-scroll .saltab td .salf,.saltable-scroll .saltab td .salev,
+  .saltable-scroll .saltab td .salmccy{width:100%;min-width:0;max-width:100%}
   .saltable-scroll .salxc,.saltable-scroll .salx-h{width:34px}
   /* A month's note and its amount share one cell. Side by side in a 90px column they printed
      over each other — "€5,41€3,6039.84" — so the note goes on its own line above the figure,

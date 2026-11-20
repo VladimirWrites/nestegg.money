@@ -107,8 +107,14 @@ export function renderForecast() {
   const band = fc.band, br = fcBandRates(), bandLo = [], bandHi = [];
   if (band) for (let Y = lastA.y; Y <= horizon; Y++) { const dt = new Date(Y, 11, 31); bandLo.push({ y: Y, v: Y <= lastA.y ? lastA.v : fnet(dt, br.lo) }); bandHi.push({ y: Y, v: Y <= lastA.y ? lastA.v : fnet(dt, br.hi) }); }
   const minY = actual[0].y, maxY = horizon, span = Math.max(1, maxY - minY);
-  const allV = actual.map((p) => Math.max(0, p.v)).concat(proj.map((p) => Math.max(0, p.v))); if (target > 0) allV.push(target); if (band) bandHi.forEach((p) => allV.push(Math.max(0, p.v)));
-  const nm = niceCeil(Math.max(1, ...allV));
+  /* The axis is scaled to what the chart is *about* — the ledger's own history, the expected
+     projection and the goal — and not to the optimistic bound of the scenario band. Scaled to
+     that bound, a band whose great case is twice the expected one pushed everything else into
+     the bottom half: the 2019-2026 actuals, the only factual series on the chart, were drawn
+     flat along the zero gridline. The great case is still drawn; it simply runs off the top,
+     which is the honest shape for a number that is one assumption away from any other. */
+  const allV = actual.map((p) => Math.max(0, p.v)).concat(proj.map((p) => Math.max(0, p.v))); if (target > 0) allV.push(target);
+  const nm = niceCeil(Math.max(1, ...allV) * 1.08);
   const dim = chartDims(svg, 720), W = dim.W, H = dim.H;
   const padL = 58, padR = 16, padT = 22, padB = 30, innerW = W - padL - padR, plotH = H - padT - padB;
   const X = (y) => padL + ((y - minY) / span) * innerW, Y = (v) => padT + plotH - (Math.max(0, v) / nm) * plotH;
@@ -132,16 +138,23 @@ export function renderForecast() {
   // goal line
   if (target > 0 && target <= nm) {
     const gy = Y(target); s += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="${C.green}" stroke-width="1.4" stroke-dasharray="2 4"/>`;
-    const lbl = t("net.goalLine", { amount: sym + shortK(target) }), lw = lbl.length * 5.6 + 10, above = gy > padT + 18, ty = above ? gy - 5 : gy + 12, ry = above ? gy - 15 : gy + 2;
-    s += `<rect x="${padL + 2}" y="${ry}" width="${lw}" height="14" rx="3" fill="${C.bg}" opacity="0.78"/>`;
-    s += `<text x="${padL + 7}" y="${ty}" text-anchor="start" font-family="ui-monospace,monospace" font-size="11" fill="${C.green}">${lbl}</text>`;
+    /* At the right-hand end of its own line, where the axis labels are not: at the left it
+       sat on top of whichever gridline the goal happened to fall near. */
+    const lbl = t("net.goalLine", { amount: sym + shortK(target) }), lw = lbl.length * 5.6 + 10, above = gy > padT + 18, ty = above ? gy - 6 : gy + 13, ry = above ? gy - 16 : gy + 3;
+    s += `<rect x="${W - padR - lw}" y="${ry}" width="${lw}" height="14" rx="3" fill="${C.bg}" opacity="0.85"/>`;
+    s += `<text x="${W - padR - 5}" y="${ty}" text-anchor="end" font-family="ui-monospace,monospace" font-size="11" fill="${C.green}">${lbl}</text>`;
   }
   // scenario band fill (poor -> great), drawn under the lines
   if (band) {
+    /* Clipped to the plot: the great case may run above the axis now, and an SVG polygon
+       does not stop at the axis on its own. */
+    s += `<defs><clipPath id="fcPlot"><rect x="${padL}" y="${padT}" width="${innerW}" height="${plotH}"/></clipPath></defs>`;
     const poly = bandHi.map((p) => X(p.y) + "," + Y(p.v)).concat(bandLo.slice().reverse().map((p) => X(p.y) + "," + Y(p.v))).join(" ");
-    s += `<polygon points="${poly}" fill="${C.amber}" opacity="0.1"/>`;
-    s += `<polyline points="${bandHi.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>${t("net.bandGreat", { pct: Math.round(br.hi * 100) })}</title></polyline>`;
-    s += `<polyline points="${bandLo.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>${t("net.bandPoor", { pct: Math.round(br.lo * 100) })}</title></polyline>`;
+    s += `<g clip-path="url(#fcPlot)">`;
+    s += `<polygon points="${poly}" fill="${C.band}" opacity="0.5"/>`;
+    s += `<polyline points="${bandHi.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.6"><title>${t("net.bandGreat", { pct: Math.round(br.hi * 100) })}</title></polyline>`;
+    s += `<polyline points="${bandLo.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.6"><title>${t("net.bandPoor", { pct: Math.round(br.lo * 100) })}</title></polyline>`;
+    s += `</g>`;
   }
   s += `<polyline points="${proj.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`;
   s += `<polyline class="line" pathLength="1" points="${actual.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2.4"/>`;

@@ -51,6 +51,7 @@
      can keep an amber that still reads as amber instead of the brown a body-text token has
      to be. Same colour as --signal in the dark theme. */
   --signal-lg: #ffb020;
+  --band: #ffb02033;      /* the forecast's poor-to-great cone, over the page */
   --signal-ink: #1a1200;
   --signal-soft: #ffb0201f;
   /* --signal is tuned to be READ: in light it is a deep amber that clears AA against the page.
@@ -140,6 +141,7 @@
 
     --signal: #9a5b00;
     --signal-lg: #c87400;
+    --band: #c8740026;
     --signal-ink: #2a1a00;
     --signal-soft: #9a5b0021;
     --signal-fill: #f5a524;
@@ -168,6 +170,7 @@
 
   --signal: #9a5b00;
   --signal-lg: #c87400;   /* 3.1:1 on the page, 3.5:1 on a card — large text and graphics */
+  --band: #c8740026;
   --signal-ink: #2a1a00;
   --signal-soft: #9a5b0021;
   --signal-fill: #f5a524;

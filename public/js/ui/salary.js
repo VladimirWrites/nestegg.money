@@ -4,7 +4,7 @@ import { $, showEditor, hideEditor, toast, debounce, flash } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS, PALETTE } from "../domain/constants.js";
-import { money, moneyIn, esc, convToY, ccySym, shortK } from "../domain/money.js";
+import { money, moneyIn, esc, convToY, ccySym, shortK, parseNum, fmtNum } from "../domain/money.js";
 import { fmtMY } from "../domain/dates.js";
 import { C, refreshPalette, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
@@ -375,7 +375,10 @@ function renderSalaryEdit() {
       // A zero amount renders blank (the placeholder shows through) so a freshly added month is
       // an empty field to type into, not a "0" to clear first.
       const e = salEntry(p, ym); const amt = e && e.amount ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
-      row += `<td class="salgsep"><input class="salf num" type="number" step="any" inputmode="decimal" value="${amt}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0"></td>` +
+      /* text, not number: a `number` field is formatted and parsed by the browser's own
+         locale, so the same ledger showed "5418.61" on one machine and "5418,61" on the
+         next, neither of which is the shape the app prints everywhere else. */
+      row += `<td class="salgsep"><input class="salf num" type="text" inputmode="decimal" value="${fmtNum(amt === "" ? null : amt)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0"></td>` +
         `<td><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select></td>` +
         `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="—" title="${t("salary.eventTitle")}"></td>`;
     });
@@ -401,7 +404,7 @@ $("salaryList").addEventListener("input", (e) => {
   const t = e.target, sid = t.dataset.sid, f = t.dataset.f; if (!sid || !f) return; const p = state.salaries.find((x) => x.id === sid); if (!p) return;
   if (t.dataset.ym) {
     const en = salEnsure(p, t.dataset.ym);
-    if (f === "amount") en.amount = parseFloat(t.value || 0); else en[f] = t.value;
+    if (f === "amount") en.amount = parseNum(t.value) || 0; else en[f] = t.value;
     scheduleSync();
     if (f === "amount") { const yr = t.dataset.ym.slice(0, 4), yt = document.querySelector('[data-ytot="' + sid + ":" + yr + '"]'); if (yt) { const tot = p.entries.filter((x) => x.ym.slice(0, 4) === yr).reduce((a, x) => a + salBase(p, x), 0); yt.textContent = tot ? money(tot) : "—"; flash(yt); } drawSalDebounced(); }
   } else { if (f === "name") p.name = t.value; else if (f === "ccy") p.ccy = t.value; scheduleSync(); if (f === "name") drawSalDebounced(); }
