@@ -1989,21 +1989,13 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 
 /* "+ Next month" and "+ Add person" live in the bar, so they are on screen at the moment
    anybody wants them rather than above a ledger they have already scrolled past. */
-.ed-bar-acts{display:flex;gap:8px;flex:none;margin-left:12px}
+
 /* On a phone the bar cannot hold a title, a reassurance, two actions and an exit: putting
    the actions in squeezed "Edit salaries" to "E" and pushed "Done" off the right edge. The
    two actions and the way out win — the lede directly beneath the bar says what the screen
    is, and the title stays for a screen reader. */
 @media(max-width:560px){
-  #salaryEditor .ed-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-  #salaryEditor .ed-saved{display:none}
-  .ed-bar-acts{margin-left:0;flex:1;min-width:0}
-  .ed-bar-acts .btn{flex:1;min-width:0;padding-left:8px;padding-right:8px;font-size:12.5px;white-space:nowrap}
-  #salaryEditor .ed-done{margin-left:8px}
-  /* The bar carries them now; the copy above the months would say the same thing twice. */
-  #salaryList .smon-top{display:none}
 }
-@media(min-width:561px){#salaryList .smon-top{display:none}}
 
 /* One row of actions, under the switch, naming the person it acts on. */
 .smon-head.is-compact{display:flex;justify-content:flex-end;gap:16px;padding:2px 0 10px;flex-wrap:wrap}
@@ -2023,7 +2015,7 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
   display:block;position:static;width:auto;height:auto;max-width:100%;
   margin:1px 0 0;padding:0;border:0;border-radius:0;background:none;
   font-size:10.5px;line-height:1.25;letter-spacing:.01em;color:var(--dim);
-  text-align:right;text-indent:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  text-align:right;text-indent:0;white-space:normal;overflow-wrap:anywhere;
   pointer-events:none;cursor:default}
 .saltab td.num .evnote{display:none}
 .saltab td.num{white-space:nowrap}
@@ -2042,10 +2034,36 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 /* …which makes the box a scroll container at every width, so the editor's sticky headings
    resolve against it everywhere and both rows pin to its top. Tops measured against the
    page put 65px of dead band above the headings and hid the first month behind them. */
-#salaryEditor .saltable-scroll{max-height:calc(100dvh - 150px);overflow:auto}
+/* Only where there is room for a self-scrolling box. Applied at every size it made a 270px
+   scroller inside a 420px landscape phone, with the last row sliced off at its edge and the
+   wheel going to the inner box first. */
+@media(min-width:900px) and (min-height:700px){
+  #salaryEditor .saltable-scroll{max-height:calc(100dvh - 150px)}
+}
+#salaryEditor .saltable-scroll{overflow:auto}
 #salaryEditor .saltab .salh1 th{top:0}
 #salaryEditor .saltab .salh2 th{top:48px}
 @media(max-width:899px){
   /* No person-name row below 900px, so the headings are the top row. */
   #salaryEditor .saltab .salh2 th{top:0}
 }
+
+
+/* The two things this screen is for, in the table's own header row — which was 65px of
+   nothing above the names. The month button sits over the month column, where a new month
+   appears; the person button sits past the last person, where a new column appears. Icons:
+   this strip already holds a name per person, and the German labels are twice as long. */
+.salhbtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
+  padding:0;border:1px solid var(--field-edge);border-radius:var(--r);background:var(--panel);
+  color:var(--dim);cursor:pointer}
+.salhbtn svg{width:17px;height:17px}
+.salhbtn:hover{color:var(--signal);border-color:var(--signal)}
+.salhbtn:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+/* A 34px box with a 44px reach, so the thumb target is right without a 44px hole in a
+   header row that is 48px tall in total. */
+.salhbtn::after{content:"";position:absolute;inset:-6px}
+.saltab .salh1 th.salm-h,.saltab .salh1 th.salx-h{position:relative;text-align:center;padding:6px}
+
+/* Below 620px there is no table header to put them in, so the two actions sit under the
+   person switch, where the months begin. Above it they live in the header row itself. */
+@media(min-width:620px){#salaryList .smon-top{display:none}}

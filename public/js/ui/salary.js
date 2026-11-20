@@ -334,12 +334,12 @@ export function renderSalary() {
       if (multi) yr += `<td class="num salgsep">${ht ? money(ht) : "—"}</td>`;
       body += yr + `</tr>`;
     }
-    let row = `<tr class="salmonth${openYears.has(y) ? "" : " is-folded"}" data-ym="${ym}" data-y="${y}"><td class="salm">${ymLabel(ym)}</td>`, hh = 0;
+    let row = `<tr class="salmonth${openYears.has(y) ? "" : " is-folded"}" data-ym="${ym}" data-y="${y}"><th scope="row" class="salm">${ymLabel(ym)}</th>`, hh = 0;
     people.forEach((p) => { const e = salEntry(p, ym); if (e) hh += salBase(p, e); row += `<td class="num salgsep">${e && e.amount ? moneyIn(salTotal(e), salEccy(p, e)) : "—"}${e && e.event ? `<span class="evtag">${esc(e.event)}</span>` : ""}</td>`; });
     if (multi) row += `<td class="num salgsep">${hh ? money(hh) : "—"}</td>`;
     body += row + `</tr>`;
   });
-  host.innerHTML = `<div class="saltable-scroll"><table class="saltab rotab"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  host.innerHTML = `<div class="saltable-scroll" role="region" tabindex="0" aria-label="${t("salary.tableAria")}"><table class="saltab rotab"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
   host.style.setProperty("--salcols", String(people.length + (multi ? 1 : 0)));
 
   /* Folding is a view state, not data, so it redraws the table rather than touching the
@@ -383,8 +383,12 @@ function salPersonSwitch(people) {
   if (people.length < 2) return "";
   /* The track is its own element so the selected pill can sit inside it with a little air
      all round, which is what makes it read as raised rather than as a tab. */
-  return `<div class="seg salwho"><div class="seg-inner" role="tablist" aria-label="${t("salary.whoAria")}">` + people.map((p, i) =>
-    `<button type="button" role="tab" aria-selected="${i === salWho}" class="seg-btn${i === salWho ? " is-on" : ""}" data-salwho="${i}">${esc(p.name || t("salary.namePh"))}</button>`).join("") + `</div></div>`;
+  /* A group of buttons, not ARIA tabs. It declared role=tablist and role=tab with no panel,
+     no aria-controls, no roving tabindex and no arrow-key handling — so a screen reader
+     announced "tab 2 of 3" and then the arrow keys did nothing at all. aria-pressed says
+     what is actually true: one of these is on. */
+  return `<div class="seg salwho"><div class="seg-inner" role="group" aria-label="${t("salary.whoAria")}">` + people.map((p, i) =>
+    `<button type="button" aria-pressed="${i === salWho}" class="seg-btn${i === salWho ? " is-on" : ""}" data-salwho="${i}">${esc(p.name || t("salary.namePh"))}</button>`).join("") + `</div></div>`;
 }
 
 /* Below 620px the editor is a list of months, not a table.
@@ -420,7 +424,7 @@ function salMonthCards(p, yms) {
     }
     const e = salEntry(p, ym);
     const amt = e && e.amount ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
-    const del = `<button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${t("salary.removeMonthAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>`;
+    const del = `<button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${esc(t("salary.removeMonthFor", { month: ymLabel(ym) }))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>`;
     const tag = "";   // the dashed card and the ghost amount already say it
     /* No captions. NET / CURRENCY / NOTE above every field is tutorial text repeated a
        hundred and fifty times; the fields are a figure, a three-letter code and a line of
@@ -450,14 +454,21 @@ function renderSalaryEdit() {
   // One person's column, or everybody's.
   const shown = narrow ? [people[salWho]] : people;
   const yms = salTableYms();
-  let h1 = `<th class="salm-h"></th>`, h2 = `<th class="salm-h">${t("salary.impMonth")}</th>`;
+  /* The table's own header row used to be 65px of nothing above the names. It is where the
+     two things this screen is for belong: the month button sits over the month column, where
+     the new month appears, and the person button sits past the last person, where a new
+     column appears. Icons, because this strip has to hold a name per person and German
+     labels are long. */
+  const addMonthBtn = `<button type="button" class="salhbtn" data-salnext title="${esc(t("salary.next"))}" aria-label="${esc(t("salary.next"))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg></button>`;
+  const addPersonBtn = `<button type="button" class="salhbtn" id="addPersonTop" title="${esc(t("salary.addPerson"))}" aria-label="${esc(t("salary.addPerson"))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c0-3.4 2.9-5.2 6.5-5.2 1.2 0 2.3.2 3.2.6"/><path d="M18 13v6M15 16h6"/></svg></button>`;
+  let h1 = `<th class="salm-h">${narrow ? "" : addMonthBtn}</th>`, h2 = `<th class="salm-h">${t("salary.impMonth")}</th>`;
   shown.forEach((p) => {
     /* With one person on screen and a switch above naming them, the table's own name cell
        is the third place the same word appears. */
     h1 += narrow ? "" : `<th colspan="3" class="salp-h salgsep"><span class="salp-hin"><input class="salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${p.id}" title="${esc(t("salary.removeName", { name: p.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></span></th>`;
     h2 += `<th class="salgsep salnet-h">${t("salary.thNet")}</th><th>${t("salary.thCcy")}</th><th>${t("salary.thEvent")}</th>`;
   });
-  h1 += `<th class="salx-h"></th>`; h2 += `<th class="salx-h"></th>`;
+  h1 += `<th class="salx-h">${narrow ? "" : addPersonBtn}</th>`; h2 += `<th class="salx-h"></th>`;
   let body = "", curY = null;
   yms.forEach((ym) => {
     const y = ym.slice(0, 4);
@@ -484,11 +495,15 @@ function renderSalaryEdit() {
       /* text, not number: a `number` field is formatted and parsed by the browser's own
          locale, so the same ledger showed "5418.61" on one machine and "5418,61" on the
          next, neither of which is the shape the app prints everywhere else. */
-      row += `<td class="salgsep"><input class="salf num${amt === "" ? " is-empty" : ""}" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="${t("salary.amountPh")}"></td>` +
-        `<td><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select></td>` +
-        `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="${t("salary.eventPh")}" title="${t("salary.eventTitle")}"></td>`;
+      /* Named with the month and the person they belong to. Unnamed, the table read as a
+         hundred and fifty identical "Amount" fields with nothing saying which month or whose
+         money any of them was. */
+      const forWhom = { month: ymLabel(ym), name: p.name || t("salary.namePh") };
+      row += `<td class="salgsep"><input class="salf num${amt === "" ? " is-empty" : ""}" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" aria-label="${esc(t("salary.netAria", forWhom))}" placeholder="${t("salary.amountPh")}"></td>` +
+        `<td><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy" aria-label="${esc(t("salary.ccyAria", forWhom))}">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select></td>` +
+        `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" aria-label="${esc(t("salary.noteAria", forWhom))}" placeholder="${t("salary.eventPh")}" title="${t("salary.eventTitle")}"></td>`;
     });
-    row += `<td class="salxc"><button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${t("salary.removeMonthAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button></td>`;
+    row += `<td class="salxc"><button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${esc(t("salary.removeMonthFor", { month: ymLabel(ym) }))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button></td>`;
     body += row + `</tr>`;
   });
   /* The range starts after the last month on record, not on it: offering "from May 2026"
@@ -506,12 +521,7 @@ function renderSalaryEdit() {
   const who_ = esc(person.name || t("salary.namePh"));
   const cardHead = people.length > 1
     ? `<div class="smon-head is-compact"><button type="button" class="smon-act" data-rename="${person.id}">${t("salary.renameName", { name: who_ })}</button><button type="button" class="smon-act is-danger" data-perdel="${person.id}">${t("salary.removeName", { name: who_ })}</button></div>`
-    : `<div class="smon-head"><input class="salname" value="${esc(person.name)}" data-sid="${person.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${person.id}" title="${esc(t("salary.removeName", { name: person.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;
-  const nextBtn = `<button class="btn btn-sm btn-primary smon-next" data-salnext>${t("salary.next")}</button>`;
-  /* Beside the people, not at the bottom of their months: on a phone "+ Add person" sat
-     below every month of every year, which is the one place you are not when you decide to
-     add someone. */
-  const addPersonTop = `<button class="btn btn-sm smon-addper" id="addPersonTop">${t("salary.addPerson")}</button>`;
+    : `<div class="smon-head"><input class="salname" value="${esc(person.name)}" data-sid="${person.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${person.id}" title="${esc(t("salary.removeName", { name: person.name }))}" aria-label="${esc(t("salary.removeName", { name: person.name || t("salary.namePh") }))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;
   /* A person with nothing in the ledger gets one line, not thirteen years of somebody
      else's calendar: those years exist because another person was paid in them, and
      mirroring them as "0 of 12 filled · nothing yet" thirteen times is a wall to scroll
@@ -522,7 +532,7 @@ function renderSalaryEdit() {
      person a salary, and "+ Next month" quietly added a month to everyone's ledger behind
      a screen that never changed. */
   const emptyPerson = !theirs && yms.length && salOpened !== person.id;
-  const cardList = `<div class="smon-top">${nextBtn}${addPersonTop}</div>`
+  const cardList = `<div class="smon-top"><button class="btn btn-sm btn-primary smon-next" data-salnext>${t("salary.next")}</button><button class="btn btn-sm smon-addper" id="addPersonTop">${t("salary.addPerson")}</button></div>`
     + (emptyPerson
       ? `<div class="smon-blank"><p>${t("salary.personEmpty", { name: esc(person.name || t("salary.namePh")), count: yms.length })}</p>`
         + `<button type="button" class="btn btn-sm" data-fillfrom>${t("salary.fillFrom", { count: yms.length })}</button></div>`
@@ -530,7 +540,7 @@ function renderSalaryEdit() {
   /* On a desktop the add button sat below a hundred and fifty rows while the month it adds
      appears at the top of them, so a reader pressed it and nothing visibly happened. It is
      at both ends now: beside the months on a phone, above the table on a desktop. */
-  const tableHTML = `<div class="smon-top">${nextBtn}${addPersonTop}</div>`
+  const tableHTML = ``
     + (narrow && emptyPerson
       ? `<div class="smon-blank"><p>${t("salary.personEmpty", { name: esc(person.name || t("salary.namePh")), count: yms.length })}</p>`
         + `<button type="button" class="btn btn-sm" data-fillfrom>${t("salary.fillFrom", { count: yms.length })}</button></div>`
