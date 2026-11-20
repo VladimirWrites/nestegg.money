@@ -537,10 +537,17 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .legal .back{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal);text-decoration:none;margin-bottom:26px}
 .legal h1{font-size:clamp(28px,6vw,40px);font-weight:700;color:var(--text);letter-spacing:-.01em;margin-bottom:6px}
 .legal .updated{color:var(--dim);font-size:12px;margin-bottom:30px}
-.legal h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--signal);margin:30px 0 10px}
-.legal p,.legal li{color:var(--text);font-size:14px;line-height:1.65;margin-bottom:10px}
+/* A heading is not smaller than the paragraph it heads, and amber is not three things at
+   once: these pages used it for headings, for inline emphasis and for links alike, with no
+   underline, so there was no way to tell which of four amber runs in a sentence could be
+   pressed. 14px across 760px is also about 110 characters a line, on the longest documents
+   on the site. */
+.legal{max-width:660px}
+.legal h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:34px 0 10px}
+.legal p,.legal li{color:var(--text);font-size:16px;line-height:1.7;margin-bottom:12px}
 .legal ul{padding-left:20px;margin-bottom:10px}
-.legal strong{color:var(--signal)}
+.legal strong{color:var(--text);font-weight:600}
+.legal a{text-decoration:underline;text-underline-offset:2px}
 .legal .note{border-left:2px solid var(--line);padding-left:14px;color:var(--dim);font-size:12.5px;margin-top:30px}
 .legal a{color:var(--signal)}
 
@@ -1830,3 +1837,53 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   #edEntries .rcard .rkind,#edEntries .rcard .rcat{min-height:40px}
   #edEntries .rcard.auto{grid-template-areas:"dot name tag conv chev"}
 }
+
+/* ── round 3 follow-ups ────────────────────────────────────────────────── */
+
+/* The year table's heading is sticky inside a box that never scrolls vertically, so `top`
+   pushed it down over the first rows of the table instead of out of the bar's way — on a
+   laptop it covered 2025, the year carrying a lump sum. The box only needs to scroll
+   sideways, and the page's own bar is what the heading should clear. */
+.yrsched .schscroll{overflow:visible}
+.yrsched .schtab th{position:sticky;top:calc(56px + var(--edge-t));background:var(--panel-2);z-index:1}
+@media(min-width:900px){.yrsched .schtab th{top:60px}}
+
+/* The editor's title is a programmatic focus target, not somewhere to type. The global ring
+   drew an 850px amber capsule around the asset's name and told a keyboard reader it was a
+   text field. */
+.ed-title:focus,.ed-title:focus-visible{outline:none}
+
+/* Redundant with the :focus-visible rule below it and higher in specificity, so a focused
+   field kept a grey border inside an amber ring in dark and turned amber in light. */
+.fin:focus-visible,.fld select:focus-visible,.rcard .rval:focus-visible,.rcard .rsh:focus-visible,
+.rcard .rtk:focus-visible,.rcard select:focus-visible{border-color:var(--signal)}
+
+/* The year row is a button now, so it stops inheriting a button's own look. */
+.yhead{width:100%;text-align:left;font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.yhead:focus-visible{outline:2px solid var(--signal);outline-offset:-2px;border-radius:var(--r)}
+
+/* A control with no edge is not a control. These two were quietened to buy back the height
+   of a row and ended up reading as grey captions. */
+@media(max-width:899px){
+  #edEntries .rcard .rkind,#edEntries .rcard .rcat{border-color:var(--line);background:var(--panel)}
+}
+/* German's "Monatliche Rate" was cut mid-word in the Set-by select with nothing to say so. */
+.fld select{text-overflow:ellipsis}
+.yo-n{font-size:12px}
+/* The close × on a dialog was about 26x30. */
+.infoclose{width:44px;height:44px;display:flex;align-items:center;justify-content:center;top:4px;right:6px;padding:0}
+.ed-yearnow{min-height:44px}
+/* A descendant selector put 33px on the .frow inside the .loanbox as well as on the box, so
+   the loan's own fields started 33px right of the lump sums directly beneath them. */
+.tglgroup .frow,.tglgroup .loanbox{margin-left:0}
+.tglgroup>.frow,.tglgroup>.loanbox{margin-left:33px}
+@media(max-width:560px){.tglgroup>.frow,.tglgroup>.loanbox{margin-left:0}}
+/* An empty converted-value cell still claimed a grid row and 7px of gap on every plain
+   holding — about 50px a card, 450px in a year of them. */
+#edEntries .rcard .rconv:empty{display:none}
+/* A name that is too long for its box says so. An <input> gives no ellipsis while it is
+   focused, but it does at rest, which is when it is being read. */
+.rcard .rname{text-overflow:ellipsis}
+/* The tab bar is gone while an editor is open (body.no-nav), so its clearance is 150px of
+   nothing under the last control on every editor screen. */
+body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}

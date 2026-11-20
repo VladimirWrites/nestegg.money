@@ -130,7 +130,12 @@ export function parseNum(s) {
       const mark = t[i];
       const only = t.indexOf(mark) === i;
       const after = t.length - i - 1;
-      if (only && after !== 3) dec = i;
+      /* "0.125" and "0,125" are decimals under either reading: nobody writes a thousands
+         group after a lone zero. Without this, a three-decimal figure typed into a share
+         count or an interest rate came back a thousand times too large — which is worse than
+         the zero it replaced, because it is believable. */
+      const leadingZero = /^0+$/.test(t.slice(0, i));
+      if (only && (after !== 3 || leadingZero)) dec = i;
     }
   }
   const intPart = (dec >= 0 ? t.slice(0, dec) : t).replace(/[.,]/g, "");
@@ -142,6 +147,27 @@ export function parseNum(s) {
 
 // The canonical way to write a number back into a field: grouped, en-IE, like every figure
 // the app prints beside it.
+/* A number where a thousands group is not a plausible reading: an interest rate, a term in
+ * years, a count of shares or coins. Both "." and "," are the decimal mark, and nothing is
+ * grouping — so 3.125 is three and an eighth in either language, which is what somebody
+ * typing a rate or a fraction of a bitcoin means. parseNum's grouping rule is right for
+ * money and wrong here. */
+export function parseDec(s) {
+  if (typeof s === "number") return Number.isFinite(s) ? s : null;
+  if (s == null) return null;
+  let t = String(s).trim().replace(/[\s  ]/g, "");
+  if (!t) return null;
+  const neg = /^[-−]/.test(t);
+  if (neg) t = t.slice(1);
+  t = t.replace(/[^\d.,]/g, "").replace(/,/g, ".");
+  const i = t.indexOf(".");
+  if (i >= 0) t = t.slice(0, i + 1) + t.slice(i + 1).replace(/\./g, "");
+  if (!t || !/\d/.test(t)) return null;
+  const n = parseFloat(t);
+  if (!Number.isFinite(n)) return null;
+  return neg ? -n : n;
+}
+
 export function fmtNum(n, maxFrac = 2, minFrac = 0) {
   if (n == null || n === "" || !Number.isFinite(Number(n))) return "";
   /* minFrac is for columns of money: without it a formatter drops trailing zeros, so

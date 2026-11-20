@@ -2,7 +2,7 @@
 /* ───────── landing page ───────── */
 body.lp{padding-bottom:0}
 .lp-nav{max-width:var(--maxw);margin:0 auto;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.lp-brand{font-size:20px;font-weight:700;letter-spacing:.02em;color:var(--amber);text-decoration:none}
+.lp-brand{font-size:20px;font-weight:700;letter-spacing:.02em;color:var(--signal);text-decoration:none}
 .lp-navlinks{display:flex;align-items:center;gap:20px;font-size:13px}
 .lp-navlinks a{color:var(--muted);text-decoration:none}
 /* A button that reads as one of the links beside it — the theme toggle. Its own element because
@@ -10,17 +10,21 @@ body.lp{padding-bottom:0}
 .lp-linkbtn{background:none;border:none;padding:0;color:var(--muted);cursor:pointer;font:inherit}
 .lp-linkbtn:hover{color:var(--text)}
 .lp-navlinks a:hover{color:var(--text)}
-.lp-btn{display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;letter-spacing:.04em;border-radius:4px;padding:13px 22px;cursor:pointer;text-decoration:none;min-height:46px;font-weight:600}
-.lp-btn-primary{background:var(--amber);color:#000;border:1px solid var(--amber)}
-.lp-btn-primary:hover{background:var(--amber2);border-color:var(--amber2)}
-.lp-btn-ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
-.lp-btn-ghost:hover{border-color:var(--amber)}
+.lp-btn{display:inline-flex;align-items:center;justify-content:center;font-size:14px;letter-spacing:.01em;border-radius:var(--r);padding:13px 22px;cursor:pointer;text-decoration:none;min-height:46px;font-weight:600}
+/* --signal is the amber tuned to be READ. Used to FILL a button it gives the light theme a
+   dark brown slab with near-black text at about 3.9:1 — base.css says so by name, every
+   screen inside the app took the --signal-fill fix, and the marketing site and the
+   calculator, the two pages a stranger meets first, did not. */
+.lp-btn-primary{background:var(--signal-fill);color:var(--signal-ink);border:1px solid var(--signal-fill)}
+.lp-btn-primary:hover{filter:brightness(1.07)}
+.lp-btn-ghost{background:transparent;color:var(--signal);border:1px solid var(--line)}
+.lp-btn-ghost:hover{border-color:var(--signal)}
 .lp-navlinks .lp-btn-ghost{padding:9px 16px;min-height:0}
 .lp-main{max-width:var(--maxw);margin:0 auto;padding:0 22px}
 .lp-hero{padding:72px 0 64px;border-bottom:1px solid var(--line);text-align:center}
-.lp-kick{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber)}
+.lp-kick{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--signal)}
 .lp-hero h1{font-size:clamp(36px,8vw,72px);line-height:1.02;letter-spacing:-.02em;font-weight:700;margin:16px 0 18px;color:var(--text)}
-.lp-hero h1 span{color:var(--amber)}
+.lp-hero h1 span{color:var(--signal-lg)}
 .lp-sub{max-width:620px;margin:0 auto;color:var(--muted);font-size:clamp(14px,2.2vw,17px);line-height:1.65}
 .lp-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:30px 0 14px}
 .lp-note{font-size:12px;color:var(--muted);letter-spacing:.04em}
@@ -82,16 +86,18 @@ body.lp{padding-bottom:0}
   .lp-frame-phone{width:min(70vw,286px)}
 }
 .lp-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;padding:64px 0}
-.lp-feat{border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:24px}
-.lp-ficon{width:40px;height:40px;border-radius:8px;background:rgba(255,176,0,.1);display:flex;align-items:center;justify-content:center;color:var(--amber);margin-bottom:16px}
+.lp-feat{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);padding:24px}
+.lp-ficon{width:40px;height:40px;border-radius:var(--r);background:var(--signal-soft);display:flex;align-items:center;justify-content:center;color:var(--signal);margin-bottom:16px}
 .lp-ficon svg{width:21px;height:21px}
+/* The markup is <h2>. Styled as h3 this rule matched nothing, base.css zeroes heading
+   margins, and the cards rendered their title at 22px hard against the paragraph under it. */
 .lp-feat h3{font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px}
 .lp-feat p{font-size:13.5px;line-height:1.6;color:var(--muted)}
 .lp-final{text-align:center;padding:24px 0 80px;border-top:1px solid var(--line)}
 .lp-final h2{font-size:clamp(26px,5vw,40px);font-weight:700;letter-spacing:-.01em;color:var(--text);margin-bottom:12px}
 .lp-final p{max-width:520px;margin:0 auto 26px;color:var(--muted);font-size:14.5px;line-height:1.6}
 .lp-foot{max-width:var(--maxw);margin:0 auto;padding:26px 22px 40px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted)}
-.lp-foot a{color:var(--amber);text-decoration:none}
+.lp-foot a{color:var(--signal);text-decoration:underline;text-underline-offset:2px}
 @media(max-width:560px){.lp-hero{padding:48px 0 44px}.lp-features{padding:44px 0}}
 /* Six links and a button do not fit beside the name on a phone — laid out in a row they ran 135px
    past the edge of a 375px screen and took the page's width with them. Below the breakpoint they
@@ -107,7 +113,7 @@ body.lp{padding-bottom:0}
   .lp-navlinks .lp-btn-ghost{margin-left:auto}
 
   .lp-nav-js .lp-burger{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;padding:0;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text);cursor:pointer;margin-left:auto}
-  .lp-nav-js .lp-burger:hover{border-color:var(--amber)}
+  .lp-nav-js .lp-burger:hover{border-color:var(--signal)}
   .lp-nav-js .lp-burger svg{width:20px;height:20px}
   /* The panel hangs off the header rather than pushing the hero down, and covers what is under
      it — a translucent menu over a headline is unreadable at any size. */
@@ -117,12 +123,23 @@ body.lp{padding-bottom:0}
      of a fingertip, and a list of links at 12px apart is a list of near misses. */
   .lp-nav-js .lp-navlinks > *{display:flex;align-items:center;min-height:46px;padding:0;text-align:left;color:var(--muted);box-shadow:inset 0 1px 0 var(--line-soft)}
   .lp-nav-js .lp-navlinks > *:first-child{box-shadow:none}
-  .lp-nav-js .lp-navlinks .lp-btn-ghost{justify-content:center;margin:12px 0 0;min-height:46px;box-shadow:none;color:var(--amber)}
+  .lp-nav-js .lp-navlinks .lp-btn-ghost{justify-content:center;margin:12px 0 0;min-height:46px;box-shadow:none;color:var(--signal)}
 }
 
 
 /* tertiary "explore a live demo" link under the hero CTAs */
 .lp-demo{margin-top:14px;font-size:13px;color:var(--muted)}
 /* In-text links carry a visible underline (not colour alone) for colour-blind users / a11y. */
-.lp-demo a{color:var(--amber);text-decoration:underline;text-underline-offset:2px}
-.lp-footlinks a{color:var(--amber);text-decoration:underline;text-underline-offset:2px}
+.lp-demo a{color:var(--signal);text-decoration:underline;text-underline-offset:2px}
+.lp-footlinks a{color:var(--signal);text-decoration:underline;text-underline-offset:2px}
+
+/* The largest type on the site, and a hard <br> put the accent word on a line of its own —
+   so the rest wrapped on its own too and left a one-word orphan in the middle at 390px, in
+   both languages. */
+.lp-hero h1{text-wrap:balance}
+/* Two equal, full-width actions under 480px rather than two different widths ragged-centred. */
+@media(max-width:480px){.lp-cta{display:grid;grid-template-columns:1fr;gap:10px}.lp-cta .lp-btn{width:100%}}
+/* The rule was drawn outside the footer's own padding while every section rule above it is
+   drawn inside, so it overhung by 22px at each end. */
+.lp-foot{border-top:0;position:relative}
+.lp-foot::before{content:"";position:absolute;top:0;left:22px;right:22px;border-top:1px solid var(--line)}

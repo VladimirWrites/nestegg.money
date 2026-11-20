@@ -50,11 +50,19 @@ export function restoreFocus(id) {
   if (el && document.contains(el) && !el.closest("[inert]")) { try { el.focus(); } catch (e) {} }
 }
 
+/* What to switch off behind an editor.
+ *
+ * On a laptop the rail stays visible beside the editor and tapping a tab is meant to close
+ * the editor and go — so making the whole of #app inert left four tabs drawn on screen,
+ * looking pressable, swallowing the click and the Tab key alike. Only the column the editor
+ * covers goes inert. */
+const behind = () => (matchMedia("(min-width: 900px)").matches ? document.querySelector(".shell-main") : $("app"));
+
 export function showEditor(id) {
   const el = $(id);
   rememberFocus(id);
   el.classList.remove("hide");
-  setInert($("app"), true);
+  setInert(behind(), true);
   /* On a phone the editor is the whole window, so the app behind it is put away. On a desktop
      the navigation rail lives inside #app, and hiding the lot took the rail with it — an editor
      is a place you tapped into, not a dialog you have to answer, so the rail stays and the
@@ -94,6 +102,18 @@ export function showEditor(id) {
   }, 0);
 }
 
+/* Focus goes back after the re-render, not before it.
+ *
+ * Closing an editor restores focus and then re-renders the list underneath — which replaces
+ * the very element focus was handed back to, and drops it on <body>. So the target is found
+ * again, by attribute, once the list has been rebuilt. */
+export function restoreFocusTo(selector) {
+  setTimeout(() => {
+    const el = selector && document.querySelector(selector);
+    if (el && !el.closest("[inert]")) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+  }, 0);
+}
+
 // Put the caret in a just-added field and scroll it into view. Placeholder text is selected, so
 // the first keystroke replaces it instead of appending to it.
 export function focusNew(el) {
@@ -114,8 +134,8 @@ export function hideEditor(id) {
   $(id).classList.add("hide");
   $("app").classList.remove("hide");
   setInert($("app"), false);
+  setInert(document.querySelector(".shell-main"), false);
   document.body.classList.remove("no-nav");
-  restoreFocus(id);
   // Closed by its own arrow: spend the entry it pushed, so Back doesn't have to be pressed
   // twice for one screen. A no-op when the close came from Back in the first place.
   popEditor();

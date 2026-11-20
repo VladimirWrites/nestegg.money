@@ -482,7 +482,10 @@ function renderYears() {
        year's size. Before this the bar itself was capped at the proportional width, so the
        amount and the chevron started wherever the bar happened to stop — 2019's total sat a
        third of the way across the row and nothing in the column lined up with anything. */
-    card.innerHTML = `<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar"><span class="yfill" style="width:${Math.max(2, (gross / maxV) * 100)}%">${segs}</span></span>${liabHtml}<span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
+    /* A button. As a div with a click handler, the single route into the year editor — the
+       layer the whole asset-editing flow lives behind — could not be reached by keyboard or
+       announced by a screen reader as anything but loose text. */
+    card.innerHTML = `<button type="button" class="yhead" data-open="${ri}" aria-label="${esc(t("net.openYearAria", { year: sn.year, total: money(tot) }))}"><span class="yr">${sn.year}</span><span class="ybar"><span class="yfill" style="width:${Math.max(2, (gross / maxV) * 100)}%">${segs}</span></span>${liabHtml}<span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>`;
     host.appendChild(card);
   });
 }

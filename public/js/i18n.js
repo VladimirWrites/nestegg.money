@@ -47,10 +47,20 @@ export function t(key, params) {
 // Translate static DOM: <span data-i18n="key"> for text, data-i18n-placeholder / data-i18n-title
 // for attributes. Pre-rendered pages rarely need this; it exists for runtime-built fragments.
 export function translateDom(root = document) {
-  root.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.getAttribute("data-i18n")); });
+  /* A key that resolves to itself is a key that is missing — most often from a dictionary an
+     old service worker is still serving, right after a deploy that added it. Printing
+     "salary.savedShort" where a word should be is worse than leaving the English the page
+     was authored with, which is what this now does. */
+  root.querySelectorAll("[data-i18n]").forEach((el) => {
+    const k = el.getAttribute("data-i18n"), v = t(k);
+    if (v !== k) el.textContent = v;
+  });
   // `data-short` is the one-word form a CSS ::after prints where there is no room for the
   // sentence; it is translated like any other attribute.
   for (const attr of ["placeholder", "title", "aria-label", "data-short"]) {
-    root.querySelectorAll(`[data-i18n-${attr}]`).forEach((el) => { el.setAttribute(attr, t(el.getAttribute(`data-i18n-${attr}`))); });
+    root.querySelectorAll(`[data-i18n-${attr}]`).forEach((el) => {
+      const k = el.getAttribute(`data-i18n-${attr}`), v = t(k);
+      if (v !== k) el.setAttribute(attr, v);
+    });
   }
 }

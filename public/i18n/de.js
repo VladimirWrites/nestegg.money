@@ -2,6 +2,9 @@
 // pre-rendered per locale by scripts/gen-i18n-pages.mjs from scripts/i18n/*.json.
 export default {
   bnr: {
+    heroLbl: "Netto pro Monat",
+    heroOf: "Von {gross} brutto im Jahr bleiben Ihnen {net} im Monat.",
+    heroNeed: "Für {net} netto im Monat brauchen Sie {gross} brutto im Jahr.",
     annual: "Jahr",
     monthly: "Monat",
     gross: "Brutto",
@@ -214,6 +217,7 @@ export default {
     delYearConfirm: "Jahr {year} löschen?",
     removeEntryConfirm: "{name} aus diesem Jahr entfernen?",
     thisRow: "diese Zeile",
+    openYearAria: "{year}, Summe {total} — Jahr öffnen",
     removeEntryAria: "{name} entfernen",
     kindAria: "Art der Position",
     editAssetAria: "{name} bearbeiten, {tags}, {amount}",
@@ -379,6 +383,8 @@ export default {
     thBalance: "Restschuld",
     acquired: "Angeschafft",
     ownedSince: "Im Besitz seit",
+    borrowedOn: "Aufgenommen am",
+    byPayment: "Rate",
     yrShort: "J.",
     moShort: "Mon.",
     worthOwes: "Wert {worth} · Schuld {owed}",

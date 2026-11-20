@@ -7,7 +7,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseNum, fmtNum } from "../public/js/domain/money.js";
+import { parseNum, parseDec, fmtNum } from "../public/js/domain/money.js";
 
 test("plain integers and decimals", () => {
   assert.equal(parseNum("0"), 0);
@@ -108,4 +108,24 @@ test("fmtNum holds a minimum number of decimals when a column asks for one", () 
   assert.equal(parseNum(fmtNum(3687.8, 2, 2)), 3687.8);
   // the default is unchanged
   assert.equal(fmtNum(3687.8), "3,687.8");
+});
+
+test("a lone separator after a bare zero is a decimal, never a group", () => {
+  /* "0.125" cannot be a hundred and twenty-five under any convention, and read as one it
+     turned an eighth of a bitcoin into 125 of them. */
+  assert.equal(parseNum("0.125"), 0.125);
+  assert.equal(parseNum("0,125"), 0.125);
+  assert.equal(parseNum("00,500"), 0.5);
+});
+
+test("parseDec reads a decimal and never a thousands group", () => {
+  /* For a rate, a term or a count of coins, where "3.125" means three and an eighth in
+     either language and a thousands group is not a plausible reading. */
+  assert.equal(parseDec("3.125"), 3.125);
+  assert.equal(parseDec("3,125"), 3.125);
+  assert.equal(parseDec("0.5"), 0.5);
+  assert.equal(parseDec("15.000"), 15);
+  assert.equal(parseDec("−2,5 %"), -2.5);
+  assert.equal(parseDec(""), null);
+  assert.equal(parseDec("abc"), null);
 });

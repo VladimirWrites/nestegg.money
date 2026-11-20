@@ -11,7 +11,7 @@ import { renderEntries } from "./ui/networth.js";
 import { drawSalaryChart } from "./ui/salary.js";
 import { boot, setDisplayCcy, showView } from "./ui/gate.js";
 import { initHistory } from "./ui/history.js";
-import { closeTopEditor, closeOverlays } from "./ui/editors.js";
+import { closeTopEditor, closeOverlays, topEditor } from "./ui/editors.js";
 import { initI18n, translateDom, t } from "./i18n.js";
 import "./ui/assets.js"; // side-effect: wire its editor listeners
 import "./ui/share.js"; // side-effect: wire the share dialog
@@ -158,6 +158,8 @@ try { boot(); } catch (e) {}
    Back from there leaves the app — which is what Back does everywhere else on the platform.
    Wired after boot, so the entry it records is the view boot actually landed on. */
 initHistory({
+  onCloseOverlays: closeOverlays,
+  onTopEditor: topEditor,
   onView: (v) => showView(v),
   // Through each editor's own Back button, so closing by the system button runs exactly what
   // closing by the arrow runs: the sync, and the re-render underneath.

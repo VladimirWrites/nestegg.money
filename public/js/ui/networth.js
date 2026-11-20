@@ -1,9 +1,9 @@
 // Year editor: the list of snapshots and the per-year entry editing overlay.
-import { $, showEditor, hideEditor, toast, flash, focusNew } from "./dom.js";
+import { $, showEditor, hideEditor, toast, flash, focusNew, setInert, rememberFocus, restoreFocus } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
-import { money, moneyIn, esc, parseNum, fmtNum } from "../domain/money.js";
+import { money, moneyIn, esc, parseNum, parseDec, fmtNum } from "../domain/money.js";
 import { allNames, autoEntriesFor, colorOf, seriesKey, entryBase, tickerPx, snapTotalBase, effEntries } from "../domain/model.js";
 import { scheduleSync, ensureHist, fetchPrice, fetchPriceYear } from "../io/storage.js";
 import { renderAll } from "./charts.js";
@@ -75,7 +75,7 @@ function cardHTML(en, i, names, year) {
     const noHistData = !p && en.ticker && year < new Date().getFullYear();
     if (noHistData) priceNote = `<div class="rhint">${t("net.noYearEndPriceLong", { year })}</div>`;
     const pxtxt = p ? "@ " + moneyIn(p.price, p.currency) + (p.frozen ? " · " + t("net.yearEnd") : "") : noHistData ? t("net.noYearEndPrice") : en.ticker ? t("net.noPrice") : isC ? t("net.setCoin") : t("net.setTicker");
-    valuePart = `<input class="rsh num" type="text" inputmode="decimal" value="${en.shares ? fmtNum(en.shares, 8) : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" aria-label="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
+    valuePart = `<input class="rsh num" type="text" inputmode="decimal" value="${en.shares ? String(en.shares) : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" aria-label="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
     <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker || "")}" data-i="${i}" data-f="ticker" placeholder="${isC ? "BTC-EUR" : "AMS:VWRL"}" aria-label="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}" title="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}"><button type="button" class="rinfo" data-info="${isC ? "crypto" : "ticker"}" title="${t("net.symbolHelpTitle")}" aria-label="${t("net.symbolHelpAria")}">i</button></span>
     <span class="rconv">${p ? money(baseV) : pxtxt}</span>`;
   } else {
@@ -197,11 +197,22 @@ function renderYearGrid() {
 function openYearModal() {
   if (edIdx < 0) return;
   renderYearGrid();
+  rememberFocus("yearModal");
   $("yearModal").classList.remove("hide");
+  /* The markup claimed aria-modal and the dialog behaved like a card: focus stayed on the
+     year button behind the scrim, Tab walked the whole editor before reaching a tile, and
+     picking one dropped focus on <body>. */
+  setInert($("yearEditor"), true);
   const now = $("yearGrid").querySelector(".is-now");
   if (now) now.scrollIntoView({ block: "center" });
+  const first = $("yearGrid").querySelector("button:not([disabled])");
+  if (first) setTimeout(() => { try { first.focus({ preventScroll: true }); } catch (e) {} }, 0);
 }
-const closeYearModal = () => $("yearModal").classList.add("hide");
+const closeYearModal = () => {
+  $("yearModal").classList.add("hide");
+  setInert($("yearEditor"), false);
+  restoreFocus("yearModal");
+};
 /* Escape and the system Back button both reach for "the editor" — which, with this dialog
    open, shut the year editor underneath and left the year grid floating over the Net worth
    screen with every tile in it dead, because the handler reads state.snapshots[edIdx] and
@@ -260,7 +271,8 @@ $("edEntries").addEventListener("input", (e) => {
   if (el.dataset.grp != null) return;
   const i = +el.dataset.i, f = el.dataset.f; if (el.dataset.i == null || !f) return;
   const en = sn.entries[i];
-  if (f === "value" || f === "shares") en[f] = parseNum(el.value) || 0;
+  if (f === "value") en.value = parseNum(el.value) || 0;
+  else if (f === "shares") en.shares = parseDec(el.value) || 0;   // 0.125 BTC is an eighth of a coin, not 125
   else if (f === "group") en.group = el.value || undefined;
   else en[f] = el.value;
   scheduleSync();

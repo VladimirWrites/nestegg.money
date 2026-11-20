@@ -1,10 +1,10 @@
 // Long-term asset editor: one asset with optional toggles (depreciates and/or carries a loan).
 // Net contribution = (depreciated price or market value) − outstanding loan.
-import { $, toast, flash, focusNew, setInert, rememberFocus, restoreFocus } from "./dom.js";
+import { $, toast, flash, focusNew, setInert, rememberFocus, restoreFocus, restoreFocusTo } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
-import { money, moneyIn, moneyIn0, esc, convTo, fmtLocale, parseNum, fmtNum } from "../domain/money.js";
+import { money, moneyIn, moneyIn0, esc, convTo, fmtLocale, parseNum, parseDec, fmtNum } from "../domain/money.js";
 import { fmtMY, fmtMonths, parseDate } from "../domain/dates.js";
 import { buildSchedule, loanTerms, outstandingAt } from "../domain/loan.js";
 import { assetGrossAt, assetNetAt } from "../domain/asset-value.js";
@@ -81,12 +81,19 @@ export function openAssetEditor(id, focusName) {
 function closeAssetEditor() {
   $("assetEditor").classList.add("hide");
   setInert($("yearEditor"), false);
+  const back = curAssetId;
   // The year editor underneath is an editor too, so the bar only comes back with both shut.
-  if ($("yearEditor").classList.contains("hide")) { document.body.classList.remove("no-nav"); setInert($("app"), false); }
-  restoreFocus("assetEditor");
+  if ($("yearEditor").classList.contains("hide")) {
+    document.body.classList.remove("no-nav");
+    setInert($("app"), false);
+    setInert(document.querySelector(".shell-main"), false);
+  }
   popEditor();
-  if (!$("yearEditor").classList.contains("hide")) renderEntries();
-  else renderAll();
+  if (!$("yearEditor").classList.contains("hide")) {
+    renderEntries();
+    // After the rebuild, not before it: renderEntries replaces the card focus came from.
+    restoreFocusTo(`[data-editasset="${back}"]`);
+  } else { renderAll(); restoreFocus("assetEditor"); }
 }
 
 // The computed (read-only) outputs for a loan — refreshed in place as inputs change,
@@ -152,7 +159,7 @@ function loanComputedHTML(a) {
       const extraNote = g.extra > 0 ? `<i class="yr-extra">${t("asset.inclExtra", { amount: moneyIn0(g.extra, a.ccy) })}</i>` : "";
       return `<tr class="${cls}"><td>${y}${extraNote}</td><td class="num off">${moneyIn0(g.principal + g.extra, a.ccy)}</td><td class="num dim">${moneyIn0(g.interest, a.ccy)}</td><td class="num">${g.extra > 0 ? moneyIn0(g.extra, a.ccy) : "—"}</td><td class="num">${moneyIn0(g.balance, a.ccy)}</td></tr>`;
     }).join("")}</tbody></table></div>
-    ${anyEst ? `<div class="yrsched-note">${t("asset.estNote", { date: my(fixedUntil), rate: L.rate })}</div>` : ""}
+    ${anyEst ? `<div class="yrsched-note">${t("asset.estNote", { date: my(fixedUntil), rate: fmtNum(L.rate, 3) })}</div>` : ""}
   </div>`;
 
   let divDone = false;
@@ -161,7 +168,7 @@ function loanComputedHTML(a) {
     let pre = "";
     const y = r.date.getFullYear();
     if (y !== curYear) { curYear = y; pre += yearRow(y); }
-    if (!divDone && r.estimated) { divDone = true; pre += `<tr class="fxdiv"><td colspan="6">${t("asset.fixedEnds", { date: my(fixedUntil), amount: moneyIn(balAtChange, a.ccy), rate: L.rate })}</td></tr>`; }
+    if (!divDone && r.estimated) { divDone = true; pre += `<tr class="fxdiv"><td colspan="6">${t("asset.fixedEnds", { date: my(fixedUntil), amount: moneyIn(balAtChange, a.ccy), rate: fmtNum(L.rate, 3) })}</td></tr>`; }
     const cls = r.estimated ? " est" : "";
     return pre + (r.type === "extra"
       ? `<tr class="exline${cls}"><td>${ymdDay(r.date)}</td><td colspan="3">${t("asset.additionalPayment")}</td><td class="num">${moneyIn(r.extra, a.ccy)}</td><td class="num">${moneyIn(r.balance, a.ccy)}</td></tr>`
@@ -170,11 +177,11 @@ function loanComputedHTML(a) {
   return `${tooLow ? `<div class="loanwarn">${t("asset.paymentTooLow", { amount: moneyIn((+L.amount || 0) * (+L.rate || 0) / 100 / 12, a.ccy) })}</div>` : ""}
     <div class="pstats">
       ${calcStat}
-      ${a.liability ? "" : `<div class="pstat"><span class="k">${t("asset.balanceToday")}</span><span class="v num">${moneyIn(bal, a.ccy)}</span></div>`}
-      ${inYear ? `<div class="pstat"><span class="k">${t("asset.paidOffIn", { year: nowYear })}</span><span class="v num off">${moneyIn(ytd, a.ccy)}</span></div>` : ""}
-      ${balAtChange != null ? `<div class="pstat"><span class="k">${t("asset.leftAtRateChange")}</span><span class="v num hilite">${moneyIn(balAtChange, a.ccy)}</span></div>` : ""}
+      ${a.liability ? "" : `<div class="pstat"><span class="k">${t("asset.balanceToday")}</span><span class="v num">${moneyIn0(bal, a.ccy)}</span></div>`}
+      ${inYear ? `<div class="pstat"><span class="k">${t("asset.paidOffIn", { year: nowYear })}</span><span class="v num off">${moneyIn0(ytd, a.ccy)}</span></div>` : ""}
+      ${balAtChange != null ? `<div class="pstat"><span class="k">${t("asset.leftAtRateChange")}</span><span class="v num hilite">${moneyIn0(balAtChange, a.ccy)}</span></div>` : ""}
       <div class="pstat"><span class="k">${t("asset.payoff")}</span><span class="v num">${payoff ? my(payoff) : "—"}</span></div>
-      <div class="pstat"><span class="k">${t("asset.totalInterest")}</span><span class="v num">${moneyIn(totInt, a.ccy)}</span></div>
+      <div class="pstat"><span class="k">${t("asset.totalInterest")}</span><span class="v num">${moneyIn0(totInt, a.ccy)}</span></div>
     </div>
     ${yearly.size ? yearTable : ""}
     ${payRows.length ? `<details class="psched"${schedOpen ? " open" : ""}><summary>${t("asset.schedule", { count: payRows.length })}</summary>
@@ -221,7 +228,7 @@ function assetCardHTML(a) {
       <div class="frow">
         <label class="fld">${t("asset.loanAmount")}<input class="fin num" type="text" inputmode="decimal" value="${L.amount ? fmtNum(L.amount) : ""}" placeholder="0" data-aid="${a.id}" data-lf="amount"></label>
         <label class="fld">${t("asset.interestYr")}<span class="suffix"><input class="fin num" type="text" inputmode="decimal" value="${L.rate ? fmtNum(L.rate) : ""}" placeholder="0" data-aid="${a.id}" data-lf="rate"><i>%</i></span></label>
-        <label class="fld">${t("asset.setBy")}<select data-aid="${a.id}" data-lf="mode"><option value="term" ${byPayment ? "" : "selected"}>${t("asset.term")}</option><option value="payment" ${byPayment ? "selected" : ""}>${t("asset.monthlyPayment")}</option></select></label>
+        <label class="fld">${t("asset.setBy")}<select data-aid="${a.id}" data-lf="mode"><option value="term" ${byPayment ? "" : "selected"}>${t("asset.term")}</option><option value="payment" ${byPayment ? "selected" : ""}>${t("asset.byPayment")}</option></select></label>
         ${termField}
         <label class="fld">${t("asset.start")}<input class="fin" type="date" value="${esc(L.startDate)}" data-aid="${a.id}" data-lf="startDate"></label>
         <label class="fld">${t("asset.fixedUntil")}<input class="fin" type="date" value="${esc(L.fixedUntil || "")}" data-aid="${a.id}" data-lf="fixedUntil"></label>
@@ -237,9 +244,9 @@ function assetCardHTML(a) {
   if (a.liability) {
     return `<div class="rcard acard liabcard${bal > 0.005 ? " is-owing" : ""}" id="acard-${a.id}" data-aid="${a.id}">
       <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="${t("net.liabilityName")}" aria-label="${t("net.liabilityName")}"></div>
-      <div class="ahero is-liab"><span class="ah-k">${t("asset.owedToday")}</span><span class="ah-v num liab">${bal > 0.005 ? "− " + moneyIn0(bal, a.ccy) : moneyIn0(0, a.ccy)}${inBase(-bal)}</span></div>
+      <div class="ahero is-liab"><span class="ah-k">${t("asset.owedToday")}</span><span class="ah-v num${bal > 0.005 ? " liab" : ""}">${bal > 0.005 ? "− " + moneyIn0(bal, a.ccy) : moneyIn0(0, a.ccy)}${inBase(-bal)}</span></div>
       <div class="frow"><label class="fld">${t("asset.currency")}${ccySel}</label><label class="fld">${t("common.category")}${catSel}</label>
-        <label class="fld">${t("asset.ownedSince")}<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label></div>
+        <label class="fld">${t("asset.borrowedOn")}<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label></div>
       ${loanBlock}
       <div class="acard-danger"><button class="btn btn-sm btn-quiet-danger" data-adel="${a.id}">${t("asset.removeLiability")}</button></div>
     </div>`;
@@ -312,11 +319,18 @@ export function newLiability(year) {
 $("assetList").addEventListener("input", (e) => {
   const el = e.target, id = el.dataset.aid; if (!id) return; const a = state.assets.find((x) => x.id === id); if (!a) return;
   if (el.dataset.eid) { const x = ((a.loan && a.loan.extra) || []).find((z) => z.id === el.dataset.eid); if (x) { if (el.dataset.ef === "amount") x.amount = parseNum(el.value) || 0; else x.date = el.value; } }
-  else if (el.dataset.lf) { const f = el.dataset.lf; if (a.loan) a.loan[f] = f === "startDate" || f === "mode" || f === "fixedUntil" ? el.value : parseNum(el.value) || 0; }
+  else if (el.dataset.lf) {
+    const f = el.dataset.lf;
+    /* A rate and a term are read as decimals: "3.125" is three and an eighth per cent in
+       either language, and parseNum's thousands rule would make it 3,125. An amount and a
+       payment are money, where a thousands group is exactly what somebody means. */
+    if (a.loan) a.loan[f] = f === "startDate" || f === "mode" || f === "fixedUntil" ? el.value
+      : (f === "rate" || f === "termYears" ? parseDec(el.value) : parseNum(el.value)) || 0;
+  }
   else if (el.dataset.f) {
     const f = el.dataset.f;
     if (f === "value") a.value = parseNum(el.value) || 0;
-    else if (f === "rate") a.rate = Math.min(Math.max((parseNum(el.value) || 0) / 100, 0), 5);
+    else if (f === "rate") a.rate = Math.min(Math.max((parseDec(el.value) || 0) / 100, 0), 5);
     else if (f === "up") a.up = el.value === "up";
     else if (f === "group") a.group = el.value || undefined;
     else a[f] = el.value;

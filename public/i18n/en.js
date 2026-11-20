@@ -2,6 +2,9 @@
 // page copy is pre-rendered per locale by scripts/gen-i18n-pages.mjs from scripts/i18n/*.json.
 export default {
   bnr: {
+    heroLbl: "Net, per month",
+    heroOf: "Of {gross} gross a year, {net} a month is yours.",
+    heroNeed: "To take home {net} a month you need {gross} gross a year.",
     annual: "Annual",
     monthly: "Monthly",
     gross: "Gross",
@@ -214,6 +217,7 @@ export default {
     delYearConfirm: "Delete year {year}?",
     removeEntryConfirm: "Remove {name} from this year?",
     thisRow: "this row",
+    openYearAria: "{year}, total {total} — open this year",
     removeEntryAria: "Remove {name}",
     kindAria: "What kind of holding",
     editAssetAria: "Edit {name}, {tags}, {amount}",
@@ -379,6 +383,8 @@ export default {
     thBalance: "Balance",
     acquired: "Acquired",
     ownedSince: "Owned since",
+    borrowedOn: "Borrowed on",
+    byPayment: "Payment",
     yrShort: "yr",
     moShort: "mo",
     worthOwes: "Worth {worth} · owes {owed}",

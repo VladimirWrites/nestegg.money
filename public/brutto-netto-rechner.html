@@ -16,16 +16,24 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/landing.css">
 <style>
-.bnr-wrap{max-width:860px;margin:0 auto;padding:0 20px 60px}
+/* The same column as the header and the footer above and below it. At 860px against the
+   nav's 1100px the wordmark, the h1 and the footer text each started at a different x. */
+.bnr-wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px 60px}
+.bnr-col{max-width:860px}
 .bnr-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:26px 0 6px}
 #themeBtn:hover{color:var(--text)}
-.bnr-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px 18px;margin:22px 0;padding:20px;border:1px solid var(--line);border-radius:4px;background:var(--panel)}
+.bnr-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px 18px;margin:22px 0;padding:20px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel-2)}
 .bnr-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
-.bnr-form input,.bnr-form select{background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0}
-.bnr-form input:focus,.bnr-form select:focus{outline:none;border-color:var(--amber)}
+/* 16px is the threshold at which iOS stops zooming the page on focus and never zooms back,
+   and a 3px corner on a 44px control is what makes a page read as a web form rather than as
+   an app — base.css states both. This page broke both, and it is the page a stranger from a
+   search engine lands on. */
+.bnr-form input,.bnr-form select{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;color:var(--text);font-size:16px;min-height:44px;min-width:0}
+.bnr-form input{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.bnr-form input:focus-visible,.bnr-form select:focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-color:var(--signal)}
 .bnr-form select{
   -webkit-appearance:none;-moz-appearance:none;appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238a867c' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23888' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 9px center;background-size:11px;
   padding-right:28px;
 }
@@ -33,16 +41,30 @@
 .bnr-inline input{flex:1}
 .bnr-inline select{width:auto}
 .bnr-check{flex-direction:row !important;align-items:center;gap:8px !important;align-self:end;padding-bottom:9px}
-.bnr-check input{width:16px;height:16px}
+.bnr-check{min-height:44px}
+.bnr-check input{width:22px;height:22px}
 .bnr-actions{grid-column:1 / -1}
 .bnr-table{width:100%;border-collapse:collapse;margin:8px 0 4px;font-family:var(--mono);font-size:14px}
 .bnr-table th,.bnr-table td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:right}
 .bnr-table th:first-child,.bnr-table td:first-child{text-align:left;font-family:inherit}
-.bnr-table .bnr-net td{font-weight:700;color:var(--green);border-top:2px solid var(--line2);border-bottom:none}
+.bnr-table .bnr-net td{font-weight:700;color:var(--accent);border-top:2px solid var(--line);border-bottom:none}
+/* The answer, said as an answer. A search visitor wants one number and was given a nine-row
+   table whose last line was the same size as "Solidaritätszuschlag" above it. */
+.bnr-hero{margin:18px 0 6px}
+.bnr-hero .k{font-size:12.5px;color:var(--muted)}
+.bnr-hero .v{display:block;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(34px,8vw,46px);font-weight:700;line-height:1.05;color:var(--signal-lg);letter-spacing:-.01em}
+.bnr-hero .s{font-size:14px;color:var(--text);margin-top:6px;max-width:48ch}
 .bnr-note{font-size:12px;color:var(--muted);margin:10px 0 0}
 .bnr-sec{margin:44px 0 0}
 .bnr-sec h2{font-size:17px;margin:0 0 10px}
-.bnr-sec p,.bnr-sec li{font-size:14px;color:var(--muted);line-height:1.65}
+/* Three paragraphs ran together: base.css zeroes p margins and nothing here put them back,
+   so the page's credibility copy was one undifferentiated grey wall at 125 characters a line. */
+.bnr-sec p,.bnr-sec li{font-size:14.5px;color:var(--muted);line-height:1.7;max-width:68ch}
+.bnr-sec p+p,.bnr-sec ul{margin-top:12px}
+/* The only route from this page into the product was the last three words of a paragraph,
+   in the same grey as the sentence around it: base.css sets a{color:inherit} and nothing
+   here overrode it. */
+.bnr-sec a{color:var(--signal);text-decoration:underline;text-underline-offset:2px}
 .bnr-err{color:var(--red);font-size:13px;margin:8px 0}
 .hide{display:none}
 </style>
@@ -50,7 +72,7 @@
 <body class="lp">
 
 <header class="lp-nav">
-  <a class="lp-brand" href="/">nestegg</a>
+  <a class="lp-brand" href="/de/">nestegg</a>
   <nav class="lp-navlinks">
     <a href="/de/">Startseite</a>
     <a href="/dashboard">Dashboard</a>
@@ -60,6 +82,7 @@
 </header>
 
 <main class="bnr-wrap">
+  <div class="bnr-col">
   <div class="bnr-head">
     <div>
       <h1 style="margin:0 0 6px">Brutto-Netto-Rechner</h1>
@@ -127,8 +150,11 @@
     </div>
   </form>
 
-  <section id="bnrResult" class="hide">
+  <section id="bnrResult" class="hide" aria-live="polite">
     <h2 style="font-size:17px">Ergebnis</h2>
+    <!-- The answer first. A visitor who searched for this page wants one figure and was
+         given a nine-row table whose last line was the same size as the row above it. -->
+    <div class="bnr-hero"><span class="k" id="bnrHeroK"></span><span class="v num" id="bnrHeroV">—</span><span class="s" id="bnrHeroS"></span></div>
     <table class="bnr-table" id="bnrTable"></table>
     <p class="bnr-note" id="bnrBasis"></p>
   </section>
@@ -144,6 +170,7 @@
     <h2>Mehr als ein Rechner</h2>
     <p>nestegg ist ein privater Vermögens- und Gehalts-Tracker — verschlüsselt im Browser, ohne E-Mail und ohne Passwort. <a href="/dashboard#demo">Live-Demo ansehen</a></p>
   </section>
+  </div>
 </main>
 
 <footer class="lp-foot">

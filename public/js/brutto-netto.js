@@ -70,7 +70,9 @@ function calc() {
     children: parseFloat($("fKids").value) || 0,
     churchTaxPct: +$("fChurch").value,
     bundesland: $("fState").value || null,
-    kvZusatzPct: pkv ? null : (parseFloat($("fKvz").value) || null),
+    /* Number.isFinite, not `|| null`: a Kasse charging 0% is a real answer, and `0 || null`
+       silently replaced it with the statutory average. */
+    kvZusatzPct: pkv ? null : (Number.isFinite(parseFloat($("fKvz").value)) ? parseFloat($("fKvz").value) : null),
   };
   const u25 = parseFloat($("fKidsU25").value);
   if (!Number.isNaN(u25)) args.childrenUnder25 = u25;
@@ -107,7 +109,18 @@ function calc() {
     + rows.map(([l, v]) => tr(l, v)).join("")
     + tr(t("bnr.net"), r.net.annual, "bnr-net");
   $("bnrBasis").textContent = r.assumptions.basis;
+  /* The answer, said as an answer and said first. Somebody arrives from a search for a net
+     salary calculator wanting one figure, and the figure was the last row of a nine-row
+     table, set at the size of the row above it. */
+  const netMonth = Math.round(r.net.annual / 12 * 100) / 100;
+  $("bnrHeroK").textContent = t("bnr.heroLbl");
+  $("bnrHeroV").textContent = fmt(netMonth);
+  $("bnrHeroS").textContent = requiredGross != null
+    ? t("bnr.heroNeed", { gross: fmt(requiredGross), net: fmt(netMonth) })
+    : t("bnr.heroOf", { gross: fmt(r.gross.annual), net: fmt(netMonth) });
   $("bnrResult").classList.remove("hide");
+  // Nothing visibly happened: on a phone the button sits a thousand pixels down the form.
+  try { $("bnrResult").scrollIntoView({ block: "start", behavior: "smooth" }); } catch (e) {}
 }
 
 $("bnrForm").addEventListener("submit", (e) => { e.preventDefault(); calc(); });
