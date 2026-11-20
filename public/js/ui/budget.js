@@ -55,7 +55,7 @@ function roGroupSection(name, color, subtotalHTML, cardsHTML) {
      rule written for field edges painted a text input's underline across a word you cannot
      type in — a hairline from the name to the subtotal on every category, which also read as
      a second divider. A different class is what stops an input rule reaching it again. */
-  return `<section class="grp grp-ro${body ? "" : " is-empty"}" aria-label="${esc(name)}">`
+  return `<section class="grp grp-ro${body ? "" : " is-empty"}">`
     + `<div class="grphead"><span class="dot" style="background:${color}" aria-hidden="true"></span>`
     + `<h3 class="grptitle">${esc(name)}</h3><span class="grpsub num">${subtotalHTML}</span></div>${body}</section>`;
 }
@@ -194,7 +194,7 @@ function expenseRow(e) {
     <input class="bud-exp-name" data-id="${e.id}" type="text" value="${esc(e.name || "")}" placeholder="${t("budget.expense")}" aria-label="${t("budget.expenseName")}">
     ${catSelect("bud-exp-cat", `data-id="${e.id}"`, e.group)}
     <input class="bud-exp-amt" data-id="${e.id}" type="number" inputmode="decimal" value="${e.amount || ""}" placeholder="0" aria-label="${t("budget.monthlyAmount")}">
-    <button class="bud-exp-del" data-id="${e.id}" title="${t("common.remove")}" aria-label="${t("common.remove")}">✕</button>
+    <button type="button" class="bud-exp-del" data-id="${e.id}" title="${t("common.remove")}" aria-label="${esc(t("common.removeName", { name: e.name || t("budget.thisExpense") }))}">×</button>
   </div>`;
 }
 
@@ -298,7 +298,7 @@ export function renderBudget() {
            right. Written as a bare text node plus an auto margin, the title, the button and
            the whitespace between them became three anonymous flex items and the button
            settled wherever that arithmetic put it — 836px into a 1354px row. -->
-      <div class="bud-exp-head"><div class="bud-exp-headtext"><span class="bud-exp-title">${t("budget.outgoings")}</span>${reading() ? "" : `<span class="hint">${t("budget.outgoingsHint")}</span>`}</div>${RO ? "" : `<button type="button" class="btn btn-sm bud-editbtn${EDITING ? " btn-primary" : ""}" id="budEdit" aria-pressed="${EDITING}">${EDITING ? t("budget.done") : t("common.edit")}</button>`}</div>
+      <div class="bud-exp-head"><div class="bud-exp-headtext"><h2 class="bud-exp-title">${t("budget.outgoings")}</h2>${reading() ? "" : `<span class="hint">${t("budget.outgoingsHint")}</span>`}</div>${RO ? "" : `<button type="button" class="btn btn-sm bud-editbtn${EDITING ? " btn-primary" : ""}" id="budEdit" aria-controls="budItems">${EDITING ? t("budget.done") : t("common.edit")}</button>`}</div>
       <div id="budItems">${itemsHTML(s, b)}</div>
       <div class="bud-row total"><span class="bud-lbl">${t("budget.totalOutgoings")}</span><span class="bud-val" id="budOutTotal">${money(s.fixed + s.expenses)}</span></div>
     </div>
@@ -317,7 +317,11 @@ export function renderBudget() {
   const eb = $("budEdit");
   /* The button that was pressed is inside the markup the re-render replaces, so focus fell
      to <body> and a keyboard reader was returned to the top of the page with nothing said. */
-  if (eb) eb.onclick = () => { EDITING = !EDITING; renderBudget(); budRefocus("#budEdit"); };
+  if (eb) eb.onclick = () => {
+    EDITING = !EDITING; renderBudget(); budRefocus("#budEdit");
+    // The body is replaced wholesale, so a live region inside it can never announce.
+    toast(EDITING ? t("budget.editingOn") : t("budget.editingOff"));
+  };
   if (reading()) return;
 
   // Override income: live, no rebuild (keeps focus while typing). Empty field = use salary.
@@ -363,19 +367,20 @@ export function renderBudget() {
     if (nw === UNCATEGORIZED || nw === t("budget.uncategorized")) { toast(t("common.categoryReserved", { name: nw })); ev.target.value = was; return; }
     if (budgetCategoryNames().some((g) => g !== was && g === nw)) { toast(t("common.categoryExists", { name: nw })); ev.target.value = was; return; }
     renameBudgetCategory(was, nw); scheduleSync(); renderBudget();
+    budRefocus(`input.grpname[data-grp="${CSS.escape(nw)}"]`);
   });
   items.addEventListener("click", (ev) => {
     const gd = ev.target.closest("[data-grpdel]");
     if (gd) {
       const g = gd.dataset.grpdel, n = budgetCategoryUsage(g);
-      if (n === 0 || confirm(t("budget.removeCategoryConfirm", { name: g, count: n }))) { removeBudgetCategory(g); scheduleSync(); renderBudget(); }
+      if (n === 0 || confirm(t("budget.removeCategoryConfirm", { name: g, count: n }))) { removeBudgetCategory(g); scheduleSync(); renderBudget(); budRefocus("#budAddCat"); }
       return;
     }
     const del = ev.target.closest(".bud-exp-del");
     if (del) {
       const row = b.expenses.find((x) => x.id === del.dataset.id);
       if (row && !confirm(t("budget.removeExpenseConfirm", { name: row.name || t("budget.thisExpense") }))) return;
-      b.expenses = b.expenses.filter((x) => x.id !== del.dataset.id); scheduleSync(); renderBudget();
+      b.expenses = b.expenses.filter((x) => x.id !== del.dataset.id); scheduleSync(); renderBudget(); budRefocus("#budAddExp");
     }
   });
 
