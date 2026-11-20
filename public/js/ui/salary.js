@@ -67,7 +67,11 @@ export function drawSalaryChart() {
   const nowY = new Date().getFullYear(); // the current year isn't finalized — exclude from the yearly total
   const years = [...new Set(all.map((e) => +e.ym.slice(0, 4)))].sort((a, b) => a - b);
   const combY = years.filter((y) => y < nowY).map((y) => ({ y, v: people.reduce((s, p) => s + (salAnnual(p)[y] || 0), 0) }));
-  const nmR = axisMax(Math.max(1, ...combY.map((c) => c.v)));
+  /* No finished year means no yearly line, and an axis scaled to 1 printed six labels
+     reading 0 0 0 1 1 1 under a caption saying "per year". Anybody who opens the app in
+     January saw it. */
+  const hasYearly = combY.length > 0;
+  const nmR = hasYearly ? axisMax(Math.max(1, ...combY.map((c) => c.v))) : 0;
   const padL = 56, padR = 56, padT = 22, padB = 30;
   /* Shorter on a phone: at 400px the chart filled the screen on its own and pushed the
      legend below the fold, so the first thing a reader saw was three unlabelled lines. */
@@ -79,7 +83,7 @@ export function drawSalaryChart() {
   // its .histscroll container (horizontal scroll) on narrow screens rather than cramming.
   const minData = padL + padR + Math.round((maxI - minI + 1) * 3.0);
   const W = Math.max(360, Math.floor(cw), minData), plotW = W - padL - padR;
-  const X = (i) => padL + ((i - minI) / span) * plotW, YL = (v) => padT + plotH - (v / nmL) * plotH, YR = (v) => padT + plotH - (v / nmR) * plotH, sym = ccySym();
+  const X = (i) => padL + ((i - minI) / span) * plotW, YL = (v) => padT + plotH - (v / nmL) * plotH, YR = (v) => padT + plotH - (nmR ? (v / nmR) * plotH : 0), sym = ccySym();
   /* The chart is wider than a phone and opens on the newest month, so a left axis drawn
      inside it is scrolled off before a reader sees it. When that happens the labels go to a
      pinned axis beside the scroller (drawn below) and the chart keeps only its gridlines. */
@@ -90,7 +94,7 @@ export function drawSalaryChart() {
     s += `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="${C.grid}" stroke-width="1"/>`;
     if (!pinned) s += `<text x="${padL - 8}" y="${yy + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${sym}${shortK(val)}</text>`;
   }
-  for (let g = 0; g <= 5; g++) { const yy = padT + plotH - (g / 5) * plotH; s += `<text x="${W - padR + 8}" y="${yy + 3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${shortK((nmR * g) / 5)}</text>`; }
+  if (hasYearly) for (let g = 0; g <= 5; g++) { const yy = padT + plotH - (g / 5) * plotH; s += `<text x="${W - padR + 8}" y="${yy + 3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${shortK((nmR * g) / 5)}</text>`; }
   /* Two scales, two meanings: the left one is one person's pay in a month, the right one is
      everyone's pay in a year. Numbers alone on either side say nothing about which, so each
      axis names its own unit at its head — and the legend repeats it below the chart, because
@@ -144,8 +148,12 @@ export function drawSalaryChart() {
   svg.classList.toggle("anim", animOn);
   // when it overflows, show the most recent months first (scroll to the right edge)
   if (animOn) scrollToNewest(svg);
-  leg.innerHTML = people.map((p, pi) => `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("")
-    + `<span><span class="chip" style="background:${SAL_COMB}"></span>${t("salary.combinedYearly")}</span>`
+  /* Only the people who have a line. Someone added and not yet filled in was skipped by the
+     drawing loop but still given a colour in the key, so the legend named a colour that
+     appears nowhere on the chart. The combined line is named only when it exists. */
+  leg.innerHTML = people.map((p, pi) => ((p.entries || []).some((e) => e.amount)
+      ? `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name || t("salary.namePh"))}</span>` : "")).join("")
+    + (combY.length ? `<span><span class="chip" style="background:${SAL_COMB}"></span>${t("salary.combinedYearly")}</span>` : "")
     + `<span class="axishint">${t("salary.axisHint")}</span>`;
 }
 
@@ -545,8 +553,12 @@ function renderSalaryEdit() {
     h2 += `<th class="salgsep salnet-h">${t("salary.thNet")}</th><th>${t("salary.thCcy")}</th><th>${t("salary.thEvent")}</th>`;
   });
   h1 += `<th class="salx-h">${narrow ? "" : addPersonBtn}</th>`; h2 += `<th class="salx-h"></th>`;
+  /* Not built at all in card mode, where it is thrown away: about 150 rows, each with an
+     input, an eleven-option select and another input, is a few hundred kilobytes of string
+     per render — and this re-renders on every fold tap, person switch and keystroke, on the
+     device least able to afford it. */
   let body = "", curY = null;
-  yms.forEach((ym) => {
+  if (!cards) yms.forEach((ym) => {
     const y = ym.slice(0, 4);
     if (y !== curY) {
       curY = y;

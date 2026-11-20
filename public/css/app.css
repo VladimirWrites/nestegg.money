@@ -2107,3 +2107,12 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 .saltab.rotab thead th{top:0}
 /* Said once, under the table, and only when a ledger actually mixes currencies. */
 .salconvnote{font-size:12px;color:var(--dim);line-height:1.5;margin:8px 2px 0;max-width:62ch}
+/* A selected segment must be lighter than the track it sits in, or it reads as a hole
+   rather than as a raised pill. In the dark theme --panel is darker than --panel-2. */
+:root:not([data-theme="light"]) .salwho .seg-btn.is-on{background:var(--line)}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]) .salwho .seg-btn.is-on{background:var(--panel)}}
+:root[data-theme="dark"] .salwho .seg-btn.is-on{background:var(--line)}
+/* Targets. "+ note" is the only way to add one on a phone, and it was 25px tall. */
+.salwho .seg-btn{min-height:44px}
+.smon-addnote{min-height:44px;display:inline-flex;align-items:center}
+.saltab .delbtn{min-width:40px;min-height:40px}
