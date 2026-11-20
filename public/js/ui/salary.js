@@ -64,6 +64,12 @@ export function drawSalaryChart() {
   // Left axis (per-person monthly) reuses the shared grid; the right axis (combined yearly) is overlaid.
   let s = yGrid(W, padL, padR, padT, plotH, nmL, sym);
   for (let g = 0; g <= 5; g++) { const yy = padT + plotH - (g / 5) * plotH; s += `<text x="${W - padR + 8}" y="${yy + 3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${shortK((nmR * g) / 5)}</text>`; }
+  /* Two scales, two meanings: the left one is one person's pay in a month, the right one is
+     everyone's pay in a year. Numbers alone on either side say nothing about which, so each
+     axis names its own unit at its head — and the legend repeats it below the chart, because
+     the chart scrolls sideways and a caption at a corner can scroll out of sight. */
+  s += `<text x="${padL - 6}" y="${padT - 8}" text-anchor="end" font-size="10" fill="${C.axis}">${t("salary.axisLeft")}</text>`;
+  s += `<text x="${W - padR + 8}" y="${padT - 8}" text-anchor="start" font-size="10" fill="${C.axis}">${t("salary.axisRight")}</text>`;
   /* How many years the axis can name is a question about width, not about how many years
      there are. A four-digit label needs about 34px of its own; fitting one per year into a
      phone's 248px of plot printed "2014" through "2026" on top of each other. */
@@ -96,7 +102,9 @@ export function drawSalaryChart() {
   svg.classList.toggle("anim", animOn);
   // when it overflows, show the most recent months first (scroll to the right edge)
   if (animOn) scrollToNewest(svg);
-  leg.innerHTML = people.map((p, pi) => `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("") + `<span><span class="chip" style="background:${SAL_COMB}"></span>${t("salary.combinedYearly")}</span>`;
+  leg.innerHTML = people.map((p, pi) => `<span><span class="chip" style="background:${salColor(pi)}"></span>${esc(p.name)}</span>`).join("")
+    + `<span><span class="chip" style="background:${SAL_COMB}"></span>${t("salary.combinedYearly")}</span>`
+    + `<span class="axishint">${t("salary.axisHint")}</span>`;
 }
 
 function downloadSalary() {

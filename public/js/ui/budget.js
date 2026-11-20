@@ -54,7 +54,11 @@ const dispCat = (name) => (name === "Uncategorized" ? t("budget.uncategorized") 
 function breakdownSegments(s) {
   const segs = [];
   (s.categories || []).forEach((c, i) => { if (c.total > 0) segs.push({ name: dispCat(c.category), v: c.total, color: PALETTE[i % PALETTE.length], items: c.items }); });
-  if (s.leftover > 0) segs.push({ name: t("budget.leftOver"), v: s.leftover, color: C.green, items: [] });
+  /* What is left is not a category of spending, and it was painted in the same green the
+     palette gives the third category — in the dark theme the two were the identical hex, so
+     a 3% sliver and a 17% arc could not be told apart. A neutral wedge says "unspent" and
+     can never collide with a category, whatever order the categories come in. */
+  if (s.leftover > 0) segs.push({ name: t("budget.leftOver"), v: s.leftover, color: C.neutral, items: [] });
   return segs;
 }
 
@@ -224,7 +228,7 @@ export function renderBudget() {
   const auto = salaryIncome();
 
   host.innerHTML = `
-    <section class="over" style="border:none;padding:8px 0">
+    <section class="over sect-plain">
       <!-- No section title here: the screen is already called Budget and already says what it
            is for, in the bar on a phone and in the masthead on a desktop. -->
       <div class="bud-card${s.leftover < 0 ? " neg" : ""}" id="budCard">

@@ -6,12 +6,13 @@ import { t } from "../i18n.js";
 
 // Chart colours, read from the active theme's CSS variables. Mutated by refreshPalette()
 // before each render so a theme switch recolours the SVG charts.
-export const C = { amber: "#ffb020", green: "#3ad17a", grid: "#2b3040", axis: "#939aae", ink: "#e9ebf2", bg: "#12141b", red: "#ff6b6b" };
+export const C = { amber: "#ffb020", green: "#3ad17a", grid: "#2b3040", axis: "#939aae", ink: "#e9ebf2", bg: "#12141b", red: "#ff6b6b", neutral: "#939aae" };
 const cssVar = (n, fb) => { try { const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return v || fb; } catch (e) { return fb; } };
 export function refreshPalette() {
   C.amber = cssVar("--signal", C.amber); C.green = cssVar("--accent", C.green);
   C.grid = cssVar("--line", C.grid); C.axis = cssVar("--dim", C.axis);
   C.ink = cssVar("--text", C.ink); C.bg = cssVar("--ink", C.bg); C.red = cssVar("--danger", C.red);
+  C.neutral = cssVar("--dim", C.neutral);
 }
 
 // Round a value up to a "nice" axis maximum. The step sequence is fine-grained on purpose:

@@ -4,8 +4,12 @@
    showSignin, which are also what a failed boot falls back to, so the gate is never unreachable
    because of an attribute. */
 :root[data-boot="app"] #gate{display:none}
-#gate{position:fixed;inset:0;background:var(--ink);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
-.gatebox{max-width:520px;width:100%}
+/* Centred by auto margins rather than by align-items: a flex item centred by alignment is
+   clipped at the top once it is taller than the viewport, and the scrollbar cannot reach
+   what is above it — which on a phone is the wordmark and the headline. Auto margins centre
+   the same way and collapse to zero when there is nothing to spare. */
+#gate{position:fixed;inset:0;background:var(--ink);z-index:50;display:flex;justify-content:center;padding:24px;overflow:auto}
+.gatebox{max-width:520px;width:100%;margin:auto}
 .gatebox .kick{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
 /* The wordmark, set exactly as the app's own brand lockup in the rail. */
 .gatebrand{display:flex;align-items:center;gap:9px;font-variation-settings:"wdth" 118;font-weight:800;letter-spacing:-.03em;font-size:19px;color:var(--text);margin-bottom:18px}
@@ -15,20 +19,42 @@
 .gatebox .sub{color:var(--dim);margin-bottom:26px;font-size:15px}
 .gatebox .panel{border-top:1px solid var(--line);padding-top:20px}
 .gatebox p{font-size:15px;color:var(--dim);margin:12px 0;max-width:68ch}
+/* What the product is, in one sentence, before anything asks to be filled in. */
+.gatelede{font-size:16px;line-height:1.5;color:var(--dim);margin:0 0 18px;max-width:46ch}
+.gatefacts{list-style:none;margin:0 0 26px;padding:0;display:flex;flex-direction:column;gap:10px}
+.gatefacts li{position:relative;padding-left:20px;font-size:14px;line-height:1.45;color:var(--dim)}
+/* A small amber tick rather than a bullet glyph, so the three facts read as the product's
+   own claims and not as a list of options. */
+.gatefacts li::before{content:"";position:absolute;left:2px;top:6px;width:7px;height:7px;
+  border-radius:var(--r-pill);background:var(--signal)}
+/* Wide screens: the product on the left, the door on the right. Below this the two stack in
+   source order, which is already what a phone wants — name, claim, then the form. */
+@media(min-width:1000px){
+  .gatebox{max-width:1000px;display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:72px;align-items:center}
+  .gateintro{align-self:center}
+  .gatebox h1{font-size:56px}
+  .gatelede{font-size:17px;max-width:38ch}
+  /* The form is a card here rather than a rule under the headline: on a wide screen the
+     border-top of a 460px column next to a tall intro reads as an unfinished line. */
+  .gatepanels{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-xl);
+    padding:26px 28px;box-shadow:var(--shadow-card)}
+  .gatepanels .panel{border-top:0;padding-top:0}
+  .gatepanels>.switch:last-child{margin-bottom:0}
+}
 /* The gate's copy of the number, in the same wrapping box the profile uses. It breaks at its
    own dashes rather than shrinking: the old box shrank the type to an 11px floor and, at
    320px, still cut off the last group — on the one screen whose whole job is getting this
    number read and written down correctly. */
 /* A grid of groups rather than a wrapping line. The number breaks where showToken() decided
    it breaks, four groups to a line, so no line ever ends on a dash. */
-.acctnum{display:grid;grid-template-columns:repeat(4,max-content);justify-content:center;gap:2px 0;
+.acctnum{display:flex;flex-direction:column;align-items:center;gap:2px;
   padding:16px 14px;border:1px solid var(--signal);border-radius:var(--r);background:var(--signal-soft);font-family:var(--mono);
   font-size:clamp(14px,4.4vw,19px);letter-spacing:.06em;text-align:center;font-weight:700;margin:14px 0;line-height:1.9}
 /* A dash-separated group never breaks across lines. */
 .tokgrp{display:inline-block;white-space:nowrap}
-.acctnum .d{color:var(--accent)}   /* digits */
-.acctnum .a{color:var(--signal)}   /* letters */
-.acctnum .s{color:var(--dimmer)}   /* separators */
+.tokline{display:flex;justify-content:center}
+.acctnum .c{color:var(--text)}
+.acctnum .s{color:var(--dimmer)}   /* the separators, not part of what you write down */
 /* The same button the rest of the app uses. These were 12px mono small-caps at .1em, a
    different control from every button behind the door. */
 .gatebtn{font-size:15px;letter-spacing:0;text-transform:none;background:var(--signal-fill);color:var(--signal-ink);border:1px solid var(--signal-fill);padding:13px 20px;cursor:pointer;border-radius:var(--r);min-height:48px;font-weight:600;font-family:var(--sans)}
@@ -52,7 +78,9 @@
   font-size:15px;font-weight:600;text-decoration:none;cursor:pointer}
 .switch.demoswitch a:hover{border-color:var(--dimmer)}
 .gatesaved{font-size:12px;color:var(--accent);margin:-6px 0 0}
-.warn{font-size:12px;color:var(--signal);font-style:normal;margin-top:14px;border-left:2px solid var(--signal);padding-left:12px}
+/* The one irreversible fact on this screen, so not set smaller than the paragraph that
+   explains the happy path above it. */
+.warn{font-size:15px;line-height:1.45;color:var(--signal);font-style:normal;margin-top:14px;border-left:2px solid var(--signal);padding-left:12px}
 .switch{margin-top:24px;font-size:12px;color:var(--dim)}.switch a{color:var(--signal);cursor:pointer;text-decoration:underline}
 
 /* ---------- shell ----------
@@ -130,7 +158,11 @@ header.masthead{display:none}
      bar only appears when a screen has actually put controls in it. */
   .topbar{display:none}
   .topbar:has(.topbar-actions:not(:empty)){display:block}
-  header.masthead{display:block;max-width:var(--maxw);margin:0 auto;padding:8px 32px 18px;border-bottom:1px solid var(--line)}
+  /* The rule is drawn inside the padding, not on the element: as a border it ran the full
+     width of the padding box and overshot every card and rule below it by 32px on each side.
+     The extra top padding gives the eyebrow room to clear the demo banner above it. */
+  header.masthead{display:block;max-width:var(--maxw);margin:0 auto;padding:20px 32px 18px;position:relative}
+  header.masthead::after{content:"";position:absolute;left:32px;right:32px;bottom:0;height:1px;background:var(--line)}
 }
 
 .acctrow{display:flex;align-items:stretch;gap:8px}
@@ -156,6 +188,11 @@ h1.title{font-size:clamp(28px,3.4vw,40px);color:var(--text)}
 .stalepx{color:var(--dimmer)}
 
 section{padding:24px 0;border-bottom:1px solid var(--line)}
+/* A section that carries no rule of its own, but keeps the same distance from whatever is
+   above it. Written as inline `padding:8px 0` on two screens, it put the first heading 24px
+   below the hero rule on Net worth, 8px below it on Salary and 1px below it on Budget, where
+   the export button touched the rule. */
+.sect-plain{border-bottom:0;padding:24px 0 8px}
 /* A panel's name is a heading, not signage. It used to be an 11px uppercase micro-label in
    --dim, which put it *below* the field labels inside the panel it was naming — the hierarchy
    ran backwards. Now it is the largest thing in its section after the figures. */
@@ -179,9 +216,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 #histChart{display:block;height:auto}
 .chiplegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;margin-bottom:22px;font-size:11.5px;color:var(--dim)}
 .chiplegend span{display:flex;align-items:center;gap:6px}.chip{width:10px;height:10px;border-radius:1px}
+/* Not a series — a note about which side of the chart means what. No chip, quieter ink. */
+.chiplegend .axishint{color:var(--dimmer)}
 
 .charts{display:grid;grid-template-columns:240px 1fr;gap:32px;align-items:center}
-@media(min-width:900px){.bud-chart-main{display:grid;grid-template-columns:minmax(240px,1fr) minmax(320px,1fr);gap:40px;align-items:center}}
 @media(max-width:680px){.charts{grid-template-columns:1fr;gap:22px}}
 .legend{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-card)}
 /* Proportions rather than content widths, so every row in a panel divides at the same two
@@ -209,7 +247,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .yfill{display:flex;height:100%;border-radius:var(--r-pill);overflow:hidden;min-width:3px}
 .ybar i{display:block;height:100%}
 /* Right-aligned and tabular, so every year's total lands in one column. */
-.ytot{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;white-space:nowrap;text-align:right;flex:none}
+/* A fixed column for the amount, so the bar track beside it is the same length on every
+   row: sized by its content, a year with a shorter total let its bar run 33px further than
+   its neighbours and the bars stopped being comparable. */
+.ytot{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;white-space:nowrap;text-align:right;flex:none;min-width:9ch}
 .ychev{color:var(--dim);width:14px;height:14px;flex:none}
 
 .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
@@ -361,13 +402,17 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .infobox a{color:var(--signal);text-decoration:none}
 .infobox a:hover{text-decoration:underline}
 .fccheck{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:var(--text);cursor:pointer}
-.fccheck input{width:16px;height:16px;accent-color:var(--signal);cursor:pointer}
+/* A checked box and a thrown switch are painted surfaces, so they take the fill token
+   the buttons take. `--signal` is the text colour tuned for contrast on a page, and in the
+   light theme it is brown where every button is amber — two different 'actionable' colours
+   on one screen. */
+.fccheck input{width:16px;height:16px;accent-color:var(--signal-fill);cursor:pointer}
 .chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--signal) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
 .fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--dim)}
 .fcswitch input{position:absolute;opacity:0;pointer-events:none}
 .fcswitch .track{width:34px;height:18px;border-radius:var(--r-lg);background:var(--line);position:relative;transition:background .15s}
 .fcswitch .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:left .15s}
-.fcswitch input:checked+.track{background:var(--signal)}
+.fcswitch input:checked+.track{background:var(--signal-fill)}
 .fcswitch input:checked+.track::after{left:18px;background:var(--ink)}
 .rcard.liabcard{border-left:2px solid rgba(255,77,109,.5)}
 .yliab{color:var(--danger);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -376,12 +421,19 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .rcard .rdel:hover{color:var(--danger)}
 
 /* asset groups in the year editor */
-.grp{border:1px solid var(--line);border-radius:var(--r-lg);margin-top:6px;background:var(--panel-2)}
+/* The header's divider runs the full width of the card, so without clipping it is drawn
+   straight across the rounded bottom corners of a category that has nothing in it — a
+   hairline poking out from under the card. */
+.grp{border:1px solid var(--line);border-radius:var(--r-lg);margin-top:6px;background:var(--panel-2);overflow:hidden}
 .grphead{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--line)}
+/* Nothing below it to divide from. */
+.grp.is-empty .grphead{border-bottom:0}
 .grphead .dot{width:10px;height:10px;border-radius:1px;flex:none}
 .grpname{flex:1;min-width:80px;font:inherit;font-size:14px;font-weight:600;letter-spacing:.04em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);padding:3px 0}
 .grpname:focus{outline:none;border-bottom:1px solid var(--signal)}
-.grpsub{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:var(--text);white-space:nowrap}
+/* A category's total is the parent of the rows beneath it and is set accordingly: the
+   children were the louder number, which read as though each expense outranked its group. */
+.grpsub{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:var(--text);white-space:nowrap}
 .grpdel{background:none;border:none;color:var(--dim);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
 .grpdel:hover{color:var(--danger)}
 .grpcards{display:flex;flex-direction:column;gap:6px;padding:11px 13px}
@@ -396,7 +448,8 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .foot>p,.foot>span{display:block;max-width:68ch}
 @media(min-width:900px){.foot{padding-left:32px;padding-right:32px;font-size:13px}}
 .foot a{color:var(--signal);text-decoration:underline}
-.footlinks{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px 10px}
+.footlinks{display:flex;flex-wrap:wrap;align-items:center;gap:0 4px;margin-top:14px}
+.footlinks a+a::before{content:"·";margin:0 10px 0 6px;color:var(--dimmer)}
 /* standalone legal pages (privacy.html, terms.html) */
 .legal{max-width:760px;margin:0 auto;padding:48px 22px 90px}
 .legal .back{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal);text-decoration:none;margin-bottom:26px}
@@ -462,7 +515,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .acard{flex-direction:column;align-items:stretch;gap:12px;flex-wrap:nowrap}
 .toggles{display:flex;flex-wrap:wrap;gap:10px 22px}
 .tgl{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text);cursor:pointer}
-.tgl input{width:17px;height:17px;accent-color:var(--signal);cursor:pointer}
+.tgl input{width:17px;height:17px;accent-color:var(--signal-fill);cursor:pointer}
 /* min-width:0 so a wide schedule scrolls inside its own box instead of stretching the column —
    a flex item's floor is its content, and a five-column money table is wider than a phone. */
 .loanbox{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel-2);padding:13px;display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -557,11 +610,11 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .saltab td .salf:focus,.saltab td .salev:focus{outline:none;border-color:var(--signal)}
 .salx-h{width:34px}
 .saltab td.salxc{text-align:center}
-.salpick{font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px;color:var(--text);min-height:38px}
+.salpick{font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px;color:var(--text);min-height:44px}
 .salpick:focus{outline:none;border-color:var(--signal)}
 .salctrls{align-items:center}
 .salrlbl{font-size:11px;letter-spacing:.04em;color:var(--dim)}
-.salmccy{width:100%;min-width:72px;font:inherit;font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 24px 8px 8px;color:var(--dim);min-height:38px}
+.salmccy{width:100%;min-width:72px;font:inherit;font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 24px 8px 8px;color:var(--dim);min-height:44px}
 .salmccy:focus{outline:none;border-color:var(--signal)}
 /* trash-style delete button (replaces the bare ×) */
 .delbtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;background:none;border:none;color:var(--dim);cursor:pointer;border-radius:var(--r-sm)}
@@ -731,7 +784,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .demobar>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .demobar .demobtns{flex:none}
 .demobar .demobtns{display:flex;gap:8px;align-items:center}
-.demobar .btn{min-height:32px;padding:6px 12px;font-size:12.5px}
+.demobar .btn{min-height:40px;padding:8px 14px;font-size:12.5px}
 .demolink{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;background:none;border:none;color:var(--dim);cursor:pointer;font:inherit;font-size:13px;text-decoration:underline}
 .demoswitch{margin-top:4px}
 
@@ -782,6 +835,16 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 @media(min-width:640px){
   .bud-chart-main{flex-direction:row;justify-content:center;align-items:center;gap:30px}
   .bud-chart .legend{width:auto;min-width:230px;max-width:none}
+}
+/* On a wide screen the pair is a column of the page, not a centred island: the donut on the
+   left, the legend taking the rest of the width, both landing on the same two edges as every
+   card above and below them. Centred, they floated with ~250px of nothing on either side and
+   aligned with nothing. (Written after the rules above, because it has to outrank them —
+   earlier in the file at equal strength it never applied.) */
+@media(min-width:900px){
+  .bud-chart-main{display:grid;grid-template-columns:300px minmax(0,1fr);gap:48px;align-items:center;justify-content:start}
+  .bud-chart .legend{width:auto;min-width:0;max-width:none}
+  .bud-chart-main .bud-chartwrap{width:300px}
 }
 .bud-ovr{display:flex;align-items:center;gap:8px}
 .bud-reset{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-pill);color:var(--dim);cursor:pointer;font:inherit;font-size:11px;padding:5px 10px;white-space:nowrap;line-height:1}
@@ -934,16 +997,14 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   font-family:var(--mono);font-size:clamp(13px,4.1vw,16px);letter-spacing:.07em;text-align:center;font-weight:700;
   width:100%;overflow-wrap:break-word;line-height:1.9}
 .token-out .s{color:var(--dimmer)}
-.token-out .d{color:var(--accent)}
-.token-out .a{color:var(--signal)}
+.token-out .c{color:var(--text)}
 
 /* The revealed account number, inside its settings row rather than as a banner over the page.
    Breaks at its own dashes so it never runs past a narrow screen. */
 .acctcode{display:block;margin-top:9px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel-2);
   font-size:13px;letter-spacing:.06em;line-height:1.9;overflow-wrap:break-word}
 .acctcode .s{color:var(--dimmer)}
-.acctcode .d{color:var(--accent)}
-.acctcode .a{color:var(--signal)}
+.acctcode .c{color:var(--text)}
 
 
 /* A picker with two answers is a pair of buttons, not a dropdown. A native select's popup is
@@ -964,7 +1025,11 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   /* No scroll inside a scroll. The box was capped at 60vh, so the page scrolled, and then the
      table scrolled again inside it, slicing whichever row the cap landed on through the middle
      of its glyphs. The page is the only thing that scrolls now. */
-  .saltable-scroll{max-height:none;overflow:visible}
+  /* `clip` rather than `visible`: it clips the square table to the wrapper's rounded corners
+     without creating a scroll container, so the sticky header still resolves against the
+     page. With `visible` the header's and the last row's backgrounds printed straight across
+     the rounded border, which read as a broken card. */
+  .saltable-scroll{max-height:none;overflow:clip}
   .saltable-scroll .saltab{width:100%;table-layout:fixed;border-collapse:collapse}
   .saltable-scroll .salm,.saltable-scroll .salm-h{width:74px}
   .saltable-scroll .salmccy{width:100%;min-width:0;padding-right:26px;background-position:right 7px center}
@@ -987,6 +1052,21 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .saltab td.num .evtag{display:inline-block;vertical-align:middle;margin:0 6px 0 0;
     max-width:7.5em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:1px 6px;line-height:1.5}
 }
+/* The read-only table is `.saltab.rotab`, and its own rule — 13.5px figures, 8px/14px
+   padding — outranks anything written as `.saltab td.num`. Every phone rule above was
+   therefore losing: the month figures stayed larger than the year totals they roll up into,
+   and at 13.5px a figure with cents was wider than its column's content box and printed 9px
+   into the column beside it, so month amounts and year amounts never shared a right edge.
+   Matched here at the same strength, with the summary set above the detail. */
+@media(max-width:899px){
+  .saltab.rotab tbody td.num{font-size:12.5px;padding-left:10px;padding-right:10px;font-weight:400}
+  .saltab.rotab tbody tr.saly td{font-size:13px;font-weight:700}
+  .saltab.rotab tbody tr.saly td.num{padding-left:10px;padding-right:10px}
+  /* Nothing scrolls sideways at this width, so the frozen first column has nothing to be
+     frozen against — and its right-hand rule appeared on the year rows alone. */
+  .saltab.rotab tbody tr.saly td:first-child{border-right:0}
+}
+
 /* Narrower than this there is no width for both a word and a figure, and the word is the one
    that would be cut to "Xmas bon…". It becomes a dot that carries the note in its tooltip and
    its accessible name, so nothing is truncated and German fits as well as English. */
@@ -1001,7 +1081,11 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   /* Wrapping was only ever there to let a block-level chip sit above the figure. Nothing in
      this cell wraps now — and the figure is one unbreakable word, so wrapping could only ever
      have pushed it onto a second line and knocked the row off its neighbours' baseline. */
-  .saltab td.num{position:relative;white-space:nowrap;padding-left:14px;font-size:12px}
+  .saltab td.num{position:relative;white-space:nowrap}
+  /* Room for the dot on the left and for a figure with cents on the right, in one column
+     90px wide: the dot ends 10px in, the longest amount starts 17px in. */
+  .saltab.rotab tbody td.num,.saltab.rotab tbody tr.saly td.num{font-size:12px;padding-left:16px;padding-right:8px}
+  .saltab.rotab tbody tr.saly td.num{font-size:13px}
   .saltable-scroll .salm,.saltable-scroll .salm-h{width:68px}
 }
 @media(max-width:899px){
@@ -1020,7 +1104,7 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .saltable-scroll .salxc .delbtn{width:28px;height:28px}
 }
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.seg-btn{padding:8px 14px;min-height:38px;border:0;background:var(--panel-2);color:var(--dim);cursor:pointer;font-size:13px;font-weight:600}
+.seg-btn{padding:8px 14px;min-height:44px;border:0;background:var(--panel-2);color:var(--dim);cursor:pointer;font-size:13px;font-weight:600}
 .seg-btn+.seg-btn{border-left:1px solid var(--line)}
 .seg-btn:hover{color:var(--text)}
 .seg-btn.is-on{background:var(--signal-fill);color:var(--signal-ink)}
@@ -1032,7 +1116,7 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    than two become this — a button and a panel, both ours, with the keyboard behaviour a
    listbox is supposed to have. */
 .picker{position:relative}
-.picker-btn{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 34px 6px 12px;border:1px solid var(--line);
+.picker-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:6px 34px 6px 12px;border:1px solid var(--line);
   border-radius:var(--r);background:var(--panel) var(--chevron) no-repeat right 11px center;background-size:15px;
   color:var(--text);font-family:var(--mono);font-size:16px;cursor:pointer}
 .picker-btn:hover{border-color:var(--dimmer)}
@@ -1059,12 +1143,17 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
      merely present. */
   .set-row{padding:18px 20px}
   .set-group+.set-group{margin-top:18px}
+  /* A mouse does not need the thumb-sized target the phone gets. */
   .btn-sm{min-height:38px;font-size:14px;padding:8px 14px}
+  .seg-btn,.picker-btn{min-height:38px}
   .sect h2,.t-label{font-size:12px}
   .bud-row{padding:14px 16px}
   .bud-exp.ro{min-height:56px}
   .yhead{padding:16px 20px;min-height:60px}
   .legrow{font-size:15px;padding:14px 20px;min-height:56px}
+  /* A 17-character category was being cut to "Workplace pens…" on a 1440px page. The name
+     takes a second line instead; the amount and the percentage keep their columns. */
+  .legrow>span:nth-child(2){white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
   .legrow .pct{font-size:13px}
   .ytot,.yhead .yr{font-size:15px}
   .fcstat{padding:14px 16px}
@@ -1094,10 +1183,12 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .bud-rows>.bud-row{padding-left:16px;padding-right:16px}
 /* A read row is a line in a list, not a form row: name on the left, amount right-aligned in
    the same mono column every other amount in the app uses. */
-.bud-exp.ro{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:0 2px}
+/* No inset of its own: the 2px put every item's amount two pixels right of the category
+   total it belongs to, which is visible as a ragged right edge in a column of figures. */
+.bud-exp.ro{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:0}
 .bud-exp.ro{min-height:52px}
 .bud-exp.ro .bud-loan-name,.bud-exp.ro .bud-loan-amt{padding:0;line-height:1.45}
-.bud-exp.ro .bud-loan-amt{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bud-exp.ro .bud-loan-amt{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:400;color:var(--dim)}
 
 /* ── salary: a year folds behind its own total ──
  * Phones only. On a desktop there is room for the whole history and it stays open, which is
@@ -1121,18 +1212,30 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 @media(max-width:619px){
   .fcrow{display:block;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
     overflow:hidden;box-shadow:var(--shadow-card);margin:10px 0 16px}
-  .fcrow .fld{display:flex;flex-direction:row;align-items:center;justify-content:space-between;
+  /* One control column, not one per row: a year input asked for 11.5ch, a percentage for
+     12.5ch and a select for whatever it liked, so the controls started at three different
+     places down a single list and the labels wrapped against three different widths. The
+     row is a grid — label, then a control column of fixed proportion — so every field in
+     the list begins and ends on the same two edges. */
+  .fcrow .fld{display:grid;grid-template-columns:minmax(0,1fr) 42%;align-items:center;
     gap:12px;padding:8px 14px;min-height:56px;font-size:14px;color:var(--text)}
   .fcrow .fld+.fld{border-top:1px solid var(--line-soft)}
-  .fcrow .fld>.cap{flex:1 1 auto;min-width:0;white-space:normal;overflow:visible;text-overflow:clip;color:var(--text)}
-  .fcrow .fld input,.fcrow .fld select{flex:0 0 11.5ch;width:auto;min-height:40px;padding:8px 10px}
-  .fcrow .fld select{flex:0 0 auto;max-width:52%}
+  .fcrow .fld>.cap{min-width:0;white-space:normal;overflow:visible;text-overflow:clip;color:var(--text)}
+  .fcrow .fld input,.fcrow .fld select{width:100%;min-width:0;min-height:40px;padding:8px 10px}
+  /* The chevron is painted inside the box at its right edge, so a select that shortens its
+     text at the box edge shortens it underneath the chevron: "Germany (Rentenpunkte)" lost
+     its last letters behind the arrow rather than to an ellipsis. The room the chevron needs
+     is reserved here, because this row's own padding overrides the shared rule that reserved
+     it. */
+  .fcrow .fld select{max-width:none;padding-right:30px}
   /* The suffix shell is a field like the others, so it is the same height as the others. */
-  .fcrow .pct{flex:0 0 12.5ch;min-height:40px}
+  .fcrow .pct{min-height:40px}
   .fcrow .pct input{flex:1 1 auto;width:100%;padding-right:4px}
   /* A long option ("Germany (Rentenpunkte)") shortens with an ellipsis instead of being cut
      mid-word by the chevron. German runs longer again. */
   .fcrow .fld select{text-overflow:ellipsis}
+  /* The suffix shell is a control like the others and takes the control column. */
+  .fcrow .pct{width:100%}
 }
 
 /* The note a month carries, where the chip has shrunk to a dot.

@@ -27,18 +27,28 @@ const TOK_COLS = 4;   // groups per line; the CSS grid uses the same number
 
 function showToken(el, tok) {
   const groups = String(tok).split("-");
-  el.innerHTML = groups.map((g, i) => {
-    const chars = [...g].map((c) => (/[0-9]/.test(c) ? `<span class="d">${c}</span>` : `<span class="a">${c}</span>`)).join("");
+  /* One line per row of groups, each line centred on its own. As one grid the last line
+     began at the first column while the line above it filled four, so a 4+3 number read as
+     left-aligned text inside a centred box. */
+  const lines = [];
+  for (let i = 0; i < groups.length; i += TOK_COLS) lines.push(groups.slice(i, i + TOK_COLS));
+  el.innerHTML = lines.map((line, li) => line.map((g, gi) => {
+    const i = li * TOK_COLS + gi;
+    /* Every character in the text colour. Digits in the "money" green and letters in the
+       "actionable" amber spent both of the product's accents on a string that is neither,
+       and set it shouting beside the amber button that is the actual next step. The mono
+       face is what tells 0 from O. */
+    const chars = [...g].map((c) => `<span class="c">${c}</span>`).join("");
     /* The dash joins this group to the next one, so it is only drawn when there *is* a next
        one on the same line. Letting the text wrap on its own left a dash hanging off the end
        of a line, which on the one screen whose job is getting this number written down
        correctly reads as part of the number. A fixed number of columns is what makes that
        knowable: the break positions are chosen here rather than discovered by the browser. */
-    const endsLine = (i + 1) % TOK_COLS === 0;
+    const endsLine = gi === line.length - 1;
     const isLast = i === groups.length - 1;
     const sep = (!isLast && !endsLine) ? '<span class="s">-</span>' : "";
     return `<span class="tokgrp">${chars}${sep}</span>`;
-  }).join("");
+  }).join("")).map((row) => `<span class="tokline">${row}</span>`).join("");
 }
 
 /* ---- the password manager ----

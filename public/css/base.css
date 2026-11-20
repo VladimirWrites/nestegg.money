@@ -44,7 +44,7 @@
   --line-soft: #22263250;
   --text: #e9ebf2;
   --dim: #939aae;
-  --dimmer: #666d80;
+  --dimmer: #838b9e;
 
   --signal: #ffb020;
   --signal-ink: #1a1200;
@@ -131,7 +131,7 @@
     --line-soft: #dededf80;
     --text: #16171a;
     --dim: #5c5f68;
-    --dimmer: #8a8d97;
+    --dimmer: #686c77;
 
     --signal: #9a5b00;
     --signal-ink: #2a1a00;
@@ -157,7 +157,7 @@
   --line-soft: #dededf80;
   --text: #16171a;
   --dim: #5c5f68;
-  --dimmer: #8a8d97;
+  --dimmer: #686c77;
 
   --signal: #9a5b00;
   --signal-ink: #2a1a00;
@@ -276,8 +276,8 @@ img { max-width: 100%; display: block }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 16px;
-  min-height: 42px;
+  padding: 11px 16px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: var(--r);
   background: var(--panel-2);
@@ -306,7 +306,11 @@ img { max-width: 100%; display: block }
   border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
 }
 
-.btn-sm { padding: 6px 11px; min-height: 34px; font-size: 13px }
+/* 44px is the smallest target a thumb hits reliably, and this is a phone-first ledger: a
+   secondary button was 34px here while the same button on a mouse-driven desktop was 38px,
+   which is the wrong way round. The desktop keeps the tighter size, set where the desktop
+   rhythm is. */
+.btn-sm { padding: 9px 13px; min-height: 44px; font-size: 13px }
 
 .btn-icon {
   width: 17px;

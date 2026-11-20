@@ -52,8 +52,20 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     <!-- The door says which product it is. It used to open on the words "Net Worth", which are
          also the name of the first tab, so nothing on the first screen a stranger sees ever
          named nestegg. -->
-    <div class="gatebrand"><i class="brand-lamp"></i><span>nestegg</span></div><h1 data-i18n="gate.title">Net Worth</h1>
-    <div class="sub" data-i18n="gate.sub">No email. No password. Just an account number.</div>
+    <!-- Two columns on a wide screen: what the product is on the left, the door itself on the
+         right. One 520px column centred in a 1440px window told a stranger what to type before
+         it told them what they were signing up to. -->
+    <div class="gateintro">
+      <div class="gatebrand"><i class="brand-lamp"></i><span>nestegg</span></div><h1 data-i18n="gate.title">Net Worth</h1>
+      <div class="sub" data-i18n="gate.sub">No email. No password. Just an account number.</div>
+      <p class="gatelede" data-i18n="gate.lede">Log what you own each year and watch your wealth over time and by allocation — alongside your salary, your budget and a forecast of where it all lands.</p>
+      <ul class="gatefacts">
+        <li data-i18n="gate.fact1">Encrypted in your browser before it ever syncs.</li>
+        <li data-i18n="gate.fact2">Live prices for every ticker and coin you hold.</li>
+        <li data-i18n="gate.fact3">Export everything as JSON whenever you like.</li>
+      </ul>
+    </div>
+    <div class="gatepanels">
     <form class="panel" id="gateCreate" autocomplete="on">
       <p data-i18n="gate.createLede">Your account number is your only key. It identifies you and unlocks your data, which is encrypted in your browser before it ever leaves. Write it down somewhere safe.</p>
       <!-- The account number is the credential. A username field alongside a password field
@@ -79,6 +91,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
       <div class="switch"><span data-i18n="gate.needNew">Need a new account?</span> <a id="toCreate" role="button" tabindex="0" data-i18n="gate.create">Create one</a></div>
     </form>
     <div class="switch"><span data-i18n="gate.agreePre">By continuing you agree to the</span> <a href="privacy.html" data-i18n="gate.privacy">Privacy Policy</a> <span data-i18n="gate.and">and</span> <a href="terms.html" data-i18n="gate.terms">Terms &amp; Conditions</a>.</div>
+    </div>
   </div>
 </div>
 
@@ -221,7 +234,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
              to sit under the table, which on a phone is several thousand pixels down. -->
         <div class="controls"><button class="btn btn-primary btn-sm" id="salNext" data-i18n="salary.next">+ Next month</button><button class="btn btn-sm" id="salEdit" data-i18n="salary.edit">Edit salaries</button></div>
       </div>
-      <section class="over" style="border:none;padding:8px 0">
+      <section class="over sect-plain">
         <div class="sectitle" data-i18n="salary.history">Our salary history<span class="sectools"><button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart" data-i18n-title="salary.dlChart" data-i18n-aria-label="salary.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
         <div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div>
         <div class="chiplegend" id="salaryLegend"></div>
@@ -376,7 +389,9 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     it never sees your figures. It can still see the size of your encrypted data, when you sync, and your IP address.
     Each year holds its own asset rows, each in its own currency, shown in your chosen display currency — past years at that year's year-end ECB rates, the current year live.
     There is no recovery if you lose your account number — Export JSON is your backup.</span>
-    <div class="footlinks"><a href="privacy.html" data-i18n="foot.privacy">Privacy Policy</a> · <a href="terms.html" data-i18n="foot.terms">Terms &amp; Conditions</a> · <a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener" data-i18n="foot.source">Source</a> · <a href="https://buymeacoffee.com/vladimirj.dev" target="_blank" rel="noopener" data-i18n="foot.coffee">Buy me a coffee ☕</a></div>
+    <!-- The separators are drawn by CSS between the links, not typed between them: as text they
+         were line-breaking opportunities, and the row wrapped leaving a "·" hanging at the end. -->
+    <div class="footlinks"><a href="privacy.html" data-i18n="foot.privacy">Privacy Policy</a><a href="terms.html" data-i18n="foot.terms">Terms &amp; Conditions</a><a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener" data-i18n="foot.source">Source</a><a href="https://buymeacoffee.com/vladimirj.dev" target="_blank" rel="noopener" data-i18n="foot.coffee">Buy me a coffee ☕</a></div>
   </div>
   </div><!-- /shell-main -->
  </div><!-- /shell -->
