@@ -197,6 +197,17 @@ export function parseLocaleNum(s) {
   return neg ? -n : n;
 }
 
+/* A number with no thousands separators, for a field whose parser does not group.
+ *
+ * The rate and term fields are read with parseDec, which treats every separator as a decimal
+ * mark — so writing them back with the grouping formatter meant "1,500" went in and 1.5 came
+ * out. A rate and a term are small numbers; they do not need grouping, and they must not
+ * have it. */
+export function fmtPlain(n, maxFrac = 2) {
+  if (n == null || n === "" || !Number.isFinite(Number(n))) return "";
+  return new Intl.NumberFormat(fmtLocale(), { maximumFractionDigits: maxFrac, useGrouping: false }).format(Number(n));
+}
+
 export function fmtNum(n, maxFrac = 2, minFrac = 0) {
   if (n == null || n === "" || !Number.isFinite(Number(n))) return "";
   /* minFrac is for columns of money: without it a formatter drops trailing zeros, so

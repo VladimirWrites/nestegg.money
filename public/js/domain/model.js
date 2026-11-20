@@ -165,7 +165,13 @@ export function autoEntriesFor(year) {
          that it never had an amount: a debt created by "+ Loan / debt" starts at zero, and
          dropping it here left a record in the vault that no screen rendered and nothing could
          delete, because the only way to its editor is the row that stopped existing. */
-      if (bal <= 0.005 && from && from < ref && +((a.loan && a.loan.amount) || 0) > 0) return;
+      /* Dropped once it is history, not in the year it was cleared. With `from < ref` a debt
+         borrowed in March and repaid in November was absent from that year too — and from
+         every other, since earlier years skip it as not-yet-owned — so the record existed in
+         no year at all, and the only route to its editor is a row in a year. The year you
+         finished paying is also the year the loan most belongs on the page. */
+      const yearStart = new Date(ref.getFullYear(), 0, 1);
+      if (bal <= 0.005 && from && from < yearStart && +((a.loan && a.loan.amount) || 0) > 0) return;
       out.push({ id: "asset:" + a.id, auto: true, assetId: a.id, kind: "liability", name: a.name || "Liability", ccy: a.ccy || state.baseCcy, value: bal, group: a.group });
     } else {
       out.push({ id: "asset:" + a.id, auto: true, assetId: a.id, kind: "fixed", name: a.name || "Asset", ccy: a.ccy || state.baseCcy, value: assetNetAt(a, ref), group: a.group });
