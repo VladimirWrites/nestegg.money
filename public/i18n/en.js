@@ -283,6 +283,7 @@ export default {
     yearNone: "nothing yet",
     notFilled: "empty",
     eventPh: "Raise, new job…",
+    amountPh: "Amount",
     thNet: "Net",
     thCcy: "Currency",
     thEvent: "Note",

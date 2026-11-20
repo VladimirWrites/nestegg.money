@@ -175,21 +175,25 @@ const salNextMonth = () => { const ys = salGlobalYms(); return ys.length ? nextY
 
 // Both tables live in their own scroll box, and every edit rebuilds it — which would throw the
 // view back to the top of a long history. Keep the reader where they were across a re-render…
+/* The editor overlay is what scrolls. These used to move `.saltable-scroll`, which stopped
+   being a scroll container when it went to `overflow:clip` and does not exist at all in the
+   card layout — so both of these were quietly doing nothing in both layouts, and a reader
+   who added a month or a range saw no sign of where it went. */
+const salScroller = () => $("salaryEditor");
 function salKeepScroll(host, render) {
-  const before = host.querySelector(".saltable-scroll");
-  const top = before ? before.scrollTop : 0;
+  const box = salScroller();
+  const top = box ? box.scrollTop : 0;
   render();
-  const after = host.querySelector(".saltable-scroll");
-  if (after) after.scrollTop = top;
+  if (box) box.scrollTop = top;
 }
-// …and, when a month was just added, bring that row into view instead (it lands at the bottom).
+// …and, when a month was just added, bring it into view: it lands at the top of the newest year.
 function salRevealMonth(host, ym, focus) {
-  const box = host.querySelector(".saltable-scroll"); if (!box || !ym) return;
-  const row = box.querySelector(`[data-ym="${ym}"]`); if (!row) return;
+  const box = salScroller(); if (!box || !ym) return;
+  const row = host.querySelector(`[data-ym="${ym}"]`); if (!row) return;
   const r = row.getBoundingClientRect(), b = box.getBoundingClientRect();
-  if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom + 8;
-  else if (r.top < b.top) box.scrollTop -= b.top - r.top + 8;
-  if (focus) { const f = row.querySelector("input.salf"); if (f) f.focus(); }
+  if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom + 12;
+  else if (r.top < b.top) box.scrollTop -= b.top - r.top + 12;
+  if (focus) { const f = row.querySelector("input.salf"); if (f) try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }
 }
 
 // Parse a pasted month cell into YYYY-MM: "May 2013", "2013-05", "5/2013", "2013/05/01"…
@@ -388,13 +392,18 @@ function salMonthCards(p, yms) {
     const amt = e && e.amount ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
     const del = `<button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${t("salary.removeMonthAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>`;
     const tag = amt === "" ? `<span class="smon-tag">${t("salary.notFilled")}</span>` : "";
+    /* No captions. NET / CURRENCY / NOTE above every field is tutorial text repeated a
+       hundred and fifty times; the fields are a figure, a three-letter code and a line of
+       prose, and a reader knows which is which. They keep their accessible names. The note
+       only takes a row once it has something in it — an empty month is then a third of the
+       height it was, which is what makes a new person's twelve years readable. */
     out += `<div class="smon${amt === "" ? " is-empty" : ""}${openEditYears.has(y) ? "" : " is-folded"}" data-ym="${ym}">`
       + `<div class="smon-h"><span class="smon-m">${ymLabel(ym)}</span>${tag}${del}</div>`
       + `<div class="smon-row">`
-      + `<label class="smon-f smon-amt"><span class="smon-cap">${t("salary.thNet")}</span><input class="salf num" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0.00"></label>`
-      + `<label class="smon-f smon-ccy"><span class="smon-cap">${t("salary.thCcy")}</span><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select></label>`
+      + `<input class="salf num" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="${t("salary.amountPh")}" aria-label="${t("salary.thNet")}">`
+      + `<select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy" aria-label="${t("salary.thCcy")}">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select>`
       + `</div>`
-      + `<label class="smon-f smon-ev"><span class="smon-cap">${t("salary.thEvent")}</span><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="${t("salary.eventPh")}" title="${t("salary.eventTitle")}"></label>`
+      + `<input class="salev${ev ? "" : " is-blank"}" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="${t("salary.eventPh")}" aria-label="${t("salary.thEvent")}" title="${t("salary.eventTitle")}">`
       + `</div>`;
   });
   return out;
@@ -439,7 +448,7 @@ function renderSalaryEdit() {
       /* text, not number: a `number` field is formatted and parsed by the browser's own
          locale, so the same ledger showed "5418.61" on one machine and "5418,61" on the
          next, neither of which is the shape the app prints everywhere else. */
-      row += `<td class="salgsep"><input class="salf num${amt === "" ? " is-empty" : ""}" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0.00"></td>` +
+      row += `<td class="salgsep"><input class="salf num${amt === "" ? " is-empty" : ""}" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="${t("salary.amountPh")}"></td>` +
         `<td><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select></td>` +
         `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="${t("salary.eventPh")}" title="${t("salary.eventTitle")}"></td>`;
     });
@@ -487,38 +496,46 @@ try {
   });
 } catch (e) {}
 
+/* `t` is the translator, imported at the top of this file. The event target is `el`: naming
+   it `t` here shadowed the translator, and an attempt to keep a reference to it one line
+   above the shadowing declaration read `t` inside its own temporal dead zone — which threw
+   on every keystroke, before a single character reached the ledger. On a screen whose lede
+   says "everything saves as you type", that is the worst bug this file can have. */
 $("salaryList").addEventListener("input", (e) => {
-  const t2 = t;   // `t` is the event target in this handler; the translator keeps its own name
-  const t = e.target, sid = t.dataset.sid, f = t.dataset.f; if (!sid || !f) return; const p = state.salaries.find((x) => x.id === sid); if (!p) return;
-  if (t.dataset.ym) {
-    const en = salEnsure(p, t.dataset.ym);
-    if (f === "amount") en.amount = parseNum(t.value) || 0; else en[f] = t.value;
+  const el = e.target, sid = el.dataset.sid, f = el.dataset.f; if (!sid || !f) return;
+  const p = state.salaries.find((x) => x.id === sid); if (!p) return;
+  if (el.dataset.ym) {
+    const en = salEnsure(p, el.dataset.ym);
+    if (f === "amount") en.amount = parseNum(el.value) || 0; else en[f] = el.value;
     scheduleSync();
     if (f === "amount") {
-      const yr = t.dataset.ym.slice(0, 4);
+      const yr = el.dataset.ym.slice(0, 4);
       const yt = document.querySelector('[data-ytot="' + sid + ":" + yr + '"]');
       if (yt) {
         const tot = p.entries.filter((x) => x.ym.slice(0, 4) === yr).reduce((a, x) => a + salBase(p, x), 0);
-        /* Written the way the renderer writes it. Rewritten as a bare figure, a card's
-           "2026 · Total €24,740" lost its label at the first keystroke, and "nothing yet"
-           turned into a number with no word to say what it was. */
+        /* Written the way the renderer writes it: rewritten as a bare figure, a card's
+           "2026 · Total €24,740" lost its label at the first keystroke. */
         yt.textContent = yt.classList.contains("smy-t")
-          ? (tot ? t2("salary.yearTotal", { amount: money(tot) }) : t2("salary.yearNone"))
+          ? (tot ? t("salary.yearTotal", { amount: money(tot) }) : t("salary.yearNone"))
           : (tot ? money(tot) : "—");
         flash(yt);
       }
-      /* The card stops being an empty one the moment it holds a figure. */
-      const card = t.closest(".smon");
+      /* A card stops being an empty one the moment it holds a figure. */
+      const has = !!parseNum(el.value);
+      const card = el.closest(".smon");
       if (card) {
-        const has = !!parseNum(t.value);
         card.classList.toggle("is-empty", !has);
         const tag = card.querySelector(".smon-tag");
         if (tag) tag.hidden = has;
       }
-      const sf = t.closest("td") ? t : null; if (sf) sf.classList.toggle("is-empty", !parseNum(t.value));
+      el.classList.toggle("is-empty", !has);
       drawSalDebounced();
     }
-  } else { if (f === "name") p.name = t.value; else if (f === "ccy") p.ccy = t.value; scheduleSync(); if (f === "name") drawSalDebounced(); }
+  } else {
+    if (f === "name") p.name = el.value; else if (f === "ccy") p.ccy = el.value;
+    scheduleSync();
+    if (f === "name") drawSalDebounced();
+  }
 });
 $("salaryList").addEventListener("change", (e) => { if (e.target.dataset.f === "ccy") salKeepScroll($("salaryList"), renderSalaryEdit); });
 $("salaryList").addEventListener("click", (e) => {

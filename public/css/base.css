@@ -448,7 +448,10 @@ select,
   border-radius: var(--r-sm);
 }
 
-::selection { background: var(--signal); color: var(--signal-ink) }
+/* A selection has to be readable: --signal on --signal-ink is 2.6:1 in the light theme, so
+   selected text was the least legible text on the page — most visibly on a name a reader is
+   about to retype. The soft tint keeps the page's own ink. */
+::selection { background: var(--signal-soft); color: var(--text) }
 
 [role="button"] { cursor: pointer }
 
