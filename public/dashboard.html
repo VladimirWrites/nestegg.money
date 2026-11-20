@@ -176,6 +176,11 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     <section class="forecast">
       <div class="sectitle"><span data-i18n="net.forecast">Forecast</span> <span class="tin" data-i18n="net.forecastTin">— where you're headed</span><label class="fcswitch"><input type="checkbox" id="fcOn"><span class="track"></span><em data-i18n="net.show">Show</em></label><span class="sectools"><button class="chartdl" id="dlFc" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
       <div id="fcBody">
+        <!-- The assumptions sit in a disclosure. On a phone the six fields and two checkboxes
+             came to roughly 450px above the chart they feed, so the screen opened on a form
+             rather than on the answer; the summary is hidden on a desktop, where the space
+             exists and the panel stays open. -->
+        <details class="fcset" open><summary data-i18n="net.assumptions">Assumptions</summary>
         <div class="fcrow">
           <label class="fld"><span class="cap" title="Monthly contribution" data-i18n="net.monthly" data-i18n-title="net.monthly">Monthly contribution</span><input id="fcMonthly" class="fin num" type="text" step="any" inputmode="decimal" placeholder="0"></label>
           <label class="fld"><span class="cap" title="Expected return / yr" data-i18n="net.retYr" data-i18n-title="net.retYr">Expected return / yr</span><span class="pct"><input id="fcGrowth" class="fin num" type="text" step="any" inputmode="decimal" placeholder="5"><i>%</i></span></label>
@@ -186,6 +191,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
         </div>
         <label class="fccheck"><input type="checkbox" id="fcRedirect"><span data-i18n="net.redirect">Reinvest freed-up loan payments after each loan is paid off</span></label>
         <label class="fccheck"><input type="checkbox" id="fcBand"><span data-i18n="net.band">Show return range (poor / expected / great)</span></label>
+        </details>
         <div class="fcstats" id="fcStats"></div>
         <div class="histscroll"><svg id="fcChart"></svg></div>
         <div class="chiplegend"><span><span class="chip" style="background:var(--signal)"></span><span data-i18n="net.actual">Actual</span></span><span><span class="chip fcdash"></span><span data-i18n="net.projected">Projected</span></span><span><span class="chip" style="background:var(--accent)"></span><span data-i18n="net.goal">Goal</span></span></div>
@@ -195,6 +201,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     <section class="forecast retire">
       <div class="sectitle"><span data-i18n="net.retire">Retirement</span> <span class="tin" data-i18n="net.retireTin">— spend down the nest egg, then the pension kicks in</span><label class="fcswitch"><input type="checkbox" id="rtOn"><span class="track"></span><em data-i18n="net.show">Show</em></label></div>
       <div id="rtBody">
+        <details class="fcset" open><summary data-i18n="net.assumptions">Assumptions</summary>
         <div class="fcrow">
           <label class="fld"><span class="cap" title="Retire in (year)" data-i18n="net.retireIn" data-i18n-title="net.retireIn">Retire in (year)</span><input id="rtYear" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2026"></label>
           <label class="fld"><span class="cap" title="Annual spending" data-i18n="net.annualSpend" data-i18n-title="net.annualSpend">Annual spending</span><input id="rtSpend" class="fin num" type="text" step="any" inputmode="decimal" placeholder="30000"></label>
@@ -208,6 +215,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
           <label class="fld"><span class="cap" title="Inflation / yr" data-i18n="net.inflation" data-i18n-title="net.inflation">Inflation / yr</span><span class="pct"><input id="rtInfl" class="fin num" type="text" step="any" inputmode="decimal" placeholder="2"><i>%</i></span></label>
         </div>
         <div class="fchint" style="padding:0 0 4px" data-i18n="net.retireHint">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the pension you expect (in today's value) and when it starts. Germany: pension = points × value (~1 point/yr at the average salary; points accrue while working).</div>
+        </details>
         <div class="fcstats" id="rtStats"></div>
         <div class="histscroll"><svg id="rtChart"></svg></div>
         <div class="chiplegend"><span><span class="chip" style="background:var(--signal)"></span><span data-i18n="net.nestEggChip">Nest egg (today's money)</span></span></div>

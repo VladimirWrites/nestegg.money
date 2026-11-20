@@ -464,6 +464,15 @@ $("pricesBtn").onclick = doPrices;
 $("profPricesBtn").onclick = doPrices;
 $("profRatesBtn").onclick = doRates;
 
+/* The two assumption panels start folded on a phone and open on a desktop. Done once, at
+   start-up, rather than on every render: after this the panel is the reader's to leave open
+   or shut, and a redraw of the chart must not reach in and change it back. The markup ships
+   `open`, so a browser that never runs this still shows the fields. */
+(() => {
+  if (!window.matchMedia || !window.matchMedia("(max-width:899px)").matches) return;
+  document.querySelectorAll("details.fcset").forEach((d) => { d.open = false; });
+})();
+
 // Forecast inputs
 (() => {
   const fcRender = debounce(() => { renderForecast(); renderRetire(); }, 120);

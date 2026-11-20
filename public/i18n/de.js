@@ -81,6 +81,7 @@ export default {
     profileSub: "Ihre Kontonummer und was dieses Gerät damit macht.",
   },
   net: {
+    assumptions: "Annahmen",
     totalLbl: "Gesamtvermögen",
     assetsLbl: "Anlagen",
     dlChart: "Diagramm herunterladen",

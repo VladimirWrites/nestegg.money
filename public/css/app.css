@@ -406,6 +406,20 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    the buttons take. `--signal` is the text colour tuned for contrast on a page, and in the
    light theme it is brown where every button is amber — two different 'actionable' colours
    on one screen. */
+/* The forecast's and the retirement's inputs, folded away from the answer they produce.
+   Open on a desktop and the summary hidden there — the space exists, and a disclosure a
+   reader never has to use is just another line to read. Closed on a phone at boot, where
+   the two forms came to roughly 900px above and between the charts. */
+.fcset{border:0;margin:0 0 4px}
+.fcset>summary{list-style:none;cursor:pointer;display:none;align-items:center;gap:8px;
+  min-height:44px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.fcset>summary::-webkit-details-marker{display:none}
+.fcset>summary::after{content:"";width:7px;height:7px;border-right:1.5px solid currentColor;
+  border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-bottom:3px;transition:transform .15s}
+.fcset[open]>summary::after{transform:rotate(-135deg);margin-bottom:-2px}
+.fcset>summary:hover{color:var(--signal)}
+@media(max-width:899px){.fcset>summary{display:flex}}
+
 .fccheck input{width:16px;height:16px;accent-color:var(--signal-fill);cursor:pointer}
 .chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--signal) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
 .fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--dim)}

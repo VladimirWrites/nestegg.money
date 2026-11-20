@@ -81,6 +81,7 @@ export default {
     profileSub: "Your account number, and what this device does with it.",
   },
   net: {
+    assumptions: "Assumptions",
     totalLbl: "Total Net Worth",
     assetsLbl: "Assets",
     dlChart: "Download chart",
