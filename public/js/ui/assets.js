@@ -1,6 +1,6 @@
 // Long-term asset editor: one asset with optional toggles (depreciates and/or carries a loan).
 // Net contribution = (depreciated price or market value) − outstanding loan.
-import { $, toast, flash, focusNew, setInert, rememberFocus, restoreFocus, restoreFocusTo } from "./dom.js";
+import { $, toast, flash, focusNew, setInert, rememberFocus, restoreFocus, restoreFocusTo, behind } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
@@ -70,7 +70,10 @@ export function openAssetEditor(id, focusName) {
   /* This editor opens on top of the year editor rather than instead of it, so both the app
      and that layer have to be switched off: otherwise Tab walks through a whole screen of
      controls nobody can see, under an opaque one. */
-  setInert($("app"), true);
+  /* The same thing showEditor switches off, for the same reason: on a laptop the rail lives
+     inside #app and stays on screen beside the editor, so inerting the lot left four tabs
+     drawn as if they worked. */
+  setInert(behind(), true);
   setInert($("yearEditor"), true);
   document.body.classList.add("no-nav");
   pushEditor("assetEditor");
@@ -87,7 +90,7 @@ function closeAssetEditor() {
     document.body.classList.remove("no-nav");
     setInert($("app"), false);
     setInert(document.querySelector(".shell-main"), false);
-  }
+  } else setInert(behind(), true);   // the year editor is still up, so its own layer stays off
   popEditor();
   if (!$("yearEditor").classList.contains("hide")) {
     renderEntries();

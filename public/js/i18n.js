@@ -18,9 +18,26 @@ export function resolveLocale(explicit) {
   return LOCALES.includes(nav) ? nav : DEFAULT_LOCALE;
 }
 
+/* English under everything.
+ *
+ * `t()` returns the key when a string is missing, and after a deploy that adds one, a service
+ * worker can still be serving the previous dictionary — so a German reader's first load
+ * printed "asset.byPayment" where a word should be. English is loaded as the base and the
+ * chosen language laid over it, so a missing string falls back to a real word. */
+function layer(base, over) {
+  const out = { ...base };
+  for (const k in over) {
+    const v = over[k];
+    out[k] = v && typeof v === "object" && !Array.isArray(v) && base[k] && typeof base[k] === "object"
+      ? layer(base[k], v) : v;
+  }
+  return out;
+}
+
 export async function initI18n(explicit) {
   locale = resolveLocale(explicit);
-  dict = (await import(`../i18n/${locale}.js`)).default;
+  const base = (await import("../i18n/en.js")).default;
+  dict = locale === "en" ? base : layer(base, (await import(`../i18n/${locale}.js`)).default);
   /* The document says which language it is in. Nothing set it, so the German app was served
      as lang="en" and read aloud by a screen reader in an English voice — and the hyphenation
      and quotation rules a browser applies are the wrong ones too. */

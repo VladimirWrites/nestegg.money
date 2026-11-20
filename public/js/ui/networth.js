@@ -11,6 +11,7 @@ import { openAssetEditor, newAsset, newLiability } from "./assets.js";
 import { groupNames, addCategory, renameCategory, categoryUsage, removeCategory } from "../domain/categories.js";
 import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
 import { t } from "../i18n.js";
+import { registerOverlay } from "./editors.js";
 
 let edIdx = -1;
 let edYearPrev = null;
@@ -219,6 +220,7 @@ const closeYearModal = () => {
    edIdx is now -1. The dialog is what Escape means while the dialog is up. */
 export const yearModalOpen = () => !$("yearModal").classList.contains("hide");
 
+registerOverlay("yearModal", closeYearModal);
 $("edYearBtn").onclick = openYearModal;
 $("yearClose").onclick = closeYearModal;
 $("yearModal").addEventListener("click", (e) => { if (e.target.id === "yearModal") closeYearModal(); });
@@ -337,8 +339,23 @@ $("edEntries").addEventListener("change", async (e) => {
 
 // Symbol-format help, shown in an overlay from the (i) button next to the ticker field.
 // The HTML lives in the i18n dictionaries (net.infoTicker / net.infoCrypto), resolved at open time.
-function openInfo(kind) { const b = $("infoBody"); if (b) b.innerHTML = kind === "ticker" ? t("net.infoTicker") : kind === "crypto" ? t("net.infoCrypto") : ""; $("infoModal").classList.remove("hide"); }
-function closeInfo() { $("infoModal").classList.add("hide"); }
+function openInfo(kind) {
+  const b = $("infoBody");
+  if (b) b.innerHTML = kind === "ticker" ? t("net.infoTicker") : kind === "crypto" ? t("net.infoCrypto") : "";
+  rememberFocus("infoModal");
+  $("infoModal").classList.remove("hide");
+  /* The same treatment as the dialog next to it: Tab used to walk the whole editor behind an
+     aria-modal="true" overlay, with focus still on the "i" button that opened it. */
+  setInert($("yearEditor"), true);
+  const c = $("infoClose");
+  if (c) setTimeout(() => { try { c.focus({ preventScroll: true }); } catch (e) {} }, 0);
+}
+function closeInfo() {
+  $("infoModal").classList.add("hide");
+  setInert($("yearEditor"), false);
+  restoreFocus("infoModal");
+}
+registerOverlay("infoModal", closeInfo);
 $("infoClose").onclick = closeInfo;
 $("infoModal").addEventListener("click", (e) => { if (e.target.id === "infoModal") closeInfo(); });
 /* No Escape listener of its own.

@@ -38,10 +38,22 @@ export const anyEditorOpen = () => topEditor() !== null;
  * editor left the year grid floating over whatever came up behind it — with every tile in it
  * dead, because its handler reads the snapshot the editor was on and there is no longer one.
  * Any route out of an editor takes its dialogs with it. */
+/* How each dialog shuts itself.
+ *
+ * Hiding a dialog is not closing it: the Move-year dialog switches the editor underneath
+ * off while it is up, so a route that only added `.hide` left the screen behind it inert —
+ * visible, and accepting neither a click nor a Tab. Escape and the system Back button both
+ * went through that route. Each dialog registers what it actually has to undo. */
+const overlayClosers = new Map();
+export const registerOverlay = (id, close) => overlayClosers.set(id, close);
+
 export function closeOverlays() {
   let closed = false;
   for (const m of document.querySelectorAll(".infomodal")) {
-    if (!m.classList.contains("hide")) { m.classList.add("hide"); closed = true; }
+    if (m.classList.contains("hide")) continue;
+    const close = overlayClosers.get(m.id);
+    if (close) close(); else m.classList.add("hide");
+    closed = true;
   }
   return closed;
 }

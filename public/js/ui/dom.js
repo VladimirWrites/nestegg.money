@@ -56,7 +56,7 @@ export function restoreFocus(id) {
  * the editor and go — so making the whole of #app inert left four tabs drawn on screen,
  * looking pressable, swallowing the click and the Tab key alike. Only the column the editor
  * covers goes inert. */
-const behind = () => (matchMedia("(min-width: 900px)").matches ? document.querySelector(".shell-main") : $("app"));
+export const behind = () => (matchMedia("(min-width: 900px)").matches ? document.querySelector(".shell-main") : $("app"));
 
 export function showEditor(id) {
   const el = $(id);
