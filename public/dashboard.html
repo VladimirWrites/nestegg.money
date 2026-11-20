@@ -194,7 +194,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
         </details>
         <div class="fcstats" id="fcStats"></div>
         <div class="histscroll"><svg id="fcChart"></svg></div>
-        <div class="chiplegend"><span><span class="chip" style="background:var(--signal)"></span><span data-i18n="net.actual">Actual</span></span><span><span class="chip fcdash"></span><span data-i18n="net.projected">Projected</span></span><span><span class="chip" style="background:var(--accent)"></span><span data-i18n="net.goal">Goal</span></span></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--signal-lg)"></span><span data-i18n="net.actual">Actual</span></span><span><span class="chip fcdash"></span><span data-i18n="net.projected">Projected</span></span><span><span class="chip" style="background:var(--accent)"></span><span data-i18n="net.goal">Goal</span></span></div>
       </div>
     </section>
 
@@ -218,11 +218,12 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
         </details>
         <div class="fcstats" id="rtStats"></div>
         <div class="histscroll"><svg id="rtChart"></svg></div>
-        <div class="chiplegend"><span><span class="chip" style="background:var(--signal)"></span><span data-i18n="net.nestEggChip">Nest egg (today's money)</span></span></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--signal-lg)"></span><span data-i18n="net.nestEggChip">Nest egg (today's money)</span></span></div>
       </div>
     </section>
 
-    <section style="border-bottom:none;padding-top:8px">
+    <!-- Eight pixels under the rule above it, where every other block gets twenty-four. -->
+    <section class="sect-plain">
       <div class="controls" style="margin-top:0">
         <button class="btn btn-sm" id="pricesBtn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.prices">Prices</span></button>
         <button class="btn btn-sm" id="ratesBtn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.rates">Rates</span></button>

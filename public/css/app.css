@@ -36,6 +36,14 @@
   .gatepanels{display:flex;flex-direction:column}
   .gatepanels>.demoswitch{order:-1;margin:0 0 18px}
 }
+/* The lede already says what the product is. The three supporting facts cost about 110px,
+   which on a phone is the difference between the no-recovery warning and the sign-in link
+   being on the first screen or below it — and those two matter more to a stranger than the
+   supporting copy does. */
+@media(max-width:559px){
+  .gatefacts{display:none}
+  .gatelede{margin-bottom:22px}
+}
 
 /* Wide screens: the product on the left, the door on the right. Below this the two stack in
    source order, which is already what a phone wants — name, claim, then the form. */
@@ -455,7 +463,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .fccheck input:checked{background:var(--signal-fill);border-color:var(--signal-fill)}
 .fccheck input:checked::before{transform:scale(1)}
 .fccheck input:focus-visible{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
-.chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--signal) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
+/* A key has to be the colour of the line it keys: the chart series moved to --signal-lg
+   and the chips stayed on the body-text amber, so in the light theme the swatch was brown
+   beside an amber line. */
+.chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--signal-lg) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
 .fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--dim)}
 .fcswitch input{position:absolute;opacity:0;pointer-events:none}
 .fcswitch em{font-style:normal}
@@ -686,7 +697,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* read-only salary table (Salary tab) */
 .saltab.rotab th,.saltab.rotab td{text-align:right;padding:8px 14px;white-space:nowrap}
 .saltab.rotab th.salm-h,.saltab.rotab td.salm{text-align:left}
-.saltab.rotab thead th{position:sticky;top:0;z-index:3;background:var(--panel-2);color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.04em;
+.saltab.rotab thead th{position:sticky;top:0;z-index:3;background:var(--panel);box-shadow:inset 0 -1px 0 var(--line);color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.04em;
   box-shadow:0 1px 0 var(--line)}
 /* Below the topbar on a phone, which is the thing it would otherwise hide behind. */
 @media(max-width:899px){.saltab.rotab thead th{top:calc(60px + var(--edge-t))}}

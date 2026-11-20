@@ -41,7 +41,7 @@
   --panel: #191c26;
   --panel-2: #202432;
   --line: #2b3040;
-  --line-soft: #22263250;
+  --line-soft: #2b304080;   /* a divider you can see: at #22263250 it was 1.03:1 on a card */
   --text: #e9ebf2;
   --dim: #939aae;
   --dimmer: #838b9e;
@@ -61,6 +61,7 @@
   --accent: #3ad17a;
   --accent-soft: #3ad17a1f;
   --danger: #ff6b6b;
+  --danger-ink: #12141b;   /* 6.6:1 on that fill; white would be 2.8:1 */
 
   /* One radius family, used everywhere. Before this the app drew ten different corners —
      3px on twenty-seven controls, 1px on bars and chips, 4px, 10px, 12px — and a 3px corner on
@@ -145,6 +146,7 @@
     --accent: #1f7a4a;
     --accent-soft: #1f7a4a14;
     --danger: #c02626;
+    --danger-ink: #ffffff;
 
     --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a24;
     --shadow-card: 0 1px 2px #0f172a14;
@@ -172,6 +174,7 @@
   --accent: #1f7a4a;
   --accent-soft: #1f7a4a14;
   --danger: #c02626;
+  --danger-ink: #ffffff;
 
   --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a24;
     --shadow-card: 0 1px 2px #0f172a14;
@@ -318,7 +321,7 @@ img { max-width: 100%; display: block }
 .btn-danger-solid {
   background: var(--danger);
   border-color: var(--danger);
-  color: #fff;
+  color: var(--danger-ink);
   font-weight: 600;
 }
 .btn-danger-solid:hover { filter: brightness(1.08); border-color: var(--danger) }
