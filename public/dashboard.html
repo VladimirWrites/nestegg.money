@@ -244,7 +244,10 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
       </div>
       <section class="over sect-plain">
         <div class="sectitle" data-i18n="salary.history">Our salary history<span class="sectools"><button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart" data-i18n-title="salary.dlChart" data-i18n-aria-label="salary.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
-        <div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div>
+        <!-- The left scale lives outside the scroller. The chart is wider than a phone and
+             opens on the newest month, so an axis drawn inside it starts off-screen and the
+             per-person monthly lines have no scale a reader can see. -->
+        <div class="salchart"><svg id="salaryAxis" class="salaxis" aria-hidden="true"></svg><div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div></div>
         <div class="chiplegend" id="salaryLegend"></div>
       </section>
       <div id="salaryTable"></div>
@@ -338,7 +341,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     <div class="set-group">
       <div class="set-row top">
         <div class="set-text"><div class="set-name" data-i18n="prof.logout">Log out on this device</div><div class="set-hint" data-i18n="prof.logoutHint">Forgets the account number here. Your data stays on the server and comes back when you sign in with the number again.</div></div>
-        <div class="set-ctl"><button class="btn btn-sm btn-danger" id="profLogout" data-i18n="prof.logoutCta">Log out</button></div>
+        <div class="set-ctl"><button class="btn btn-sm" id="profLogout" data-i18n="prof.logoutCta">Log out</button></div>
       </div>
       <div class="set-row top">
         <div class="set-text"><div class="set-name" data-i18n="prof.reset">Reset</div><div class="set-hint" data-i18n="prof.resetHint">Empties this ledger and starts again on the same account number.</div></div>
@@ -349,7 +352,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
            should reach for. -->
       <div class="set-row top">
         <div class="set-text"><div class="set-name" data-i18n="prof.delete">Delete everything</div><div class="set-hint" data-i18n="prof.deleteHint">Removes the encrypted data from the server for good, and clears this device with it. There is no undo, and no copy anybody here could give you back.</div></div>
-        <div class="set-ctl"><button class="btn btn-sm btn-danger" id="deleteAllBtn" data-i18n="prof.deleteCta">Delete</button></div>
+        <div class="set-ctl"><button class="btn btn-sm btn-danger-solid" id="deleteAllBtn" data-i18n="prof.deleteCta">Delete</button></div>
       </div>
     </div>
 

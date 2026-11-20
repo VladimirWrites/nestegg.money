@@ -312,6 +312,17 @@ img { max-width: 100%; display: block }
   border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
 }
 
+/* Three identically outlined red buttons put signing out — which changes nothing and can be
+   undone with the account number — at the same alarm level as erasing the vault. Only the
+   one that cannot be undone is filled; signing out is an ordinary button. */
+.btn-danger-solid {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+  font-weight: 600;
+}
+.btn-danger-solid:hover { filter: brightness(1.08); border-color: var(--danger) }
+
 /* 44px is the smallest target a thumb hits reliably, and this is a phone-first ledger: a
    secondary button was 34px here while the same button on a mouse-driven desktop was 38px,
    which is the wrong way round. The desktop keeps the tighter size, set where the desktop

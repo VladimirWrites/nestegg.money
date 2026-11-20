@@ -6,7 +6,7 @@ import { nid } from "../domain/ids.js";
 import { CCYS, PALETTE } from "../domain/constants.js";
 import { money, moneyIn, esc, convToY, ccySym, shortK } from "../domain/money.js";
 import { fmtMY } from "../domain/dates.js";
-import { yGrid, C, refreshPalette, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
+import { C, refreshPalette, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
 import { showView, goTab } from "./gate.js";
 import { t } from "../i18n.js";
@@ -64,14 +64,22 @@ export function drawSalaryChart() {
   const minData = padL + padR + Math.round((maxI - minI + 1) * 3.0);
   const W = Math.max(360, Math.floor(cw), minData), plotW = W - padL - padR;
   const X = (i) => padL + ((i - minI) / span) * plotW, YL = (v) => padT + plotH - (v / nmL) * plotH, YR = (v) => padT + plotH - (v / nmR) * plotH, sym = ccySym();
-  // Left axis (per-person monthly) reuses the shared grid; the right axis (combined yearly) is overlaid.
-  let s = yGrid(W, padL, padR, padT, plotH, nmL, sym);
+  /* The chart is wider than a phone and opens on the newest month, so a left axis drawn
+     inside it is scrolled off before a reader sees it. When that happens the labels go to a
+     pinned axis beside the scroller (drawn below) and the chart keeps only its gridlines. */
+  const pinned = W > (cont ? cont.clientWidth : W) + 1;
+  let s = "";
+  for (let i = 0; i <= 5; i++) {
+    const val = (nmL * i) / 5, yy = padT + plotH - (val / nmL) * plotH;
+    s += `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="${C.grid}" stroke-width="1"/>`;
+    if (!pinned) s += `<text x="${padL - 8}" y="${yy + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${sym}${shortK(val)}</text>`;
+  }
   for (let g = 0; g <= 5; g++) { const yy = padT + plotH - (g / 5) * plotH; s += `<text x="${W - padR + 8}" y="${yy + 3}" text-anchor="start" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${shortK((nmR * g) / 5)}</text>`; }
   /* Two scales, two meanings: the left one is one person's pay in a month, the right one is
      everyone's pay in a year. Numbers alone on either side say nothing about which, so each
      axis names its own unit at its head — and the legend repeats it below the chart, because
      the chart scrolls sideways and a caption at a corner can scroll out of sight. */
-  s += `<text x="${padL - 6}" y="${padT - 8}" text-anchor="end" font-size="10" fill="${C.axis}">${t("salary.axisLeft")}</text>`;
+  if (!pinned) s += `<text x="${padL - 6}" y="${padT - 8}" text-anchor="end" font-size="10" fill="${C.axis}">${t("salary.axisLeft")}</text>`;
   s += `<text x="${W - padR + 8}" y="${padT - 8}" text-anchor="start" font-size="10" fill="${C.axis}">${t("salary.axisRight")}</text>`;
   /* How many years the axis can name is a question about width, not about how many years
      there are. A four-digit label needs about 34px of its own; fitting one per year into a
@@ -99,6 +107,21 @@ export function drawSalaryChart() {
        width some of them print through it — it was only more obvious on a phone. The x-axis
        carries the years already, and tapping a point still names it. */
   });
+  const ax = $("salaryAxis");
+  if (ax) {
+    if (pinned) {
+      const AW = 48;
+      /* The caption is wider than the figures under it, so it is anchored to the left edge
+         of the gutter rather than to their right edge, where it was clipped to "er month". */
+      let a = `<text x="0" y="${padT - 8}" text-anchor="start" font-size="9.5" fill="${C.axis}">${t("salary.axisLeft")}</text>`;
+      for (let i = 0; i <= 5; i++) {
+        const val = (nmL * i) / 5, yy = padT + plotH - (val / nmL) * plotH;
+        a += `<text x="${AW - 6}" y="${yy + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${sym}${shortK(val)}</text>`;
+      }
+      ax.setAttribute("width", AW); ax.setAttribute("height", H); ax.setAttribute("viewBox", `0 0 ${AW} ${H}`);
+      ax.innerHTML = a; ax.classList.remove("hide");
+    } else { ax.innerHTML = ""; ax.classList.add("hide"); }
+  }
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = s;
   svg.setAttribute("role", "img");
   svg.setAttribute("aria-label", t("salary.ariaChart", { count: people.length }));

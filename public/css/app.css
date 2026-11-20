@@ -221,6 +221,12 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    an explanation of the panel that the panel itself then demonstrates. */
 @media(max-width:619px){.sectitle .tin{display:none}}
 
+/* Chart plus its pinned scale: the scale is a sibling of the scroller, not a passenger
+   inside it, so it stays on screen while the months scroll past. */
+.salchart{display:flex;align-items:flex-start;gap:0}
+.salchart .histscroll{flex:1 1 auto;min-width:0}
+.salaxis{flex:none;display:block}
+.salaxis.hide{display:none}
 .histscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 #fcChart,#rtChart{display:block;width:100%;height:auto}
 #histChart{display:block;height:auto}
@@ -828,7 +834,9 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .demobar>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .demobar .demobtns{flex:none}
 .demobar .demobtns{display:flex;gap:8px;align-items:center}
-.demobar .btn{min-height:40px;padding:8px 14px;font-size:12.5px}
+/* The first and only button a stranger meets, so it is not the one control in the product
+   that falls short of a thumb. */
+.demobar .btn{min-height:44px;padding:9px 14px;font-size:12.5px}
 .demolink{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;background:none;border:none;color:var(--dim);cursor:pointer;font:inherit;font-size:13px;text-decoration:underline}
 .demoswitch{margin-top:4px}
 
@@ -1250,7 +1258,12 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
  * DOM at every width, and Ctrl+F still finds a month inside a folded year on a desktop.
  */
 .saly[data-ytoggle]{cursor:pointer}
-.salytog{display:inline-flex;align-items:center;gap:6px}
+/* The year label starts where the month labels start, with the chevron after it. Leading,
+   the chevron pushed "2026" 19px right of the "May 2026" rows beneath it, so every child
+   hung to the left of the year it rolls up into — upside down for a list that folds.
+   There is no room to indent the months instead: the column is 86px and a month label plus
+   that indent does not fit. */
+.salytog{display:inline-flex;align-items:center;gap:6px;flex-direction:row-reverse;justify-content:flex-end}
 .salychev{width:13px;height:13px;flex:none;color:var(--dim);transition:transform .15s ease}
 .saly.is-open .salychev{transform:rotate(90deg)}
 .saly[data-ytoggle]:hover{background:var(--panel)}
