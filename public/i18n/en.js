@@ -178,6 +178,7 @@ export default {
     allocAria: "Allocation for {year}: {list}.",
     allocAriaEmpty: "Allocation — no data yet.",
     noAllocSave: "No allocation to save",
+    expRetire: "Net Worth · retirement",
     expForecast: "Net Worth · forecast",
     expHist: "Net Worth · over time",
     ratesUpdating: "Updating rates…",

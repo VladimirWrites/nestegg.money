@@ -363,7 +363,9 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .fcrow .pct input::-webkit-outer-spin-button,.fcrow .pct input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .fcrow .pct i{position:static;flex:none;margin-left:3px;color:var(--dim);font-style:normal;font-size:12px;pointer-events:none}
 .fcstats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
-.fcstat{flex:1 1 150px;min-width:140px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-lg);padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+/* The same surface and elevation as every other card. On light, panel-2 left the tiles a
+   shade off the page while the cards beside them were white with a shadow. */
+.fcstat{flex:1 1 150px;min-width:140px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-card);padding:10px 12px;display:flex;flex-direction:column;gap:3px}
 .fcstat .k{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
 /* A figure is mono and tabular wherever it appears. These tiles were the one place money was
    set in the prose face, so a column of them did not line up with anything else on the page. */
@@ -378,7 +380,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* The hero tile carries the same border and the same ground as its three siblings, so the
    only thing marking it out was two extra points of type — which reads as a mistake rather
    than as emphasis. It is one of four equal tiles. */
-.fcstat.hero{border-color:var(--line);background:var(--panel-2)}
+.fcstat.hero{border-color:var(--line);background:var(--panel)}
 .fchint{color:var(--dim);font-size:13px;padding:8px 0}
 /* A paragraph that introduces the tiles below it, rather than one squeezed between them:
    four pixels of air read as a collision at any size. */
@@ -422,7 +424,8 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .infobox code{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-xs);padding:1px 5px;font-size:11.5px;color:var(--accent);text-transform:none}
 .infobox a{color:var(--signal);text-decoration:none}
 .infobox a:hover{text-decoration:underline}
-.fccheck{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:var(--text);cursor:pointer;min-height:44px}
+/* One gap above and between them, and a label at the size of the labels around it. */
+.fccheck{display:flex;align-items:center;gap:11px;margin:0 0 6px;font-size:13.5px;color:var(--text);cursor:pointer;min-height:44px}
 /* A checked box and a thrown switch are painted surfaces, so they take the fill token
    the buttons take. `--signal` is the text colour tuned for contrast on a page, and in the
    light theme it is brown where every button is amber — two different 'actionable' colours
@@ -441,7 +444,17 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .fcset>summary:hover{color:var(--signal)}
 @media(max-width:899px){.fcset>summary{display:flex}}
 
-.fccheck input{width:16px;height:16px;accent-color:var(--signal-fill);cursor:pointer}
+/* Drawn, not native: beside the product's own switch one section above, two 13px system
+   checkboxes with 12px labels read as a different application. */
+.fccheck input{appearance:none;-webkit-appearance:none;width:20px;height:20px;flex:none;cursor:pointer;
+  border:1.5px solid var(--line);border-radius:var(--r-xs);background:var(--panel);
+  display:inline-grid;place-content:center;transition:background .12s ease,border-color .12s ease}
+.fccheck input::before{content:"";width:10px;height:10px;transform:scale(0);transition:transform .12s ease;
+  box-shadow:inset 1em 1em var(--signal-ink);
+  clip-path:polygon(14% 44%,0 60%,40% 100%,100% 18%,84% 0,40% 68%)}
+.fccheck input:checked{background:var(--signal-fill);border-color:var(--signal-fill)}
+.fccheck input:checked::before{transform:scale(1)}
+.fccheck input:focus-visible{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
 .chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--signal) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
 .fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--dim)}
 .fcswitch input{position:absolute;opacity:0;pointer-events:none}
@@ -830,7 +843,9 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* One row, never two. It used to wrap, which on a phone cost 160px — a fifth of the screen —
    before the reader reached the number they came for. The sentence truncates; the buttons
    never do. */
-.demobar{position:relative;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap;min-height:44px;background:var(--panel-2);border-bottom:1px solid var(--line);color:var(--dim);padding:0 var(--edge-r) 0 var(--edge-l);font-size:12.5px;letter-spacing:.02em}
+/* The bar is as tall as the button plus air. At 44px for both, a 44px button filled the
+   bar edge to edge and read as a tab hanging off the top of the screen. */
+.demobar{position:relative;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap;min-height:56px;background:var(--panel-2);border-bottom:1px solid var(--line);color:var(--dim);padding:6px var(--edge-r) 6px var(--edge-l);font-size:12.5px;letter-spacing:.02em}
 .demobar>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .demobar .demobtns{flex:none}
 .demobar .demobtns{display:flex;gap:8px;align-items:center}
@@ -1208,8 +1223,10 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .sect h2,.t-label{font-size:12px}
   .bud-row{padding:14px 16px}
   .bud-exp.ro{min-height:56px}
-  .yhead{padding:16px 20px;min-height:60px}
-  .legrow{font-size:15px;padding:14px 20px;min-height:56px}
+  /* 16px, the inset every list on these screens uses, so a figure in the year list, the
+     legend and the budget rows all end on the same x down the page. */
+  .yhead{padding:16px;min-height:60px}
+  .legrow{font-size:15px;padding:14px 16px;min-height:56px}
   /* A 17-character category was being cut to "Workplace pens…" on a 1440px page. The name
      takes a second line instead; the amount and the percentage keep their columns. */
   /* The amount column reserved 108px for figures that need about 95, and the percentage 44

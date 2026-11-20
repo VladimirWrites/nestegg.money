@@ -178,6 +178,7 @@ export default {
     allocAria: "Aufteilung für {year}: {list}.",
     allocAriaEmpty: "Aufteilung — noch keine Daten.",
     noAllocSave: "Keine Aufteilung zu speichern",
+    expRetire: "Vermögen · Ruhestand",
     expForecast: "Vermögen · Prognose",
     expHist: "Vermögen · im Zeitverlauf",
     ratesUpdating: "Wechselkurse werden aktualisiert…",

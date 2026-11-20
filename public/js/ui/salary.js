@@ -38,6 +38,21 @@ const SAL_COMB = "#c9a227"; // gold, matching the combined-yearly line
 let _animSal = false;
 export function armSalaryAnim() { _animSal = true; }
 const drawSalDebounced = debounce(() => drawSalaryChart(), 120);
+/* The chart is sized from its container, and it is first drawn while the Salary view is
+   still hidden — so it measured a container that had not been laid out and kept that width,
+   leaving 300px of the column empty on a desktop. One observer, armed on the first draw,
+   redraws when the container's width actually changes. The guard is what stops the redraw
+   from feeding itself: the chart's own width never changes its container's. */
+let _salCW = 0;
+function watchSalWidth(cont) {
+  if (!cont || !window.ResizeObserver || cont.dataset.obs) return;
+  cont.dataset.obs = "1";
+  new ResizeObserver(() => {
+    const w = cont.clientWidth;
+    if (!w || Math.abs(w - _salCW) < 2) return;
+    _salCW = w; drawSalDebounced();
+  }).observe(cont);
+}
 
 export function drawSalaryChart() {
   const animOn = _animSal; _animSal = false;
@@ -59,6 +74,7 @@ export function drawSalaryChart() {
   const H = (window.innerWidth || 0) < 560 ? 320 : 400, plotH = H - padT - padB;
   // Fill the available width (the .histscroll container), so the graph scales with the screen.
   const cont = svg.closest(".histscroll"); let cw = cont ? cont.clientWidth : 0; if (!cw || cw < 80) cw = 720;
+  _salCW = cont ? cont.clientWidth : 0; watchSalWidth(cont);
   // Minimum ~6px per month so the x-axis year labels stay legible; the chart overflows
   // its .histscroll container (horizontal scroll) on narrow screens rather than cramming.
   const minData = padL + padR + Math.round((maxI - minI + 1) * 3.0);

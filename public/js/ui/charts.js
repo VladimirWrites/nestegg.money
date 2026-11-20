@@ -430,6 +430,14 @@ export function downloadForecast() {
   exportChart({ src, title: t("net.expForecast"), width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-forecast.png",
     items: [{ color: C.amber, label: t("net.actual") + " / " + t("net.projected") }, { color: C.green, label: t("net.goal") }] });
 }
+/* The retirement chart was the one chart in the product you could not save. Its section
+   header was also the one header with nothing in the tools slot, which is why its "Show"
+   toggle sat 54px right of the identical toggle in the section above it. */
+export function downloadRetire() {
+  const src = $("rtChart"); if (!src || !src.innerHTML) { toast(t("common.nothingToSave")); return; }
+  exportChart({ src, title: t("net.expRetire"), width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-retirement.png",
+    items: [{ color: C.amber, label: t("net.nestEggChip") }] });
+}
 export function downloadHist() {
   const src = $("histChart"); if (!src.innerHTML) { toast(t("common.nothingToSave")); return; }
   const names = allNames();
