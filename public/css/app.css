@@ -711,9 +711,9 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .salname::placeholder{color:var(--dim);font-weight:400}
 .salname:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
 .salccy{font:inherit;font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 6px;color:var(--text)}
-.saltab th.salm-h,.saltab td.salm{background:transparent}
+.saltab th.salm-h,.saltab .salm{background:transparent}
 .saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel-2)}
-.saltab td.salm{color:var(--dim);font-size:12px}
+.saltab .salm{color:var(--dim);font-size:12px;font-weight:400;text-align:left}
 /* Mono like the figures beneath it, and right-aligned to the same inset, so the column has
    one right edge and one typeface rather than two of each. */
 .saltab tr.saly td{background:var(--panel-2);color:var(--text);font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:none;text-align:right;font-variant-numeric:tabular-nums}
@@ -732,7 +732,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    people's columns ran together with nothing marking where one ended. */
 .saltab .salgsep{border-left:1px solid var(--line)}
 .saltab tr>.salgsep:nth-child(2){border-left:0}
-.saltab td.salm{min-width:90px}
+.saltab .salm{min-width:90px}
 /* A month with nothing in it reads as a month with nothing in it, not as a stored zero. */
 .saltab td .salf.is-empty{border-style:dashed;border-color:var(--dimmer);background:transparent}
 /* The prompt belongs to the field you are in, not to a hundred and fifty you are not: the
@@ -774,7 +774,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .delbtn svg{width:15px;height:15px}
 /* read-only salary table (Salary tab) */
 .saltab.rotab th,.saltab.rotab td{text-align:right;padding:8px 14px;white-space:nowrap}
-.saltab.rotab th.salm-h,.saltab.rotab td.salm{text-align:left}
+.saltab.rotab th.salm-h,.saltab.rotab .salm{text-align:left}
 .saltab.rotab thead th{position:sticky;top:0;z-index:3;background:var(--panel);box-shadow:inset 0 -1px 0 var(--line);color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.04em;
   box-shadow:0 1px 0 var(--line)}
 /* Below the topbar on a phone, which is the thing it would otherwise hide behind. */
@@ -2015,7 +2015,7 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
   display:block;position:static;width:auto;height:auto;max-width:100%;
   margin:1px 0 0;padding:0;border:0;border-radius:0;background:none;
   font-size:10.5px;line-height:1.25;letter-spacing:.01em;color:var(--dim);
-  text-align:right;text-indent:0;white-space:normal;overflow-wrap:anywhere;
+  text-align:right;text-indent:0;white-space:normal;overflow-wrap:break-word;
   pointer-events:none;cursor:default}
 .saltab td.num .evnote{display:none}
 .saltab td.num{white-space:nowrap}
@@ -2029,8 +2029,17 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
  * width and the table scrolls sideways instead, the way it already does on a laptop. */
 @media(max-width:899px){
   .saltable-scroll{overflow-x:auto;overflow-y:clip}
-  .saltable-scroll .saltab{min-width:calc(74px + var(--salcols, 2) * 96px)}
+  /* 70px, not 96px. At 96px the default two-person ledger — month, two people, household —
+     needed 362px inside a 286px box, so the household total was off the right edge of a
+     320px phone with no scrollbar and no fade to say so. Fixing three people had broken
+     the case nearly everybody is in. Three people still scroll; two do not. */
+  .saltable-scroll .saltab{min-width:calc(66px + var(--salcols, 2) * 66px)}
 }
+/* …and when it does scroll, it says so. */
+.saltable-scroll{position:relative}
+.saltable-scroll.is-cut::after{content:"";position:absolute;top:0;right:0;bottom:0;width:34px;
+  pointer-events:none;background:linear-gradient(to right, transparent, var(--panel));
+  border-radius:0 var(--r-lg) var(--r-lg) 0}
 /* …which makes the box a scroll container at every width, so the editor's sticky headings
    resolve against it everywhere and both rows pin to its top. Tops measured against the
    page put 65px of dead band above the headings and hid the first month behind them. */
@@ -2040,7 +2049,7 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 @media(min-width:900px) and (min-height:700px){
   #salaryEditor .saltable-scroll{max-height:calc(100dvh - 150px)}
 }
-#salaryEditor .saltable-scroll{overflow:auto}
+@media(min-width:900px){#salaryEditor .saltable-scroll{overflow:auto}}
 #salaryEditor .saltab .salh1 th{top:0}
 #salaryEditor .saltab .salh2 th{top:48px}
 @media(max-width:899px){
@@ -2067,3 +2076,23 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 /* Below 620px there is no table header to put them in, so the two actions sit under the
    person switch, where the months begin. Above it they live in the header row itself. */
 @media(min-width:620px){#salaryList .smon-top{display:none}}
+
+/* A row where one person has a note and another does not was setting their two figures on
+   different baselines, because the note grows its own cell. */
+.saltab.rotab td.num{vertical-align:top}
+
+/* "+ Next month" lands focus on a new, empty field — which the .is-empty rule then drew as
+   an unfocused one, because it is declared after :focus at the same weight. */
+.saltab td .salf.is-empty:focus,.saltab td .salf.is-empty:focus-visible,
+.smon .salf.is-empty:focus,.smon .salf.is-empty:focus-visible{
+  border-style:solid;border-color:var(--signal);background:var(--panel);
+  box-shadow:0 0 0 3px var(--signal-soft)}
+/* Every field on this screen suppressed the global ring for a 1px border change. */
+.saltab td .salf:focus-visible,.saltab td .salev:focus-visible,.salmccy:focus-visible,
+.salname:focus-visible,.salpick:focus-visible,.smon .salf:focus-visible,
+.smon .salev:focus-visible,.seg-btn:focus-visible,.saltable-scroll:focus-visible{
+  outline:2px solid var(--signal);outline-offset:2px}
+/* The sticky person switch is a rounded pill on a transparent corner, so rows scrolling
+   beneath it showed through around its edges. */
+.salwho::before{content:"";position:absolute;inset:-10px -16px 0;background:var(--ink);z-index:-1}
+.seg.salwho{position:sticky;isolation:isolate}

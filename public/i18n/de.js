@@ -331,6 +331,7 @@ export default {
     thisPerson: "diese Person",
     me: "Ich",
     partner: "Partner",
+    personN: "Person {n}",
   },
   yeared: {
     back: "Zurück",

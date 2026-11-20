@@ -4,7 +4,7 @@ import { $, showEditor, hideEditor, toast, debounce, flash } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS, PALETTE } from "../domain/constants.js";
-import { money, moneyIn, esc, convToY, ccySym, shortK, parseNum, fmtNum } from "../domain/money.js";
+import { money, moneyIn, moneyIn0, esc, convToY, ccySym, shortK, parseNum, fmtNum } from "../domain/money.js";
 import { fmtMY } from "../domain/dates.js";
 import { C, refreshPalette, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
@@ -310,17 +310,46 @@ const openYears = new Set();
 let openEditSeeded = false;
 const openEditYears = new Set();
 
+/* Say when a table has columns off its right-hand edge.
+ *
+ * A box with `overflow-x:auto` and no scrollbar — which is every touch device — gives a
+ * reader no way to know there is anything past the edge, and the column it hides here is the
+ * household total. A fade appears while there is more to the right, and goes when there is
+ * not. */
+function salMarkCut(box) {
+  if (!box) return;
+  /* 24px, not a pixel or two: a scroll container reports a few pixels of slack from its own
+     borders even when every column fits, and a fade drawn permanently over a table that is
+     not cut is a lie in the other direction. */
+  const mark = () => box.classList.toggle("is-cut", box.scrollWidth - box.clientWidth - box.scrollLeft > 24);
+  mark();
+  box.addEventListener("scroll", mark, { passive: true });
+  try { new ResizeObserver(mark).observe(box); } catch (e) {}
+}
+
 // Read-only table shown on the Salary tab; all edits happen in the edit overlay.
 export function renderSalary() {
   drawSalaryChart();
-  const host = $("salaryTable"), people = state.salaries || [];
-  renderSalaryHero(people);
-  if (!people.length) { host.innerHTML = `<div class="emptyhint">${t("salary.emptyTable")}</div>`; return; }
+  const host = $("salaryTable"), all = state.salaries || [];
+  renderSalaryHero(all);
+  if (!all.length) { host.innerHTML = `<div class="emptyhint">${t("salary.emptyTable")}</div>`; return; }
+  /* Only people with something in the ledger. A person added and not yet filled in was a
+     whole column of dashes here — and on a phone that column is what pushed the household
+     total off the right-hand edge. The hero has always filtered them out; the table and the
+     legend said otherwise. */
+  const withAmounts = all.filter((p) => (p.entries || []).some((e) => e.amount));
+  const people = withAmounts.length ? withAmounts : all;
   const yms = salTableYms(), multi = people.length > 1;
   let head = `<tr><th class="salm-h">${t("salary.impMonth")}</th>`;
   people.forEach((p) => (head += `<th class="r salgsep">${esc(p.name)}</th>`));
   if (multi) head += `<th class="r salgsep">${t("salary.household")}</th>`;
   head += `</tr>`;
+  /* Cents are what pushed the household column off a 320px screen: three money columns of
+     "€5,418.61" need more width than the phone has, and the column that was lost is the one
+     the household came to read. The year rows and the household total already print whole
+     units; on a phone the month figures do too. */
+  const tight = salCards();
+  const amt = (v, ccy) => (tight ? moneyIn0(v, ccy) : moneyIn(v, ccy));
   let body = "", curY = null, latestYear = null;
   yms.forEach((ym) => {
     const y = ym.slice(0, 4);
@@ -335,12 +364,13 @@ export function renderSalary() {
       body += yr + `</tr>`;
     }
     let row = `<tr class="salmonth${openYears.has(y) ? "" : " is-folded"}" data-ym="${ym}" data-y="${y}"><th scope="row" class="salm">${ymLabel(ym)}</th>`, hh = 0;
-    people.forEach((p) => { const e = salEntry(p, ym); if (e) hh += salBase(p, e); row += `<td class="num salgsep">${e && e.amount ? moneyIn(salTotal(e), salEccy(p, e)) : "—"}${e && e.event ? `<span class="evtag">${esc(e.event)}</span>` : ""}</td>`; });
+    people.forEach((p) => { const e = salEntry(p, ym); if (e) hh += salBase(p, e); row += `<td class="num salgsep">${e && e.amount ? amt(salTotal(e), salEccy(p, e)) : "—"}${e && e.event ? `<span class="evtag">${esc(e.event)}</span>` : ""}</td>`; });
     if (multi) row += `<td class="num salgsep">${hh ? money(hh) : "—"}</td>`;
     body += row + `</tr>`;
   });
   host.innerHTML = `<div class="saltable-scroll" role="region" tabindex="0" aria-label="${t("salary.tableAria")}"><table class="saltab rotab"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
   host.style.setProperty("--salcols", String(people.length + (multi ? 1 : 0)));
+  salMarkCut(host.querySelector(".saltable-scroll"));
 
   /* Folding is a view state, not data, so it redraws the table rather than touching the
      ledger — and the whole table is already in the DOM, so this only toggles classes. */
@@ -733,7 +763,13 @@ document.addEventListener("click", (e) => {
   if (t2.id === "salBarNext") salAddNextMonth(); else $("addPerson").click();
 });
 $("addPerson").onclick = () => {
-  const p = { id: nid(), name: state.salaries.length ? t("salary.partner") : t("salary.me"), ccy: state.baseCcy, entries: [] };
+  /* A fourth person was also called "Partner", and two people with the same name cannot be
+     told apart in the switch, the legend or the table. The second is the partner; after that
+     they are numbered. */
+  const taken = new Set((state.salaries || []).map((x) => x.name));
+  let name = state.salaries.length ? t("salary.partner") : t("salary.me");
+  for (let i = state.salaries.length + 1; taken.has(name); i++) name = t("salary.personN", { n: i });
+  const p = { id: nid(), name, ccy: state.baseCcy, entries: [] };
   state.salaries.push(p); scheduleSync();
   salWho = state.salaries.length - 1;   // the one you just added is the one you want to fill in
   salKeepScroll($("salaryList"), renderSalaryEdit);
