@@ -7,11 +7,11 @@ import { $, toast, downloadBlob, isIOSUserAgent, isStandalone, keepNumberLocale 
 import { scheduleSync, flushSync, autoRefresh, setDataListener, deleteVault, LS } from "./io/storage.js";
 import { clearKeys } from "./io/crypto.js";
 import { renderAll } from "./ui/charts.js";
-import { renderEntries, dismissYearModal } from "./ui/networth.js";
+import { renderEntries } from "./ui/networth.js";
 import { drawSalaryChart } from "./ui/salary.js";
 import { boot, setDisplayCcy, showView } from "./ui/gate.js";
 import { initHistory } from "./ui/history.js";
-import { closeTopEditor } from "./ui/editors.js";
+import { closeTopEditor, closeOverlays } from "./ui/editors.js";
 import { initI18n, translateDom, t } from "./i18n.js";
 import "./ui/assets.js"; // side-effect: wire its editor listeners
 import "./ui/share.js"; // side-effect: wire the share dialog
@@ -104,14 +104,16 @@ window.addEventListener("resize", () => {
    Topmost first. An asset opens on top of the year editor that reached it, so both are open at
    once, and closing them in declaration order shut the year editor out from underneath the
    asset editor still covering the screen. */
+/* One handler, one layer.
+ *
+ * Each modal used to register its own Escape listener, and a module's imports evaluate before
+ * the importing module's body — so the symbol help's listener always ran before this one's
+ * guard could see that the help was open. Escape hid the help, the guard then found nothing
+ * open, and the year editor behind it closed too. Escape closes the topmost thing: a dialog
+ * if one is up, otherwise the editor. */
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
-  const im = $("infoModal"); if (im && !im.classList.contains("hide")) return; // the info modal handles its own Esc
-  const dm = $("dayModal"); if (dm && !dm.classList.contains("hide")) return; // so does the day breakdown
-  /* A dialog over an editor is what Escape means while it is up. Without this, Escape with
-     "Move this year" open shut the year editor behind it and left the grid on screen over the
-     wrong screen, every tile in it inert. */
-  if (dismissYearModal()) return;
+  if (closeOverlays()) return;
   closeTopEditor();
 });
 

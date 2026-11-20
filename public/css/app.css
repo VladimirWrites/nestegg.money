@@ -1797,3 +1797,36 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
      same specificity — so without this the long-term asset card loses its own layout. */
   #edEntries .rcard.auto{grid-template-areas:"dot name tag chev" "conv conv conv conv"}
 }
+
+/* ── round 3 of the asset-edit review ──────────────────────────────────── */
+
+/* The year table's headings slid under the editor's own sticky bar and were gone for the
+   rest of the table — eleven rows of money in three unnamed columns. The inner scroll box
+   was removed on purpose here, so `top:0` resolves against the page, and the page has a bar
+   on it. They stick below it instead. */
+.yrsched .schtab th{top:calc(60px + var(--edge-t))}
+@media(min-width:900px){.yrsched .schtab th{top:64px}}
+
+/* An estimate dims every figure in its row. `.schtab.yrtab td.off` out-specified
+   `.schtab tr.est td`, so the middle column of a guessed year stayed full-strength green
+   while the two beside it faded. */
+.schtab.yrtab tr.est td.off{color:var(--accent);opacity:.7}
+
+/* The most-used control in either editor was 38px while a row's bin was 44. */
+#edBack,#assetBack,#salaryBack{min-width:44px;min-height:44px;justify-content:center}
+
+/* The figure is why the row exists; it was given 89px while the three-letter currency code
+   beside it took 146. */
+@media(max-width:899px){
+  #edEntries .rcard:not(.acard){grid-template-columns:10px minmax(0,1fr) 74px 44px}
+  #edEntries .rcard .rval,#edEntries .rcard .rsh{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+}
+/* A 760px landscape phone is not a 320px one: the single-column form stretched a two-option
+   select to 665px and a share count to 510px. The row stays a row once there is room. */
+@media(min-width:620px) and (max-width:899px){
+  #edEntries .rcard:not(.acard),#edEntries .rcard.is-priced{
+    grid-template-columns:10px minmax(140px,1fr) 130px 92px 44px;
+    grid-template-areas:"dot name val ccy del" ". kind cat conv conv" ". hint hint hint hint"}
+  #edEntries .rcard .rkind,#edEntries .rcard .rcat{min-height:40px}
+  #edEntries .rcard.auto{grid-template-areas:"dot name tag conv chev"}
+}

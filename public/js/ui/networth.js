@@ -3,7 +3,7 @@ import { $, showEditor, hideEditor, toast, flash, focusNew } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
-import { money, moneyIn, esc } from "../domain/money.js";
+import { money, moneyIn, esc, parseNum, fmtNum } from "../domain/money.js";
 import { allNames, autoEntriesFor, colorOf, seriesKey, entryBase, tickerPx, snapTotalBase, effEntries } from "../domain/model.js";
 import { scheduleSync, ensureHist, fetchPrice, fetchPriceYear } from "../io/storage.js";
 import { renderAll } from "./charts.js";
@@ -75,11 +75,11 @@ function cardHTML(en, i, names, year) {
     const noHistData = !p && en.ticker && year < new Date().getFullYear();
     if (noHistData) priceNote = `<div class="rhint">${t("net.noYearEndPriceLong", { year })}</div>`;
     const pxtxt = p ? "@ " + moneyIn(p.price, p.currency) + (p.frozen ? " · " + t("net.yearEnd") : "") : noHistData ? t("net.noYearEndPrice") : en.ticker ? t("net.noPrice") : isC ? t("net.setCoin") : t("net.setTicker");
-    valuePart = `<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares ? en.shares : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" aria-label="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
+    valuePart = `<input class="rsh num" type="text" inputmode="decimal" value="${en.shares ? fmtNum(en.shares, 8) : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" aria-label="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
     <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker || "")}" data-i="${i}" data-f="ticker" placeholder="${isC ? "BTC-EUR" : "AMS:VWRL"}" aria-label="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}" title="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}"><button type="button" class="rinfo" data-info="${isC ? "crypto" : "ticker"}" title="${t("net.symbolHelpTitle")}" aria-label="${t("net.symbolHelpAria")}">i</button></span>
     <span class="rconv">${p ? money(baseV) : pxtxt}</span>`;
   } else {
-    valuePart = `<input class="rval num" type="number" step="any" inputmode="decimal" value="${en.value ? en.value : ""}" data-i="${i}" data-f="value" aria-label="${liab ? t("net.amountOwed") : t("asset.value")}" placeholder="${liab ? t("net.amountOwed") : "0"}">
+    valuePart = `<input class="rval num" type="text" inputmode="decimal" value="${en.value ? fmtNum(en.value) : ""}" data-i="${i}" data-f="value" aria-label="${liab ? t("net.amountOwed") : t("asset.value")}" placeholder="${liab ? t("net.amountOwed") : "0"}">
     <select data-i="${i}" data-f="ccy" aria-label="${t("asset.currency")}">${CCYS.map((x) => `<option ${x === en.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>
     <span class="rconv${liab ? " liab" : ""}">${liab ? "− " + money(Math.abs(baseV)) : en.ccy !== state.baseCcy ? "= " + money(baseV) : ""}</span>`;
   }
@@ -207,7 +207,6 @@ const closeYearModal = () => $("yearModal").classList.add("hide");
    screen with every tile in it dead, because the handler reads state.snapshots[edIdx] and
    edIdx is now -1. The dialog is what Escape means while the dialog is up. */
 export const yearModalOpen = () => !$("yearModal").classList.contains("hide");
-export const dismissYearModal = () => { if (!yearModalOpen()) return false; closeYearModal(); return true; };
 
 $("edYearBtn").onclick = openYearModal;
 $("yearClose").onclick = closeYearModal;
@@ -261,7 +260,7 @@ $("edEntries").addEventListener("input", (e) => {
   if (el.dataset.grp != null) return;
   const i = +el.dataset.i, f = el.dataset.f; if (el.dataset.i == null || !f) return;
   const en = sn.entries[i];
-  if (f === "value" || f === "shares") en[f] = parseFloat(el.value || 0);
+  if (f === "value" || f === "shares") en[f] = parseNum(el.value) || 0;
   else if (f === "group") en.group = el.value || undefined;
   else en[f] = el.value;
   scheduleSync();
@@ -322,7 +321,13 @@ function openInfo(kind) { const b = $("infoBody"); if (b) b.innerHTML = kind ===
 function closeInfo() { $("infoModal").classList.add("hide"); }
 $("infoClose").onclick = closeInfo;
 $("infoModal").addEventListener("click", (e) => { if (e.target.id === "infoModal") closeInfo(); });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeInfo(); });
+/* No Escape listener of its own.
+ *
+ * It had one, and because a module's imports evaluate before the importing module's body,
+ * it was registered before the app's. So Escape hid this modal first, and by the time the
+ * app's handler checked whether a modal was open the class was already gone: one press shut
+ * the help and the whole year editor behind it. Escape is handled in one place, in main.js,
+ * which closes the topmost layer and nothing else. */
 
 $("edEntries").addEventListener("click", (e) => {
   const sn = state.snapshots[edIdx];

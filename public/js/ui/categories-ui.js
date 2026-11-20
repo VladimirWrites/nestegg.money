@@ -7,8 +7,11 @@ import { t } from "../i18n.js";
 
 // A category picker: the given category names plus a leading "no category" option.
 export function categorySelectHTML(cls, dataAttr, current, names) {
-  const opts = (names || []).map((g) => `<option ${g === current ? "selected" : ""}>${esc(g)}</option>`).join("");
-  return `<select class="${cls}" ${dataAttr} title="${t("common.category")}"><option value="" ${!current ? "selected" : ""}>${t("common.noCategory")}</option>${opts}</select>`;
+  /* An explicit value. Without one an option's value is its text with whitespace collapsed,
+     so a category whose name contains two spaces came back as a different string and
+     stranded every row tagged with it in a section nothing matched. */
+  const opts = (names || []).map((g) => `<option value="${esc(g)}" ${g === current ? "selected" : ""}>${esc(g)}</option>`).join("");
+  return `<select class="${cls}" ${dataAttr} title="${t("common.category")}" aria-label="${t("common.category")}"><option value="" ${!current ? "selected" : ""}>${t("common.noCategory")}</option>${opts}</select>`;
 }
 
 // One category section: header (dot + rename input + subtotal + delete ×) wrapping its cards/rows.
@@ -16,8 +19,8 @@ export function categorySelectHTML(cls, dataAttr, current, names) {
 export function groupSectionHTML(name, color, subtotalHTML, cardsHTML, emptyHint = t("common.emptyCategory")) {
   return `<div class="grp"><div class="grphead">`
     + `<span class="dot" style="background:${color}"></span>`
-    + `<input class="grpname" data-grp="${esc(name)}" value="${esc(name)}" title="${t("common.categoryName")}" placeholder="${t("common.categoryName")}">`
+    + `<input class="grpname" data-grp="${esc(name)}" value="${esc(name)}" title="${t("common.categoryName")}" aria-label="${t("common.categoryName")}" placeholder="${t("common.categoryName")}">`
     + `<span class="grpsub num" data-grpsub="${esc(name)}">${subtotalHTML}</span>`
-    + `<button class="grpdel" data-grpdel="${esc(name)}" title="${t("common.deleteCategory")}">×</button></div>`
+    + `<button type="button" class="grpdel" data-grpdel="${esc(name)}" title="${t("common.deleteCategory")}" aria-label="${esc(t("common.deleteCategoryAria", { name }))}">×</button></div>`
     + `<div class="grpcards">${cardsHTML || `<div class="exhint">${esc(emptyHint)}</div>`}</div></div>`;
 }

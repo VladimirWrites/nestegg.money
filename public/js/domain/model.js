@@ -161,7 +161,11 @@ export function autoEntriesFor(year) {
     if (from && from > ref) return;
     if (a.liability) {
       const bal = a.loan ? outstandingAt(a.loan, ref) : 0;
-      if (bal <= 0.005 && from && from < ref) return; // paid off — drop once cleared
+      /* Paid off — drop once cleared. "Cleared" means it was borrowed and is now repaid, not
+         that it never had an amount: a debt created by "+ Loan / debt" starts at zero, and
+         dropping it here left a record in the vault that no screen rendered and nothing could
+         delete, because the only way to its editor is the row that stopped existing. */
+      if (bal <= 0.005 && from && from < ref && +((a.loan && a.loan.amount) || 0) > 0) return;
       out.push({ id: "asset:" + a.id, auto: true, assetId: a.id, kind: "liability", name: a.name || "Liability", ccy: a.ccy || state.baseCcy, value: bal, group: a.group });
     } else {
       out.push({ id: "asset:" + a.id, auto: true, assetId: a.id, kind: "fixed", name: a.name || "Asset", ccy: a.ccy || state.baseCcy, value: assetNetAt(a, ref), group: a.group });

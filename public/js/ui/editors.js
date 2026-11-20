@@ -48,9 +48,12 @@ export function closeOverlays() {
 
 // Shut the topmost one. True if there was one to shut.
 export function closeTopEditor() {
+  /* A dialog over an editor is the top layer, and closing "the top" means closing it — one
+     press of the system Back button used to shut the dialog and the editor under it
+     together, which on Android is the ordinary way out of anything. */
+  if (closeOverlays()) return true;
   const id = topEditor();
   if (!id) return false;
-  closeOverlays();
   const back = $(EDITOR_BACK[id]);
   if (!back) return false;
   back.click();

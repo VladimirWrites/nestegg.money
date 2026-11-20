@@ -4,7 +4,7 @@ import { $, toast, flash, focusNew, setInert, rememberFocus, restoreFocus } from
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
-import { money, moneyIn, moneyIn0, esc, convTo, fmtLocale } from "../domain/money.js";
+import { money, moneyIn, moneyIn0, esc, convTo, fmtLocale, parseNum, fmtNum } from "../domain/money.js";
 import { fmtMY, fmtMonths, parseDate } from "../domain/dates.js";
 import { buildSchedule, loanTerms, outstandingAt } from "../domain/loan.js";
 import { assetGrossAt, assetNetAt } from "../domain/asset-value.js";
@@ -181,6 +181,19 @@ function loanComputedHTML(a) {
       <div class="schscroll"><table class="schtab"><thead><tr><th>${t("asset.thWhen")}</th><th>${t("asset.thPayment")}</th><th>${t("asset.thInterest")}</th><th>${t("asset.thPrincipal")}</th><th>${t("asset.thExtra")}</th><th>${t("asset.thBalance")}</th></tr></thead><tbody>${rows}</tbody></table></div></details>` : ""}`;
 }
 
+/* What a loan still needs before anything can be computed from it. An amount with no term
+   and no payment has no schedule, no payoff and no monthly figure; printing the labels over
+   dashes says "broken" rather than "not finished". */
+function loanMissing(L) {
+  if (!(+L.amount > 0)) return "asset.loanNeedsAmount";
+  if (L.mode === "payment" ? !(+L.payment > 0) : !(+L.termYears > 0)) return "asset.loanNeedsTerm";
+  return null;
+}
+function loanBlockHTML(a) {
+  const missing = loanMissing(a.loan);
+  return missing ? `<div class="exhint">${t(missing)}</div>` : loanComputedHTML(a);
+}
+
 function assetCardHTML(a) {
   const today = new Date();
   const gross = assetGrossAt(a, today), bal = a.loan ? outstandingAt(a.loan, today) : 0, net = gross - bal;
@@ -189,25 +202,25 @@ function assetCardHTML(a) {
   if (a.depreciates) {
     depBlock = `<div class="frow">
       <label class="fld">${t("asset.direction")}<select data-aid="${a.id}" data-f="up"><option value="down" ${a.up ? "" : "selected"}>${t("asset.depDown")}</option><option value="up" ${a.up ? "selected" : ""}>${t("asset.appUp")}</option></select></label>
-      <label class="fld">${t("asset.changeYr")}<span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${+(a.rate * 100).toFixed(2)}" data-aid="${a.id}" data-f="rate"><i>%</i></span></label>
+      <label class="fld">${t("asset.changeYr")}<span class="suffix"><input class="fin num" type="text" inputmode="decimal" value="${fmtNum(+(a.rate * 100).toFixed(2))}" data-aid="${a.id}" data-f="rate"><i>%</i></span></label>
     </div>`;
   }
   if (a.loan) {
     const L = a.loan, byPayment = L.mode === "payment";
     const termField = byPayment
-      ? `<label class="fld">${t("asset.monthlyPayment")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.payment ? L.payment : ""}" placeholder="0" data-aid="${a.id}" data-lf="payment"></label>`
-      : `<label class="fld">${t("asset.term")}<span class="suffix"><input class="fin num" type="number" step="any" inputmode="numeric" value="${L.termYears}" data-aid="${a.id}" data-lf="termYears"><i>${t("asset.yrShort")}</i></span></label>`;
+      ? `<label class="fld">${t("asset.monthlyPayment")}<input class="fin num" type="text" inputmode="decimal" value="${L.payment ? fmtNum(L.payment) : ""}" placeholder="0" data-aid="${a.id}" data-lf="payment"></label>`
+      : `<label class="fld">${t("asset.term")}<span class="suffix"><input class="fin num" type="text" inputmode="decimal" value="${L.termYears ? fmtNum(L.termYears) : ""}" placeholder="0" data-aid="${a.id}" data-lf="termYears"><i>${t("asset.yrShort")}</i></span></label>`;
     /* A date and an amount belong to each other. Stacked with the same gap as the gap
        between payments, four of them were eight identical boxes with no way to tell which
        date owned which figure — and none of them had a name an assistive reader could use. */
     const extras = (L.extra || []).map((x, xi) => `<div class="exrow" role="group" aria-label="${t("asset.extraNth", { n: xi + 1 })}">
         <input type="date" class="fin" value="${esc(x.date)}" data-aid="${a.id}" data-eid="${x.id}" data-ef="date" aria-label="${t("asset.extraDateAria", { n: xi + 1 })}">
-        <span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${x.amount || ""}" data-aid="${a.id}" data-eid="${x.id}" data-ef="amount" placeholder="${t("asset.amountPh")}" aria-label="${t("asset.extraAmountAria", { n: xi + 1 })}"><i>${ccyUnit(a.ccy)}</i></span>
+        <span class="suffix"><input class="fin num" type="text" inputmode="decimal" value="${x.amount ? fmtNum(x.amount) : ""}" data-aid="${a.id}" data-eid="${x.id}" data-ef="amount" placeholder="${t("asset.amountPh")}" aria-label="${t("asset.extraAmountAria", { n: xi + 1 })}"><i>${ccyUnit(a.ccy)}</i></span>
         <button type="button" class="rdel" data-extradel="${x.id}" data-aid="${a.id}" title="${t("asset.removePayment")}" aria-label="${t("asset.removeExtraAria", { n: xi + 1 })}">×</button></div>`).join("");
     loanBlock = `<div class="loanbox">
       <div class="frow">
-        <label class="fld">${t("asset.loanAmount")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.amount ? L.amount : ""}" placeholder="0" data-aid="${a.id}" data-lf="amount"></label>
-        <label class="fld">${t("asset.interestYr")}<span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${L.rate ? L.rate : ""}" placeholder="0" data-aid="${a.id}" data-lf="rate"><i>%</i></span></label>
+        <label class="fld">${t("asset.loanAmount")}<input class="fin num" type="text" inputmode="decimal" value="${L.amount ? fmtNum(L.amount) : ""}" placeholder="0" data-aid="${a.id}" data-lf="amount"></label>
+        <label class="fld">${t("asset.interestYr")}<span class="suffix"><input class="fin num" type="text" inputmode="decimal" value="${L.rate ? fmtNum(L.rate) : ""}" placeholder="0" data-aid="${a.id}" data-lf="rate"><i>%</i></span></label>
         <label class="fld">${t("asset.setBy")}<select data-aid="${a.id}" data-lf="mode"><option value="term" ${byPayment ? "" : "selected"}>${t("asset.term")}</option><option value="payment" ${byPayment ? "selected" : ""}>${t("asset.monthlyPayment")}</option></select></label>
         ${termField}
         <label class="fld">${t("asset.start")}<input class="fin" type="date" value="${esc(L.startDate)}" data-aid="${a.id}" data-lf="startDate"></label>
@@ -216,7 +229,7 @@ function assetCardHTML(a) {
       <div class="exwrap"><div class="psub"><span>${t("asset.extraPayments")}</span><button class="btn btn-sm" data-extraadd="${a.id}">${t("asset.addExtra")}</button></div>${extras || `<div class="exhint">${t("asset.extraHint")}</div>`}</div>
       <!-- Six labels over four dashes and two zeroes is furniture, not an answer. Until there
            is an amount there is nothing to compute, and the screen says what it needs. -->
-      <div class="lcomp">${+L.amount > 0 ? loanComputedHTML(a) : `<div class="exhint">${t("asset.loanNeedsAmount")}</div>`}</div>
+      <div class="lcomp">${loanBlockHTML(a)}</div>
     </div>`;
   }
   const ccySel = `<select data-aid="${a.id}" data-f="ccy">${CCYS.map((x) => `<option ${x === a.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>`;
@@ -225,7 +238,8 @@ function assetCardHTML(a) {
     return `<div class="rcard acard liabcard${bal > 0.005 ? " is-owing" : ""}" id="acard-${a.id}" data-aid="${a.id}">
       <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="${t("net.liabilityName")}" aria-label="${t("net.liabilityName")}"></div>
       <div class="ahero is-liab"><span class="ah-k">${t("asset.owedToday")}</span><span class="ah-v num liab">${bal > 0.005 ? "− " + moneyIn0(bal, a.ccy) : moneyIn0(0, a.ccy)}${inBase(-bal)}</span></div>
-      <div class="frow"><label class="fld">${t("asset.currency")}${ccySel}</label><label class="fld">${t("common.category")}${catSel}</label></div>
+      <div class="frow"><label class="fld">${t("asset.currency")}${ccySel}</label><label class="fld">${t("common.category")}${catSel}</label>
+        <label class="fld">${t("asset.ownedSince")}<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label></div>
       ${loanBlock}
       <div class="acard-danger"><button class="btn btn-sm btn-quiet-danger" data-adel="${a.id}">${t("asset.removeLiability")}</button></div>
     </div>`;
@@ -233,12 +247,12 @@ function assetCardHTML(a) {
   /* The answer, at the top. "Net value today" used to be the last line of the card, which on
      a 320px phone with a mortgage on it is 2,700px below the fold, set at the same size as
      every label above it. */
-  const hero = `<div class="ahero"><span class="ah-k">${t("asset.netValueToday")}</span><span class="ah-v num">${moneyIn0(net, a.ccy)}${inBase(net)}</span>${a.loan && +a.loan.amount > 0 ? `<span class="ah-sub">${t("asset.worthOwes", { worth: moneyIn0(gross, a.ccy), owed: moneyIn0(bal, a.ccy) })}</span>` : ""}</div>`;
+  const hero = `<div class="ahero"><span class="ah-k">${t("asset.netValueToday")}</span><span class="ah-v num">${moneyIn0(net, a.ccy)}${inBase(net)}</span><span class="ah-sub">${a.loan && +a.loan.amount > 0 ? t("asset.worthOwes", { worth: moneyIn0(gross, a.ccy), owed: moneyIn0(bal, a.ccy) }) : ""}</span></div>`;
   return `<div class="rcard acard" id="acard-${a.id}" data-aid="${a.id}">
     <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="${t("net.assetName")}" aria-label="${t("net.assetName")}"></div>
     ${hero}
     <div class="frow">
-      <label class="fld">${a.depreciates ? t("asset.startingValue") : t("asset.value")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${a.value ? a.value : ""}" placeholder="0" data-aid="${a.id}" data-f="value"></label>
+      <label class="fld">${a.depreciates ? t("asset.startingValue") : t("asset.value")}<input class="fin num" type="text" inputmode="decimal" value="${a.value ? fmtNum(a.value) : ""}" placeholder="0" data-aid="${a.id}" data-f="value"></label>
       <label class="fld">${t("asset.currency")}${ccySel}</label>
       <label class="fld">${t("common.category")}${catSel}</label>
       <!-- On every asset, not only a depreciating one. This date decides which years the
@@ -281,12 +295,14 @@ function renderAssets(focusName) {
 
 export function newAsset(year) {
   const iso = ownedFromFor(year);
-  const a = { id: nid(), name: t("common.newAsset"), ccy: state.baseCcy, value: 0, depreciates: false, up: false, date: iso, rate: 0.15, loan: null };
+  /* rate 0, not 0.15. One button adds a house and a car, and the old default meant ticking
+     "Value changes over time" on a flat silently asserted a 15%-a-year decline. */
+  const a = { id: nid(), name: t("common.newAsset"), ccy: state.baseCcy, value: 0, depreciates: false, up: false, date: iso, rate: 0, loan: null };
   state.assets.push(a); scheduleSync(); return a;
 }
 export function newLiability(year) {
   const iso = ownedFromFor(year);
-  const a = { id: nid(), name: t("common.newLiability"), ccy: state.baseCcy, value: 0, depreciates: false, up: false, liability: true, date: iso, rate: 0.15, loan: normLoan({ startDate: iso }, iso) };
+  const a = { id: nid(), name: t("common.newLiability"), ccy: state.baseCcy, value: 0, depreciates: false, up: false, liability: true, date: iso, rate: 0, loan: normLoan({ startDate: iso }, iso) };
   state.assets.push(a); scheduleSync(); return a;
 }
 
@@ -295,12 +311,12 @@ export function newLiability(year) {
    saved, for a whole round of review. */
 $("assetList").addEventListener("input", (e) => {
   const el = e.target, id = el.dataset.aid; if (!id) return; const a = state.assets.find((x) => x.id === id); if (!a) return;
-  if (el.dataset.eid) { const x = ((a.loan && a.loan.extra) || []).find((z) => z.id === el.dataset.eid); if (x) { if (el.dataset.ef === "amount") x.amount = parseFloat(el.value || 0); else x.date = el.value; } }
-  else if (el.dataset.lf) { const f = el.dataset.lf; if (a.loan) a.loan[f] = f === "startDate" || f === "mode" || f === "fixedUntil" ? el.value : parseFloat(el.value || 0); }
+  if (el.dataset.eid) { const x = ((a.loan && a.loan.extra) || []).find((z) => z.id === el.dataset.eid); if (x) { if (el.dataset.ef === "amount") x.amount = parseNum(el.value) || 0; else x.date = el.value; } }
+  else if (el.dataset.lf) { const f = el.dataset.lf; if (a.loan) a.loan[f] = f === "startDate" || f === "mode" || f === "fixedUntil" ? el.value : parseNum(el.value) || 0; }
   else if (el.dataset.f) {
     const f = el.dataset.f;
-    if (f === "value") a.value = parseFloat(el.value || 0);
-    else if (f === "rate") a.rate = Math.min(Math.max(parseFloat(el.value || 0) / 100, 0), 5);
+    if (f === "value") a.value = parseNum(el.value) || 0;
+    else if (f === "rate") a.rate = Math.min(Math.max((parseNum(el.value) || 0) / 100, 0), 5);
     else if (f === "up") a.up = el.value === "up";
     else if (f === "group") a.group = el.value || undefined;
     else a[f] = el.value;
@@ -323,7 +339,7 @@ $("assetList").addEventListener("input", (e) => {
     sub.textContent = a.loan && +a.loan.amount > 0 ? t("asset.worthOwes", { worth: moneyIn0(assetGrossAt(a, now), a.ccy), owed: moneyIn0(owed, a.ccy) }) : "";
   }
   const lc = card.querySelector(".lcomp");
-  if (lc && a.loan) lc.innerHTML = +a.loan.amount > 0 ? loanComputedHTML(a) : `<div class="exhint">${t("asset.loanNeedsAmount")}</div>`;
+  if (lc && a.loan) lc.innerHTML = loanBlockHTML(a);
 });
 
 /* A loan set aside because its box was unticked.
