@@ -1811,8 +1811,6 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    rest of the table — eleven rows of money in three unnamed columns. The inner scroll box
    was removed on purpose here, so `top:0` resolves against the page, and the page has a bar
    on it. They stick below it instead. */
-.yrsched .schtab th{top:calc(60px + var(--edge-t))}
-@media(min-width:900px){.yrsched .schtab th{top:64px}}
 
 /* An estimate dims every figure in its row. `.schtab.yrtab td.off` out-specified
    `.schtab tr.est td`, so the middle column of a guessed year stayed full-strength green
@@ -1844,9 +1842,19 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    pushed it down over the first rows of the table instead of out of the bar's way — on a
    laptop it covered 2025, the year carrying a lump sum. The box only needs to scroll
    sideways, and the page's own bar is what the heading should clear. */
-.yrsched .schscroll{overflow:visible}
-.yrsched .schtab th{position:sticky;top:calc(56px + var(--edge-t));background:var(--panel-2);z-index:1}
-@media(min-width:900px){.yrsched .schtab th{top:60px}}
+/* Scrolls sideways, and only sideways.
+ *
+ * It was given `overflow:visible` to stop its sticky heading pinning inside a box that never
+ * scrolls vertically and covering the first rows. That worked, and took the horizontal
+ * scroller with it — so five no-wrap money columns set the loan box's content width, the
+ * card grew wider than the screen, and every field to the right of it was clipped: "Rate
+ * fixed until" cut in half, the lump-sum amounts cut off, the fourth field of a row gone.
+ * `overflow-y:clip` keeps the heading pinned to the top of the box, where it belongs, while
+ * `overflow-x:auto` lets the table be wider than the card without dragging the card with
+ * it. `min-width:0` is what actually lets the flex child shrink. */
+.yrsched{min-width:0}
+.yrsched .schscroll{max-height:none;overflow-x:auto;overflow-y:clip;min-width:0}
+.yrsched .schtab th{top:0}
 
 /* The editor's title is a programmatic focus target, not somewhere to type. The global ring
    drew an 850px amber capsule around the asset's name and told a keyboard reader it was a
@@ -2116,3 +2124,7 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 .salwho .seg-btn{min-height:44px}
 .smon-addnote{min-height:44px;display:inline-flex;align-items:center}
 .saltab .delbtn{min-width:40px;min-height:40px}
+
+/* One rule for this heading, after every earlier attempt at it: pinned to the top of its own
+   box, which is the only thing it can pin to. */
+.yrsched .schtab th{position:sticky;top:0;z-index:1;background:var(--panel-2)}
