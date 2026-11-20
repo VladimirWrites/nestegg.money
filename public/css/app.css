@@ -1972,3 +1972,38 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 /* The kind select kept the 1.3:1 divider colour on a laptop while every field beside it had
    the 3:1 edge. */
 .rcard .rkind,.rcard .rcat{border-color:var(--field-edge)}
+
+/* ── the salary editor, reported from the running app ──────────────────── */
+
+/* The table box is a scroll container at 900px and up (it has to be — a household of four
+   is wider than the column), and the two header rows are `position:sticky` with tops of
+   64px and 113px, which are the heights of the editor's own bar on the PAGE. Inside a
+   scroll container those resolve against the box: 65px of dead band above the headings,
+   and the heading strip painted over the first month row — the top row of the ledger,
+   unreachable. The box scrolls for itself and the headings pin to the top of it. */
+@media(min-width:900px){
+  #salaryEditor .saltable-scroll{max-height:calc(100dvh - 150px)}
+  #salaryEditor .saltab .salh1 th{top:0}
+  #salaryEditor .saltab .salh2 th{top:48px}
+}
+
+/* "+ Next month" and "+ Add person" live in the bar, so they are on screen at the moment
+   anybody wants them rather than above a ledger they have already scrolled past. */
+.ed-bar-acts{display:flex;gap:8px;flex:none;margin-left:12px}
+/* On a phone the bar cannot hold a title, a reassurance, two actions and an exit: putting
+   the actions in squeezed "Edit salaries" to "E" and pushed "Done" off the right edge. The
+   two actions and the way out win — the lede directly beneath the bar says what the screen
+   is, and the title stays for a screen reader. */
+@media(max-width:560px){
+  #salaryEditor .ed-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  #salaryEditor .ed-saved{display:none}
+  .ed-bar-acts{margin-left:0;flex:1;min-width:0}
+  .ed-bar-acts .btn{flex:1;min-width:0;padding-left:8px;padding-right:8px;font-size:12.5px;white-space:nowrap}
+  #salaryEditor .ed-done{margin-left:8px}
+  /* The bar carries them now; the copy above the months would say the same thing twice. */
+  #salaryList .smon-top{display:none}
+}
+@media(min-width:561px){#salaryList .smon-top{display:none}}
+
+/* One row of actions, under the switch, naming the person it acts on. */
+.smon-head.is-compact{display:flex;justify-content:flex-end;gap:16px;padding:2px 0 10px;flex-wrap:wrap}

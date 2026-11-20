@@ -171,6 +171,23 @@ function salEnsure(p, ym) { let e = salEntry(p, ym); if (!e) { e = salNewEntry(p
 function salAddRowAt(ym) { (state.salaries || []).forEach((p) => { if (salEntry(p, ym)) return; p.entries.push(salNewEntry(p, ym)); }); }
 const salThisMonth = () => new Date().toISOString().slice(0, 7);
 // The month after the last one on record — the row "+ Next month" adds, blank, for every person.
+/* Add the next month to everyone's ledger and land on it.
+ *
+ * Lifted out of the list's own click handler so the copy in the editor's bar can call it:
+ * that handler is bound to #salaryList, and a button in the bar is not inside it. */
+function salAddNextMonth() {
+  const ym = salNextMonth();
+  salAddRowAt(ym);
+  /* The month has to be visible to have been added: in a folded year, or behind the
+     empty-person panel, the row went into the ledger and nothing on screen moved. */
+  openEditYears.add(ym.slice(0, 4));
+  const who2 = (state.salaries || [])[salWho];
+  if (who2) salOpened = who2.id;
+  scheduleSync();
+  salKeepScroll($("salaryList"), renderSalaryEdit);
+  salRevealMonth($("salaryList"), ym, true);
+}
+
 const salNextMonth = () => { const ys = salGlobalYms(); return ys.length ? nextYm(ys[ys.length - 1]) : salThisMonth(); };
 
 // Both tables live in their own scroll box, and every edit rebuilds it — which would throw the
@@ -493,8 +510,12 @@ function renderSalaryEdit() {
      name becomes a field when you ask to rename it, and removing a person is a word rather
      than a bin you can catch with a thumb. With one person there is no switch, so the field
      is the header and says who the ledger is for. */
+  /* Named, because the switch above it has two pills and this row had none: two people
+     produced two identical "Rename / Remove person" rows floating right of nothing, and
+     neither said which person it would rename or remove. */
+  const who_ = esc(person.name || t("salary.namePh"));
   const cardHead = people.length > 1
-    ? `<div class="smon-head is-compact"><button type="button" class="smon-act" data-rename="${person.id}">${t("salary.rename")}</button><button type="button" class="smon-act is-danger" data-perdel="${person.id}">${t("salary.removePerson")}</button></div>`
+    ? `<div class="smon-head is-compact"><button type="button" class="smon-act" data-rename="${person.id}">${t("salary.renameName", { name: who_ })}</button><button type="button" class="smon-act is-danger" data-perdel="${person.id}">${t("salary.removeName", { name: who_ })}</button></div>`
     : `<div class="smon-head"><input class="salname" value="${esc(person.name)}" data-sid="${person.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${person.id}" title="${esc(t("salary.removeName", { name: person.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;
   const nextBtn = `<button class="btn btn-sm btn-primary smon-next" data-salnext>${t("salary.next")}</button>`;
   /* Beside the people, not at the bottom of their months: on a phone "+ Add person" sat
@@ -511,7 +532,7 @@ function renderSalaryEdit() {
      person a salary, and "+ Next month" quietly added a month to everyone's ledger behind
      a screen that never changed. */
   const emptyPerson = !theirs && yms.length && salOpened !== person.id;
-  const cardList = `${cardHead}<div class="smon-top">${nextBtn}${addPersonTop}</div>`
+  const cardList = `<div class="smon-top">${nextBtn}${addPersonTop}</div>`
     + (emptyPerson
       ? `<div class="smon-blank"><p>${t("salary.personEmpty", { name: esc(person.name || t("salary.namePh")), count: yms.length })}</p>`
         + `<button type="button" class="btn btn-sm" data-fillfrom>${t("salary.fillFrom", { count: yms.length })}</button></div>`
@@ -526,7 +547,11 @@ function renderSalaryEdit() {
       : `<div class="saltable-scroll"><table class="saltab"><thead>${narrow ? "" : `<tr class="salh1">${h1}</tr>`}<tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + shown.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>`);
   /* Below 900px the table shows one person, chosen by the switch, so it needs the same
      header the cards have: two words, not a name repeated under the tab that says it. */
-  host.innerHTML = (narrow ? salPersonSwitch(people) + (people.length > 1 ? cardHead : "") : "") + (cards ? cardList : tableHTML) +
+  /* The head goes directly under the person switch and nowhere else. It used to be written
+     here and again at the top of cardList, so a two-person ledger on a phone showed the pair
+     of actions twice. */
+  const headOnce = narrow ? salPersonSwitch(people) + cardHead : "";
+  host.innerHTML = headOnce + (cards ? cardList : tableHTML) +
     `<div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="btn btn-sm" data-salgen>${t("salary.addRange")}</button>${cards ? "" : `<button class="btn btn-sm" data-salnext>${t("salary.next")}</button>`}</div>`;
   const who = $("salImportWho");
   if (who) {
@@ -687,16 +712,7 @@ $("salaryList").addEventListener("click", (e) => {
   // New month: blank amounts for everyone, and land on the new row with the first field focused.
   const nx = e.target.closest("[data-salnext]");
   if (nx) {
-    const ym = salNextMonth();
-    salAddRowAt(ym);
-    /* The month has to be visible to have been added: in a folded year, or behind the
-       empty-person panel, the row went into the ledger and nothing on screen moved. */
-    openEditYears.add(ym.slice(0, 4));
-    const who2 = (state.salaries || [])[salWho];
-    if (who2) salOpened = who2.id;
-    scheduleSync();
-    salKeepScroll($("salaryList"), renderSalaryEdit);
-    salRevealMonth($("salaryList"), ym, true);
+    salAddNextMonth();
     return;
   }
   const gn = e.target.closest("[data-salgen]");
@@ -710,7 +726,11 @@ $("salaryList").addEventListener("click", (e) => {
   }
 });
 /* Both copies of the control, one handler. */
-document.addEventListener("click", (e) => { if (e.target && e.target.id === "addPersonTop") $("addPerson").click(); });
+document.addEventListener("click", (e) => {
+  const t2 = e.target && e.target.closest && e.target.closest("#addPersonTop,#salBarPerson,#salBarNext");
+  if (!t2) return;
+  if (t2.id === "salBarNext") salAddNextMonth(); else $("addPerson").click();
+});
 $("addPerson").onclick = () => {
   const p = { id: nid(), name: state.salaries.length ? t("salary.partner") : t("salary.me"), ccy: state.baseCcy, entries: [] };
   state.salaries.push(p); scheduleSync();

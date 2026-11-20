@@ -291,6 +291,7 @@ export default {
     emptyEdit: "Noch niemand. Fügen Sie sich selbst hinzu — und Ihre Partnerin oder Ihren Partner, wenn Sie ein gemeinsames Kontobuch führen — und dann die Monate, die Sie ausfüllen möchten.",
     whoAria: "Wessen Gehälter",
     rename: "Umbenennen",
+    renameName: "{name} umbenennen",
     removePerson: "Person entfernen",
     namePh: "Name",
     removeName: "{name} entfernen",

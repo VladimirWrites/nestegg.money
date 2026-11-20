@@ -291,6 +291,7 @@ export default {
     emptyEdit: "No one yet. Add yourself — and your partner, if you share a ledger — then add the months you want to fill in.",
     whoAria: "Whose salaries",
     rename: "Rename",
+    renameName: "Rename {name}",
     removePerson: "Remove person",
     namePh: "Name",
     removeName: "Remove {name}",
