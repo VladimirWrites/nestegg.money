@@ -198,8 +198,17 @@ function salRevealMonth(host, ym, focus) {
   const box = salScroller(host); if (!box || !ym) return;
   const row = host.querySelector(`[data-ym="${ym}"]`); if (!row) return;
   const r = row.getBoundingClientRect(), b = box.getBoundingClientRect();
+  /* Everything pinned to the top of the editor — its bar, the person switch, the table's
+     own headings — sits over the scroll box, so a row scrolled to the top of that box is a
+     row underneath all of it. */
+  let chrome = 0;
+  host.querySelectorAll(".salwho, #salaryEditor .salh1 th, #salaryEditor .salh2 th").forEach((el) => {
+    if (getComputedStyle(el).position === "sticky") chrome = Math.max(chrome, el.getBoundingClientRect().bottom - b.top);
+  });
+  const edBar = document.querySelector("#salaryEditor .ed-bar");
+  if (edBar) chrome = Math.max(chrome, edBar.getBoundingClientRect().bottom - b.top);
   if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom + 12;
-  else if (r.top < b.top) box.scrollTop -= b.top - r.top + 12;
+  else if (r.top < b.top + chrome) box.scrollTop -= (b.top + chrome) - r.top + 12;
   if (focus) { const f = row.querySelector("input.salf"); if (f) try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }
 }
 
@@ -361,6 +370,7 @@ const salNarrow = () => { try { return matchMedia("(max-width: 899px)").matches;
 /* Narrower again: the width at which five columns stop being readable at all. */
 const salCards = () => { try { return matchMedia("(max-width: 619px)").matches; } catch (e) { return false; } };
 let salWho = 0;   // which person the narrow layout is showing
+let salOpened = null;   // the person whose months the reader has asked to see anyway
 
 function salPersonSwitch(people) {
   if (people.length < 2) return "";
@@ -496,7 +506,11 @@ function renderSalaryEdit() {
      mirroring them as "0 of 12 filled · nothing yet" thirteen times is a wall to scroll
      rather than a place to start. */
   const theirs = (person.entries || []).some((e) => e.amount);
-  const emptyPerson = !theirs && yms.length;
+  /* `salOpened` is the reader saying "show me the months anyway". Without it the panel was a
+     trap: its own button re-rendered the same panel, because opening a fold does not give a
+     person a salary, and "+ Next month" quietly added a month to everyone's ledger behind
+     a screen that never changed. */
+  const emptyPerson = !theirs && yms.length && salOpened !== person.id;
   const cardList = `${cardHead}<div class="smon-top">${nextBtn}${addPersonTop}</div>`
     + (emptyPerson
       ? `<div class="smon-blank"><p>${t("salary.personEmpty", { name: esc(person.name || t("salary.namePh")), count: yms.length })}</p>`
@@ -518,10 +532,13 @@ function renderSalaryEdit() {
   if (who) {
     const prev = who.value;
     who.innerHTML = people.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
-    /* Only if that person still exists: restoring the id of someone just deleted left the
-       select on no option at all, and the importer then refused to import, telling a ledger
-       with two people in it to add a person first. */
-    if (prev && people.some((x) => x.id === prev)) who.value = prev;
+    /* The import follows the person on screen. It used to keep whoever was selected last,
+       so a reader who added a partner and took the panel's advice to paste a spreadsheet
+       wrote that partner's payslips over the first person's twelve years — and was told it
+       had worked. Only when the switch is not deciding (one person, or the desktop's
+       side-by-side table) does the previous choice stand. */
+    const onScreen = narrow && person ? person.id : (prev && people.some((x) => x.id === prev) ? prev : people[0].id);
+    who.value = onScreen;
   }
   /* Folding is a view state: it toggles a class on the cards already in the DOM, so the
      field you were typing in is still there, and a browser's find still reaches a month
@@ -529,7 +546,7 @@ function renderSalaryEdit() {
   /* The note field arrives when it is asked for, and the ledger is untouched until something
      is typed into it. */
   const fill = host.querySelector("[data-fillfrom]");
-  if (fill) fill.onclick = () => { openEditYears.add(yms[0].slice(0, 4)); salKeepScroll(host, renderSalaryEdit); };
+  if (fill) fill.onclick = () => { salOpened = person.id; openEditYears.add(yms[0].slice(0, 4)); salKeepScroll(host, renderSalaryEdit); };
   host.querySelectorAll("[data-rename]").forEach((btn) => {
     btn.onclick = () => {
       const row = btn.closest(".smon-head"); if (!row) return;
@@ -668,13 +685,27 @@ $("salaryList").addEventListener("click", (e) => {
     scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); return;
   }
   // New month: blank amounts for everyone, and land on the new row with the first field focused.
-  const nx = e.target.closest("[data-salnext]"); if (nx) { const ym = salNextMonth(); salAddRowAt(ym); scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); salRevealMonth($("salaryList"), ym, true); return; }
+  const nx = e.target.closest("[data-salnext]");
+  if (nx) {
+    const ym = salNextMonth();
+    salAddRowAt(ym);
+    /* The month has to be visible to have been added: in a folded year, or behind the
+       empty-person panel, the row went into the ledger and nothing on screen moved. */
+    openEditYears.add(ym.slice(0, 4));
+    const who2 = (state.salaries || [])[salWho];
+    if (who2) salOpened = who2.id;
+    scheduleSync();
+    salKeepScroll($("salaryList"), renderSalaryEdit);
+    salRevealMonth($("salaryList"), ym, true);
+    return;
+  }
   const gn = e.target.closest("[data-salgen]");
   if (gn) {
     const c = e.target.closest(".controls"); let from = c.querySelector(".salfrom").value, to = c.querySelector(".salto").value;
     if (!/^\d{4}-\d{2}$/.test(from) || !/^\d{4}-\d{2}$/.test(to)) { toast(t("salary.pickBoth")); return; }
     if (from > to) { const t2 = from; from = to; to = t2; }
-    let cur = from, last = from, n = 0; while (cur <= to && n < 600) { salAddRowAt(cur); last = cur; cur = nextYm(cur); n++; }
+    let cur = from, last = from, n = 0; while (cur <= to && n < 600) { salAddRowAt(cur); openEditYears.add(cur.slice(0, 4)); last = cur; cur = nextYm(cur); n++; }
+    const wp = (state.salaries || [])[salWho]; if (wp) salOpened = wp.id;
     scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); salRevealMonth($("salaryList"), last, true); toast(t("salary.addedMonths", { count: n })); return;
   }
 });

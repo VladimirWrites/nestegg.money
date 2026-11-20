@@ -665,8 +665,12 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* `clip` is right under 899px, where the table is fixed-layout and fits by construction.
    Above it the table sizes itself from its content — four people need about 1,236px in a
    1,036px column — and clipped, the last person's columns were unreachable. */
-@media(min-width:900px){.saltable-scroll{overflow:auto}}
 .saltable-scroll{overflow:clip;border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:10px;background:var(--panel);box-shadow:var(--shadow-card)}
+/* After the rule it overrides, not before it. `clip` is right under 900px, where the table
+   is fixed-layout and fits by construction; above it the table sizes itself from content —
+   four people need about 1,236px in a 1,036px column — and clipped, the last person's
+   money could not be reached at all. */
+@media(min-width:900px){.saltable-scroll{overflow:auto}}
 .saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
 .saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel-2);z-index:2}
@@ -720,19 +724,20 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .saltab td.salm{min-width:90px}
 /* A month with nothing in it reads as a month with nothing in it, not as a stored zero. */
 .saltab td .salf.is-empty{border-style:dashed;border-color:var(--dimmer);background:transparent}
-/* Quiet until you touch it. Every cell being a bordered box made the grid of borders the
-   loudest thing on the screen, over the money it contains; the border arrives on hover and
-   on focus, where it means something. */
-.saltab td .salf,.saltab td .salev{background:transparent;border-color:transparent}
 /* The prompt belongs to the field you are in, not to a hundred and fifty you are not: the
    same sentence repeated down every note column is the loudest text on the table. */
 .saltab td .salev::placeholder{color:transparent}
 .saltab td .salev:focus::placeholder{color:var(--dim)}
-.saltab td .salf:hover,.saltab td .salev:hover{border-color:var(--line)}
-.saltab td .salf:focus,.saltab td .salev:focus{background:var(--panel-2)}
 .saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--text)}
 .saltab td .salev{width:100%;min-width:90px;font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--dim)}
 .saltab td .salf:focus,.saltab td .salev:focus{outline:none;border-color:var(--signal)}
+/* Quiet until you touch it — declared after the rules that paint the boxes, because written
+   before them it did nothing and the table stayed a grid of 900 outlined rectangles with the
+   money inside them as the quietest thing on the screen. */
+.saltab td .salf,.saltab td .salev{background:transparent;border-color:transparent}
+.saltab td .salf:hover,.saltab td .salev:hover{border-color:var(--line)}
+.saltab td .salf:focus,.saltab td .salev:focus{background:var(--panel-2);border-color:var(--signal)}
+.saltab td .salf.is-empty{border-style:dashed;border-color:var(--dimmer);background:transparent}
 .salx-h{width:34px}
 .saltab td.salxc{text-align:center}
 .salpick{font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px;color:var(--text);min-height:44px}
@@ -1369,7 +1374,8 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   /* The delete button plus the cell padding around it came to 42px in a 34px column, so every
      row pushed the table two pixels past its box and the whole thing scrolled sideways. */
   .saltable-scroll .saltab td.salxc{padding-left:2px;padding-right:2px}
-  .saltable-scroll .salxc .delbtn{width:28px;height:28px}
+  /* It removes a month from everyone in the ledger; it is not the smallest target here. */
+  .saltable-scroll .salxc .delbtn{width:40px;height:40px}
 }
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .seg-btn{padding:8px 14px;min-height:44px;border:0;background:var(--panel-2);color:var(--dim);cursor:pointer;font-size:13px;font-weight:600}
