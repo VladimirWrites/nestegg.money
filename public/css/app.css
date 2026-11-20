@@ -302,7 +302,11 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* The editor's bar carries the exit and the reassurance. The note goes when there is no room
    for it; the button never does. */
 .ed-saved{margin-left:auto;font-size:11.5px;color:var(--dim);white-space:nowrap}
-.ed-done{flex:none}
+/* The button carries the margin too: on a phone the note beside it is hidden, and with the
+   margin living only on the note, Done sat in the middle of the bar with 160px of empty
+   space to its right. */
+.ed-done{flex:none;margin-left:auto}
+.ed-saved+.ed-done{margin-left:12px}
 @media(max-width:420px){.ed-saved{display:none}}
 .ed-title+.ed-saved{margin-left:auto}
 .ed-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -695,7 +699,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .saltab th.salm-h,.saltab td.salm{background:transparent}
 .saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel-2)}
 .saltab td.salm{color:var(--dim);font-size:12px}
-.saltab tr.saly td{background:var(--panel-2);color:var(--text);font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:none;text-align:right;font-variant-numeric:tabular-nums}
+/* Mono like the figures beneath it, and right-aligned to the same inset, so the column has
+   one right edge and one typeface rather than two of each. */
+.saltab tr.saly td{background:var(--panel-2);color:var(--text);font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:none;text-align:right;font-variant-numeric:tabular-nums}
+.saltab tr.saly td.num{padding-right:19px}
 /* The words beside the year's figure, quiet enough not to compete with it. */
 /* Said once, beside the year it belongs to, rather than once per person per year. */
 .saltab tr.saly .salytot-lbl{display:inline;margin-left:10px;font-style:normal;font-weight:400;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
@@ -814,7 +821,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .smon-act:hover{color:var(--text)}
 .smon-act.is-danger{color:var(--danger);opacity:.85}
 .smon-act.is-danger:hover{opacity:1}
-.salwho{position:sticky;top:calc(64px + var(--edge-t));z-index:5;background:var(--ink);padding:6px 0;margin-bottom:12px}
+.salwho{position:sticky;top:calc(64px + var(--edge-t));z-index:5;background:var(--ink);padding:10px 0 8px;margin-bottom:12px}
 .salwho::after{content:"";position:absolute;left:0;right:0;top:100%;height:10px;
   background:linear-gradient(var(--ink),transparent);pointer-events:none}
 /* A phone on its side is 420px tall: the bar plus a pinned switch were taking 28% of it and

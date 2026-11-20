@@ -505,7 +505,7 @@ function renderSalaryEdit() {
   /* On a desktop the add button sat below a hundred and fifty rows while the month it adds
      appears at the top of them, so a reader pressed it and nothing visibly happened. It is
      at both ends now: beside the months on a phone, above the table on a desktop. */
-  const tableHTML = `<div class="smon-top">${nextBtn}${narrow ? addPersonTop : ""}</div>`
+  const tableHTML = `<div class="smon-top">${nextBtn}${addPersonTop}</div>`
     + (narrow && emptyPerson
       ? `<div class="smon-blank"><p>${t("salary.personEmpty", { name: esc(person.name || t("salary.namePh")), count: yms.length })}</p>`
         + `<button type="button" class="btn btn-sm" data-fillfrom>${t("salary.fillFrom", { count: yms.length })}</button></div>`
