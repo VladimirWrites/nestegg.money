@@ -630,7 +630,6 @@ export default {
     removeName: "Remove {name}",
     categoryNeedsName: "A category needs a name.",
     categoryExists: "There is already a category called {name}.",
-    categoryReserved: "{name} is the name for everything with no category — pick another.",
     never: "never",
     justNow: "just now",
     minAgo: "{count} min ago",

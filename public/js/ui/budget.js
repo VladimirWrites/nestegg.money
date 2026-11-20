@@ -5,7 +5,7 @@ import { $, toast, debounce, focusNew } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { PALETTE } from "../domain/constants.js";
-import { money, esc } from "../domain/money.js";
+import { money, esc, parseNum, fmtNum } from "../domain/money.js";
 import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, renameBudgetCategory, removeBudgetCategory, budgetCategoryUsage, UNCATEGORIZED } from "../domain/budget.js";
 import { C, refreshPalette, donutArcs, exportChart, positionTip } from "./chart-kit.js";
 import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
@@ -45,6 +45,15 @@ function budRefocus(selector) {
     if (el && !el.closest("[inert]")) { try { el.focus({ preventScroll: true }); } catch (e) {} }
   }, 0);
 }
+
+/* Two category names a reader cannot tell apart are the same name.
+ *
+ * The check was byte-exact, so "food" beside "Food" passed, and a "Café" pasted from Finder
+ * (decomposed) passed beside a typed one (composed) — two cards, two wedges, two legend rows
+ * that look identical. The domain also trims when it buckets and the interface did not, so
+ * "Food " and "Food" rendered as two sections for one wedge. */
+const catKey = (n) => String(n || "").normalize("NFC").trim().toLocaleLowerCase();
+const sameCat = (a, b) => catKey(a) === catKey(b);
 
 // A read-only category section: static header (no rename input, no delete ×).
 function roGroupSection(name, color, subtotalHTML, cardsHTML) {
@@ -179,7 +188,10 @@ function refreshTotals() {
   if (sv) sv.textContent = s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%";
   if (card) card.classList.toggle("neg", s.leftover < 0);
   // live category subtotals (no row rebuild → focus kept while typing an amount)
-  document.querySelectorAll("[data-grpsub]").forEach((el) => {
+  /* Scoped. Document-wide, this reached the net worth year editor's own sections — which
+     keep their markup behind a `hide` class — and rewrote their subtotals with budget
+     figures, or with 0.00 for a category the budget has never heard of. */
+  $("budItems").querySelectorAll("[data-grpsub]").forEach((el) => {
     const c = s.categories.find((x) => x.category === el.getAttribute("data-grpsub"));
     el.textContent = money(c ? c.total : 0);
   });
@@ -193,7 +205,7 @@ function expenseRow(e) {
   return `<div class="bud-exp" data-id="${e.id}">
     <input class="bud-exp-name" data-id="${e.id}" type="text" value="${esc(e.name || "")}" placeholder="${t("budget.expense")}" aria-label="${t("budget.expenseName")}">
     ${catSelect("bud-exp-cat", `data-id="${e.id}"`, e.group)}
-    <input class="bud-exp-amt" data-id="${e.id}" type="number" inputmode="decimal" value="${e.amount || ""}" placeholder="0" aria-label="${t("budget.monthlyAmount")}">
+    <input class="bud-exp-amt num" data-id="${e.id}" type="text" inputmode="decimal" value="${e.amount ? fmtNum(e.amount) : ""}" placeholder="0" aria-label="${t("budget.monthlyAmount")}">
     <button type="button" class="bud-exp-del" data-id="${e.id}" title="${t("common.remove")}" aria-label="${esc(t("common.removeName", { name: e.name || t("budget.thisExpense") }))}">×</button>
   </div>`;
 }
@@ -242,7 +254,7 @@ function itemsHTML(s, b) {
     const ex = b.expenses.filter((e) => e.group === g), lo = loans.filter((l) => lc[l.id] === g);
     const sub = ex.reduce((a, e) => a + (+e.amount || 0), 0) + lo.reduce((a, l) => a + l.monthly, 0);
     const cards = lo.map(loanRowH).join("") + ex.map(expRow).join("");
-    if (RO && !cards) return;   // a category with nothing in it is editor scaffolding, not data
+    if (reading() && !cards) return;   // a category with nothing in it is editor scaffolding, not data
     html += reading() ? roGroupSection(g, catColor(g, s.categories), money(sub), cards)
                : groupSectionHTML(g, catColor(g, s.categories), money(sub), cards);
   });
@@ -291,7 +303,7 @@ export function renderBudget() {
         <span class="bud-lbl">${t("budget.overrideIncome")}</span>
         <span class="bud-ovr">
           <button id="budUseSalary" class="bud-reset${b.incomeOverride == null ? " hide" : ""}" type="button" title="${t("budget.useSalaryAgain")}">${t("budget.useSalary")}</button>
-          <input id="budOverride" class="bud-input" type="number" inputmode="decimal" value="${b.incomeOverride == null ? "" : b.incomeOverride}" placeholder="${t("budget.autoPh", { amount: money(auto) })}" aria-label="${t("budget.overrideIncome")}">
+          <input id="budOverride" class="bud-input num" type="text" inputmode="decimal" value="${b.incomeOverride == null ? "" : fmtNum(b.incomeOverride)}" placeholder="${t("budget.autoPh", { amount: money(auto) })}" aria-label="${t("budget.overrideIncome")}">
         </span>
       </div>`}
       <!-- Two explicit cells: the title and its explanation on the left, the switch on the
@@ -327,7 +339,10 @@ export function renderBudget() {
   // Override income: live, no rebuild (keeps focus while typing). Empty field = use salary.
   $("budOverride").oninput = (ev) => {
     const v = ev.target.value.trim();
-    b.incomeOverride = v === "" ? null : (parseFloat(v) || 0);
+    /* parseNum, like every other money field in this app. A type=number input invalidates
+       "5.740,50" and hands back an empty string, so a German reader retyping the figure the
+       screen had just printed set it to zero, silently. */
+    b.incomeOverride = v === "" ? null : Math.max(0, parseNum(v) || 0);
     scheduleSync(); refreshTotals();
   };
   // Explicit "use salary": clear the override and revert the field to auto, in place.
@@ -343,7 +358,7 @@ export function renderBudget() {
   });
   // Amount edits update in place (focus kept); category changes move the card → full re-render.
   host.querySelectorAll(".bud-exp-amt").forEach((el) => {
-    el.oninput = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { e.amount = parseFloat(ev.target.value) || 0; scheduleSync(); refreshTotals(); } };
+    el.oninput = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { e.amount = Math.max(0, parseNum(ev.target.value) || 0); scheduleSync(); refreshTotals(); } };
   });
   host.querySelectorAll(".bud-exp-cat").forEach((el) => {
     el.onchange = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { e.group = ev.target.value; scheduleSync(); renderBudget(); } };
@@ -364,8 +379,7 @@ export function renderBudget() {
     const was = ev.target.dataset.grp, nw = ev.target.value.trim();
     if (nw === was) { ev.target.value = was; return; }
     if (!nw) { toast(t("common.categoryNeedsName")); ev.target.value = was; return; }
-    if (nw === UNCATEGORIZED || nw === t("budget.uncategorized")) { toast(t("common.categoryReserved", { name: nw })); ev.target.value = was; return; }
-    if (budgetCategoryNames().some((g) => g !== was && g === nw)) { toast(t("common.categoryExists", { name: nw })); ev.target.value = was; return; }
+    if (budgetCategoryNames().some((g) => g !== was && sameCat(g, nw))) { toast(t("common.categoryExists", { name: nw })); ev.target.value = was; return; }
     renameBudgetCategory(was, nw); scheduleSync(); renderBudget();
     budRefocus(`input.grpname[data-grp="${CSS.escape(nw)}"]`);
   });

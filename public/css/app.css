@@ -2240,3 +2240,13 @@ input.grpname:focus-visible{border-radius:var(--r-sm);outline-offset:2px}
 .bud-exp input[type="number"]{-moz-appearance:textfield}
 .bud-exp input[type="number"]::-webkit-outer-spin-button,
 .bud-exp input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+/* The net-worth doughnut honours a reader who has asked for less motion; the budget one was
+   never added to either reduced-motion block, and it redraws on every edit rather than on
+   arrival. */
+@media(prefers-reduced-motion:reduce){
+  #budgetDonut.anim .dwedge{animation:none;stroke-dasharray:none;stroke-dashoffset:0}
+}
+/* A category that is set is a fact, not a placeholder — the same fix the net worth row got,
+   and this screen repeats the picker under every single outgoing. */
+.bud-exp .bud-exp-cat{color:var(--text)}
