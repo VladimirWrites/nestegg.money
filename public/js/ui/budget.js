@@ -52,13 +52,16 @@ function roGroupSection(name, color, subtotalHTML, cardsHTML) {
 const dispCat = (name) => (name === "Uncategorized" ? t("budget.uncategorized") : name);
 
 function breakdownSegments(s) {
+  /* What is left is not a category of spending, and green is this palette's documented
+     colour for it — "money that grew: gains, what's left over, a goal reached". It was moved
+     to a neutral grey because the third category was painted the identical green and a 3%
+     sliver could not be told from a 17% arc. So the categories give that green up instead:
+     the screen is named after the leftover, and it was the dullest wedge on it. */
+  const left = C.green;
+  const pal = budgetPalette();
   const segs = [];
-  (s.categories || []).forEach((c, i) => { if (c.total > 0) segs.push({ name: dispCat(c.category), v: c.total, color: PALETTE[i % PALETTE.length], items: c.items }); });
-  /* What is left is not a category of spending, and it was painted in the same green the
-     palette gives the third category — in the dark theme the two were the identical hex, so
-     a 3% sliver and a 17% arc could not be told apart. A neutral wedge says "unspent" and
-     can never collide with a category, whatever order the categories come in. */
-  if (s.leftover > 0) segs.push({ name: t("budget.leftOver"), v: s.leftover, color: C.neutral, items: [] });
+  (s.categories || []).forEach((c, i) => { if (c.total > 0) segs.push({ name: dispCat(c.category), v: c.total, color: pal[i % pal.length], items: c.items }); });
+  if (s.leftover > 0) segs.push({ name: t("budget.leftOver"), v: s.leftover, color: left, items: [] });
   return segs;
 }
 
@@ -190,10 +193,13 @@ function loanRow(l, loanCats) {
   </div>`;
 }
 
-// Colour a category to match its doughnut wedge (same index/palette).
+/* Colour a category to match its doughnut wedge — through the same filtered palette the
+   wedges use, or the legend and the ring disagree about which colour is whose. */
+const budgetPalette = () => PALETTE.filter((c) => c.toLowerCase() !== String(C.green).toLowerCase());
 function catColor(name, cats) {
   const i = (cats || []).findIndex((c) => c.category === name);
-  return i >= 0 ? PALETTE[i % PALETTE.length] : "var(--dim)";
+  const pal = budgetPalette();
+  return i >= 0 ? pal[i % pal.length] : "var(--dim)";
 }
 
 // The outgoings list, grouped by category exactly like the net-worth editor: ungrouped items first,
