@@ -650,6 +650,7 @@ export default {
     category: "Kategorie",
     noCategory: "— keine Kategorie —",
     categoryName: "Kategoriename",
+    renameCategoryAria: "Kategorie {name} umbenennen",
     deleteCategory: "Kategorie löschen",
     deleteCategoryAria: "Kategorie {name} löschen",
     emptyCategory: "Leer — weisen Sie einem Eintrag diese Kategorie zu.",

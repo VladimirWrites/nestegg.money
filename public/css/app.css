@@ -2183,7 +2183,7 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
   line-height:1.3;color:var(--text);overflow-wrap:anywhere}
 .grptitle{border-bottom:0}
 /* …and the rules that style the rename field are scoped to the field. */
-input.grpname{font-size:15px}
+#budItems input.grpname{font-size:15px}
 
 /* An empty category was the loudest object on the screen — a rounded capsule with an
    underline and a bold figure, and nothing to press. */
@@ -2197,18 +2197,18 @@ input.grpname{font-size:15px}
 /* Editing has to be visible without hunting for a 12px glyph: the header is tinted, the
    name is a real boxed field like every other, and deleting a category is a bordered
    control rather than the faintest mark in the card. */
-#budItems .grp:has(input.grpname) .grphead{background:var(--panel-2);box-shadow:inset 0 2px 0 var(--signal)}
-input.grpname{flex:1 1 auto;max-width:28ch;min-width:0;min-height:44px;padding:0 10px;
+#budItems .grp:has(input.grpname) .grphead{background:var(--panel-2)}
+#budItems input.grpname{flex:1 1 auto;max-width:28ch;min-width:0;min-height:44px;padding:0 10px;
   letter-spacing:0;background:var(--panel);border:1px solid var(--field-edge);border-radius:var(--r-sm)}
 /* …and the subtotal keeps the right edge it has in reading mode, so pressing Edit does not
    throw seven figures into the middle of the card. */
-.grphead .grpsub{margin-left:auto;min-width:8ch;text-align:right}
+#budItems .grphead .grpsub{margin-left:auto;min-width:8ch;text-align:right}
 /* The old underline-field rules still out-specified the new box, so focusing it squared the
    corners and drew an amber line under three grey sides. */
-input.grpname:focus{border-color:var(--signal)}
-input.grpname:focus-visible{border-radius:var(--r-sm);outline-offset:2px}
-.grpdel{border:1px solid var(--line);border-radius:var(--r-sm)}
-.grpdel:hover{border-color:var(--danger)}
+#budItems input.grpname:focus{border-color:var(--signal)}
+#budItems input.grpname:focus-visible{border-radius:var(--r-sm);outline-offset:2px}
+#budItems .grpdel{border:1px solid var(--line);border-radius:var(--r-sm)}
+#budItems .grpdel:hover{border-color:var(--danger)}
 
 /* Three fixes made on the sibling screens that never reached this one. */
 @media(max-width:899px){
@@ -2229,17 +2229,13 @@ input.grpname:focus-visible{border-radius:var(--r-sm);outline-offset:2px}
 .bud-exp.ro .bud-loan-name{white-space:normal;overflow:visible;overflow-wrap:anywhere}
 /* The fields, not only the buttons. 39-41px is not the 44 this stylesheet asks for. */
 @media(max-width:899px){
-  #budItems .bud-exp input,#budItems .bud-exp select,#budItems .bud-input,input.grpname{min-height:44px}
+  #budItems .bud-exp input,#budItems .bud-exp select,#budItems .bud-input,#budItems input.grpname{min-height:44px}
 }
 /* One spec for the two swatches that mean the same thing — a legend chip and a card dot. */
 @media(prefers-color-scheme:light){:root:not([data-theme="dark"]) .legend .swatch{box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}}
 :root[data-theme="light"] .legend .swatch{box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}
 /* …and no outline on the one marker that stands for no wedge at all. */
 .grp.is-empty .grphead .dot{box-shadow:none}
-/* An amount column with a spinner reserved on one row and not the next does not line up. */
-.bud-exp input[type="number"]{-moz-appearance:textfield}
-.bud-exp input[type="number"]::-webkit-outer-spin-button,
-.bud-exp input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 
 /* The net-worth doughnut honours a reader who has asked for less motion; the budget one was
    never added to either reduced-motion block, and it redraws on every edit rather than on
@@ -2250,3 +2246,64 @@ input.grpname:focus-visible{border-radius:var(--r-sm);outline-offset:2px}
 /* A category that is set is a fact, not a placeholder — the same fix the net worth row got,
    and this screen repeats the picker under every single outgoing. */
 .bud-exp .bud-exp-cat{color:var(--text)}
+
+/* ── Budget, round 3: the category card in editing mode ───────────────── */
+
+/* The header now carries a real <h3> around the rename field (editing mode had no headings at
+   all, so nothing announced a section and five identical "Category name" fields sat in a row).
+   The heading is a layout pass-through: it takes the flex slot the bare input used to hold, so
+   the dot, the name, the subtotal and the × keep the positions they already had. */
+.grphead .grptitle-h{flex:1 1 auto;min-width:0;margin:0;display:flex;align-items:center;font:inherit;letter-spacing:inherit}
+#budItems .grphead .grptitle-h input.grpname{max-width:28ch}
+
+/* The loan rows and the expense rows share the `.bud-exp` grid so their amounts line up, and
+   at 520px the expense row was given a three-column phone layout while the loan row kept a
+   two-column one — so in a category holding both, the loan's figure sat in the delete
+   column, about 50px right of the expenses above it, and its category picker had no slot. */
+@media(max-width:520px){
+  .bud-loan{grid-template-columns:minmax(0,1fr) 96px 44px}
+  .bud-loan-amt{grid-column:auto;text-align:right;padding-top:8px}
+  .bud-loan-cat{grid-column:1 / -1;order:5}
+}
+/* An item name is prose and wraps on the reading side; in editing it was clipped with an
+   ellipsis, so the one mode where you might need to tell two loans apart showed least. */
+.bud-exp .bud-loan-name{white-space:normal;overflow:visible;overflow-wrap:anywhere}
+
+/* A category picker in a monospace face, beside a name field in the body face, over a card
+   whose heading is the body face: the one control wearing the figures' font is the one that
+   holds no figures. */
+.bud-exp select{font-family:var(--sans)}
+
+/* Pressing Edit swapped the hint line in and out of the header, which changed the header's
+   height, and a vertically centred button moved with it — the control you just pressed is
+   under the pointer in reading mode and 9px below it in editing. Pin it to the top edge and
+   give it one width for both labels, so neither axis moves. */
+.bud-exp-head{align-items:flex-start}
+.bud-exp-head .bud-editbtn{align-self:flex-start;min-width:8ch;justify-content:center}
+
+/* 36px delete beside 40px fields in a row that is meant to read as one line. */
+.bud-exp-del{height:40px}
+@media(min-width:900px){
+  #budItems .bud-exp input,#budItems .bud-exp select,#budItems .bud-exp-del{min-height:40px;height:40px}
+}
+/* A loan's figure is static text in a column of boxed fields: without the field's own padding
+   it hangs 11px right of every amount you can type, which is the column it is meant to be in. */
+#budItems .bud-exp:not(.ro) .bud-loan-amt{padding-right:11px}
+
+/* "— no category —" is the absence of a choice and was printed in full-strength ink, so an
+   untagged row read as the most definite thing in the list. */
+.bud-exp .bud-exp-cat:has(option[value=""]:checked){color:var(--dim)}
+
+/* The override row is a label, a "use salary" button and a 140px field on one line. In German
+   the label alone is 24 characters: the three of them overflowed the card by about 58px at
+   390px, pushing the field's right edge off the screen. */
+@media(max-width:619px){
+  .bud-row.indent{flex-wrap:wrap}
+  .bud-row.indent .bud-lbl{flex:1 1 100%}
+  .bud-row.indent .bud-ovr{flex:1 1 100%;display:flex;align-items:center;gap:8px}
+  .bud-row.indent .bud-ovr .bud-input{flex:1 1 auto;width:auto;min-width:0}
+}
+
+/* The breakdown rows and the category cards below them are both inset from the card edge, by
+   16px and by 16px-plus-a-border — so the two columns of figures missed each other by 1px. */
+.bud-rows>.bud-row{padding-left:17px;padding-right:17px}

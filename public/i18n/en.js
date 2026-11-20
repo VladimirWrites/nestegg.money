@@ -648,6 +648,7 @@ export default {
     category: "Category",
     noCategory: "— no category —",
     categoryName: "Category name",
+    renameCategoryAria: "Rename the category {name}",
     deleteCategory: "Delete category",
     deleteCategoryAria: "Delete the category {name}",
     emptyCategory: "Empty — set an item's category to this.",

@@ -5,7 +5,7 @@ import { $, toast, debounce, focusNew } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { PALETTE } from "../domain/constants.js";
-import { money, esc, parseNum, fmtNum } from "../domain/money.js";
+import { money, esc, parseNum, fmtPlain } from "../domain/money.js";
 import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, renameBudgetCategory, removeBudgetCategory, budgetCategoryUsage, UNCATEGORIZED } from "../domain/budget.js";
 import { C, refreshPalette, donutArcs, exportChart, positionTip } from "./chart-kit.js";
 import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
@@ -38,11 +38,20 @@ function roItemRow(name, amount) {
 }
 
 /* Give focus back to the equivalent control after a re-render. Every edit on this screen
-   rebuilds the whole body, which destroys whatever the reader had just used. */
-function budRefocus(selector) {
+   rebuilds the whole body, which destroys whatever the reader had just used.
+
+   Takes several selectors and uses the first that resolves, because the natural landing place
+   after a delete is the row that took the deleted one's place — and there may not be one. And
+   it scrolls that control into view: sending focus to a control three screens down moved the
+   caret somewhere the reader could not see, which on a phone is indistinguishable from the
+   page having jumped on its own. */
+function budRefocus(...selectors) {
   setTimeout(() => {
-    const el = selector && document.querySelector(selector);
-    if (el && !el.closest("[inert]")) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+    let el = null;
+    for (const sel of selectors) { if (sel) { el = document.querySelector(sel); if (el && !el.closest("[inert]")) break; el = null; } }
+    if (!el) return;
+    try { el.focus({ preventScroll: true }); } catch (e) {}
+    try { el.scrollIntoView({ block: "nearest", behavior: "instant" }); } catch (e) {}
   }, 0);
 }
 
@@ -52,7 +61,7 @@ function budRefocus(selector) {
  * (decomposed) passed beside a typed one (composed) — two cards, two wedges, two legend rows
  * that look identical. The domain also trims when it buckets and the interface did not, so
  * "Food " and "Food" rendered as two sections for one wedge. */
-const catKey = (n) => String(n || "").normalize("NFC").trim().toLocaleLowerCase();
+const catKey = (n) => String(n || "").normalize("NFC").trim().toLowerCase();
 const sameCat = (a, b) => catKey(a) === catKey(b);
 
 // A read-only category section: static header (no rename input, no delete ×).
@@ -73,6 +82,13 @@ function roGroupSection(name, color, subtotalHTML, cardsHTML) {
 // domain) plus the leftover. Each carries its `items` so the tooltip can break it down on hover.
 // The "Uncategorized" sentinel comes from domain/budget.js (which stays i18n-free), so it's
 // mapped to the active locale here, at the UI boundary. Real category names are user data.
+/* "0%" for a real outgoing is wrong rather than merely rounded: Health is €45 of this
+   budget and the legend said it was none of it. */
+const pctOf = (v, total) => {
+  if (!(total > 0) || !(v > 0)) return "0%";
+  const p = (v / total) * 100;
+  return p < 0.5 ? "<1%" : Math.round(p) + "%";
+};
 const dispCat = (name) => (name === UNCATEGORIZED ? t("budget.uncategorized") : name);
 
 function breakdownSegments(s) {
@@ -117,9 +133,9 @@ function drawBudgetDonut(s, animate = false) {
   }
   svg.classList.toggle("anim", !!animate && total > 0);
   svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", total > 0 ? t("budget.ariaList", { list: segs.map((x) => x.name + " " + Math.round(x.v / total * 100) + "%").join(", ") }) : t("budget.ariaEmpty"));
+  svg.setAttribute("aria-label", total > 0 ? t("budget.ariaList", { list: segs.map((x) => x.name + " " + pctOf(x.v, total)).join(", ") }) : t("budget.ariaEmpty"));
   const leg = $("budgetLegend"); if (leg) {
-    leg.innerHTML = segs.map((x) => `<div class="legrow"><span class="swatch" style="background:${x.color}"></span><span>${esc(x.name)}</span><span class="pct">${total > 0 ? (x.v / total * 100).toFixed(0) : 0}%</span><span class="amt num">${money(x.v)}</span></div>`).join("");
+    leg.innerHTML = segs.map((x) => `<div class="legrow"><span class="swatch" style="background:${x.color}"></span><span>${esc(x.name)}</span><span class="pct">${pctOf(x.v, total)}</span><span class="amt num">${money(x.v)}</span></div>`).join("");
   }
 }
 
@@ -129,8 +145,8 @@ function budgetTipShow(path) {
   const tip = $("budgetTip"); if (!tip) return;
   const seg = _segs[+path.getAttribute("data-idx")]; if (!seg) return;
   const total = _segs.reduce((a, x) => a + x.v, 0);
-  const pct = total > 0 ? Math.round(seg.v / total * 100) : 0;
-  let html = `<div class="tiph">${esc(seg.name)} <span class="tippct">${pct}%</span></div>`;
+  const pct = pctOf(seg.v, total);
+  let html = `<div class="tiph">${esc(seg.name)} <span class="tippct">${pct}</span></div>`;
   const items = (seg.items || []).slice().sort((a, b) => b.amount - a.amount);
   if (items.length) {
     items.forEach((it) => { html += `<div class="tipr"><span class="tipn">${esc(it.name)}</span><span class="tipv">${money(it.amount)}</span></div>`; });
@@ -165,7 +181,7 @@ function downloadBudgetDonut() {
   const src = $("budgetDonut");
   if (!src || !_segs.length) { toast(t("common.nothingToSave")); return; }
   const total = _segs.reduce((a, x) => a + x.v, 0);
-  const items = _segs.map((x) => ({ color: x.color, label: x.name + "   " + Math.round(x.v / total * 100) + "%   " + money(x.v) }));
+  const items = _segs.map((x) => ({ color: x.color, label: x.name + "   " + pctOf(x.v, total) + "   " + money(x.v) }));
   exportChart({ src, title: t("budget.expTitle"), items, width: 240, height: 240, filename: "nestegg-budget.png" });
 }
 
@@ -205,7 +221,7 @@ function expenseRow(e) {
   return `<div class="bud-exp" data-id="${e.id}">
     <input class="bud-exp-name" data-id="${e.id}" type="text" value="${esc(e.name || "")}" placeholder="${t("budget.expense")}" aria-label="${t("budget.expenseName")}">
     ${catSelect("bud-exp-cat", `data-id="${e.id}"`, e.group)}
-    <input class="bud-exp-amt num" data-id="${e.id}" type="text" inputmode="decimal" value="${e.amount ? fmtNum(e.amount) : ""}" placeholder="0" aria-label="${t("budget.monthlyAmount")}">
+    <input class="bud-exp-amt num" data-id="${e.id}" type="text" inputmode="decimal" value="${e.amount ? fmtPlain(e.amount) : ""}" placeholder="0" aria-label="${t("budget.monthlyAmount")}">
     <button type="button" class="bud-exp-del" data-id="${e.id}" title="${t("common.remove")}" aria-label="${esc(t("common.removeName", { name: e.name || t("budget.thisExpense") }))}">×</button>
   </div>`;
 }
@@ -248,7 +264,16 @@ function itemsHTML(s, b) {
 
   let html = "";
   const ungEx = b.expenses.filter((e) => !e.group), ungLo = loans.filter((l) => !lc[l.id]);
-  if (ungEx.length || ungLo.length) html += `<div class="grpcards">${ungLo.map(loanRowH).join("")}${ungEx.map(expRow).join("")}</div>`;
+  /* These rows used to be dropped into a bare `.grpcards` with no card around them, no colour
+     dot, no name and no subtotal — while the ring above gave them a wedge called
+     "Uncategorized" and the legend gave that wedge a figure. The one block on the screen you
+     could not match to the chart was the one the chart named. Same header as the rest, with
+     the same words the wedge uses, and no rename or delete: it isn't a category. */
+  if (ungEx.length || ungLo.length) {
+    const ungSub = ungEx.reduce((a, e) => a + (+e.amount || 0), 0) + ungLo.reduce((a, l) => a + l.monthly, 0);
+    html += roGroupSection(t("budget.uncategorized"), "var(--dim)", money(ungSub),
+      ungLo.map(loanRowH).join("") + ungEx.map(expRow).join(""));
+  }
 
   order.forEach((g) => {
     const ex = b.expenses.filter((e) => e.group === g), lo = loans.filter((l) => lc[l.id] === g);
@@ -285,7 +310,7 @@ export function renderBudget() {
            live inside the chart wrapper, which left it floating under the donut aligned to
            nothing, while the identical button on every other section sits top-right beside a
            title. There was no title here to sit beside; now there is. -->
-      <div class="sectitle">${t("budget.breakdown")}<span class="sectools"><button class="chartdl" id="dlBudget" title="${t("net.dlChart")}" aria-label="${t("net.dlChart")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
+      <div class="sectitle"><h2>${t("budget.breakdown")}</h2><span class="sectools"><button class="chartdl" id="dlBudget" title="${t("net.dlChart")}" aria-label="${t("net.dlChart")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
       <div class="bud-chart">
         <div class="bud-chart-main">
           <div class="bud-chartwrap">
@@ -303,7 +328,7 @@ export function renderBudget() {
         <span class="bud-lbl">${t("budget.overrideIncome")}</span>
         <span class="bud-ovr">
           <button id="budUseSalary" class="bud-reset${b.incomeOverride == null ? " hide" : ""}" type="button" title="${t("budget.useSalaryAgain")}">${t("budget.useSalary")}</button>
-          <input id="budOverride" class="bud-input num" type="text" inputmode="decimal" value="${b.incomeOverride == null ? "" : fmtNum(b.incomeOverride)}" placeholder="${t("budget.autoPh", { amount: money(auto) })}" aria-label="${t("budget.overrideIncome")}">
+          <input id="budOverride" class="bud-input num" type="text" inputmode="decimal" value="${b.incomeOverride == null ? "" : fmtPlain(b.incomeOverride)}" placeholder="${t("budget.autoPh", { amount: money(auto) })}" aria-label="${t("budget.overrideIncome")}">
         </span>
       </div>`}
       <!-- Two explicit cells: the title and its explanation on the left, the switch on the
@@ -342,7 +367,11 @@ export function renderBudget() {
     /* parseNum, like every other money field in this app. A type=number input invalidates
        "5.740,50" and hands back an empty string, so a German reader retyping the figure the
        screen had just printed set it to zero, silently. */
-    b.incomeOverride = v === "" ? null : Math.max(0, parseNum(v) || 0);
+    const got = v === "" ? null : parseNum(v);
+    /* A lone "-" parses to nothing, and `|| 0` turned that into an override of zero — income
+       £0, Left over minus the whole budget, and the field still showing a minus sign. */
+    b.incomeOverride = got == null ? null : Math.max(0, got);
+    if (got != null && got < 0) ev.target.value = fmtPlain(b.incomeOverride);
     scheduleSync(); refreshTotals();
   };
   // Explicit "use salary": clear the override and revert the field to auto, in place.
@@ -358,7 +387,12 @@ export function renderBudget() {
   });
   // Amount edits update in place (focus kept); category changes move the card → full re-render.
   host.querySelectorAll(".bud-exp-amt").forEach((el) => {
-    el.oninput = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { e.amount = Math.max(0, parseNum(ev.target.value) || 0); scheduleSync(); refreshTotals(); } };
+    el.oninput = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { /* Written back, not only stored. A silent clamp left the box reading "-50" while the
+           ledger held 0, and pressing Done then rendered the row blank — the figure typed
+           was gone with nothing said. */
+        const got = parseNum(ev.target.value);
+        e.amount = Math.max(0, got || 0);
+        if (got != null && got < 0) ev.target.value = fmtPlain(e.amount); scheduleSync(); refreshTotals(); } };
   });
   host.querySelectorAll(".bud-exp-cat").forEach((el) => {
     el.onchange = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { e.group = ev.target.value; scheduleSync(); renderBudget(); } };
@@ -374,27 +408,45 @@ export function renderBudget() {
      the input stayed blank over a category that still had its name; and typing a name that
      already existed merged the two for good — two identical cards, each listing the same
      rows, each headed the same total, the list summing to twice the ring, and no undo. */
+  /* `change` on a text input fires on blur too, so committing the rename re-rendered and
+     `budRefocus` then dragged the reader back into the field they had just tabbed away from —
+     the one way out of the field was Escape. Enter asks for the field back; a blur does not. */
+  let renameByEnter = false;
+  items.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" && ev.target.classList.contains("grpname")) renameByEnter = true;
+  });
   items.addEventListener("change", (ev) => {
+    const byEnter = renameByEnter; renameByEnter = false;
     if (!ev.target.classList.contains("grpname")) return;
     const was = ev.target.dataset.grp, nw = ev.target.value.trim();
     if (nw === was) { ev.target.value = was; return; }
     if (!nw) { toast(t("common.categoryNeedsName")); ev.target.value = was; return; }
+    if (sameCat(nw, t("budget.uncategorized"))) { toast(t("common.categoryExists", { name: nw })); ev.target.value = was; return; }
     if (budgetCategoryNames().some((g) => g !== was && sameCat(g, nw))) { toast(t("common.categoryExists", { name: nw })); ev.target.value = was; return; }
     renameBudgetCategory(was, nw); scheduleSync(); renderBudget();
-    budRefocus(`input.grpname[data-grp="${CSS.escape(nw)}"]`);
+    if (byEnter) budRefocus(`input.grpname[data-grp="${CSS.escape(nw)}"]`);
   });
   items.addEventListener("click", (ev) => {
     const gd = ev.target.closest("[data-grpdel]");
     if (gd) {
       const g = gd.dataset.grpdel, n = budgetCategoryUsage(g);
-      if (n === 0 || confirm(t("budget.removeCategoryConfirm", { name: g, count: n }))) { removeBudgetCategory(g); scheduleSync(); renderBudget(); budRefocus("#budAddCat"); }
+      if (n === 0 || confirm(t("budget.removeCategoryConfirm", { name: g, count: n }))) {
+        /* Land on the category that moved up into this one's place, or the one above it if
+           this was the last — not on the Add button past the whole list. */
+        const names = budgetCategoryNames(), i = names.indexOf(g);
+        const near = (k) => (names[k] ? `input.grpname[data-grp="${CSS.escape(names[k])}"]` : null);
+        removeBudgetCategory(g); scheduleSync(); renderBudget();
+        budRefocus(near(i + 1), near(i - 1), "#budAddCat");
+      }
       return;
     }
     const del = ev.target.closest(".bud-exp-del");
     if (del) {
       const row = b.expenses.find((x) => x.id === del.dataset.id);
       if (row && !confirm(t("budget.removeExpenseConfirm", { name: row.name || t("budget.thisExpense") }))) return;
-      b.expenses = b.expenses.filter((x) => x.id !== del.dataset.id); scheduleSync(); renderBudget(); budRefocus("#budAddExp");
+      const after = b.expenses[b.expenses.findIndex((x) => x.id === del.dataset.id) + 1];
+      b.expenses = b.expenses.filter((x) => x.id !== del.dataset.id); scheduleSync(); renderBudget();
+      budRefocus(after ? `.bud-exp-name[data-id="${CSS.escape(after.id)}"]` : null, "#budAddExp");
     }
   });
 
