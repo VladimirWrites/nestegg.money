@@ -219,6 +219,19 @@ const salScroller = (host) => {
      there, so both of these used to read and write the scrollTop of a hidden element. */
   return document.scrollingElement || document.documentElement;
 };
+/* Give focus back to the equivalent control after a re-render.
+ *
+ * Every fold, rename, delete and person switch on this screen rebuilds its list with
+ * innerHTML, which destroys whatever the reader had just activated — so focus landed on
+ * <body> and a keyboard reader had to tab from the top of the document to get back. The
+ * element is found again by the attribute that identifies it. */
+function salRefocus(host, selector) {
+  setTimeout(() => {
+    const el = host && host.querySelector ? host.querySelector(selector) : null;
+    if (el && !el.closest("[inert]")) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+  }, 0);
+}
+
 function salKeepScroll(host, render) {
   const box = salScroller(host);
   const top = box ? box.scrollTop : 0;
@@ -391,7 +404,13 @@ export function renderSalary() {
     if (multi) row += `<td class="num salgsep">${hh ? money(hh) : "—"}</td>`;
     body += row + `</tr>`;
   });
-  host.innerHTML = `<div class="saltable-scroll" role="region" tabindex="0" aria-label="${t("salary.tableAria")}"><table class="saltab rotab"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  /* A month shows what was actually paid, in the currency it was paid in; the year and
+     household totals are converted to the display currency. On a EUR-only ledger the two are
+     the same number and nothing needs saying. The moment they are not, the column jumps from
+     £3,000 to €41,760 with no explanation, so the table says which is which. */
+  const mixed = people.some((p) => (p.entries || []).some((e) => e.amount && salEccy(p, e) !== state.baseCcy));
+  const note = mixed ? `<p class="salconvnote">${t("salary.convNote", { ccy: state.baseCcy })}</p>` : "";
+  host.innerHTML = `<div class="saltable-scroll" role="region" tabindex="0" aria-label="${t("salary.tableAria")}"><table class="saltab rotab"><thead>${head}</thead><tbody>${body}</tbody></table></div>${note}`;
   host.style.setProperty("--salcols", String(people.length + (multi ? 1 : 0)));
   salMarkCut(host.querySelector(".saltable-scroll"));
 
@@ -408,9 +427,13 @@ export function renderSalary() {
      than a list of years you can open. */
   host.querySelectorAll("[data-ytoggle]").forEach((tr) => {
     const y = tr.getAttribute("data-ytoggle");
-    tr.onclick = () => toggleYear(y);
+    /* Put focus back on the year that was just folded. The toggle rebuilds the table, which
+       destroys the row the reader pressed Enter on — so the next Enter went nowhere and
+       closing it again meant tabbing from the top of the document. */
+    const go = () => { toggleYear(y); salRefocus(host, `[data-ytoggle="${y}"]`); };
+    tr.onclick = go;
     tr.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleYear(y); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
     };
   });
 }
@@ -529,7 +552,7 @@ function renderSalaryEdit() {
       curY = y;
       if (!openEditSeeded) { openEditSeeded = true; openEditYears.add(y); }
       const yOpen = openEditYears.has(y);
-      let yr = `<tr class="saly${yOpen ? " is-open" : ""}" data-yedit="${y}" role="button" tabindex="0" aria-expanded="${yOpen}"><td><span class="salytog"><svg class="salychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>${y}<em class="salytot-lbl">${t("salary.yearTotalLbl")}</em></span></td>`;
+      let yr = `<tr class="saly${yOpen ? " is-open" : ""}" data-yedit="${y}" role="button" tabindex="0" aria-expanded="${yOpen}"><td><span class="salytog"><svg class="salychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>${y}</span></td>`;
       /* Under the Net column, not spanning all three: as one cell across net, currency and
          note it right-aligned to the note's edge, which on a desktop left the year's total
          250px from the figures it adds up. */
@@ -650,7 +673,10 @@ function renderSalaryEdit() {
       row.replaceChildren(inp);
       inp.focus();
       /* Leaving the field puts the row back, with the switch above it already renamed. */
-      inp.onblur = () => salKeepScroll(host, renderSalaryEdit);
+      /* After the click that caused the blur, not during it: rebuilding here detached the
+       element the mousedown had started on, so no click was ever dispatched and the first
+       press after a rename did nothing. */
+    inp.onblur = () => setTimeout(() => salKeepScroll(host, renderSalaryEdit), 0);
     };
   });
   host.querySelectorAll("[data-addnote]").forEach((btn) => {
@@ -672,6 +698,7 @@ function renderSalaryEdit() {
       const y = el.getAttribute("data-yedit");
       if (openEditYears.has(y)) openEditYears.delete(y); else openEditYears.add(y);
       salKeepScroll(host, renderSalaryEdit);
+      salRefocus(host, `[data-yedit="${y}"]`);
     };
     el.onclick = toggle;
     /* A table row is not a button, so it needs the keys a button would have given it. */

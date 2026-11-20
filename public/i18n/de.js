@@ -295,6 +295,7 @@ export default {
     nothingParsed: "Nichts erkannt — fügen Sie die Spalten Monat + Betrag ein",
     emptyTable: "Noch keine Gehaltshistorie. Tippen Sie auf „Gehälter bearbeiten“, um Personen und Monate hinzuzufügen, oder importieren Sie aus einer Tabelle.",
     household: "Haushalt",
+    convNote: "Jahres- und Haushaltssummen sind in {ccy} umgerechnet; jeder Monat zeigt die Währung, in der gezahlt wurde.",
     emptyEdit: "Noch niemand. Fügen Sie sich selbst hinzu — und Ihre Partnerin oder Ihren Partner, wenn Sie ein gemeinsames Kontobuch führen — und dann die Monate, die Sie ausfüllen möchten.",
     whoAria: "Wessen Gehälter",
     rename: "Umbenennen",

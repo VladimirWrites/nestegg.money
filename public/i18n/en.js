@@ -293,6 +293,7 @@ export default {
     nothingParsed: "Nothing parsed — paste Month + amount columns",
     emptyTable: "No salary history yet. Tap “Edit salaries” to add people and months, or import from a spreadsheet.",
     household: "Household",
+    convNote: "Year and household totals are converted to {ccy}; each month shows the currency it was paid in.",
     emptyEdit: "No one yet. Add yourself — and your partner, if you share a ledger — then add the months you want to fill in.",
     whoAria: "Whose salaries",
     rename: "Rename",

@@ -681,7 +681,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    is fixed-layout and fits by construction; above it the table sizes itself from content —
    four people need about 1,236px in a 1,036px column — and clipped, the last person's
    money could not be reached at all. */
-@media(min-width:900px){.saltable-scroll{overflow:auto}}
+@media(min-width:900px){.saltable-scroll{overflow-x:auto;overflow-y:clip}}
 .saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
 .saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel-2);z-index:2}
@@ -2043,13 +2043,14 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 /* …which makes the box a scroll container at every width, so the editor's sticky headings
    resolve against it everywhere and both rows pin to its top. Tops measured against the
    page put 65px of dead band above the headings and hid the first month behind them. */
-/* Only where there is room for a self-scrolling box. Applied at every size it made a 270px
-   scroller inside a 420px landscape phone, with the last row sliced off at its edge and the
-   wheel going to the inner box first. */
-@media(min-width:900px) and (min-height:700px){
-  #salaryEditor .saltable-scroll{max-height:calc(100dvh - 150px)}
-}
-@media(min-width:900px){#salaryEditor .saltable-scroll{overflow:auto}}
+/* One vertical scroller, at every width.
+ *
+ * A self-scrolling table box inside a scrolling editor gave the reader two wheels and the
+ * code two scrollTops to confuse: it kept the outer one while the re-render reset the inner
+ * one, so folding a year threw them a hundred and fifty rows back to the top. The box
+ * scrolls sideways, because four people are wider than the column; the editor scrolls down,
+ * because it is the page. */
+#salaryEditor .saltable-scroll{max-height:none;overflow-x:auto;overflow-y:clip}
 #salaryEditor .saltab .salh1 th{top:0}
 #salaryEditor .saltab .salh2 th{top:48px}
 @media(max-width:899px){
@@ -2096,3 +2097,13 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
    beneath it showed through around its edges. */
 .salwho::before{content:"";position:absolute;inset:-10px -16px 0;background:var(--ink);z-index:-1}
 .seg.salwho{position:sticky;isolation:isolate}
+
+/* Both header rows pin to the top of the box they are in, which is the same box at every
+   width now. Offsets measured against the page put a dead band above them and hid the first
+   row behind them. */
+.saltab .salh1 th{top:0}
+.saltab .salh2 th{top:48px}
+@media(max-width:899px){#salaryEditor .saltab .salh2 th{top:0}}
+.saltab.rotab thead th{top:0}
+/* Said once, under the table, and only when a ledger actually mixes currencies. */
+.salconvnote{font-size:12px;color:var(--dim);line-height:1.5;margin:8px 2px 0;max-width:62ch}
