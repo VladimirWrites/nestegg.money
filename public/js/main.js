@@ -7,7 +7,7 @@ import { $, toast, downloadBlob, isIOSUserAgent, isStandalone, keepNumberLocale 
 import { scheduleSync, flushSync, autoRefresh, setDataListener, deleteVault, LS } from "./io/storage.js";
 import { clearKeys } from "./io/crypto.js";
 import { renderAll } from "./ui/charts.js";
-import { renderEntries } from "./ui/networth.js";
+import { renderEntries, dismissYearModal } from "./ui/networth.js";
 import { drawSalaryChart } from "./ui/salary.js";
 import { boot, setDisplayCcy, showView } from "./ui/gate.js";
 import { initHistory } from "./ui/history.js";
@@ -108,6 +108,10 @@ document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   const im = $("infoModal"); if (im && !im.classList.contains("hide")) return; // the info modal handles its own Esc
   const dm = $("dayModal"); if (dm && !dm.classList.contains("hide")) return; // so does the day breakdown
+  /* A dialog over an editor is what Escape means while it is up. Without this, Escape with
+     "Move this year" open shut the year editor behind it and left the grid on screen over the
+     wrong screen, every tile in it inert. */
+  if (dismissYearModal()) return;
   closeTopEditor();
 });
 

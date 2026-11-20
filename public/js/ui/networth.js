@@ -122,6 +122,7 @@ export function renderEntries() {
 
 $("years").addEventListener("click", (e) => { const h = e.target.closest("[data-open]"); if (h) openYearEditor(+h.dataset.open); });
 $("edBack").onclick = () => { scheduleSync(); closeYearEditor(); };
+$("edDone").onclick = () => $("edBack").click();
 /* Moving a snapshot to another year.
 
    The year is not a label on the record — it is the key the sync merge files it under, so two
@@ -168,7 +169,11 @@ function renderYearGrid() {
     const isNow = y === sn.year, isTaken = taken.has(y);
     const cls = "yearopt" + (isNow ? " is-now" : "") + (isTaken ? " is-taken" : "");
     const title = isTaken ? t("yeared.yearTaken", { year: y }) : isNow ? t("yeared.yearNow", { year: y }) : "";
-    return `<button type="button" class="${cls}" data-year="${y}"${isTaken ? " disabled" : ""}${title ? ` title="${title}"` : ""}${isNow ? ' aria-current="true"' : ""}>${y}</button>`;
+    /* A struck-through year says nothing on a phone, where there is no tooltip to hover, so
+       the reason is printed. The current year is disabled too: pressing the big highlighted
+       tile ran the whole move and toasted "Moved to 2026" without moving anything. */
+    const note = isTaken ? `<i>${t("yeared.inLedger")}</i>` : isNow ? `<i>${t("yeared.thisYear")}</i>` : "";
+    return `<button type="button" class="${cls}" data-year="${y}"${isTaken || isNow ? " disabled" : ""}${title ? ` title="${title}"` : ""}${isNow ? ' aria-current="true"' : ""}>${y}${note}</button>`;
   }).join("");
 }
 
@@ -180,6 +185,12 @@ function openYearModal() {
   if (now) now.scrollIntoView({ block: "center" });
 }
 const closeYearModal = () => $("yearModal").classList.add("hide");
+/* Escape and the system Back button both reach for "the editor" — which, with this dialog
+   open, shut the year editor underneath and left the year grid floating over the Net worth
+   screen with every tile in it dead, because the handler reads state.snapshots[edIdx] and
+   edIdx is now -1. The dialog is what Escape means while the dialog is up. */
+export const yearModalOpen = () => !$("yearModal").classList.contains("hide");
+export const dismissYearModal = () => { if (!yearModalOpen()) return false; closeYearModal(); return true; };
 
 $("edYearBtn").onclick = openYearModal;
 $("yearClose").onclick = closeYearModal;
@@ -213,8 +224,13 @@ $("edAdd").onclick = () => {
   scheduleSync(); renderEntries();
   focusNew($("edEntries").querySelector(`.rname[data-i="${sn.entries.length - 1}"]`));
 };
-$("edAddLongterm").onclick = () => { const a = newAsset(); openAssetEditor(a.id, true); };
-$("edAddLiability").onclick = () => { const a = newLiability(); openAssetEditor(a.id, true); };
+/* The open year goes with the press. Adding a property while looking at 2023 and finding it
+   in 2026 is not a subtlety: a new asset is dated today, and autoEntriesFor drops anything
+   owned from after a year's reference date, so it was absent from the year that added it and
+   that year's total never moved. */
+const openYear = () => (state.snapshots[edIdx] ? state.snapshots[edIdx].year : new Date().getFullYear());
+$("edAddLongterm").onclick = () => { const a = newAsset(openYear()); openAssetEditor(a.id, true); };
+$("edAddLiability").onclick = () => { const a = newLiability(openYear()); openAssetEditor(a.id, true); };
 $("edAddGroup").onclick = () => {
   const name = addCategory(t("common.newCategory"));
   scheduleSync(); renderEntries();
@@ -224,11 +240,8 @@ $("edCopyPrev").onclick = () => { const cur = state.snapshots[edIdx]; const prev
 
 $("edEntries").addEventListener("input", (e) => {
   const el = e.target, sn = state.snapshots[edIdx];
-  if (el.dataset.grp != null) {
-    const nw = el.value;
-    renameCategory(el.dataset.grp, nw); // global tag: rename in the list and across every year and asset
-    el.dataset.grp = nw; scheduleSync(); return;
-  }
+  // A category name is committed on change, not on input — see the change handler below.
+  if (el.dataset.grp != null) return;
   const i = +el.dataset.i, f = el.dataset.f; if (el.dataset.i == null || !f) return;
   const en = sn.entries[i];
   if (f === "value" || f === "shares") en[f] = parseFloat(el.value || 0);
@@ -250,8 +263,31 @@ $("edEntries").addEventListener("input", (e) => {
 
 $("edEntries").addEventListener("change", async (e) => {
   const el = e.target, f = el.dataset.f;
-  if (el.dataset.grp != null) { renderEntries(); return; }
-  if (f === "name") { renderEntries(); return; }
+  /* Renaming a category used to run on every keystroke, through a rename that retags by name
+     equality across every year and every asset, with no uniqueness check. Backspacing
+     "Groceries" into "Gro" and on into "" committed each of those as the global name; passing
+     through a name that already existed merged the two categories for good, and an empty one
+     left every tagged row both ungrouped and inside a nameless section. It is committed once,
+     when the reader has finished, and refused if it is blank or already taken. */
+  if (el.dataset.grp != null) {
+    const was = el.dataset.grp, now = el.value.trim();
+    if (now === was) { el.value = was; return; }
+    if (!now) { toast(t("net.categoryNeedsName")); el.value = was; return; }
+    if (groupNames().some((g) => g !== was && g === now)) { toast(t("net.categoryExists", { name: now })); el.value = was; return; }
+    renameCategory(was, now);   // the global tag, in the list and across every year and asset
+    scheduleSync(); renderEntries(); return;
+  }
+  /* A name does not change the shape of the list, and rebuilding it here destroyed whatever
+     the reader was already reaching for: `change` fires on blur, during the press that is on
+     its way to the value field or the ×, so the first tap after typing a name landed on an
+     element that no longer existed and did nothing. Only the colour can move, and that is
+     patched in place. */
+  if (f === "name") {
+    const sn2 = state.snapshots[edIdx], en2 = sn2 && sn2.entries[+el.dataset.i];
+    const dot = el.closest(".rcard") && el.closest(".rcard").querySelector(".dot");
+    if (dot && en2 && en2.kind !== "liability") dot.style.background = colorOf(seriesKey(en2), allNames());
+    return;
+  }
   if (f === "ticker" && el.value.trim()) {
     const sn = state.snapshots[edIdx], en = sn && sn.entries[+el.dataset.i], cy = new Date().getFullYear();
     if (!en) return;
@@ -275,7 +311,13 @@ $("edEntries").addEventListener("click", (e) => {
   const sn = state.snapshots[edIdx];
   const inf = e.target.closest("[data-info]"); if (inf) { openInfo(inf.dataset.info); return; }
   const ae = e.target.closest("[data-editasset]"); if (ae) { openAssetEditor(ae.dataset.editasset); return; }
-  if (e.target.dataset.del != null) { sn.entries.splice(+e.target.dataset.del, 1); scheduleSync(); renderEntries(); return; }
+  const del = e.target.closest("[data-del]");
+  if (del) {
+    const en = sn.entries[+del.dataset.del];
+    // One tap on a glyph in the corner of a row used to remove a balance outright.
+    if (en && !confirm(t("net.removeEntryConfirm", { name: en.name || t("net.thisRow") }))) return;
+    sn.entries.splice(+del.dataset.del, 1); scheduleSync(); renderEntries(); return;
+  }
   const gd = e.target.closest("[data-grpdel]");
   if (gd) {
     const g = gd.dataset.grpdel;

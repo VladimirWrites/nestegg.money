@@ -1541,3 +1541,146 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   /* The word itself is on screen here, so the dot's button is just the chip. */
   .saltab td.num .evtag{cursor:default;pointer-events:none}
 }
+
+/* ───────────────────────── the asset edit screens ─────────────────────────
+   Appended after everything it overrides, not before it. Three fixes on this screen have
+   already been written above the rules they were meant to beat and quietly done nothing. */
+
+/* The bar. A button inside a clipping, nowrap title had its right third cut away at 320px,
+   while a red "Delete year" beside it took two lines and grew the bar on every screen. The
+   year states itself and offers to move; delete went to the foot of the page. */
+.ed-title>*{flex:none}
+.ed-yearnow{display:inline-flex;align-items:center;gap:5px;min-height:38px;padding:4px 8px 4px 11px;
+  border:1px solid var(--line);border-radius:var(--r-pill);background:var(--panel-2);
+  color:var(--signal);font:inherit;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer;white-space:nowrap}
+.ed-yearnow:hover{border-color:var(--signal)}
+.ed-yearchev{width:14px;height:14px;color:var(--dim);flex:none}
+.ed-yearnow:hover .ed-yearchev{color:var(--signal)}
+/* The rarest and most destructive thing on the screen, said as a word at the end of it
+   rather than worn as a red pill in the bar at every scroll position. */
+.ed-danger,.acard-danger{margin-top:26px;display:flex}
+.acard-danger{margin-top:4px}
+.btn-quiet-danger{background:transparent;border-color:transparent;color:var(--danger);padding-left:0}
+.btn-quiet-danger:hover{border-color:var(--danger)}
+
+/* The answer, first. "Net value today" was the last line of the card — on a 320px phone with
+   a mortgage on it, 2,700px below the fold, at the same size as every label above it. */
+.ahero{display:flex;flex-direction:column;gap:3px;padding:2px 0 4px}
+.ahero .ah-k{font-size:12px;letter-spacing:.02em;color:var(--dim)}
+.ahero .ah-v{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:26px;font-weight:600;
+  letter-spacing:-.01em;color:var(--signal-lg);line-height:1.1}
+/* Money owed is not money held. The old markup asked for `.vval.liab` and no such rule was
+   ever written, so a debt was painted in the same amber as a positive net value. */
+.ahero .ah-v.liab{color:var(--danger)}
+.ahero .ah-sub{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+@media(min-width:620px){.ahero .ah-v{font-size:30px}}
+
+/* One stat shouting is emphasis; six is wallpaper. The computed figures are ink; the one
+   number the card exists for keeps the colour. */
+.pstat .v{color:var(--text)}
+.pstat .v.off{color:var(--accent)}
+.pstat .v.hilite{color:var(--signal)}
+.vsum .k,.pstat .k{font-size:11.5px;letter-spacing:.02em;text-transform:none}
+.psub{font-size:11.5px;letter-spacing:.02em;text-transform:none;color:var(--dim);flex-wrap:wrap}
+/* German's "+ hinzufügen" broke onto two lines inside a 44px pill and pushed past the box. */
+.psub .btn{white-space:nowrap;margin-left:auto}
+.yrsched-h,.psched summary{font-size:11.5px;letter-spacing:.02em;text-transform:none}
+.edlede{font-size:13px;max-width:62ch}
+
+/* A date and an amount, not a date and a sliver. `.exrow .fin{flex:1}` targeted the input;
+   the amount's input is inside a <span class="suffix"> that was never flexed, so the bare
+   date field absorbed the row and 40,000 showed as "40" in a 36px box. */
+.exrow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) 44px;gap:8px;align-items:center}
+.exrow>*{min-width:0}
+.exrow .fin{flex:1 1 auto;width:100%}
+.exrow .suffix{min-width:0}
+@media(max-width:420px){
+  .exrow{grid-template-columns:minmax(0,1fr) 44px;grid-template-areas:"date date" "amount del"}
+  .exrow>input[type="date"]{grid-area:date}
+  .exrow>.suffix{grid-area:amount}
+  .exrow>.rdel{grid-area:del}
+}
+
+/* Targets. 19x23px for a control that deletes a balance, against the 44px this same
+   stylesheet gives a year tile. */
+.rcard .rdel,.grpdel,.exrow .rdel{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0;flex:none}
+.rcard .rinfo{width:26px;height:26px;right:5px;font-size:13px}
+.rcard .rtkwrap .rtk{padding-right:38px}
+
+/* A symbol that stops mid-word cannot be told from a wrong one, and an <input> gives no
+   ellipsis to say so. "NASDAQ:MSFT" is eleven characters. */
+.rcard .rtk{width:15ch;font-family:var(--mono);letter-spacing:.01em}
+
+/* A long-term asset is a real holding, and a dashed border is this stylesheet's own mark for
+   an empty one. It is also the only route into the asset editor, so it is a button. */
+.rcard.auto{border-style:solid;background:var(--panel)}
+.autotag{font-size:11px;letter-spacing:.04em}
+
+/* The whole row form on a phone. Flex-wrap put the colour square on a line of its own, the
+   currency under a full-width value, and the × floating beside the category select aligned
+   to nothing — about 290px of height per holding, 2,800px for a year of them. */
+@media(max-width:899px){
+  #edEntries .rcard:not(.acard){
+    display:grid;grid-template-columns:10px minmax(0,1fr) 92px 44px;
+    grid-template-areas:"dot name name del" "kind kind kind kind" "val val ccy ccy" "cat cat cat cat" "conv conv conv conv" "hint hint hint hint";
+    align-items:center;gap:8px 10px;flex-wrap:nowrap}
+  #edEntries .rcard .dot{grid-area:dot}
+  #edEntries .rcard .rname{grid-area:name;flex:none;min-width:0;width:100%}
+  #edEntries .rcard .rname.ro{grid-area:name}
+  #edEntries .rcard .rdel{grid-area:del}
+  #edEntries .rcard .rkind{grid-area:kind;width:100%}
+  #edEntries .rcard .rval,#edEntries .rcard .rsh{grid-area:val;width:100%}
+  #edEntries .rcard .rtkwrap,#edEntries .rcard select[data-f="ccy"]{grid-area:ccy;width:100%}
+  #edEntries .rcard .rtkwrap .rtk{width:100%}
+  #edEntries .rcard .rcat{grid-area:cat;width:100%;max-width:none}
+  #edEntries .rcard .rconv{grid-area:conv;text-align:right;min-width:0;flex:none}
+  #edEntries .rcard .rhint{grid-area:hint}
+  #edEntries .rcard.auto{grid-template-areas:"dot name tag chev" "conv conv conv conv"}
+  #edEntries .rcard.auto .autotag{grid-area:tag;justify-self:end}
+  #edEntries .rcard.auto .autoedit{grid-area:chev;justify-self:end}
+  /* 16px is the threshold at which iOS stops zooming the page on focus, which base.css
+     states as a rule and both of these editors broke in nine different places. */
+  #edEntries .rcard input,#edEntries .rcard select,#edEntries .grpname,
+  #assetList .fin,#assetList .fld select,#assetList .rname{font-size:16px}
+  #edEntries .rcard input,#edEntries .rcard select{min-height:44px}
+}
+
+/* The year-by-year table is the loan's whole story, and on a phone it told a third of it:
+   Year, Paid off and Interest, with "Extra" and "At year end" clipped off the right with no
+   scrollbar, no fade and nothing to say they were there. The balance walking down to zero is
+   the point of the table, and 2024's "paid off €62,430" is a misleading figure without the
+   €40,000 of it that was a lump sum. So on a narrow screen the table keeps the year, what
+   came off and where it ended, and the lump sum is said under the year. */
+@media(max-width:560px){
+  .yrtab th:nth-child(3),.yrtab td:nth-child(3),
+  .yrtab th:nth-child(4),.yrtab td:nth-child(4){display:none}
+  .yrtab td,.yrtab th{padding-left:8px;padding-right:8px}
+  .yrsched .schscroll{border:0;border-radius:0}
+}
+/* Why eight of eighteen rows are in italics. It was explained only inside the monthly
+   schedule, behind a closed disclosure, around row 116 of 204. */
+.yrsched-note{font-size:11.5px;color:var(--dim);padding:8px 0 0;line-height:1.5}
+.yrsched-note i{font-style:italic}
+/* `white-space:normal`: the cell inherits nowrap from .schtab td, and one year carrying a
+   lump sum stretched the whole Year column to 115px of a 232px table — which is why the
+   balance column was clipped off the right edge of a phone. */
+.yr-extra{display:none;white-space:normal;font-style:normal;font-weight:400;font-size:10.5px;color:var(--accent);letter-spacing:.01em}
+@media(max-width:560px){.yr-extra{display:block}}
+
+/* The kind of holding is the least-read control in the row, and amber made it the loudest
+   thing in it — louder than the figure and louder than the name. */
+.rcard .rkind{color:var(--text)}
+/* A chevron, not a pencil: this card opens another screen, it does not edit in place. */
+.autoedit{width:16px;height:16px}
+/* A toggle that says what it does, where the reader is deciding — rather than in a paragraph
+   at the top naming it by a word that is not on the control. */
+.toggles{flex-direction:column;gap:12px}
+.tgl{align-items:flex-start;gap:11px}
+.tgl input{width:22px;height:22px;flex:none;margin-top:1px}
+.tgl>span{display:flex;flex-direction:column;gap:2px;font-size:14.5px}
+.tgl>span>i{font-style:normal;font-size:12px;color:var(--dim);line-height:1.45}
+/* Three columns in 232px of phone. Cents are gone from this table at every width (a thirty-row
+   balance is read for its shape, not reconciled), and the remaining padding goes here. */
+@media(max-width:560px){
+  .schtab.yrtab td,.yrtab th{font-size:11.5px;padding-left:6px;padding-right:6px}
+}

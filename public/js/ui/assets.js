@@ -4,7 +4,7 @@ import { $, toast, flash, focusNew } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
-import { money, moneyIn, esc, convTo } from "../domain/money.js";
+import { money, moneyIn, moneyIn0, esc, convTo } from "../domain/money.js";
 import { fmtMY, fmtMonths, parseDate } from "../domain/dates.js";
 import { buildSchedule, loanTerms, outstandingAt } from "../domain/loan.js";
 import { assetGrossAt, assetNetAt } from "../domain/asset-value.js";
@@ -17,10 +17,43 @@ import { scheduleSync } from "../io/storage.js";
 import { t, getLocale } from "../i18n.js";
 import { pushEditor, popEditor } from "./history.js";
 
+// The two helpers below carry the interface language into the pure date module.
+const monthUnits = () => ({ yr: t("asset.yrShort"), mo: t("asset.moShort") });
+const my = (d) => fmtMY(d, getLocale());
 const ymdDay = (d) => d.toLocaleDateString(getLocale(), { day: "numeric", month: "short", year: "numeric" }); // day-precision sibling of fmtMY
-const todayISO = () => new Date().toISOString().slice(0, 10);
+
+/* Today where the reader is, not where UTC is.
+ *
+ * `toISOString()` is UTC, and parseDate reads a bare YYYY-MM-DD as local — so east of UTC in
+ * the small hours, and west of it in the evening, a thing bought today was dated yesterday or
+ * tomorrow. A date one day in the future drops the asset out of the current year entirely
+ * until midnight, because autoEntriesFor skips anything owned from after the year's reference
+ * date. */
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+/* When a thing added from a given year should be said to have been owned from.
+ *
+ * Adding a property while looking at 2023 and having it appear in 2026 is not a subtlety: the
+ * year you are in is the whole context of the press. Anything before this year starts on the
+ * 1st of January of it; this year and anything later start today, because a snapshot cannot be
+ * valued in the future. */
+export function ownedFromFor(year) {
+  const now = new Date().getFullYear();
+  return Number.isFinite(year) && year < now ? `${year}-01-01` : todayISO();
+}
 
 let curAssetId = null; // the single long-term asset the editor is focused on
+
+/* Whether the month-by-month schedule is open.
+ *
+ * The computed block is rebuilt from scratch on every keystroke in a loan field, and a
+ * <details> rebuilt without this is a <details> closed. So "open the schedule, nudge the rate,
+ * see what moved" — the one reason to open it at all — shut the schedule on the first key and
+ * sent the reader back down two hundred rows to reopen it. */
+let schedOpen = false;
 
 export function openAssetEditor(id, focusName) {
   curAssetId = id;
@@ -50,7 +83,7 @@ function loanComputedHTML(a) {
   const fixedUntil = L.fixedUntil ? parseDate(L.fixedUntil) : null;
   const balAtChange = fixedUntil ? outstandingAt(L, fixedUntil) : null; // amount left when the rate resets
   const calcStat = byPayment
-    ? `<div class="pstat"><span class="k">${t("asset.termCalc")}</span><span class="v num">${fmtMonths(n)}</span></div>`
+    ? `<div class="pstat"><span class="k">${t("asset.termCalc")}</span><span class="v num">${fmtMonths(n, monthUnits())}</span></div>`
     : `<div class="pstat"><span class="k">${t("asset.monthlyPayment")}</span><span class="v num">${M ? moneyIn(M, a.ccy) : "—"}</span></div>`;
   /* What a calendar year did to the debt.
    *
@@ -90,13 +123,19 @@ function loanComputedHTML(a) {
      is a document, and this is a shape — the interest falling away, the principal taking over,
      the balance walking down to nothing. Shown open, above the months, because it is the view
      somebody wants first and the month-by-month detail is what they open afterwards. */
+  const anyEst = [...yearly.values()].some((g) => g.estimated);
   const yearTable = `<div class="yrsched">
     <div class="yrsched-h">${t("asset.byYear")}</div>
     <div class="schscroll"><table class="schtab yrtab"><thead><tr><th>${t("asset.thYear")}</th><th>${t("asset.thPaidOff")}</th><th>${t("asset.thInterest")}</th><th>${t("asset.thExtra")}</th><th>${t("asset.thYearEnd")}</th></tr></thead><tbody>${[...yearly.keys()].map((y) => {
       const g = yearly.get(y);
       const cls = [g.estimated ? "est" : "", y === nowYear ? "now" : ""].filter(Boolean).join(" ");
-      return `<tr class="${cls}"><td>${y}</td><td class="num off">${moneyIn(g.principal + g.extra, a.ccy)}</td><td class="num dim">${moneyIn(g.interest, a.ccy)}</td><td class="num">${g.extra > 0 ? moneyIn(g.extra, a.ccy) : "—"}</td><td class="num">${moneyIn(g.balance, a.ccy)}</td></tr>`;
+      /* The lump sum is repeated under the year because the Extra column is dropped on a
+         narrow screen, and "paid off €62,430" with €40,000 of it invisible is not a layout
+         problem — it is a wrong number. */
+      const extraNote = g.extra > 0 ? `<i class="yr-extra">${t("asset.inclExtra", { amount: moneyIn0(g.extra, a.ccy) })}</i>` : "";
+      return `<tr class="${cls}"><td>${y}${extraNote}</td><td class="num off">${moneyIn0(g.principal + g.extra, a.ccy)}</td><td class="num dim">${moneyIn0(g.interest, a.ccy)}</td><td class="num">${g.extra > 0 ? moneyIn0(g.extra, a.ccy) : "—"}</td><td class="num">${moneyIn0(g.balance, a.ccy)}</td></tr>`;
     }).join("")}</tbody></table></div>
+    ${anyEst ? `<div class="yrsched-note">${t("asset.estNote", { date: my(fixedUntil), rate: L.rate })}</div>` : ""}
   </div>`;
 
   let divDone = false;
@@ -105,23 +144,23 @@ function loanComputedHTML(a) {
     let pre = "";
     const y = r.date.getFullYear();
     if (y !== curYear) { curYear = y; pre += yearRow(y); }
-    if (!divDone && r.estimated) { divDone = true; pre += `<tr class="fxdiv"><td colspan="6">${t("asset.fixedEnds", { date: fmtMY(fixedUntil), amount: moneyIn(balAtChange, a.ccy), rate: L.rate })}</td></tr>`; }
+    if (!divDone && r.estimated) { divDone = true; pre += `<tr class="fxdiv"><td colspan="6">${t("asset.fixedEnds", { date: my(fixedUntil), amount: moneyIn(balAtChange, a.ccy), rate: L.rate })}</td></tr>`; }
     const cls = r.estimated ? " est" : "";
     return pre + (r.type === "extra"
       ? `<tr class="exline${cls}"><td>${ymdDay(r.date)}</td><td colspan="3">${t("asset.additionalPayment")}</td><td class="num">${moneyIn(r.extra, a.ccy)}</td><td class="num">${moneyIn(r.balance, a.ccy)}</td></tr>`
-      : `<tr class="${cls.trim()}"><td>${fmtMY(r.date)}</td><td class="num">${moneyIn(r.payment, a.ccy)}</td><td class="num">${moneyIn(r.interest, a.ccy)}</td><td class="num">${moneyIn(r.principal, a.ccy)}</td><td class="num">—</td><td class="num">${moneyIn(r.balance, a.ccy)}</td></tr>`);
+      : `<tr class="${cls.trim()}"><td>${my(r.date)}</td><td class="num">${moneyIn(r.payment, a.ccy)}</td><td class="num">${moneyIn(r.interest, a.ccy)}</td><td class="num">${moneyIn(r.principal, a.ccy)}</td><td class="num">—</td><td class="num">${moneyIn(r.balance, a.ccy)}</td></tr>`);
   }).join("");
   return `${tooLow ? `<div class="loanwarn">${t("asset.paymentTooLow", { amount: moneyIn((+L.amount || 0) * (+L.rate || 0) / 100 / 12, a.ccy) })}</div>` : ""}
     <div class="pstats">
       ${calcStat}
-      <div class="pstat"><span class="k">${t("asset.balanceToday")}</span><span class="v num">${moneyIn(bal, a.ccy)}</span></div>
+      ${a.liability ? "" : `<div class="pstat"><span class="k">${t("asset.balanceToday")}</span><span class="v num">${moneyIn(bal, a.ccy)}</span></div>`}
       ${inYear ? `<div class="pstat"><span class="k">${t("asset.paidOffIn", { year: nowYear })}</span><span class="v num off">${moneyIn(ytd, a.ccy)}</span></div>` : ""}
       ${balAtChange != null ? `<div class="pstat"><span class="k">${t("asset.leftAtRateChange")}</span><span class="v num hilite">${moneyIn(balAtChange, a.ccy)}</span></div>` : ""}
-      <div class="pstat"><span class="k">${t("asset.payoff")}</span><span class="v num">${payoff ? fmtMY(payoff) : "—"}</span></div>
+      <div class="pstat"><span class="k">${t("asset.payoff")}</span><span class="v num">${payoff ? my(payoff) : "—"}</span></div>
       <div class="pstat"><span class="k">${t("asset.totalInterest")}</span><span class="v num">${moneyIn(totInt, a.ccy)}</span></div>
     </div>
     ${yearly.size ? yearTable : ""}
-    ${payRows.length ? `<details class="psched"><summary>${t("asset.schedule", { count: payRows.length })}</summary>
+    ${payRows.length ? `<details class="psched"${schedOpen ? " open" : ""}><summary>${t("asset.schedule", { count: payRows.length })}</summary>
       <div class="schscroll"><table class="schtab"><thead><tr><th>${t("asset.thWhen")}</th><th>${t("asset.thPayment")}</th><th>${t("asset.thInterest")}</th><th>${t("asset.thPrincipal")}</th><th>${t("asset.thExtra")}</th><th>${t("asset.thBalance")}</th></tr></thead><tbody>${rows}</tbody></table></div></details>` : ""}`;
 }
 
@@ -132,7 +171,6 @@ function assetCardHTML(a) {
   let depBlock = "", loanBlock = "";
   if (a.depreciates) {
     depBlock = `<div class="frow">
-      <label class="fld">${t("asset.acquired")}<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label>
       <label class="fld">${t("asset.direction")}<select data-aid="${a.id}" data-f="up"><option value="down" ${a.up ? "" : "selected"}>${t("asset.depDown")}</option><option value="up" ${a.up ? "selected" : ""}>${t("asset.appUp")}</option></select></label>
       <label class="fld">${t("asset.changeYr")}<span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${+(a.rate * 100).toFixed(2)}" data-aid="${a.id}" data-f="rate"><i>%</i></span></label>
     </div>`;
@@ -140,50 +178,62 @@ function assetCardHTML(a) {
   if (a.loan) {
     const L = a.loan, byPayment = L.mode === "payment";
     const termField = byPayment
-      ? `<label class="fld">${t("asset.monthlyPayment")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.payment}" data-aid="${a.id}" data-lf="payment"></label>`
-      : `<label class="fld">${t("asset.term")}<span class="suffix"><input class="fin num" type="number" step="any" inputmode="numeric" value="${L.termYears}" data-aid="${a.id}" data-lf="termYears"><i>yr</i></span></label>`;
+      ? `<label class="fld">${t("asset.monthlyPayment")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.payment ? L.payment : ""}" placeholder="0" data-aid="${a.id}" data-lf="payment"></label>`
+      : `<label class="fld">${t("asset.term")}<span class="suffix"><input class="fin num" type="number" step="any" inputmode="numeric" value="${L.termYears}" data-aid="${a.id}" data-lf="termYears"><i>${t("asset.yrShort")}</i></span></label>`;
     const extras = (L.extra || []).map((x) => `<div class="exrow">
         <input type="date" class="fin" value="${esc(x.date)}" data-aid="${a.id}" data-eid="${x.id}" data-ef="date">
         <span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${x.amount || ""}" data-aid="${a.id}" data-eid="${x.id}" data-ef="amount" placeholder="${t("asset.amountPh")}"></span>
         <button class="rdel" data-extradel="${x.id}" data-aid="${a.id}" title="${t("asset.removePayment")}">×</button></div>`).join("");
     loanBlock = `<div class="loanbox">
       <div class="frow">
-        <label class="fld">${t("asset.loanAmount")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.amount}" data-aid="${a.id}" data-lf="amount"></label>
-        <label class="fld">${t("asset.interestYr")}<span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${L.rate}" data-aid="${a.id}" data-lf="rate"><i>%</i></span></label>
+        <label class="fld">${t("asset.loanAmount")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.amount ? L.amount : ""}" placeholder="0" data-aid="${a.id}" data-lf="amount"></label>
+        <label class="fld">${t("asset.interestYr")}<span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${L.rate ? L.rate : ""}" placeholder="0" data-aid="${a.id}" data-lf="rate"><i>%</i></span></label>
         <label class="fld">${t("asset.setBy")}<select data-aid="${a.id}" data-lf="mode"><option value="term" ${byPayment ? "" : "selected"}>${t("asset.term")}</option><option value="payment" ${byPayment ? "selected" : ""}>${t("asset.monthlyPayment")}</option></select></label>
         ${termField}
         <label class="fld">${t("asset.start")}<input class="fin" type="date" value="${esc(L.startDate)}" data-aid="${a.id}" data-lf="startDate"></label>
         <label class="fld">${t("asset.fixedUntil")}<input class="fin" type="date" value="${esc(L.fixedUntil || "")}" data-aid="${a.id}" data-lf="fixedUntil"></label>
       </div>
-      <div class="exwrap"><div class="psub">${t("asset.extraPayments")}<button class="btn btn-sm" data-extraadd="${a.id}">${t("asset.addExtra")}</button></div>${extras || `<div class="exhint">${t("asset.extraHint")}</div>`}</div>
-      <div class="lcomp">${loanComputedHTML(a)}</div>
+      <div class="exwrap"><div class="psub"><span>${t("asset.extraPayments")}</span><button class="btn btn-sm" data-extraadd="${a.id}">${t("asset.addExtra")}</button></div>${extras || `<div class="exhint">${t("asset.extraHint")}</div>`}</div>
+      <!-- Six labels over four dashes and two zeroes is furniture, not an answer. Until there
+           is an amount there is nothing to compute, and the screen says what it needs. -->
+      <div class="lcomp">${+L.amount > 0 ? loanComputedHTML(a) : `<div class="exhint">${t("asset.loanNeedsAmount")}</div>`}</div>
     </div>`;
   }
   const ccySel = `<select data-aid="${a.id}" data-f="ccy">${CCYS.map((x) => `<option ${x === a.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>`;
   const catSel = categorySelectHTML("", `data-aid="${a.id}" data-f="group"`, a.group, groupNames());
   if (a.liability) {
     return `<div class="rcard acard liabcard" id="acard-${a.id}" data-aid="${a.id}">
-      <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="${t("net.liabilityName")}">
-        <button class="rdel" data-adel="${a.id}" title="${t("common.remove")}">×</button></div>
+      <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="${t("net.liabilityName")}" aria-label="${t("net.liabilityName")}"></div>
+      <div class="ahero is-liab"><span class="ah-k">${t("asset.owedToday")}</span><span class="ah-v num liab">${bal > 0.005 ? "− " + moneyIn(bal, a.ccy) : moneyIn(0, a.ccy)}${inBase(-bal)}</span></div>
       <div class="frow"><label class="fld">${t("asset.currency")}${ccySel}</label><label class="fld">${t("common.category")}${catSel}</label></div>
       ${loanBlock}
-      <div class="vsum"><span class="k">${t("asset.owedToday")}</span><span class="vval num liab">${bal > 0.005 ? "− " + moneyIn(bal, a.ccy) : moneyIn(0, a.ccy)}${inBase(-bal)}</span></div>
+      <div class="acard-danger"><button class="btn btn-sm btn-quiet-danger" data-adel="${a.id}">${t("asset.removeLiability")}</button></div>
     </div>`;
   }
+  /* The answer, at the top. "Net value today" used to be the last line of the card, which on
+     a 320px phone with a mortgage on it is 2,700px below the fold, set at the same size as
+     every label above it. */
+  const hero = `<div class="ahero"><span class="ah-k">${t("asset.netValueToday")}</span><span class="ah-v num">${moneyIn(net, a.ccy)}${inBase(net)}</span>${a.loan && +a.loan.amount > 0 ? `<span class="ah-sub">${t("asset.worthOwes", { worth: moneyIn(gross, a.ccy), owed: moneyIn(bal, a.ccy) })}</span>` : ""}</div>`;
   return `<div class="rcard acard" id="acard-${a.id}" data-aid="${a.id}">
-    <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="${t("net.assetName")}">
-      <button class="rdel" data-adel="${a.id}" title="${t("asset.removeAsset")}">×</button></div>
+    <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="${t("net.assetName")}" aria-label="${t("net.assetName")}"></div>
+    ${hero}
     <div class="frow">
-      <label class="fld">${a.depreciates ? t("asset.startingValue") : t("asset.value")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${a.value}" data-aid="${a.id}" data-f="value"></label>
+      <label class="fld">${a.depreciates ? t("asset.startingValue") : t("asset.value")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${a.value ? a.value : ""}" placeholder="0" data-aid="${a.id}" data-f="value"></label>
       <label class="fld">${t("asset.currency")}${ccySel}</label>
       <label class="fld">${t("common.category")}${catSel}</label>
+      <!-- On every asset, not only a depreciating one. This date decides which years the
+           thing appears in at all; hidden inside the depreciation block, the only way to
+           correct it was to tick a box that changes the value, fix the date and untick. -->
+      <label class="fld">${t("asset.ownedSince")}<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label>
     </div>
     <div class="toggles">
-      <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="depreciates" ${a.depreciates ? "checked" : ""}><span>${t("asset.valueChanges")}</span></label>
-      <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="loan" ${a.loan ? "checked" : ""}><span>${t("asset.ledeLoan")}</span></label>
+      <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="depreciates" ${a.depreciates ? "checked" : ""}><span>${t("asset.valueChanges")}<i>${t("asset.depHint")}</i></span></label>
+      <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="loan" ${a.loan ? "checked" : ""}><span>${t("asset.ledeLoan")}<i>${t("asset.loanHint")}</i></span></label>
     </div>
     ${depBlock}${loanBlock}
-    <div class="vsum"><span class="k">${t("asset.netValueToday")}</span><span class="vval num">${moneyIn(net, a.ccy)}${inBase(net)}</span></div>
+    <!-- A labelled word at the foot, not an × in the corner of the only card on screen —
+         which is the position and the glyph of "close this editor". -->
+    <div class="acard-danger"><button class="btn btn-sm btn-quiet-danger" data-adel="${a.id}">${t("asset.removeAsset")}</button></div>
   </div>`;
 }
 
@@ -192,42 +242,60 @@ function renderAssets(focusName) {
   const a = state.assets.find((x) => x.id === curAssetId);
   if (!a) { closeAssetEditor(); return; }
   wrap.innerHTML = assetCardHTML(a);
+  const title = $("assetTitle");
+  if (title) title.textContent = a.name || t(a.liability ? "common.newLiability" : "common.newAsset");
+  /* The lede explains two toggles. A standalone debt has neither, so on that screen it was
+     60 words of instructions for controls that are not on it. */
+  const lede = $("assetLede");
+  if (lede) lede.classList.toggle("hide", !!a.liability);
   if (focusName) { const nm = wrap.querySelector(".rname"); if (nm) { nm.focus(); nm.select && nm.select(); } }
 }
 
-export function newAsset() {
-  const a = { id: nid(), name: t("common.newAsset"), ccy: state.baseCcy, value: 0, depreciates: false, up: false, date: todayISO(), rate: 0.15, loan: null };
+export function newAsset(year) {
+  const iso = ownedFromFor(year);
+  const a = { id: nid(), name: t("common.newAsset"), ccy: state.baseCcy, value: 0, depreciates: false, up: false, date: iso, rate: 0.15, loan: null };
   state.assets.push(a); scheduleSync(); return a;
 }
-export function newLiability() {
-  const iso = todayISO();
+export function newLiability(year) {
+  const iso = ownedFromFor(year);
   const a = { id: nid(), name: t("common.newLiability"), ccy: state.baseCcy, value: 0, depreciates: false, up: false, liability: true, date: iso, rate: 0.15, loan: normLoan({ startDate: iso }, iso) };
   state.assets.push(a); scheduleSync(); return a;
 }
 
+/* `el`, not `t`. The imported translator is called `t`, and an earlier screen in this app
+   shadowed it with the event target — every keystroke threw, and nothing anybody typed was
+   saved, for a whole round of review. */
 $("assetList").addEventListener("input", (e) => {
-  const t = e.target, id = t.dataset.aid; if (!id) return; const a = state.assets.find((x) => x.id === id); if (!a) return;
-  if (t.dataset.eid) { const x = ((a.loan && a.loan.extra) || []).find((z) => z.id === t.dataset.eid); if (x) { if (t.dataset.ef === "amount") x.amount = parseFloat(t.value || 0); else x.date = t.value; } }
-  else if (t.dataset.lf) { const f = t.dataset.lf; if (a.loan) a.loan[f] = f === "startDate" || f === "mode" || f === "fixedUntil" ? t.value : parseFloat(t.value || 0); }
-  else if (t.dataset.f) {
-    const f = t.dataset.f;
-    if (f === "value") a.value = parseFloat(t.value || 0);
-    else if (f === "rate") a.rate = Math.min(Math.max(parseFloat(t.value || 0) / 100, 0), 5);
-    else if (f === "up") a.up = t.value === "up";
-    else if (f === "group") a.group = t.value || undefined;
-    else a[f] = t.value;
+  const el = e.target, id = el.dataset.aid; if (!id) return; const a = state.assets.find((x) => x.id === id); if (!a) return;
+  if (el.dataset.eid) { const x = ((a.loan && a.loan.extra) || []).find((z) => z.id === el.dataset.eid); if (x) { if (el.dataset.ef === "amount") x.amount = parseFloat(el.value || 0); else x.date = el.value; } }
+  else if (el.dataset.lf) { const f = el.dataset.lf; if (a.loan) a.loan[f] = f === "startDate" || f === "mode" || f === "fixedUntil" ? el.value : parseFloat(el.value || 0); }
+  else if (el.dataset.f) {
+    const f = el.dataset.f;
+    if (f === "value") a.value = parseFloat(el.value || 0);
+    else if (f === "rate") a.rate = Math.min(Math.max(parseFloat(el.value || 0) / 100, 0), 5);
+    else if (f === "up") a.up = el.value === "up";
+    else if (f === "group") a.group = el.value || undefined;
+    else a[f] = el.value;
   }
   scheduleSync();
+  if (el.dataset.f === "name") { const ti = $("assetTitle"); if (ti) ti.textContent = a.name || t(a.liability ? "common.newLiability" : "common.newAsset"); }
   // Refresh only the computed outputs in place — never the inputs — so the caret survives.
-  const card = t.closest(".acard"); if (!card) return;
-  const vv = card.querySelector(".vval");
+  const card = el.closest(".acard"); if (!card) return;
+  const now = new Date();
+  const vv = card.querySelector(".ah-v");
   if (vv) {
-    if (a.liability) { const bal = a.loan ? outstandingAt(a.loan, new Date()) : 0; vv.textContent = (bal > 0.005 ? "− " + moneyIn(bal, a.ccy) : moneyIn(0, a.ccy)) + (a.ccy !== state.baseCcy ? " · " + money(convTo(-bal, a.ccy, state.baseCcy)) : ""); }
-    else { const net = assetNetAt(a, new Date()); vv.textContent = moneyIn(net, a.ccy) + (a.ccy !== state.baseCcy ? " · " + money(convTo(net, a.ccy, state.baseCcy)) : ""); }
+    const inBase = (v) => (a.ccy !== state.baseCcy ? " · " + money(convTo(v, a.ccy, state.baseCcy)) : "");
+    if (a.liability) { const bal = a.loan ? outstandingAt(a.loan, now) : 0; vv.textContent = (bal > 0.005 ? "− " + moneyIn(bal, a.ccy) : moneyIn(0, a.ccy)) + inBase(-bal); }
+    else { const net = assetNetAt(a, now); vv.textContent = moneyIn(net, a.ccy) + inBase(net); }
     flash(vv);
   }
+  const sub = card.querySelector(".ah-sub");
+  if (sub && !a.liability) {
+    const owed = a.loan ? outstandingAt(a.loan, now) : 0;
+    sub.textContent = a.loan && +a.loan.amount > 0 ? t("asset.worthOwes", { worth: moneyIn(assetGrossAt(a, now), a.ccy), owed: moneyIn(owed, a.ccy) }) : "";
+  }
   const lc = card.querySelector(".lcomp");
-  if (lc && a.loan) lc.innerHTML = loanComputedHTML(a);
+  if (lc && a.loan) lc.innerHTML = +a.loan.amount > 0 ? loanComputedHTML(a) : `<div class="exhint">${t("asset.loanNeedsAmount")}</div>`;
 });
 
 /* A loan set aside because its box was unticked.
@@ -244,13 +312,24 @@ $("assetList").addEventListener("input", (e) => {
 const setAsideLoans = new Map();
 
 $("assetList").addEventListener("change", (e) => {
-  const t = e.target, id = t.dataset.aid; if (!id) return; const a = state.assets.find((x) => x.id === id); if (!a) return;
-  if (t.dataset.toggle) {
-    if (t.dataset.toggle === "depreciates") a.depreciates = t.checked;
-    else if (t.checked) {
+  /* `t` is the imported translator. Shadowing it with the event target is how an earlier
+     screen in this app silently discarded every keystroke for a round. */
+  const tgl = e.target, id = tgl.dataset.aid; if (!id) return; const a = state.assets.find((x) => x.id === id); if (!a) return;
+  if (tgl.dataset.toggle) {
+    if (tgl.dataset.toggle === "depreciates") a.depreciates = tgl.checked;
+    else if (tgl.checked) {
       a.loan = normLoan(a.loan || setAsideLoans.get(id) || { startDate: a.date }, a.date);
       setAsideLoans.delete(id);
     } else {
+      /* A loan is an amount, a rate, a term, two dates and every lump sum ever entered, and
+         this is a 17px checkbox. The in-memory set-aside below undoes a mis-tap in the session
+         that made it; it is gone on reload and it never existed on the other device this
+         sync reaches in a second. So anything with figures in it is asked for. */
+      const worthKeeping = a.loan && (+a.loan.amount > 0 || (a.loan.extra || []).length > 0);
+      if (worthKeeping && !confirm(t("asset.dropLoanConfirm", { name: a.name || t("asset.thisAsset") }))) {
+        tgl.checked = true;
+        return;
+      }
       if (a.loan) setAsideLoans.set(id, a.loan);
       a.loan = null;
     }
@@ -258,13 +337,29 @@ $("assetList").addEventListener("change", (e) => {
   }
   // Only the Term/Payment mode swap changes structure — rebuild for that; everything else
   // (amount, rate, dates, currency, extras) is updated live by the input handler.
-  if (t.dataset.lf === "mode") { renderAssets(); return; }
+  if (tgl.dataset.lf === "mode") { renderAssets(); return; }
 });
 
 $("assetList").addEventListener("click", (e) => {
   const ad = e.target.closest("[data-adel]"); if (ad) { const a = state.assets.find((x) => x.id === ad.dataset.adel); if (confirm(t("asset.removeConfirm", { name: a ? a.name : t("asset.thisAsset") }))) { state.assets = state.assets.filter((x) => x.id !== ad.dataset.adel); scheduleSync(); closeAssetEditor(); } return; }
   const ea = e.target.closest("[data-extraadd]"); if (ea) { const a = state.assets.find((x) => x.id === ea.dataset.extraadd); if (a && a.loan) { const id = nid(); a.loan.extra = a.loan.extra || []; a.loan.extra.push({ id, date: a.loan.startDate, amount: 0 }); scheduleSync(); renderAssets(); focusNew($("assetList").querySelector(`[data-eid="${id}"][data-ef="amount"]`)); } return; }
-  const ed = e.target.closest("[data-extradel]"); if (ed) { const a = state.assets.find((x) => x.id === ed.dataset.aid); if (a && a.loan) { a.loan.extra = (a.loan.extra || []).filter((z) => z.id !== ed.dataset.extradel); scheduleSync(); renderAssets(); } return; }
+  const ed = e.target.closest("[data-extradel]");
+  if (ed) {
+    const a = state.assets.find((x) => x.id === ed.dataset.aid);
+    if (a && a.loan) {
+      const x = (a.loan.extra || []).find((z) => z.id === ed.dataset.extradel);
+      // A lump sum is a payment that moved the balance; every figure below it changes with it.
+      if (x && +x.amount > 0 && !confirm(t("asset.removePaymentConfirm", { amount: moneyIn(+x.amount, a.ccy) }))) return;
+      a.loan.extra = (a.loan.extra || []).filter((z) => z.id !== ed.dataset.extradel);
+      scheduleSync(); renderAssets();
+    }
+    return;
+  }
 });
 
+$("assetList").addEventListener("toggle", (e) => {
+  if (e.target.classList && e.target.classList.contains("psched")) schedOpen = e.target.open;
+}, true);   // <details> toggle does not bubble, so it is caught on the way down
+
 $("assetBack").onclick = () => { scheduleSync(); closeAssetEditor(); };
+$("assetDone").onclick = () => $("assetBack").click();

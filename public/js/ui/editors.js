@@ -32,10 +32,25 @@ export function topEditor() {
 
 export const anyEditorOpen = () => topEditor() !== null;
 
+/* A dialog belongs to the screen that opened it.
+ *
+ * "Move this year" is a sibling of the year editor in the markup, not a child, so closing the
+ * editor left the year grid floating over whatever came up behind it — with every tile in it
+ * dead, because its handler reads the snapshot the editor was on and there is no longer one.
+ * Any route out of an editor takes its dialogs with it. */
+export function closeOverlays() {
+  let closed = false;
+  for (const m of document.querySelectorAll(".infomodal")) {
+    if (!m.classList.contains("hide")) { m.classList.add("hide"); closed = true; }
+  }
+  return closed;
+}
+
 // Shut the topmost one. True if there was one to shut.
 export function closeTopEditor() {
   const id = topEditor();
   if (!id) return false;
+  closeOverlays();
   const back = $(EDITOR_BACK[id]);
   if (!back) return false;
   back.click();

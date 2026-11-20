@@ -28,12 +28,17 @@ export function addMonths(date, m) {
   return d;
 }
 
-// "2 yr 3 mo" style label from a month count.
-export function fmtMonths(n) {
+/* "2 yr 3 mo" style label from a month count.
+ *
+ * The two words are passed in rather than written here. This module is pure and knows nothing
+ * about the interface language, and with them hard-coded the German build read "LAUFZEIT
+ * (BERECHNET) 19 yr 6 mo" — English units under a German label. */
+export function fmtMonths(n, units) {
+  const yr = (units && units.yr) || "yr", mo_ = (units && units.mo) || "mo";
   if (!isFinite(n) || n <= 0) return "—";
   const y = Math.floor(n / 12);
   const mo = Math.round(n % 12);
-  return [y ? `${y} yr` : "", mo ? `${mo} mo` : ""].filter(Boolean).join(" ") || "0 mo";
+  return [y ? `${y} ${yr}` : "", mo ? `${mo} ${mo_}` : ""].filter(Boolean).join(" ") || `0 ${mo_}`;
 }
 
 // Reference date for a snapshot year: now for the current year (values move daily),
@@ -43,13 +48,16 @@ export function refDateForYear(y) {
   return y === cy ? new Date() : new Date(y, 11, 31, 23, 59, 59);
 }
 
-// Short "Mon YYYY" label for a Date (en-GB); empty string for a missing date.
-export const fmtMY = (d) => {
+/* Short "Mon YYYY" label for a Date; empty string for a missing date.
+ *
+ * The locale is passed in, defaulting to en-GB. Pinned to en-GB it printed "Apr 2041" in the
+ * German build, beside German labels and German day-precision dates from ymdDay. */
+export const fmtMY = (d, locale = "en-GB") => {
   if (!d) return "";
   /* en-GB abbreviates September as "Sept" and every other month to three letters, so one
      row in a column of months was a character longer than the rest. Trimmed to three, and
      the trailing stop some locales add ("Okt.") goes with it. */
-  const s = d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+  const s = d.toLocaleDateString(locale, { month: "short", year: "numeric" });
   const i = s.indexOf(" ");
   return i < 0 ? s : s.slice(0, i).replace(/\.$/, "").slice(0, 3) + s.slice(i);
 };

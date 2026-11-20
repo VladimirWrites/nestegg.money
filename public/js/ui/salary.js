@@ -9,7 +9,7 @@ import { fmtMY } from "../domain/dates.js";
 import { C, refreshPalette, exportChart, scrollToNewest, positionTip } from "./chart-kit.js";
 import { scheduleSync } from "../io/storage.js";
 import { showView, goTab } from "./gate.js";
-import { t } from "../i18n.js";
+import { t, getLocale } from "../i18n.js";
 
 const salTotal = (en) => parseFloat(en.amount) || 0; // raw amount, in the entry's own currency
 const salEccy = (p, e) => e.ccy || p.ccy || state.baseCcy; // a month's currency (defaults to person)
@@ -21,7 +21,7 @@ function nextYm(ym) {
   m++; if (m > 12) { m = 1; y++; }
   return y + "-" + String(m).padStart(2, "0");
 }
-const ymLabel = (ym) => { const [y, m] = String(ym).split("-").map(Number); return fmtMY(new Date(y, (m || 1) - 1, 1)); };
+const ymLabel = (ym) => { const [y, m] = String(ym).split("-").map(Number); return fmtMY(new Date(y, (m || 1) - 1, 1), getLocale()); };
 // Per-year totals, converted to the display currency (handles mixed currencies across months).
 function salAnnual(p) { const a = {}; salMonths(p).forEach((en) => { const y = en.ym.slice(0, 4); a[y] = (a[y] || 0) + salBase(p, en); }); return a; }
 const salColor = (i) => PALETTE[i % PALETTE.length];

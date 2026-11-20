@@ -46,6 +46,19 @@ export function moneyIn(v, ccy) {
   }
 }
 
+/* Whole units in an explicit currency (e.g. "€887,569").
+ *
+ * For tables read down rather than reconciled: thirty rows of cents on a six-figure balance
+ * is 90 characters of noise, and on a 320px screen it is the difference between the column
+ * fitting and being clipped off the edge with nothing to say it is there. */
+export function moneyIn0(v, ccy) {
+  try {
+    return new Intl.NumberFormat("en-IE", { style: "currency", currency: ccy, maximumFractionDigits: 0 }).format(v);
+  } catch (e) {
+    return ccy + " " + Math.round(+v).toLocaleString();
+  }
+}
+
 // The base currency's symbol alone (e.g. "€").
 export function ccySym() {
   try {

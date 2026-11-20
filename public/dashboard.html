@@ -416,16 +416,23 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
       <!-- The year is the snapshot's identity — the sync merge keys records by it — so moving one
            is rare, consequential, and asked for deliberately rather than offered as a dropdown
            under the title. The bar states the year; the dialog moves it. -->
-      <div class="ed-title t-title"><span data-i18n="yeared.year">Year</span> <span class="ed-yearnow num" id="edYearVal">—</span>
-        <button type="button" class="btn btn-sm ed-yearmove" id="edYearBtn" data-i18n="yeared.move">Move</button>
+      <div class="ed-title t-title"><span data-i18n="yeared.year">Year</span>
+        <!-- The year states itself and offers to move: a separate "Move" button sat inside a
+             clipping title box and had its right third cut off on a 320px phone, while the
+             red "Delete year" beside it took two lines and grew the bar. -->
+        <button type="button" class="ed-yearnow num" id="edYearBtn" aria-haspopup="dialog" data-i18n-aria-label="yeared.move"><span id="edYearVal">—</span><svg class="ed-yearchev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg></button>
       </div>
-      <div class="ed-actions"><button class="btn btn-sm btn-danger" id="edDelYear" data-i18n="yeared.delYear">Delete year</button></div>
+      <span class="ed-saved" data-i18n="salary.savedNote">Saved as you type</span>
+      <button class="btn btn-sm ed-done" id="edDone" data-i18n="salary.done">Done</button>
     </div>
   </div>
   <div class="ed-wrap">
     <div class="ed-total"><span class="et-k" data-i18n="yeared.total">Year total</span><span class="et-v" id="edTotal">—</span></div>
     <div class="cards" id="edEntries"></div>
     <div class="controls"><button class="btn btn-primary btn-sm" id="edAdd" data-i18n="yeared.add">+ Add asset</button><button class="btn btn-sm" id="edAddLongterm" data-i18n="yeared.addLongterm">+ Property / vehicle</button><button class="btn btn-sm" id="edAddLiability" data-i18n="yeared.addLiability">+ Loan / debt</button><button class="btn btn-sm" id="edAddGroup" data-i18n="yeared.addGroup">+ Add group</button><button class="btn btn-sm" id="edCopyPrev" data-i18n="yeared.copyPrev">Copy previous year</button></div>
+    <!-- Last thing on the screen, as a quiet word rather than a red pill in the bar. It
+         removes a year of holdings and it is reached about once a lifetime. -->
+    <div class="ed-danger"><button class="btn btn-sm btn-quiet-danger" id="edDelYear" data-i18n="yeared.delYear">Delete year</button></div>
   </div>
 </div>
 
@@ -460,11 +467,19 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
   <div class="ed-bar">
     <div class="ed-bar-inner">
       <button class="ed-back" id="assetBack" title="Back" aria-label="Back" data-i18n-title="asset.back" data-i18n-aria-label="asset.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <div class="ed-title t-title" data-i18n="asset.title">Asset</div>
+      <!-- The thing's own name, written here by the editor. A bar that says "Asset" over a
+           car, a flat and a standalone debt alike is the only thing distinguishing this
+           layer from the year editor underneath it, and it distinguishes nothing. -->
+      <div class="ed-title t-title" id="assetTitle" data-i18n="asset.title">Asset</div>
+      <span class="ed-saved" data-i18n="salary.savedNote">Saved as you type</span>
+      <button class="btn btn-sm ed-done" id="assetDone" data-i18n="salary.done">Done</button>
     </div>
   </div>
   <div class="ed-wrap">
-    <p class="edlede"><span data-i18n="asset.lede1">A car, a house, anything that depreciates or carries a loan. Toggle </span><strong data-i18n="asset.ledeDep">Depreciates</strong><span data-i18n="asset.lede2"> to have its value fall a little every day (current year live, past years locked to year-end); toggle </span><strong data-i18n="asset.ledeLoan">Has a loan</strong><span data-i18n="asset.lede3"> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it. Assign a </span><strong data-i18n="asset.ledeCat">Category</strong><span data-i18n="asset.lede4"> to group it on the home screen.</span></p>
+    <!-- Two lines. It was eight on a phone, above the only thing on the screen, and it
+         explained two toggles by names neither of them used. The toggles carry their own
+         one-line hints now. -->
+    <p class="edlede" id="assetLede" data-i18n="asset.lede">A car, a house, a mortgage — anything whose value moves over time or carries a loan. Its net value counts toward your net worth for every year you own it.</p>
     <div class="cards" id="assetList"></div>
   </div>
 </div>
