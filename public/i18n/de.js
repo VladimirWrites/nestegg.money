@@ -246,6 +246,8 @@ export default {
     heroNote: "{total} bisher in {year}",
     history: "Unsere Gehaltshistorie",
     next: "+ Nächster Monat",
+    savedNote: "Wird beim Tippen gespeichert",
+    done: "Fertig",
     edit: "Gehälter bearbeiten",
     back: "Zurück",
     lede1: "Tragen Sie das monatliche ",

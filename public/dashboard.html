@@ -434,6 +434,10 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     <div class="ed-bar-inner">
       <button class="ed-back" id="salaryBack" title="Back" aria-label="Back" data-i18n-title="salary.back" data-i18n-aria-label="salary.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="ed-title t-title" data-i18n="salary.edit">Edit salaries</div>
+      <!-- Typing saves as you go, but a back chevron is the shape of "discard" on a form
+           full of money. The bar says so, and offers the same exit as a word. -->
+      <span class="ed-saved" id="salSaved" data-i18n="salary.savedNote">Saved as you type</span>
+      <button class="btn btn-sm ed-done" id="salaryDone" data-i18n="salary.done">Done</button>
     </div>
   </div>
   <div class="ed-wrap">

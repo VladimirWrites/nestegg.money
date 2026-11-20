@@ -246,6 +246,8 @@ export default {
     heroNote: "{total} so far in {year}",
     history: "Our salary history",
     next: "+ Next month",
+    savedNote: "Saved as you type",
+    done: "Done",
     edit: "Edit salaries",
     back: "Back",
     lede1: "Type each person's monthly ",

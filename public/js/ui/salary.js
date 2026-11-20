@@ -602,4 +602,6 @@ function openSalaryEdit() { showEditor("salaryEditor"); renderSalaryEdit(); }
 function closeSalaryEdit() { hideEditor("salaryEditor"); renderSalary(); }
 $("salEdit").onclick = openSalaryEdit;
 $("salaryBack").onclick = () => { scheduleSync(); closeSalaryEdit(); };
+/* The same exit, said as a word: a chevron alone reads as "discard" on a form full of money. */
+$("salaryDone") && ($("salaryDone").onclick = () => { scheduleSync(); closeSalaryEdit(); });
 $("salNext").onclick = () => { const ym = salNextMonth(); salAddRowAt(ym); scheduleSync(); salKeepScroll($("salaryTable"), renderSalary); salRevealMonth($("salaryTable"), ym); };

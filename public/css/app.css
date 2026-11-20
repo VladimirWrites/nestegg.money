@@ -299,6 +299,12 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
   background:var(--chrome-page);
   border-bottom:1px solid var(--line)}
 .ed-bar-inner{display:flex;align-items:center;gap:12px;min-height:44px;max-width:var(--maxw);margin:0 auto;padding:0 var(--edge-r) 0 var(--edge-l)}
+/* The editor's bar carries the exit and the reassurance. The note goes when there is no room
+   for it; the button never does. */
+.ed-saved{margin-left:auto;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.ed-done{flex:none}
+@media(max-width:420px){.ed-saved{display:none}}
+.ed-title+.ed-saved{margin-left:auto}
 .ed-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
 /* The arrow alone. Its label lives in the title attribute — a word beside it repeated what the
    glyph already said, and on a phone it crowded out the name of the screen. Pulled into the
@@ -697,6 +703,12 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .saltab td.salm{min-width:90px}
 /* A month with nothing in it reads as a month with nothing in it, not as a stored zero. */
 .saltab td .salf.is-empty{border-style:dashed;border-color:var(--dimmer);background:transparent}
+/* Quiet until you touch it. Every cell being a bordered box made the grid of borders the
+   loudest thing on the screen, over the money it contains; the border arrives on hover and
+   on focus, where it means something. */
+.saltab td .salf,.saltab td .salev{background:transparent;border-color:transparent}
+.saltab td .salf:hover,.saltab td .salev:hover{border-color:var(--line)}
+.saltab td .salf:focus,.saltab td .salev:focus{background:var(--panel-2)}
 .saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--text)}
 .saltab td .salev{width:100%;min-width:90px;font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--dim)}
 .saltab td .salf:focus,.saltab td .salev:focus{outline:none;border-color:var(--signal)}
@@ -764,6 +776,9 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    below twelve years of rows. */
 .smon-top{display:flex;gap:8px;margin:0 0 14px}
 .smon-addper{flex:none}
+/* On a desktop the button is a button, not a banner: full width it was a 1,037px amber bar
+   over a table of figures. */
+@media(min-width:620px){.smon-top{margin:0 0 12px}.smon-top .smon-next{flex:0 0 auto}}
 .smon-next{flex:1 1 auto;justify-content:center}
 /* Whose ledger this is stays on screen while you scroll through it. */
 .smon-head{position:sticky;top:64px;z-index:5;background:var(--ink);padding:6px 0 10px}
