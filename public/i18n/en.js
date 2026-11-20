@@ -621,6 +621,11 @@ export default {
     expenseName: "Expense name",
     monthlyAmount: "Monthly amount",
     loanTitle: "Loan payment (from your assets)",
+    loanTag: "from net worth",
+    moveTo: "Move to…",
+    chooseCat: "Set category…",
+    moveAria: "Move {name} to another category",
+    removeEmptyCategoryConfirm: "Remove the \"{name}\" category? It has nothing in it.",
     removeCategoryConfirm: {
       one: "Remove the \"{name}\" category? Its {count} tagged item loses the category — nothing is deleted.",
       other: "Remove the \"{name}\" category? Its {count} tagged items lose the category — nothing is deleted.",

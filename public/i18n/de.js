@@ -623,6 +623,11 @@ export default {
     expenseName: "Name der Ausgabe",
     monthlyAmount: "Monatlicher Betrag",
     loanTitle: "Kreditrate (aus Ihren Anlagen)",
+    loanTag: "aus Vermögen",
+    moveTo: "Verschieben nach…",
+    chooseCat: "Kategorie setzen…",
+    moveAria: "{name} in eine andere Kategorie verschieben",
+    removeEmptyCategoryConfirm: "Kategorie \"{name}\" entfernen? Sie enthält nichts.",
     removeCategoryConfirm: {
       one: "Kategorie \"{name}\" entfernen? Ihr {count} zugeordneter Eintrag verliert die Kategorie — nichts wird gelöscht.",
       other: "Kategorie \"{name}\" entfernen? Ihre {count} zugeordneten Einträge verlieren die Kategorie — nichts wird gelöscht.",

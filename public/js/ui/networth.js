@@ -127,7 +127,7 @@ export function renderEntries() {
     let sub = 0, cards = "";
     sn.entries.forEach((en, i) => { if (en.group === g) { sub += entryBase(en, sn.year); cards += cardHTML(en, i, names, sn.year); } });
     autos.forEach((en) => { if (en.group === g) { sub += entryBase(en, sn.year); cards += autoCardHTML(en, names, sn.year); } });
-    html += groupSectionHTML(g, colorOf(g, names), money(sub), cards, t("net.emptyCategoryYear"));
+    html += groupSectionHTML(g, colorOf(g, names), money(sub), cards, t("net.emptyCategoryYear"), "nw");
   });
   wrap.innerHTML = html;
   $("edTotal").textContent = money(snapTotalBase(sn));

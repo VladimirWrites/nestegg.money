@@ -2307,3 +2307,63 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 /* The breakdown rows and the category cards below them are both inset from the card edge, by
    16px and by 16px-plus-a-border — so the two columns of figures missed each other by 1px. */
 .bud-rows>.bud-row{padding-left:17px;padding-right:17px}
+
+/* ── Budget, round 4 ─────────────────────────────────────────────────── */
+
+/* Round 3 wrapped "Budget breakdown" in a bare <h2> so heading navigation could find the
+   doughnut, and nothing styled it — so it took the browser's default 1.5em bold on top of
+   `.sectitle`'s own 18/21px. The heading came out half again the size of "Outgoings" directly
+   below it, and in German "Budget-Aufschlüsselung" broke across two lines above the chart. */
+.sectitle h2,.sectitle h3{font:inherit;letter-spacing:inherit;color:inherit;margin:0;min-width:0}
+
+/* Edit/Done carries both labels and hides the one it is not showing, so the button is as wide
+   as the wider word in every locale. `min-width:8ch` equalised "Edit" and "Done" and did
+   nothing for "Bearbeiten" against "Fertig": the button is right-aligned, so pressing it moved
+   its left edge ~28px and the pointer was no longer over the control it had just pressed. */
+.bud-exp-head .bud-editbtn{min-width:0;display:inline-grid}
+.bud-editbtn .btnlbl{grid-area:1/1;text-align:center}
+.bud-editbtn .btnlbl-ghost{visibility:hidden;pointer-events:none}
+
+/* The subtotal is right-ALIGNED to the amount column, and the figures in that column are inset
+   by the field's own 10px padding and 1px border — so a category's total sat 11px right of
+   every figure it is the total of. */
+#budItems .grp:has(input.grpname) .grphead .grpsub{padding-right:11px}
+#budItems .bud-exp:not(.ro) .bud-loan-name{padding-left:11px}
+
+/* An empty category is meant to read as empty. The r2 rule named `.grptitle`, which is the
+   reading-mode label; in editing the name is an input, so the rule reached nothing and a
+   category with nothing in it had a full-strength bold name beside a dim dot and a dim €0. */
+#budItems .grp.is-empty .grpname{color:var(--dim);font-weight:500}
+
+/* The picker says "Move to…" now, so it needs the width of a verb, not of the longest category
+   name — and on a phone it stops being a full-width field under every single row. */
+/* 150px holds the longest of the four faces this control ever shows — "Verschieben nach…" is
+   the widest — and on a phone it shrinks to its text instead of spanning the card. */
+#budItems .bud-exp-cat,#budItems .bud-loan-cat{text-overflow:ellipsis}
+@media(max-width:520px){
+  #budItems .bud-exp-cat,#budItems .bud-loan-cat{width:auto;max-width:100%;justify-self:start}
+}
+
+/* Two destructive buttons in one column, same glyph, same box: the one that deletes a whole
+   category and the one that deletes a single row. Give the category's its own weight. */
+#budItems .grpdel{font-size:15px;color:var(--dim)}
+#budItems .bud-exp-del{font-size:15px}
+
+/* The amount is the thing this screen exists to show, and it was rendered dimmer than its own
+   label. Weight still separates a row from the card total above it, which is 700. */
+.bud-exp.ro .bud-loan-amt{color:var(--text)}
+
+/* The loan row now says why it has no fields. Inside the name cell, not beside it, so it
+   wraps with the name instead of stealing a grid track. */
+/* `.autotag` is `white-space:nowrap` for the net-worth cards, which give it a grid track of
+   its own. Here it lives inside the name cell, so on a phone the German chip ran 100px past
+   the cell and printed underneath the row's amount. */
+.bud-loan-name .autotag{display:inline-block;margin-left:8px;vertical-align:1px;white-space:normal;max-width:100%}
+@media(max-width:520px){.bud-loan-name .autotag{display:block;margin:3px 0 0;width:max-content;max-width:100%}}
+
+/* 11px grey under a 14px label, carrying the one figure that explains where income came from. */
+.bud-lbl .hint{font-size:12.5px}
+
+/* After pinning Edit/Done to the top of the header, the title's own line-box left it sitting
+   about 8px above the button's centre. */
+.bud-exp-headtext{display:flex;flex-direction:column;justify-content:center;min-height:36px}
