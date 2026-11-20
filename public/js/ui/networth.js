@@ -3,7 +3,7 @@ import { $, showEditor, hideEditor, toast, flash, focusNew, setInert, rememberFo
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
-import { money, moneyIn, esc, parseNum, parseDec, fmtNum } from "../domain/money.js";
+import { money, moneyIn, esc, parseNum, parseDec, parseLocaleNum, fmtNum } from "../domain/money.js";
 import { allNames, autoEntriesFor, colorOf, seriesKey, entryBase, tickerPx, snapTotalBase, effEntries } from "../domain/model.js";
 import { scheduleSync, ensureHist, fetchPrice, fetchPriceYear } from "../io/storage.js";
 import { renderAll } from "./charts.js";
@@ -76,9 +76,9 @@ function cardHTML(en, i, names, year) {
     const noHistData = !p && en.ticker && year < new Date().getFullYear();
     if (noHistData) priceNote = `<div class="rhint">${t("net.noYearEndPriceLong", { year })}</div>`;
     const pxtxt = p ? "@ " + moneyIn(p.price, p.currency) + (p.frozen ? " · " + t("net.yearEnd") : "") : noHistData ? t("net.noYearEndPrice") : en.ticker ? t("net.noPrice") : isC ? t("net.setCoin") : t("net.setTicker");
-    valuePart = `<input class="rsh num" type="text" inputmode="decimal" value="${en.shares ? String(en.shares) : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" aria-label="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
+    valuePart = `<input class="rsh num" type="text" inputmode="decimal" value="${en.shares ? fmtNum(en.shares, 8) : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" aria-label="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
     <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker || "")}" data-i="${i}" data-f="ticker" placeholder="${isC ? "BTC-EUR" : "AMS:VWRL"}" aria-label="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}" title="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}"><button type="button" class="rinfo" data-info="${isC ? "crypto" : "ticker"}" title="${t("net.symbolHelpTitle")}" aria-label="${t("net.symbolHelpAria")}">i</button></span>
-    <span class="rconv">${p ? money(baseV) : pxtxt}</span>`;
+    <span class="rconv">${p ? money(baseV) : pxtxt}</span>${p ? `<span class="rpx">${esc(pxtxt)}</span>` : ""}`;
   } else {
     valuePart = `<input class="rval num" type="text" inputmode="decimal" value="${en.value ? fmtNum(en.value) : ""}" data-i="${i}" data-f="value" aria-label="${liab ? t("net.amountOwed") : t("asset.value")}" placeholder="${liab ? t("net.amountOwed") : "0"}">
     <select data-i="${i}" data-f="ccy" aria-label="${t("asset.currency")}">${CCYS.map((x) => `<option ${x === en.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>
@@ -274,7 +274,7 @@ $("edEntries").addEventListener("input", (e) => {
   const i = +el.dataset.i, f = el.dataset.f; if (el.dataset.i == null || !f) return;
   const en = sn.entries[i];
   if (f === "value") en.value = parseNum(el.value) || 0;
-  else if (f === "shares") en.shares = parseDec(el.value) || 0;   // 0.125 BTC is an eighth of a coin, not 125
+  else if (f === "shares") en.shares = parseLocaleNum(el.value) || 0;   // read the way the field writes it, or 12,985 shares becomes 12.985
   else if (f === "group") en.group = el.value || undefined;
   else en[f] = el.value;
   scheduleSync();
@@ -295,8 +295,8 @@ $("edEntries").addEventListener("focusout", (e) => {
   const el = e.target;
   if (!el.classList || !el.classList.contains("num") || el.type !== "text") return;
   const share = el.dataset.f === "shares";
-  const n = share ? parseDec(el.value) : parseNum(el.value);
-  el.value = n == null ? "" : (share ? String(n) : fmtNum(n));
+  const n = share ? parseLocaleNum(el.value) : parseNum(el.value);
+  el.value = n == null ? "" : fmtNum(n, share ? 8 : 2);
 });
 
 $("edEntries").addEventListener("change", async (e) => {

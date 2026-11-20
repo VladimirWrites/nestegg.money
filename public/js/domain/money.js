@@ -168,6 +168,35 @@ export function parseDec(s) {
   return neg ? -n : n;
 }
 
+/* A number read the way the screen writes it.
+ *
+ * parseNum guesses between the two conventions, which is right when the figure could have
+ * come from anywhere — a pasted spreadsheet, a bank statement. parseDec never groups, which
+ * is right for a rate or a term. A share count is neither: "12,985" is twelve thousand
+ * shares to an English reader and "0,125" is an eighth of a coin to a German one, and the
+ * same string means the opposite thing in the other language. So it is read by the locale
+ * the field was written in, which is the only reading that round-trips. */
+export function parseLocaleNum(s) {
+  if (typeof s === "number") return Number.isFinite(s) ? s : null;
+  if (s == null) return null;
+  const loc = fmtLocale();
+  const parts = new Intl.NumberFormat(loc).formatToParts(12345.6);
+  const group = (parts.find((p) => p.type === "group") || {}).value || ",";
+  const decimal = (parts.find((p) => p.type === "decimal") || {}).value || ".";
+  let t = String(s).trim().replace(/[\s  ]/g, "");
+  if (!t) return null;
+  const neg = /^[-−]/.test(t);
+  if (neg) t = t.slice(1);
+  t = t.split(group).join("");
+  const i = t.indexOf(decimal);
+  if (i >= 0) t = t.slice(0, i) + "." + t.slice(i + decimal.length).split(decimal).join("");
+  t = t.replace(/[^\d.]/g, "");
+  if (!t || !/\d/.test(t)) return null;
+  const n = parseFloat(t);
+  if (!Number.isFinite(n)) return null;
+  return neg ? -n : n;
+}
+
 export function fmtNum(n, maxFrac = 2, minFrac = 0) {
   if (n == null || n === "" || !Number.isFinite(Number(n))) return "";
   /* minFrac is for columns of money: without it a formatter drops trailing zeros, so

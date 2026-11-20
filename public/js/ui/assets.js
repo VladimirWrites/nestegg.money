@@ -115,8 +115,12 @@ function loanComputedHTML(a) {
   const payoff = payRows.length ? payRows[payRows.length - 1].date : null, totInt = sched.reduce((s, r) => s + (r.interest || 0), 0);
   const fixedUntil = L.fixedUntil ? parseDate(L.fixedUntil) : null;
   const balAtChange = fixedUntil ? outstandingAt(L, fixedUntil) : null; // amount left when the rate resets
+  /* The term the loan actually runs to. `loanTerms` solves the amortization and knows
+     nothing about lump sums, so a mortgage with four of them read "19 yr 6 mo" beside a
+     payoff of Apr 2041 and a schedule of 204 payments — seventeen years. */
+  const realMonths = payRows.length || n;
   const calcStat = byPayment
-    ? `<div class="pstat"><span class="k">${t("asset.termCalc")}</span><span class="v num">${fmtMonths(n, monthUnits())}</span></div>`
+    ? `<div class="pstat"><span class="k">${t("asset.termCalc")}</span><span class="v num">${fmtMonths(realMonths, monthUnits())}</span></div>`
     : `<div class="pstat"><span class="k">${t("asset.monthlyPayment")}</span><span class="v num">${M ? moneyIn(M, a.ccy) : "—"}</span></div>`;
   /* What a calendar year did to the debt.
    *

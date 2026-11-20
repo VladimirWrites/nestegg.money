@@ -1955,3 +1955,20 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 /* The year pill lost about 7px of its right edge to the title's clipping at 320px. */
 .ed-title{overflow:visible;min-width:0}
 .ed-title>span:first-child{overflow:hidden;text-overflow:ellipsis}
+/* What a holding is priced at, and whether that price is a year's close. Both were built
+   into a string that only rendered when there was no price to show. */
+.rcard .rpx{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(max-width:899px){
+  #edEntries .rcard.is-priced{grid-template-areas:"dot name name del" "ccy ccy ccy ccy" "val val conv conv" "px px px px" "kind kind cat cat" "hint hint hint hint"}
+  #edEntries .rcard .rpx{grid-area:px;text-align:right;margin-top:-4px}
+}
+@media(min-width:620px) and (max-width:899px){
+  #edEntries .rcard.is-priced{
+    grid-template-areas:"dot name ccy del" ". val conv conv" ". px px px" ". kind cat cat" ". hint hint hint"}
+}
+/* Italics and a note under the table already say a row is an estimate; 70% opacity on top of
+   them puts the figure at about 2.9:1 in the light theme. */
+.schtab.yrtab tr.est td.off{opacity:1}
+/* The kind select kept the 1.3:1 divider colour on a laptop while every field beside it had
+   the 3:1 edge. */
+.rcard .rkind,.rcard .rcat{border-color:var(--field-edge)}

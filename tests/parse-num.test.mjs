@@ -7,7 +7,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseNum, parseDec, fmtNum } from "../public/js/domain/money.js";
+import { parseNum, parseDec, parseLocaleNum, fmtNum } from "../public/js/domain/money.js";
 
 test("plain integers and decimals", () => {
   assert.equal(parseNum("0"), 0);
@@ -128,4 +128,18 @@ test("parseDec reads a decimal and never a thousands group", () => {
   assert.equal(parseDec("−2,5 %"), -2.5);
   assert.equal(parseDec(""), null);
   assert.equal(parseDec("abc"), null);
+});
+
+test("parseLocaleNum reads a figure the way the screen writes it", () => {
+  /* A share count round-trips through fmtNum, so it has to be read by the same convention
+     it was written in: guessing turned "12,985" shares into 12.985 under one rule and
+     "0.125" coins into 125 under the other. The default locale here is English. */
+  assert.equal(parseLocaleNum("12,985"), 12985);
+  assert.equal(parseLocaleNum("0.125"), 0.125);
+  assert.equal(parseLocaleNum("12.985"), 12.985);
+  assert.equal(parseLocaleNum("1,234.5"), 1234.5);
+  assert.equal(parseLocaleNum(""), null);
+  assert.equal(parseLocaleNum("−2.5"), -2.5);
+  assert.equal(parseLocaleNum(fmtNum(12985)), 12985);
+  assert.equal(parseLocaleNum(fmtNum(0.125, 8)), 0.125);
 });
