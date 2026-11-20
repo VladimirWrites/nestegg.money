@@ -2007,3 +2007,45 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 
 /* One row of actions, under the switch, naming the person it acts on. */
 .smon-head.is-compact{display:flex;justify-content:flex-end;gap:16px;padding:2px 0 10px;flex-wrap:wrap}
+
+/* A note is a word, not a dot.
+ *
+ * Below 560px the note collapsed to a 7px amber circle you had to press, and in the band
+ * above it the same note rendered as a chip with the word in it — so a reader scrolling one
+ * ledger met rows marked with a word, rows marked with a dot that said nothing, and no
+ * legend anywhere for either. "Raise" and "Xmas bonus" are two short words; they fit under
+ * the figure they belong to, at every width, and then there is nothing to decode.
+ *
+ * Written after the dot rules it replaces, because three fixes on these screens have been
+ * put above the rules they were meant to beat and did nothing at all. */
+.saltab td.num .evtag,
+.saltab td.num.is-note-open .evtag{
+  display:block;position:static;width:auto;height:auto;max-width:100%;
+  margin:1px 0 0;padding:0;border:0;border-radius:0;background:none;
+  font-size:10.5px;line-height:1.25;letter-spacing:.01em;color:var(--dim);
+  text-align:right;text-indent:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  pointer-events:none;cursor:default}
+.saltab td.num .evnote{display:none}
+.saltab td.num{white-space:nowrap}
+
+/* Three people.
+ *
+ * Below 900px the table is fixed-layout inside `overflow:clip`, on the reasoning that it
+ * "fits by construction". That holds for two people. With three, each money column is
+ * squeezed to 50px, "€5,418.61" is cut off mid-figure, and clipping means there is no way
+ * to reach the rest of it — the ledger is simply unreadable. Each column keeps a legible
+ * width and the table scrolls sideways instead, the way it already does on a laptop. */
+@media(max-width:899px){
+  .saltable-scroll{overflow-x:auto;overflow-y:clip}
+  .saltable-scroll .saltab{min-width:calc(74px + var(--salcols, 2) * 96px)}
+}
+/* …which makes the box a scroll container at every width, so the editor's sticky headings
+   resolve against it everywhere and both rows pin to its top. Tops measured against the
+   page put 65px of dead band above the headings and hid the first month behind them. */
+#salaryEditor .saltable-scroll{max-height:calc(100dvh - 150px);overflow:auto}
+#salaryEditor .saltab .salh1 th{top:0}
+#salaryEditor .saltab .salh2 th{top:48px}
+@media(max-width:899px){
+  /* No person-name row below 900px, so the headings are the top row. */
+  #salaryEditor .saltab .salh2 th{top:0}
+}

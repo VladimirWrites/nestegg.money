@@ -335,11 +335,12 @@ export function renderSalary() {
       body += yr + `</tr>`;
     }
     let row = `<tr class="salmonth${openYears.has(y) ? "" : " is-folded"}" data-ym="${ym}" data-y="${y}"><td class="salm">${ymLabel(ym)}</td>`, hh = 0;
-    people.forEach((p) => { const e = salEntry(p, ym); if (e) hh += salBase(p, e); row += `<td class="num salgsep">${e && e.event ? `<button type="button" class="evtag" title="${esc(e.event)}" aria-label="${esc(e.event)}" aria-expanded="false">${esc(e.event)}</button><span class="evnote">${esc(e.event)}</span>` : ""}${e && e.amount ? moneyIn(salTotal(e), salEccy(p, e)) : "—"}</td>`; });
+    people.forEach((p) => { const e = salEntry(p, ym); if (e) hh += salBase(p, e); row += `<td class="num salgsep">${e && e.amount ? moneyIn(salTotal(e), salEccy(p, e)) : "—"}${e && e.event ? `<span class="evtag">${esc(e.event)}</span>` : ""}</td>`; });
     if (multi) row += `<td class="num salgsep">${hh ? money(hh) : "—"}</td>`;
     body += row + `</tr>`;
   });
   host.innerHTML = `<div class="saltable-scroll"><table class="saltab rotab"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  host.style.setProperty("--salcols", String(people.length + (multi ? 1 : 0)));
 
   /* Folding is a view state, not data, so it redraws the table rather than touching the
      ledger — and the whole table is already in the DOM, so this only toggles classes. */
@@ -347,17 +348,6 @@ export function renderSalary() {
     if (openYears.has(y)) openYears.delete(y); else openYears.add(y);
     renderSalary();
   };
-  /* On a phone the note is a dot, and a dot's tooltip is unreachable by touch — which would
-     mean the note is simply gone at the width most people read this on. Pressing it opens the
-     word under the amount in that cell, and pressing it again closes it. */
-  host.querySelectorAll("td.num .evtag").forEach((btn) => {
-    btn.onclick = (ev) => {
-      ev.stopPropagation();
-      const cell = btn.closest("td");
-      const open = cell.classList.toggle("is-note-open");
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-    };
-  });
 
   /* Every width folds. This started as a phone-only control, on the reasoning that a desktop
      has room for the whole history — but "has room for" turned out to mean 7,347px of money
@@ -553,6 +543,7 @@ function renderSalaryEdit() {
   const headOnce = narrow ? salPersonSwitch(people) + cardHead : "";
   host.innerHTML = headOnce + (cards ? cardList : tableHTML) +
     `<div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="btn btn-sm" data-salgen>${t("salary.addRange")}</button>${cards ? "" : `<button class="btn btn-sm" data-salnext>${t("salary.next")}</button>`}</div>`;
+  host.style.setProperty("--salcols", String(people.length));
   const who = $("salImportWho");
   if (who) {
     const prev = who.value;
