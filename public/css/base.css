@@ -47,6 +47,10 @@
   --dimmer: #838b9e;
 
   --signal: #ffb020;
+  /* Headline figures and chart lines: they need 3:1, not 4.5:1, so in the light theme they
+     can keep an amber that still reads as amber instead of the brown a body-text token has
+     to be. Same colour as --signal in the dark theme. */
+  --signal-lg: #ffb020;
   --signal-ink: #1a1200;
   --signal-soft: #ffb0201f;
   /* --signal is tuned to be READ: in light it is a deep amber that clears AA against the page.
@@ -134,6 +138,7 @@
     --dimmer: #686c77;
 
     --signal: #9a5b00;
+    --signal-lg: #c87400;
     --signal-ink: #2a1a00;
     --signal-soft: #9a5b0021;
     --signal-fill: #f5a524;
@@ -160,6 +165,7 @@
   --dimmer: #686c77;
 
   --signal: #9a5b00;
+  --signal-lg: #c87400;   /* 3.1:1 on the page, 3.5:1 on a card — large text and graphics */
   --signal-ink: #2a1a00;
   --signal-soft: #9a5b0021;
   --signal-fill: #f5a524;

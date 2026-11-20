@@ -228,14 +228,18 @@ export function renderBudget() {
   const auto = salaryIncome();
 
   host.innerHTML = `
+    <!-- The headline card sits outside the section, exactly as the hero does on the other two
+         screens. Inside it, the section's own top padding pushed the card 24px further down
+         the page than Net worth's and Salary's heroes, and left its rule hard against the
+         first heading instead of the same 24px below it. -->
+    <div class="bud-card${s.leftover < 0 ? " neg" : ""}" id="budCard">
+      <span class="k">${t("budget.leftPerMonth")}</span>
+      <span class="v" id="budLeftover">${money(s.leftover)}</span>
+      <span class="sub">${t("budget.savingsRate")} <b id="budSavings">${s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%"}</b></span>
+    </div>
     <section class="over sect-plain">
-      <!-- No section title here: the screen is already called Budget and already says what it
-           is for, in the bar on a phone and in the masthead on a desktop. -->
-      <div class="bud-card${s.leftover < 0 ? " neg" : ""}" id="budCard">
-        <span class="k">${t("budget.leftPerMonth")}</span>
-        <span class="v" id="budLeftover">${money(s.leftover)}</span>
-        <span class="sub">${t("budget.savingsRate")} <b id="budSavings">${s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%"}</b></span>
-      </div>
+      <!-- No section title above the card: the screen is already called Budget and already
+           says what it is for, in the bar on a phone and in the masthead on a desktop. -->
       <!-- The donut gets the same header every other panel has. Its download button used to
            live inside the chart wrapper, which left it floating under the donut aligned to
            nothing, while the identical button on every other section sits top-right beside a

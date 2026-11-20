@@ -79,7 +79,6 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
       <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct" data-i18n="gate.copy">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct" data-i18n="gate.regen">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct" data-i18n="gate.confirm">I've saved it — continue</button></div>
       <div class="warn" data-i18n="gate.warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
       <div class="switch"><span data-i18n="gate.haveOne">Already have one?</span> <a id="toSignin" role="button" tabindex="0" data-i18n="gate.toSignin">Sign in with an account number</a></div>
-      <div class="switch demoswitch"><a id="toDemo" role="button" tabindex="0" data-i18n="gate.demo">Explore a live demo — no account needed</a></div>
     </form>
     <form class="panel hide" id="gateSignin" autocomplete="on">
       <p data-i18n="gate.signinLede">Enter your account number to load and decrypt your ledger on this device.</p>
@@ -90,6 +89,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
       <div class="gaterow"><button type="submit" class="gatebtn" id="signinBtn" data-i18n="gate.signin">Sign in</button></div>
       <div class="switch"><span data-i18n="gate.needNew">Need a new account?</span> <a id="toCreate" role="button" tabindex="0" data-i18n="gate.create">Create one</a></div>
     </form>
+    <div class="switch demoswitch"><a id="toDemo" role="button" tabindex="0" data-i18n="gate.demo">Explore a live demo — no account needed</a></div>
     <div class="switch"><span data-i18n="gate.agreePre">By continuing you agree to the</span> <a href="privacy.html" data-i18n="gate.privacy">Privacy Policy</a> <span data-i18n="gate.and">and</span> <a href="terms.html" data-i18n="gate.terms">Terms &amp; Conditions</a>.</div>
     </div>
   </div>
@@ -214,7 +214,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
           <label class="fld"><span class="cap" title="Plan until (year)" data-i18n="net.planUntil" data-i18n-title="net.planUntil">Plan until (year)</span><input id="rtUntil" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2071"></label>
           <label class="fld"><span class="cap" title="Inflation / yr" data-i18n="net.inflation" data-i18n-title="net.inflation">Inflation / yr</span><span class="pct"><input id="rtInfl" class="fin num" type="text" step="any" inputmode="decimal" placeholder="2"><i>%</i></span></label>
         </div>
-        <div class="fchint" style="padding:0 0 4px" data-i18n="net.retireHint">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the pension you expect (in today's value) and when it starts. Germany: pension = points × value (~1 point/yr at the average salary; points accrue while working).</div>
+        <div class="fchint fchint-lead" data-i18n="net.retireHint">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the pension you expect (in today's value) and when it starts. Germany: pension = points × value (~1 point/yr at the average salary; points accrue while working).</div>
         </details>
         <div class="fcstats" id="rtStats"></div>
         <div class="histscroll"><svg id="rtChart"></svg></div>
