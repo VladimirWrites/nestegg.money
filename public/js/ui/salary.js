@@ -264,6 +264,10 @@ function renderSalaryHero(people) {
  * nothing is removed: the whole table is still in the DOM, and on a desktop, where there is
  * room for it, every row is shown as before. */
 const openYears = new Set();
+/* The editor folds on its own state: opening a year to read it and opening one to type into
+   it are different intentions, and the read-only tab's folds should not decide what the
+   editor shows. The newest year is open; a year you open stays open until you close it. */
+const openEditYears = new Set();
 
 // Read-only table shown on the Salary tab; all edits happen in the edit overlay.
 export function renderSalary() {
@@ -362,20 +366,29 @@ function salPersonSwitch(people) {
  * handlers — the only thing that changes is the shape. */
 function salMonthCards(p, yms) {
   let out = "", curY = null;
+  const latest = yms.length ? yms[0].slice(0, 4) : null;
   yms.forEach((ym) => {
     const y = ym.slice(0, 4);
     if (y !== curY) {
       curY = y;
+      if (y === latest) openEditYears.add(y);
       const tot = (p.entries || []).filter((e) => e.ym.slice(0, 4) === y).reduce((a, e) => a + salBase(p, e), 0);
       /* The subtotal says what it is. In the table it was a bare figure under the Event
          column, 250px from the amounts it sums, in the weight of a column heading. */
-      out += `<div class="smy"><span class="smy-y">${y}</span><span class="smy-t" data-ytot="${p.id}:${y}">${tot ? t("salary.yearTotal", { amount: money(tot) }) : t("salary.yearNone")}</span></div>`;
+      const open = openEditYears.has(y);
+      const filled = (p.entries || []).filter((e) => e.ym.slice(0, 4) === y && e.amount).length;
+      const months = yms.filter((x) => x.slice(0, 4) === y).length;
+      out += `<button type="button" class="smy${open ? " is-open" : ""}" data-yedit="${y}" aria-expanded="${open}">`
+        + `<svg class="salychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>`
+        + `<span class="smy-y">${y}</span>`
+        + `<span class="smy-n">${t("salary.filledOf", { filled, months })}</span>`
+        + `<span class="smy-t" data-ytot="${p.id}:${y}">${tot ? t("salary.yearTotal", { amount: money(tot) }) : t("salary.yearNone")}</span></button>`;
     }
     const e = salEntry(p, ym);
     const amt = e && e.amount ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
     const del = `<button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${t("salary.removeMonthAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>`;
     const tag = amt === "" ? `<span class="smon-tag">${t("salary.notFilled")}</span>` : "";
-    out += `<div class="smon${amt === "" ? " is-empty" : ""}" data-ym="${ym}">`
+    out += `<div class="smon${amt === "" ? " is-empty" : ""}${openEditYears.has(y) ? "" : " is-folded"}" data-ym="${ym}">`
       + `<div class="smon-h"><span class="smon-m">${ymLabel(ym)}</span>${tag}${del}</div>`
       + `<div class="smon-row">`
       + `<label class="smon-f smon-amt"><span class="smon-cap">${t("salary.thNet")}</span><input class="salf num" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0.00"></label>`
@@ -426,7 +439,7 @@ function renderSalaryEdit() {
       /* text, not number: a `number` field is formatted and parsed by the browser's own
          locale, so the same ledger showed "5418.61" on one machine and "5418,61" on the
          next, neither of which is the shape the app prints everywhere else. */
-      row += `<td class="salgsep"><input class="salf num" type="text" inputmode="decimal" value="${fmtNum(amt === "" ? null : amt)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0"></td>` +
+      row += `<td class="salgsep"><input class="salf num${amt === "" ? " is-empty" : ""}" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0.00"></td>` +
         `<td><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select></td>` +
         `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="—" title="${t("salary.eventTitle")}"></td>`;
     });
@@ -438,10 +451,23 @@ function renderSalaryEdit() {
   const cardHead = `<div class="smon-head"><input class="salname" value="${esc(person.name)}" data-sid="${person.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${person.id}" title="${esc(t("salary.removeName", { name: person.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;
   const nextBtn = `<button class="btn btn-sm btn-primary smon-next" data-salnext>${t("salary.next")}</button>`;
   const cardList = `${cardHead}<div class="smon-top">${nextBtn}</div><div class="smons">${yms.length ? salMonthCards(person, yms) : `<div class="exhint">${t("salary.noMonths")}</div>`}</div>`;
-  const tableHTML = `<div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + shown.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>`;
+  /* On a desktop the add button sat below a hundred and fifty rows while the month it adds
+     appears at the top of them, so a reader pressed it and nothing visibly happened. It is
+     at both ends now: beside the months on a phone, above the table on a desktop. */
+  const tableHTML = `<div class="smon-top">${nextBtn}</div><div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + shown.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>`;
   host.innerHTML = (narrow ? salPersonSwitch(people) : "") + (cards ? cardList : tableHTML) +
     `<div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="btn btn-sm" data-salgen>${t("salary.addRange")}</button>${cards ? "" : `<button class="btn btn-sm btn-primary" data-salnext>${t("salary.next")}</button>`}</div>`;
   const who = $("salImportWho"); if (who) { const prev = who.value; who.innerHTML = people.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join(""); if (prev) who.value = prev; }
+  /* Folding is a view state: it toggles a class on the cards already in the DOM, so the
+     field you were typing in is still there, and a browser's find still reaches a month
+     inside a folded year. */
+  host.querySelectorAll("[data-yedit]").forEach((btn) => {
+    btn.onclick = () => {
+      const y = btn.getAttribute("data-yedit");
+      if (openEditYears.has(y)) openEditYears.delete(y); else openEditYears.add(y);
+      salKeepScroll(host, renderSalaryEdit);
+    };
+  });
 }
 
 /* Crossing the breakpoint changes which layout is right, and the editor can be open while it
@@ -499,7 +525,9 @@ $("addPerson").onclick = () => {
   salWho = state.salaries.length - 1;   // the one you just added is the one you want to fill in
   salKeepScroll($("salaryList"), renderSalaryEdit);
   const nm = $("salaryList").querySelector(`.salname[data-sid="${p.id}"]`);
-  if (nm) { try { nm.focus({ preventScroll: true }); } catch (err) { nm.focus(); } if (nm.select) try { nm.select(); } catch (err) {} }
+  /* Focused so it can be named straight away, but not selected: a selected name is wiped by
+     the first keystroke, and it renders as a block of solid colour in every screenshot. */
+  if (nm) { try { nm.focus({ preventScroll: true }); } catch (err) { nm.focus(); } try { const n = nm.value.length; nm.setSelectionRange(n, n); } catch (err) {} }
 };
 $("salImportBtn").onclick = importSalary;
 
