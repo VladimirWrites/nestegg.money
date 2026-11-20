@@ -289,6 +289,14 @@ $("edEntries").addEventListener("input", (e) => {
   $("edTotal").textContent = money(snapTotalBase(sn));
 });
 
+$("edEntries").addEventListener("focusout", (e) => {
+  const el = e.target;
+  if (!el.classList || !el.classList.contains("num") || el.type !== "text") return;
+  const share = el.dataset.f === "shares";
+  const n = share ? parseDec(el.value) : parseNum(el.value);
+  el.value = n == null ? "" : (share ? String(n) : fmtNum(n));
+});
+
 $("edEntries").addEventListener("change", async (e) => {
   const el = e.target, f = el.dataset.f;
   /* Renaming a category used to run on every keystroke, through a rename that retags by name

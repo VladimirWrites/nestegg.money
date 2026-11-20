@@ -101,7 +101,13 @@ function closeAssetEditor() {
 function loanComputedHTML(a) {
   const L = a.loan, byPayment = L.mode === "payment", sched = buildSchedule(L), { M, n } = loanTerms(L);
   const bal = outstandingAt(L, new Date());
-  const tooLow = byPayment && +L.payment > 0 && !isFinite(n);
+  /* A payment a euro above the monthly interest amortizes in theory and never in practice:
+     the engine caps the schedule at a hundred years, and the screen then reported "Payoff
+     Dec 2125" and a total interest of three and a half million against a balance that had
+     barely moved. Anything that does not clear inside a working lifetime is called what it
+     is. */
+  const LIFETIME_MONTHS = 600;   // fifty years
+  const tooLow = byPayment && +L.payment > 0 && (!isFinite(n) || n > LIFETIME_MONTHS);
   const payRows = sched.filter((r) => r.type !== "extra");
   const payoff = payRows.length ? payRows[payRows.length - 1].date : null, totInt = sched.reduce((s, r) => s + (r.interest || 0), 0);
   const fixedUntil = L.fixedUntil ? parseDate(L.fixedUntil) : null;
@@ -174,7 +180,7 @@ function loanComputedHTML(a) {
       ? `<tr class="exline${cls}"><td>${ymdDay(r.date)}</td><td colspan="3">${t("asset.additionalPayment")}</td><td class="num">${moneyIn(r.extra, a.ccy)}</td><td class="num">${moneyIn(r.balance, a.ccy)}</td></tr>`
       : `<tr class="${cls.trim()}"><td>${my(r.date)}</td><td class="num">${moneyIn(r.payment, a.ccy)}</td><td class="num">${moneyIn(r.interest, a.ccy)}</td><td class="num">${moneyIn(r.principal, a.ccy)}</td><td class="num">—</td><td class="num">${moneyIn(r.balance, a.ccy)}</td></tr>`);
   }).join("");
-  return `${tooLow ? `<div class="loanwarn">${t("asset.paymentTooLow", { amount: moneyIn((+L.amount || 0) * (+L.rate || 0) / 100 / 12, a.ccy) })}</div>` : ""}
+  return `${tooLow ? `<div class="loanwarn" role="alert">${t("asset.paymentTooLow", { amount: moneyIn((+L.amount || 0) * (+L.rate || 0) / 100 / 12, a.ccy) })}</div>` : ""}
     <div class="pstats">
       ${calcStat}
       ${a.liability ? "" : `<div class="pstat"><span class="k">${t("asset.balanceToday")}</span><span class="v num">${moneyIn0(bal, a.ccy)}</span></div>`}
@@ -194,6 +200,12 @@ function loanComputedHTML(a) {
 function loanMissing(L) {
   if (!(+L.amount > 0)) return "asset.loanNeedsAmount";
   if (L.mode === "payment" ? !(+L.payment > 0) : !(+L.termYears > 0)) return "asset.loanNeedsTerm";
+  /* A date input can be cleared, and with no start there is no schedule — so the screen
+     printed "Total interest €0.00" beside a balance of the whole principal on a live
+     mortgage, and the asset's net value silently dropped by the full loan. */
+  if (!L.startDate) return "asset.loanNeedsStart";
+  // A term that rounds to zero months has no schedule either.
+  if (L.mode !== "payment" && Math.round((+L.termYears || 0) * 12) < 1) return "asset.loanNeedsTerm";
   return null;
 }
 function loanBlockHTML(a) {
@@ -245,8 +257,9 @@ function assetCardHTML(a) {
     return `<div class="rcard acard liabcard${bal > 0.005 ? " is-owing" : ""}" id="acard-${a.id}" data-aid="${a.id}">
       <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="${t("net.liabilityName")}" aria-label="${t("net.liabilityName")}"></div>
       <div class="ahero is-liab"><span class="ah-k">${t("asset.owedToday")}</span><span class="ah-v num${bal > 0.005 ? " liab" : ""}">${bal > 0.005 ? "− " + moneyIn0(bal, a.ccy) : moneyIn0(0, a.ccy)}${inBase(-bal)}</span></div>
+      ${a.loan ? "" : `<div class="toggles"><div class="tglgroup"><label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="loan"><span>${t("asset.ledeLoan")}<i>${t("asset.loanHint")}</i></span></label></div></div>`}
       <div class="frow"><label class="fld">${t("asset.currency")}${ccySel}</label><label class="fld">${t("common.category")}${catSel}</label>
-        <label class="fld">${t("asset.borrowedOn")}<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label></div>
+        <label class="fld">${t("asset.borrowedOn")}<input class="fin" type="date" max="${todayISO()}" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label></div>
       ${loanBlock}
       <div class="acard-danger"><button class="btn btn-sm btn-quiet-danger" data-adel="${a.id}">${t("asset.removeLiability")}</button></div>
     </div>`;
@@ -265,7 +278,7 @@ function assetCardHTML(a) {
       <!-- On every asset, not only a depreciating one. This date decides which years the
            thing appears in at all; hidden inside the depreciation block, the only way to
            correct it was to tick a box that changes the value, fix the date and untick. -->
-      <label class="fld">${t("asset.ownedSince")}<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label>
+      <label class="fld">${t("asset.ownedSince")}<input class="fin" type="date" max="${todayISO()}" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label>
     </div>
     <!-- Each sub-form sits under the toggle that reveals it. Rendered after both toggles,
          the depreciation fields appeared beneath the "Has a loan" hint, so ticking one box
@@ -333,7 +346,15 @@ $("assetList").addEventListener("input", (e) => {
     else if (f === "rate") a.rate = Math.min(Math.max((parseDec(el.value) || 0) / 100, 0), 5);
     else if (f === "up") a.up = el.value === "up";
     else if (f === "group") a.group = el.value || undefined;
-    else a[f] = el.value;
+    else if (f === "date") {
+      /* A snapshot cannot be dated later than today, and a thing owned from after the last
+         year in the ledger appears in none of them — which, since the only route into this
+         editor is a row in a year, left a record nobody could reach, edit or delete, riding
+         the sync for ever. */
+      const iso = el.value;
+      if (iso && iso > todayISO()) { toast(t("asset.futureDate")); el.value = a.date; return; }
+      a.date = iso;
+    } else a[f] = el.value;
   }
   scheduleSync();
   if (el.dataset.f === "name") { const ti = $("assetTitle"); if (ti) ti.textContent = a.name || t(a.liability ? "common.newLiability" : "common.newAsset"); }
@@ -413,6 +434,16 @@ $("assetList").addEventListener("click", (e) => {
     }
     return;
   }
+});
+
+/* Typed figures settle into the ledger's formatting when the field is left — otherwise the
+   card shows "41500" directly under "€1,060,000" until some unrelated thing re-renders it. */
+$("assetList").addEventListener("focusout", (e) => {
+  const el = e.target;
+  if (!el.classList || !el.classList.contains("num") || el.type !== "text") return;
+  const n = el.dataset.lf === "rate" || el.dataset.lf === "termYears" || el.dataset.f === "rate"
+    ? parseDec(el.value) : parseNum(el.value);
+  el.value = n == null ? "" : fmtNum(n, el.dataset.lf === "rate" || el.dataset.f === "rate" ? 3 : 2);
 });
 
 $("assetList").addEventListener("toggle", (e) => {

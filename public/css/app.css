@@ -1887,3 +1887,50 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 /* The tab bar is gone while an editor is open (body.no-nav), so its clearance is 150px of
    nothing under the last control on every editor screen. */
 body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
+
+/* ── the surfaces no round had looked at ───────────────────────────────── */
+
+/* A scrim that does not dim is not a scrim. Over a #12141b page, 62% black left the tab bar,
+   the headings and an amber banner button behind the share dialog all reading as live, so the
+   dialog looked like a card dropped on the screen rather than a layer over it. */
+.infomodal{background:rgba(0,0,0,.72)}
+.infobox{background:var(--panel-2);box-shadow:0 24px 60px rgba(0,0,0,.45)}
+/* The close button scrolls away inside a box that scrolls. */
+.infobox{padding-top:8px}
+.infoclose{position:sticky;float:right;top:0;z-index:2;background:var(--panel-2);border-radius:var(--r)}
+
+/* The reveal, for a 32-character key copied off paper into a field of dots. */
+.gateinwrap{position:relative;display:flex;align-items:center}
+.gateinwrap .gatein{flex:1;padding-right:52px}
+.gatereveal{position:absolute;right:4px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  background:none;border:0;color:var(--dim);cursor:pointer;padding:0}
+.gatereveal:hover{color:var(--text)}
+.gatereveal svg{width:20px;height:20px}
+.gatereveal[aria-pressed="true"]{color:var(--signal)}
+
+/* The symbol help is a lookup table, and it was set as flowing prose with 28 bordered chips
+   in it, so a line could break between a prefix and the market it belongs to. Green is this
+   stylesheet's colour for money that grew; a symbol is not money. */
+.infobox code{color:var(--text);background:var(--ink);border-color:var(--line)}
+.infobox dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:10px 0 2px;align-items:baseline}
+.infobox dt{font-family:var(--mono);font-size:13px;color:var(--text)}
+.infobox dd{font-size:13.5px;color:var(--dim);margin:0}
+.infobox a{color:var(--signal);text-decoration:underline;text-underline-offset:2px}
+
+/* The day line is a button and said so only on hover, which a phone never does. */
+.hero .day.is-tap{text-decoration-color:color-mix(in srgb, currentColor 40%, transparent);
+  min-height:44px;display:inline-flex;align-items:center;gap:6px}
+.hero .day.is-tap::after{content:"›";font-size:16px;opacity:.7}
+/* A symbol needs its own line in the landscape band too: the 620–899px row rule put it back
+   in the 92px currency track, where AMS:VWRL arrives as "AMS:V" with the help button sitting
+   on the letters. */
+@media(min-width:620px) and (max-width:899px){
+  #edEntries .rcard.is-priced{
+    grid-template-columns:10px minmax(120px,1fr) 150px 44px;
+    grid-template-areas:"dot name ccy del" ". val conv conv" ". kind cat cat" ". hint hint hint"}
+  #edEntries .rcard.is-priced .rtkwrap{width:100%}
+}
+/* The one field on the asset card with no edge was the one the card is named after, while
+   the bar title above it wore the focus ring. */
+.rcard .rname{border-bottom-color:var(--field-edge)}
+.rcard.acard .rname{font-size:17px;font-weight:600}

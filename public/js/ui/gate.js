@@ -148,6 +148,19 @@ function showSignin() {
   if (stopAcctWatch) { stopAcctWatch(); stopAcctWatch = null; } // no create screen, nothing to confirm
   $("gateCreate").classList.add("hide"); $("gateSignin").classList.remove("hide");
 }
+/* Reveal the account number being typed. The field stays type=password so a password
+   manager will fill it; this flips it only while the eye is pressed on. */
+const reveal = $("signinReveal");
+if (reveal) {
+  reveal.onclick = () => {
+    const f = $("signinInput");
+    const on = f.type === "password";
+    f.type = on ? "text" : "password";
+    reveal.setAttribute("aria-pressed", String(on));
+    f.focus();
+  };
+}
+
 $("toSignin").onclick = showSignin;
 $("toCreate").onclick = showCreate;
 // these are role="button" links — let keyboard users activate them with Enter/Space too

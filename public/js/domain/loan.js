@@ -49,11 +49,16 @@ function computeSchedule(loan) {
     let running = bal;
     while (ei < extras.length && extras[ei].d < date) {
       const x = extras[ei];
+      /* You cannot pay off more than you owe. Uncapped, a lump sum larger than the balance
+         drove the schedule negative — the table printed a balance of minus four hundred
+         thousand and claimed half a million paid off on a hundred-thousand loan. */
+      const paid = Math.min(round2(x.a), Math.max(0, running));
+      if (paid <= 0) { ei++; continue; }
       const day = Math.min(30, Math.max(1, x.d.getDate()));
-      credit += (x.a * (30 - day)) / 30;
-      extraThis = round2(extraThis + x.a);
-      running = round2(running - x.a);
-      rows.push({ type: "extra", date: x.d, extra: x.a, balance: running, estimated: est(x.d) });
+      credit += (paid * (30 - day)) / 30;
+      extraThis = round2(extraThis + paid);
+      running = round2(running - paid);
+      rows.push({ type: "extra", date: x.d, extra: paid, balance: running, estimated: est(x.d) });
       ei++;
     }
 

@@ -76,8 +76,11 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
       <div class="acctnum num" id="newAcct">…</div>
       <input type="password" id="newAcctField" class="sr-only" name="password" autocomplete="new-password" readonly tabindex="-1" aria-hidden="true" spellcheck="false">
       <p class="gatesaved hide" id="acctSaved" data-i18n="gate.savedToManager">Saved to your password manager.</p>
-      <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct" data-i18n="gate.copy">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct" data-i18n="gate.regen">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct" data-i18n="gate.confirm">I've saved it — continue</button></div>
+      <!-- Above the button, not below it. The sentence that justifies this whole screen was
+           printed after the control it is supposed to gate, so the reading order was: here is
+           a number, here is Continue, and by the way there is no recovery. -->
       <div class="warn" data-i18n="gate.warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
+      <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct" data-i18n="gate.copy">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct" data-i18n="gate.regen">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct" data-i18n="gate.confirm">I've saved it — continue</button></div>
       <div class="switch"><span data-i18n="gate.haveOne">Already have one?</span> <a id="toSignin" role="button" tabindex="0" data-i18n="gate.toSignin">Sign in with an account number</a></div>
     </form>
     <form class="panel hide" id="gateSignin" autocomplete="on">
@@ -85,7 +88,14 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
       <!-- Empty and writable here, so the manager fills it: a username it didn't write is a
            reason for it to decline to fill the number either. -->
       <input type="text" id="signinUser" class="sr-only" name="username" autocomplete="username" tabindex="-1" aria-hidden="true">
-      <input class="gatein" id="signinInput" type="password" name="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false" aria-label="Account number" data-i18n-aria-label="gate.acctAria">
+      <div class="gateinwrap">
+        <input class="gatein" id="signinInput" type="password" name="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false" aria-label="Account number" data-i18n-aria-label="gate.acctAria">
+        <!-- The field has to stay type=password for a password manager to fill it, so the
+             way to check what you typed is a reveal, not a different type. -->
+        <button type="button" class="gatereveal" id="signinReveal" aria-pressed="false" aria-label="Show the number" data-i18n-aria-label="gate.reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/></svg>
+        </button>
+      </div>
       <div class="gaterow"><button type="submit" class="gatebtn" id="signinBtn" data-i18n="gate.signin">Sign in</button></div>
       <div class="switch"><span data-i18n="gate.needNew">Need a new account?</span> <a id="toCreate" role="button" tabindex="0" data-i18n="gate.create">Create one</a></div>
     </form>
@@ -486,10 +496,10 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
   </div>
 </div>
 
-<div id="shareModal" class="infomodal hide"><div class="infobox">
+<div id="shareModal" class="infomodal hide"><div class="infobox" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
   <button class="infoclose" id="shareClose" aria-label="Close" data-i18n-aria-label="share.close">×</button>
   <div id="shareBody">
-    <h3 data-i18n="share.title">Share a read-only link</h3>
+    <h3 id="shareTitle" data-i18n="share.title">Share a read-only link</h3>
     <p data-i18n="share.lede">Pick what to include. The person you share with sees a frozen, read-only snapshot — they can't edit your data, and the link expires in 30 days.</p>
     <div id="shareSecs" class="share-secs"></div>
     <label class="share-lbl"><span data-i18n="share.whoFor">Who's it for?</span> <span class="share-hint" data-i18n="share.whoHint">(optional, for your list)</span>
