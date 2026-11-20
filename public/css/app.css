@@ -672,6 +672,8 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .saltab .salh1 th{top:0}
 #salaryEditor .saltab .salh1 th{top:calc(64px + var(--edge-t))}
 #salaryEditor .saltab .salh2 th{top:calc(113px + var(--edge-t))}
+/* Below 900px there is no person-name row above them, so the headings are the top row. */
+@media(max-width:899px){#salaryEditor .saltab .salh2 th{top:calc(64px + var(--edge-t))}}
 /* A heading sits over the control it names. Right-aligned against full-width inputs, each
    one hugged the right edge of its cell while its control filled the cell — so "EVENT" was
    130px to the right of where the event field's text starts, and at 320px "CCY" floated over
@@ -808,12 +810,16 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    it, the name field printed the same word ninety pixels below the tab that already said
    it, and parked a destructive control under the thumb. */
 .smon-head.is-compact{display:flex;gap:18px;justify-content:flex-end;padding:0 2px 12px}
-.smon-act{background:none;border:0;padding:6px 0;min-height:36px;font:inherit;font-size:13px;color:var(--dim);cursor:pointer}
+.smon-act{background:none;border:0;padding:6px 2px;min-height:44px;font:inherit;font-size:13px;color:var(--dim);cursor:pointer}
 .smon-act:hover{color:var(--text)}
-.smon-act.is-danger:hover{color:var(--danger)}
+.smon-act.is-danger{color:var(--danger);opacity:.85}
+.smon-act.is-danger:hover{opacity:1}
 .salwho{position:sticky;top:calc(64px + var(--edge-t));z-index:5;background:var(--ink);padding:6px 0;margin-bottom:12px}
 .salwho::after{content:"";position:absolute;left:0;right:0;top:100%;height:10px;
   background:linear-gradient(var(--ink),transparent);pointer-events:none}
+/* A phone on its side is 420px tall: the bar plus a pinned switch were taking 28% of it and
+   slicing the column headings in half. At that height the switch scrolls away with the rest. */
+@media(max-height:560px){.salwho{position:static}.salwho::after{display:none}}
 
 /* The year's own line, and the handle that folds it. A person with twelve years of months
    is 150 cards; a new person is 150 empty ones. Folded behind their years, with the newest
@@ -827,7 +833,11 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .smy .salychev{width:13px;height:13px;flex:none;color:var(--dim);transition:transform .15s ease}
 .smy.is-open .salychev{transform:rotate(90deg)}
 .smy:focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-radius:var(--r-sm)}
-.smy-y{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--text)}
+.smy-y{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--text);flex:none}
+/* "12 of 12 filled" and "Total €60,644" wrapped at 320px, so each row was a different
+   height; in German they are longer again. The count gives way first, the total never. */
+.smy-n{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.smy-t{flex:none;white-space:nowrap}
 /* How much of the year is actually filled in — the thing you open a year to find out. */
 .smy-n{font-size:11.5px;color:var(--dimmer)}
 /* The one fact in this line worth an accent: a year still missing months. */

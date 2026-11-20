@@ -435,7 +435,9 @@ function renderSalaryEdit() {
   const yms = salTableYms();
   let h1 = `<th class="salm-h"></th>`, h2 = `<th class="salm-h">${t("salary.impMonth")}</th>`;
   shown.forEach((p) => {
-    h1 += `<th colspan="3" class="salp-h salgsep"><span class="salp-hin"><input class="salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${p.id}" title="${esc(t("salary.removeName", { name: p.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></span></th>`;
+    /* With one person on screen and a switch above naming them, the table's own name cell
+       is the third place the same word appears. */
+    h1 += narrow ? "" : `<th colspan="3" class="salp-h salgsep"><span class="salp-hin"><input class="salname" value="${esc(p.name)}" data-sid="${p.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${p.id}" title="${esc(t("salary.removeName", { name: p.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></span></th>`;
     h2 += `<th class="salgsep salnet-h">${t("salary.thNet")}</th><th>${t("salary.thCcy")}</th><th>${t("salary.thEvent")}</th>`;
   });
   h1 += `<th class="salx-h"></th>`; h2 += `<th class="salx-h"></th>`;
@@ -503,8 +505,14 @@ function renderSalaryEdit() {
   /* On a desktop the add button sat below a hundred and fifty rows while the month it adds
      appears at the top of them, so a reader pressed it and nothing visibly happened. It is
      at both ends now: beside the months on a phone, above the table on a desktop. */
-  const tableHTML = `<div class="smon-top">${nextBtn}</div><div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + shown.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>`;
-  host.innerHTML = (narrow ? salPersonSwitch(people) : "") + (cards ? cardList : tableHTML) +
+  const tableHTML = `<div class="smon-top">${nextBtn}${narrow ? addPersonTop : ""}</div>`
+    + (narrow && emptyPerson
+      ? `<div class="smon-blank"><p>${t("salary.personEmpty", { name: esc(person.name || t("salary.namePh")), count: yms.length })}</p>`
+        + `<button type="button" class="btn btn-sm" data-fillfrom>${t("salary.fillFrom", { count: yms.length })}</button></div>`
+      : `<div class="saltable-scroll"><table class="saltab"><thead>${narrow ? "" : `<tr class="salh1">${h1}</tr>`}<tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + shown.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>`);
+  /* Below 900px the table shows one person, chosen by the switch, so it needs the same
+     header the cards have: two words, not a name repeated under the tab that says it. */
+  host.innerHTML = (narrow ? salPersonSwitch(people) + (people.length > 1 ? cardHead : "") : "") + (cards ? cardList : tableHTML) +
     `<div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="btn btn-sm" data-salgen>${t("salary.addRange")}</button>${cards ? "" : `<button class="btn btn-sm" data-salnext>${t("salary.next")}</button>`}</div>`;
   const who = $("salImportWho");
   if (who) {
