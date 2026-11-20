@@ -793,6 +793,13 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    two rarest actions in the editor, one of them destructive and under the thumb. What stays
    is the switch, which is the thing that answers "whose money is this". */
 .smon-head{padding:6px 0 10px}
+/* Two quiet words where a repeated name and a delete bin used to be: with a switch above
+   it, the name field printed the same word ninety pixels below the tab that already said
+   it, and parked a destructive control under the thumb. */
+.smon-head.is-compact{display:flex;gap:18px;justify-content:flex-end;padding:0 2px 12px}
+.smon-act{background:none;border:0;padding:6px 0;min-height:36px;font:inherit;font-size:13px;color:var(--dim);cursor:pointer}
+.smon-act:hover{color:var(--text)}
+.smon-act.is-danger:hover{color:var(--danger)}
 .salwho{position:sticky;top:64px;z-index:5;background:var(--ink);padding:6px 0;margin-bottom:12px}
 .salwho::after{content:"";position:absolute;left:0;right:0;top:100%;height:10px;
   background:linear-gradient(var(--ink),transparent);pointer-events:none}
@@ -812,6 +819,8 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .smy-y{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--text)}
 /* How much of the year is actually filled in — the thing you open a year to find out. */
 .smy-n{font-size:11.5px;color:var(--dimmer)}
+/* The one fact in this line worth an accent: a year still missing months. */
+.smy-n.is-part{color:var(--signal)}
 .smy-n.is-part{color:var(--signal)}
 .smy-t{margin-left:auto;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;color:var(--text)}
 .smon.is-folded{display:none}
@@ -1221,14 +1230,20 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    at once and take one tap instead of three. */
 /* The person switch above the salary table on a phone. Full width, because it is the thing
    that says whose column you are filling in. */
-.salwho{display:flex;width:100%;margin-bottom:12px}
-.salwho .seg-btn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Which person you are looking at is a state; adding a month is an action. Filled amber,
-   the switch read as the same kind of object as the button under it — two amber blocks of
-   the same radius, 170px apart, meaning different things. The selected person keeps the
-   amber, as a mark under the name rather than a slab behind it. */
-.salwho .seg-btn.is-on{background:var(--panel);color:var(--text);box-shadow:inset 0 -2px 0 var(--signal-fill)}
-.salwho .seg-btn.is-on:hover{color:var(--text)}
+/* A switch, not a tab strip. Filled amber it read as the same kind of object as the button
+   that adds a month; as an underline inside a bordered box it read as a desktop tab strip
+   from fifteen years ago. A soft well with one raised pill in it. */
+/* `.seg` is declared after this and would otherwise put its own border back round the
+   track, which is the ring that made it look like a tab strip. */
+.seg.salwho{display:flex;width:100%;margin-bottom:12px;border:0;border-radius:var(--r-pill);overflow:visible}
+.salwho .seg-inner{display:flex;gap:2px;width:100%;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:var(--r-pill);padding:3px}
+.salwho .seg-btn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  border:0;border-radius:var(--r-pill);background:transparent;color:var(--dim);min-height:40px;
+  font-size:14px;font-weight:600;transition:background .14s ease,color .14s ease}
+.salwho .seg-btn+.seg-btn{border-left:0}
+.salwho .seg-btn:hover{color:var(--text)}
+.salwho .seg-btn.is-on{background:var(--panel);color:var(--text);box-shadow:var(--shadow-card)}
 /* The columns are told to share the width rather than each asking for the space its widest
    content wants — which is what pushed the table past its 358px box and left it scrolling
    sideways. These rules used to be written as `.salwho ~ .saltable-scroll`, so they only

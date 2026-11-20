@@ -276,6 +276,8 @@ export default {
     emptyTable: "No salary history yet. Tap “Edit salaries” to add people and months, or import from a spreadsheet.",
     household: "Household",
     emptyEdit: "No one yet. Add yourself — and your partner, if you share a ledger — then add the months you want to fill in.",
+    rename: "Rename",
+    removePerson: "Remove person",
     namePh: "Name",
     removeName: "Remove {name}",
     removePersonAria: "Remove person",

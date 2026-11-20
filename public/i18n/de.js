@@ -276,6 +276,8 @@ export default {
     emptyTable: "Noch keine Gehaltshistorie. Tippen Sie auf „Gehälter bearbeiten“, um Personen und Monate hinzuzufügen, oder importieren Sie aus einer Tabelle.",
     household: "Haushalt",
     emptyEdit: "Noch niemand. Fügen Sie sich selbst hinzu — und Ihre Partnerin oder Ihren Partner, wenn Sie ein gemeinsames Kontobuch führen — und dann die Monate, die Sie ausfüllen möchten.",
+    rename: "Umbenennen",
+    removePerson: "Person entfernen",
     namePh: "Name",
     removeName: "{name} entfernen",
     removePersonAria: "Person entfernen",

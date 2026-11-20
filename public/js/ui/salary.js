@@ -353,8 +353,10 @@ let salWho = 0;   // which person the narrow layout is showing
 
 function salPersonSwitch(people) {
   if (people.length < 2) return "";
-  return `<div class="seg salwho">` + people.map((p, i) =>
-    `<button type="button" class="seg-btn${i === salWho ? " is-on" : ""}" data-salwho="${i}">${esc(p.name || t("salary.namePh"))}</button>`).join("") + `</div>`;
+  /* The track is its own element so the selected pill can sit inside it with a little air
+     all round, which is what makes it read as raised rather than as a tab. */
+  return `<div class="seg salwho"><div class="seg-inner">` + people.map((p, i) =>
+    `<button type="button" class="seg-btn${i === salWho ? " is-on" : ""}" data-salwho="${i}">${esc(p.name || t("salary.namePh"))}</button>`).join("") + `</div></div>`;
 }
 
 /* Below 620px the editor is a list of months, not a table.
@@ -463,7 +465,14 @@ function renderSalaryEdit() {
      when May 2026 is already the top row is an invitation to add nothing. */
   const dFrom = yms.length ? salNextMonth() : new Date().getFullYear() + "-01", dTo = salThisMonth();
   const person = shown[0];
-  const cardHead = `<div class="smon-head"><input class="salname" value="${esc(person.name)}" data-sid="${person.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${person.id}" title="${esc(t("salary.removeName", { name: person.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;
+  /* With a switch above it, a name field printed the same word ninety pixels below the tab
+     that already said it, and parked a delete bin beside it. Two quiet words instead: the
+     name becomes a field when you ask to rename it, and removing a person is a word rather
+     than a bin you can catch with a thumb. With one person there is no switch, so the field
+     is the header and says who the ledger is for. */
+  const cardHead = people.length > 1
+    ? `<div class="smon-head is-compact"><button type="button" class="smon-act" data-rename="${person.id}">${t("salary.rename")}</button><button type="button" class="smon-act is-danger" data-perdel="${person.id}">${t("salary.removePerson")}</button></div>`
+    : `<div class="smon-head"><input class="salname" value="${esc(person.name)}" data-sid="${person.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${person.id}" title="${esc(t("salary.removeName", { name: person.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;
   const nextBtn = `<button class="btn btn-sm btn-primary smon-next" data-salnext>${t("salary.next")}</button>`;
   /* Beside the people, not at the bottom of their months: on a phone "+ Add person" sat
      below every month of every year, which is the one place you are not when you decide to
@@ -482,6 +491,23 @@ function renderSalaryEdit() {
      inside a folded year. */
   /* The note field arrives when it is asked for, and the ledger is untouched until something
      is typed into it. */
+  host.querySelectorAll("[data-rename]").forEach((btn) => {
+    btn.onclick = () => {
+      const row = btn.closest(".smon-head"); if (!row) return;
+      const sid = btn.getAttribute("data-rename");
+      const p2 = (state.salaries || []).find((x) => x.id === sid); if (!p2) return;
+      const inp = document.createElement("input");
+      inp.className = "salname"; inp.value = p2.name || "";
+      inp.dataset.sid = sid; inp.dataset.f = "name";
+      inp.placeholder = t("salary.namePh");
+      inp.setAttribute("aria-label", t("salary.namePh"));
+      row.classList.remove("is-compact");
+      row.replaceChildren(inp);
+      inp.focus();
+      /* Leaving the field puts the row back, with the switch above it already renamed. */
+      inp.onblur = () => salKeepScroll(host, renderSalaryEdit);
+    };
+  });
   host.querySelectorAll("[data-addnote]").forEach((btn) => {
     btn.onclick = () => {
       const card = btn.closest(".smon"); if (!card) return;
