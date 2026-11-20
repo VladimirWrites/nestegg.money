@@ -284,7 +284,7 @@ export default {
     notFilled: "empty",
     eventPh: "Raise, new job…",
     thNet: "Net",
-    thCcy: "Ccy",
+    thCcy: "Currency",
     thEvent: "Note",
     removeMonthConfirm: "Remove {month}?",
     removeMonthAllConfirm: "Remove {month} for everyone in this ledger?",

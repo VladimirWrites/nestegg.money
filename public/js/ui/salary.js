@@ -441,7 +441,7 @@ function renderSalaryEdit() {
          next, neither of which is the shape the app prints everywhere else. */
       row += `<td class="salgsep"><input class="salf num${amt === "" ? " is-empty" : ""}" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="0.00"></td>` +
         `<td><select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select></td>` +
-        `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="—" title="${t("salary.eventTitle")}"></td>`;
+        `<td><input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="${t("salary.eventPh")}" title="${t("salary.eventTitle")}"></td>`;
     });
     row += `<td class="salxc"><button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${t("salary.removeMonthAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button></td>`;
     body += row + `</tr>`;
@@ -450,13 +450,17 @@ function renderSalaryEdit() {
   const person = shown[0];
   const cardHead = `<div class="smon-head"><input class="salname" value="${esc(person.name)}" data-sid="${person.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${person.id}" title="${esc(t("salary.removeName", { name: person.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;
   const nextBtn = `<button class="btn btn-sm btn-primary smon-next" data-salnext>${t("salary.next")}</button>`;
-  const cardList = `${cardHead}<div class="smon-top">${nextBtn}</div><div class="smons">${yms.length ? salMonthCards(person, yms) : `<div class="exhint">${t("salary.noMonths")}</div>`}</div>`;
+  /* Beside the people, not at the bottom of their months: on a phone "+ Add person" sat
+     below every month of every year, which is the one place you are not when you decide to
+     add someone. */
+  const addPersonTop = cards ? `<button class="btn btn-sm smon-addper" id="addPersonTop">${t("salary.addPerson")}</button>` : "";
+  const cardList = `${cardHead}<div class="smon-top">${nextBtn}${addPersonTop}</div><div class="smons">${yms.length ? salMonthCards(person, yms) : `<div class="exhint">${t("salary.noMonths")}</div>`}</div>`;
   /* On a desktop the add button sat below a hundred and fifty rows while the month it adds
      appears at the top of them, so a reader pressed it and nothing visibly happened. It is
      at both ends now: beside the months on a phone, above the table on a desktop. */
   const tableHTML = `<div class="smon-top">${nextBtn}</div><div class="saltable-scroll"><table class="saltab"><thead><tr class="salh1">${h1}</tr><tr class="salh2">${h2}</tr></thead><tbody>${body || `<tr><td colspan="${2 + shown.length * 3}" class="exhint">${t("salary.noMonths")}</td></tr>`}</tbody></table></div>`;
   host.innerHTML = (narrow ? salPersonSwitch(people) : "") + (cards ? cardList : tableHTML) +
-    `<div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="btn btn-sm" data-salgen>${t("salary.addRange")}</button>${cards ? "" : `<button class="btn btn-sm btn-primary" data-salnext>${t("salary.next")}</button>`}</div>`;
+    `<div class="controls salctrls"><span class="salrlbl">${t("salary.addFrom")}</span><input type="month" class="salpick salfrom" value="${dFrom}" title="${t("salary.fromTitle")}"><span class="salrlbl">${t("salary.toLbl")}</span><input type="month" class="salpick salto" value="${dTo}" title="${t("salary.toTitle")}"><button class="btn btn-sm" data-salgen>${t("salary.addRange")}</button>${cards ? "" : `<button class="btn btn-sm" data-salnext>${t("salary.next")}</button>`}</div>`;
   const who = $("salImportWho"); if (who) { const prev = who.value; who.innerHTML = people.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join(""); if (prev) who.value = prev; }
   /* Folding is a view state: it toggles a class on the cards already in the DOM, so the
      field you were typing in is still there, and a browser's find still reaches a month
@@ -484,12 +488,36 @@ try {
 } catch (e) {}
 
 $("salaryList").addEventListener("input", (e) => {
+  const t2 = t;   // `t` is the event target in this handler; the translator keeps its own name
   const t = e.target, sid = t.dataset.sid, f = t.dataset.f; if (!sid || !f) return; const p = state.salaries.find((x) => x.id === sid); if (!p) return;
   if (t.dataset.ym) {
     const en = salEnsure(p, t.dataset.ym);
     if (f === "amount") en.amount = parseNum(t.value) || 0; else en[f] = t.value;
     scheduleSync();
-    if (f === "amount") { const yr = t.dataset.ym.slice(0, 4), yt = document.querySelector('[data-ytot="' + sid + ":" + yr + '"]'); if (yt) { const tot = p.entries.filter((x) => x.ym.slice(0, 4) === yr).reduce((a, x) => a + salBase(p, x), 0); yt.textContent = tot ? money(tot) : "—"; flash(yt); } drawSalDebounced(); }
+    if (f === "amount") {
+      const yr = t.dataset.ym.slice(0, 4);
+      const yt = document.querySelector('[data-ytot="' + sid + ":" + yr + '"]');
+      if (yt) {
+        const tot = p.entries.filter((x) => x.ym.slice(0, 4) === yr).reduce((a, x) => a + salBase(p, x), 0);
+        /* Written the way the renderer writes it. Rewritten as a bare figure, a card's
+           "2026 · Total €24,740" lost its label at the first keystroke, and "nothing yet"
+           turned into a number with no word to say what it was. */
+        yt.textContent = yt.classList.contains("smy-t")
+          ? (tot ? t2("salary.yearTotal", { amount: money(tot) }) : t2("salary.yearNone"))
+          : (tot ? money(tot) : "—");
+        flash(yt);
+      }
+      /* The card stops being an empty one the moment it holds a figure. */
+      const card = t.closest(".smon");
+      if (card) {
+        const has = !!parseNum(t.value);
+        card.classList.toggle("is-empty", !has);
+        const tag = card.querySelector(".smon-tag");
+        if (tag) tag.hidden = has;
+      }
+      const sf = t.closest("td") ? t : null; if (sf) sf.classList.toggle("is-empty", !parseNum(t.value));
+      drawSalDebounced();
+    }
   } else { if (f === "name") p.name = t.value; else if (f === "ccy") p.ccy = t.value; scheduleSync(); if (f === "name") drawSalDebounced(); }
 });
 $("salaryList").addEventListener("change", (e) => { if (e.target.dataset.f === "ccy") salKeepScroll($("salaryList"), renderSalaryEdit); });
@@ -519,6 +547,8 @@ $("salaryList").addEventListener("click", (e) => {
     scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); salRevealMonth($("salaryList"), last, true); toast(t("salary.addedMonths", { count: n })); return;
   }
 });
+/* Both copies of the control, one handler. */
+document.addEventListener("click", (e) => { if (e.target && e.target.id === "addPersonTop") $("addPerson").click(); });
 $("addPerson").onclick = () => {
   const p = { id: nid(), name: state.salaries.length ? t("salary.partner") : t("salary.me"), ccy: state.baseCcy, entries: [] };
   state.salaries.push(p); scheduleSync();

@@ -284,7 +284,7 @@ export default {
     notFilled: "leer",
     eventPh: "Gehaltserhöhung, neuer Job…",
     thNet: "Netto",
-    thCcy: "Whg.",
+    thCcy: "Währung",
     thEvent: "Notiz",
     removeMonthConfirm: "{month} entfernen?",
     removeMonthAllConfirm: "{month} für alle in diesem Kontobuch entfernen?",
