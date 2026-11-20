@@ -83,7 +83,14 @@ export function donutArcs(svg, segs, tag) {
     const f = seg.v / total, a2 = a + f * Math.PI * 2, lg = f > 0.5 ? 1 : 0, am = (a + a2) / 2;
     const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
     const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    p.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`);
+    /* One segment that is the whole total draws nothing at all as an arc: a2 is a + 2π, so the
+       two endpoints are the same point, and the SVG spec says an arc whose endpoints coincide
+       is omitted. The ring vanished and the centre figure was left floating in white space —
+       on the budget tab that is the first-run state (a salary entered, no outgoings yet), and
+       on net worth it is a year holding one asset. Two half-arcs instead. */
+    p.setAttribute("d", f >= 0.9999
+      ? `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r}`
+      : `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`);
     p.setAttribute("fill", "none"); p.setAttribute("stroke", seg.color); p.setAttribute("stroke-width", sw);
     p.setAttribute("pathLength", "1"); p.setAttribute("class", "dwedge");
     p.setAttribute("data-mx", (cx + r * Math.cos(am)).toFixed(1)); p.setAttribute("data-my", (cy + r * Math.sin(am)).toFixed(1));

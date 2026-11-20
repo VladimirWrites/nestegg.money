@@ -19,13 +19,16 @@ import { t } from "../i18n.js";
    string and stranded every row tagged with it in a section nothing matched. */
 export function categorySelectHTML(cls, dataAttr, current, names, opts) {
   const o = opts || {};
-  const keep = (g) => !(o.move && g === current);
+  /* An expense with no category stores "", a loan with none has no entry at all. Compared
+     untouched, the loan's picker listed "no category" as somewhere to move to. */
+  const cur = current || "";
+  const keep = (g) => !(o.move && g === cur);
   const list = (names || []).filter(keep)
-    .map((g) => `<option value="${esc(g)}" ${!o.move && g === current ? "selected" : ""}>${esc(g)}</option>`).join("");
+    .map((g) => `<option value="${esc(g)}" ${!o.move && g === cur ? "selected" : ""}>${esc(g)}</option>`).join("");
   /* Disabled, so a reader can never land back on it, and it is not in the tab order of the
      open list. It is only ever the closed face. */
   const head = o.move ? `<option value="" selected disabled hidden>${esc(o.move)}</option>` : "";
-  const none = keep("") ? `<option value="" ${!o.move && !current ? "selected" : ""}>${t("common.noCategory")}</option>` : "";
+  const none = keep("") ? `<option value="" ${!o.move && !cur ? "selected" : ""}>${t("common.noCategory")}</option>` : "";
   const label = o.label || t("common.category");
   return `<select class="${cls}" ${dataAttr} title="${esc(label)}" aria-label="${esc(label)}">${head}${none}${list}</select>`;
 }
@@ -49,7 +52,13 @@ export function groupHeadingId(prefix, name) {
    straight past every category, and there was nothing to announce the section by. And the only
    label on the rename field was the generic "Category name", so five fields in a row read
    identically and none of them said which category it would rename. */
-export function groupSectionHTML(name, color, subtotalHTML, cardsHTML, emptyHint = t("common.emptyCategory"), idPrefix = "grp") {
+/* A trash can, for callers whose rows carry a × of their own. Two bordered × buttons of the
+   same size in the same column, one of which empties a whole category and one of which deletes
+   a single row, are not two weights of the same control — they are two different actions that
+   had become impossible to tell apart. */
+export const TRASH_SVG = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>`;
+
+export function groupSectionHTML(name, color, subtotalHTML, cardsHTML, emptyHint = t("common.emptyCategory"), idPrefix = "grp", delGlyph = "×") {
   const hid = groupHeadingId(idPrefix, name);
   const empty = !cardsHTML ? " is-empty" : "";
   return `<div class="grp${empty}" role="group" aria-labelledby="${hid}"><div class="grphead">`
@@ -57,6 +66,6 @@ export function groupSectionHTML(name, color, subtotalHTML, cardsHTML, emptyHint
     + `<h3 class="grptitle-h" id="${hid}"><span class="sr-only">${esc(name)}</span>`
     + `<input class="grpname" data-grp="${esc(name)}" value="${esc(name)}" title="${t("common.categoryName")}" aria-label="${esc(t("common.renameCategoryAria", { name }))}" placeholder="${t("common.categoryName")}"></h3>`
     + `<span class="grpsub num" data-grpsub="${esc(name)}">${subtotalHTML}</span>`
-    + `<button type="button" class="grpdel" data-grpdel="${esc(name)}" title="${t("common.deleteCategory")}" aria-label="${esc(t("common.deleteCategoryAria", { name }))}">×</button></div>`
+    + `<button type="button" class="grpdel" data-grpdel="${esc(name)}" title="${t("common.deleteCategory")}" aria-label="${esc(t("common.deleteCategoryAria", { name }))}">${delGlyph}</button></div>`
     + `<div class="grpcards">${cardsHTML || `<div class="exhint">${esc(emptyHint)}</div>`}</div></div>`;
 }

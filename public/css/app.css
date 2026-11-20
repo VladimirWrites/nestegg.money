@@ -2234,8 +2234,9 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 /* One spec for the two swatches that mean the same thing — a legend chip and a card dot. */
 @media(prefers-color-scheme:light){:root:not([data-theme="dark"]) .legend .swatch{box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}}
 :root[data-theme="light"] .legend .swatch{box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}
-/* …and no outline on the one marker that stands for no wedge at all. */
-.grp.is-empty .grphead .dot{box-shadow:none}
+/* A category with nothing in it has no wedge, so its marker is faded rather than unringed —
+   stripping the outline only made it invisible on a white card. */
+.grp.is-empty .grphead .dot{opacity:.45}
 
 /* The net-worth doughnut honours a reader who has asked for less motion; the budget one was
    never added to either reduced-motion block, and it redraws on every edit rather than on
@@ -2245,7 +2246,7 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 }
 /* A category that is set is a fact, not a placeholder — the same fix the net worth row got,
    and this screen repeats the picker under every single outgoing. */
-.bud-exp .bud-exp-cat{color:var(--text)}
+.bud-exp .bud-exp-cat{color:var(--dim)}
 
 /* ── Budget, round 3: the category card in editing mode ───────────────── */
 
@@ -2292,7 +2293,7 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 
 /* "— no category —" is the absence of a choice and was printed in full-strength ink, so an
    untagged row read as the most definite thing in the list. */
-.bud-exp .bud-exp-cat:has(option[value=""]:checked){color:var(--dim)}
+#budItems .bud-exp-cat,#budItems .bud-loan-cat{color:var(--dim)}
 
 /* The override row is a label, a "use salary" button and a 140px field on one line. In German
    the label alone is 24 characters: the three of them overflowed the card by about 58px at
@@ -2333,7 +2334,7 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 /* An empty category is meant to read as empty. The r2 rule named `.grptitle`, which is the
    reading-mode label; in editing the name is an input, so the rule reached nothing and a
    category with nothing in it had a full-strength bold name beside a dim dot and a dim €0. */
-#budItems .grp.is-empty .grpname{color:var(--dim);font-weight:500}
+#budItems .grp.is-empty .grpsub{color:var(--dim);font-weight:500}
 
 /* The picker says "Move to…" now, so it needs the width of a verb, not of the longest category
    name — and on a phone it stops being a full-width field under every single row. */
@@ -2344,9 +2345,10 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
   #budItems .bud-exp-cat,#budItems .bud-loan-cat{width:auto;max-width:100%;justify-self:start}
 }
 
-/* Two destructive buttons in one column, same glyph, same box: the one that deletes a whole
-   category and the one that deletes a single row. Give the category's its own weight. */
-#budItems .grpdel{font-size:15px;color:var(--dim)}
+/* The card delete is a trash can and the row delete is a ×. They were two bordered × boxes
+   of the same size in the same column, 70px apart, one of which empties a whole category. */
+#budItems .grpdel{display:inline-flex;align-items:center;justify-content:center}
+#budItems .grpdel:hover,#budItems .grpdel:focus-visible{color:var(--danger);border-color:var(--danger)}
 #budItems .bud-exp-del{font-size:15px}
 
 /* The amount is the thing this screen exists to show, and it was rendered dimmer than its own
@@ -2367,3 +2369,40 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 /* After pinning Edit/Done to the top of the header, the title's own line-box left it sitting
    about 8px above the button's centre. */
 .bud-exp-headtext{display:flex;flex-direction:column;justify-content:center;min-height:36px}
+
+/* ── Budget, round 5 ─────────────────────────────────────────────────── */
+
+/* Each card now carries its own share of the outgoings, which was the only column the legend
+   had that the card did not: the swatch is this card's dot and the same hex, the name is its
+   heading, the figure is its subtotal. So on a phone the legend was ~450px spent restating
+   the block immediately below it, and it goes. On a desktop it fills the column beside the
+   ring, where there is nothing else to put, and stays. */
+.grppct{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--dim);margin-right:10px}
+.grpamt{font-variant-numeric:tabular-nums}
+@media(max-width:899px){.bud-chart .legend{display:none}}
+
+/* The untagged card is drawn by the reading-mode helper in both modes, so in editing it was
+   the only card with no rename field and no delete — which meant it missed the header tint,
+   missed the 11px inset, and had no 44px delete column, leaving its total 65px right of every
+   other card's. It is the first card in the list, so it read as a rendering fault. */
+#budItems:has(input.grpname) .grp-uncat .grphead{background:var(--panel-2)}
+#budItems:has(input.grpname) .grp-uncat .grphead .grpsub{padding-right:65px}
+#budItems:has(input.grpname) .grp-uncat .grptitle{padding-left:11px}
+/* …and its rows are form rows, which have neither the reading row's border nor its gap. */
+#budItems .grp-ro:has(.bud-exp:not(.ro)) .grpcards{gap:6px}
+
+/* Add an expense into the card you are reading. */
+.bud-addin{align-self:flex-start;margin-top:2px;color:var(--dim);border-style:dashed}
+.bud-addin:hover{color:var(--text)}
+
+/* `scroll-padding-top` alone: `block:"nearest"` aligns a control below the fold with the
+   bottom of the viewport, which on a phone is underneath the fixed tab bar — so refocusing a
+   row that moved to a lower card parked the caret behind the navigation. */
+@media(max-width:899px){html{scroll-padding-bottom:calc(84px + var(--edge-b, 0px))}}
+
+/* The only way back from an income override, at 23px tall in 11px type. */
+.bud-reset{min-height:44px;font-size:13px;padding:0 12px}
+@media(min-width:900px){.bud-reset{min-height:36px}}
+
+/* "ordnen Sie Kredite & Ausgaben Kategorien zu" left "zu" alone on a second line. */
+.bud-exp-head .hint{text-wrap:balance}

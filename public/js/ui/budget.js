@@ -5,10 +5,10 @@ import { $, toast, debounce, focusNew } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { PALETTE } from "../domain/constants.js";
-import { money, esc, parseNum, fmtPlain } from "../domain/money.js";
+import { money, esc, parseNum, fmtPlain, fmtLocale } from "../domain/money.js";
 import { budgetSummary, salaryIncome, budgetCategoryNames, addBudgetCategory, renameBudgetCategory, removeBudgetCategory, budgetCategoryUsage, UNCATEGORIZED } from "../domain/budget.js";
 import { C, refreshPalette, donutArcs, exportChart, positionTip } from "./chart-kit.js";
-import { categorySelectHTML, groupSectionHTML, groupHeadingId } from "./categories-ui.js";
+import { categorySelectHTML, groupSectionHTML, groupHeadingId, TRASH_SVG } from "./categories-ui.js";
 import { scheduleSync } from "../io/storage.js";
 import { t } from "../i18n.js";
 
@@ -61,8 +61,6 @@ function budRefocus(...selectors) {
  * (decomposed) passed beside a typed one (composed) — two cards, two wedges, two legend rows
  * that look identical. The domain also trims when it buckets and the interface did not, so
  * "Food " and "Food" rendered as two sections for one wedge. */
-// A sentinel the HTML parser will not touch, standing in for domain/budget.js's NUL-prefixed one.
-const UNCAT_KEY = "__uncategorized__";
 const catKey = (n) => String(n || "").normalize("NFC").trim().toLowerCase();
 const sameCat = (a, b) => catKey(a) === catKey(b);
 
@@ -86,7 +84,7 @@ function relabelCategory(grp, was, nw) {
 }
 
 // A read-only category section: static header (no rename input, no delete ×).
-function roGroupSection(name, color, subtotalHTML, cardsHTML, subKey) {
+function roGroupSection(name, color, subtotalHTML, cardsHTML, subKey, uncat) {
   /* A category with nothing in it rendered its header and then an empty 30px strip below —
      a card with a floor and no contents. With nothing to list there is nothing to open. */
   const body = cardsHTML && cardsHTML.trim() ? `<div class="grpcards">${cardsHTML}</div>` : "";
@@ -98,7 +96,7 @@ function roGroupSection(name, color, subtotalHTML, cardsHTML, subKey) {
      so the same card announced as a group while you were editing it and as nothing while you
      were reading it — which is the mode a reader is in most of the time. */
   const hid = groupHeadingId("bud", name);
-  return `<section class="grp grp-ro${body ? "" : " is-empty"}" aria-labelledby="${hid}">`
+  return `<section class="grp grp-ro${uncat ? " grp-uncat" : ""}${body ? "" : " is-empty"}" role="group" aria-labelledby="${hid}">`
     + `<div class="grphead"><span class="dot" style="background:${color}" aria-hidden="true"></span>`
     + `<h3 class="grptitle" id="${hid}">${esc(name)}</h3>`
     /* `refreshTotals` only rewrites `[data-grpsub]`, which this header did not carry — so while
@@ -106,7 +104,7 @@ function roGroupSection(name, color, subtotalHTML, cardsHTML, subKey) {
        total and the hero all moved and the card's own total above them did not. The key cannot
        be the sentinel itself: it starts with U+0000, which the parser turns into U+FFFD, so the
        attribute would never match what the domain stores. */
-    + `<span class="grpsub num"${subKey ? ` data-grpsub="${esc(subKey)}"` : ""}>${subtotalHTML}</span></div>${body}</section>`;
+    + `<span class="grpsub num"${subKey == null ? "" : ` data-grpsub="${esc(subKey)}"`}${uncat ? " data-grpuncat" : ""}>${subtotalHTML}</span></div>${body}</section>`;
 }
 
 // Where the income goes, at the top level: one wedge per category (expenses + loans grouped by the
@@ -115,10 +113,15 @@ function roGroupSection(name, color, subtotalHTML, cardsHTML, subKey) {
 // mapped to the active locale here, at the UI boundary. Real category names are user data.
 /* "0%" for a real outgoing is wrong rather than merely rounded: Health is €45 of this
    budget and the legend said it was none of it. */
+/* Every money figure on this screen goes through Intl and every percentage was built by
+   gluing "%" to a number — so a German reader got "17%" beside "9.058 €", where de-DE writes
+   a narrow no-break space before the sign. And `(-0.2).toFixed(0)` is "-0", so a €10 shortfall
+   printed "savings rate -0%" with an ASCII hyphen under a hero using a real minus. */
+const pct = (p) => new Intl.NumberFormat(fmtLocale(), { style: "percent", maximumFractionDigits: 0, signDisplay: "negative" }).format(p / 100);
 const pctOf = (v, total) => {
-  if (!(total > 0) || !(v > 0)) return "0%";
+  if (!(total > 0) || !(v > 0)) return pct(0);
   const p = (v / total) * 100;
-  return p < 0.5 ? "<1%" : Math.round(p) + "%";
+  return p < 0.5 ? "<" + pct(1) : pct(p);
 };
 const dispCat = (name) => (name === UNCATEGORIZED ? t("budget.uncategorized") : name);
 
@@ -131,7 +134,12 @@ function breakdownSegments(s) {
   const left = LEFTOVER_HEX;
   const order = catOrder(bud());
   const segs = [];
-  (s.categories || []).forEach((c) => { if (c.total > 0) segs.push({ name: dispCat(c.category), v: c.total, color: colorFor(c.category, order), items: c.items }); });
+  /* Same order as the cards below. The domain buckets in the order it meets the items, so a
+     category whose first item is a loan, and the untagged bucket in particular, sat in a
+     different place in the key than in the list it is a key to. */
+  const rank = (n) => (n === UNCATEGORIZED ? -1 : (order.indexOf(n) + 1 || 1e6));
+  [...(s.categories || [])].sort((a, c) => rank(a.category) - rank(c.category))
+    .forEach((c) => { if (c.total > 0) segs.push({ name: dispCat(c.category), v: c.total, color: colorFor(c.category, order), items: c.items }); });
   if (s.leftover > 0) segs.push({ name: t("budget.leftOver"), v: s.leftover, color: left, items: [] });
   return segs;
 }
@@ -160,8 +168,6 @@ function drawBudgetDonut(s, animate = false) {
   _segs = segs;
   const total = donutArcs(svg, segs, (p, seg, i) => p.setAttribute("data-idx", String(i)));
   if (total > 0) {
-    // Centre shows income (the money coming in) — never the outgoings total, which would read as
-    // "expenses in the centre" when overspending. Red when spending exceeds income.
     // Say which number this is. A bare figure in the middle of a ring of outgoings reads as the
     // outgoings total, which is the one thing it isn't.
     /* Say what the ring actually adds up to. In surplus the wedges are the categories plus the
@@ -245,17 +251,25 @@ function refreshTotals() {
   const lo = $("budLeftover"), sv = $("budSavings"), inc = $("budIncome"), ot = $("budOutTotal"), card = $("budCard");
   if (inc) inc.textContent = money(s.income);
   if (ot) ot.textContent = money(s.fixed + s.expenses);
-  if (lo) lo.textContent = money(s.leftover);
-  if (sv) sv.textContent = s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%";
+  if (lo) lo.textContent = money(s.leftover < 0 ? -s.leftover : s.leftover);
+  const lk = $("budLeftK");
+  if (lk) lk.textContent = s.leftover < 0 ? t("budget.shortPerMonth") : t("budget.leftPerMonth");
+  if (sv) sv.textContent = s.savingsRatePct == null ? "—" : pct(s.savingsRatePct);
   if (card) card.classList.toggle("neg", s.leftover < 0);
   // live category subtotals (no row rebuild → focus kept while typing an amount)
   /* Scoped. Document-wide, this reached the net worth year editor's own sections — which
      keep their markup behind a `hide` class — and rewrote their subtotals with budget
      figures, or with 0.00 for a category the budget has never heard of. */
+  const outTotal = ringTotal(s);
   $("budItems").querySelectorAll("[data-grpsub]").forEach((el) => {
-    const key = el.getAttribute("data-grpsub");
-    const c = s.categories.find((x) => x.category === (key === UNCAT_KEY ? UNCATEGORIZED : key));
-    el.textContent = money(c ? c.total : 0);
+    /* A flag, not a magic value. Keyed on the string "__uncategorized__", a category a reader
+       had actually named that would have had its subtotal overwritten with the untagged total
+       on every keystroke — the very collision the domain's NUL sentinel exists to prevent. */
+    const key = el.hasAttribute("data-grpuncat") ? UNCATEGORIZED : el.getAttribute("data-grpsub");
+    const c = s.categories.find((x) => x.category === key);
+    const amt = el.querySelector(".grpamt"), pc = el.querySelector(".grppct");
+    if (amt) amt.textContent = money(c ? c.total : 0); else el.textContent = money(c ? c.total : 0);
+    if (pc) pc.textContent = pctOf(c ? c.total : 0, outTotal);
   });
   const ub = $("budUseSalary");
   if (ub) ub.classList.toggle("hide", !(state.budget && state.budget.incomeOverride != null));
@@ -292,7 +306,14 @@ function loanRow(l, loanCats) {
  * and in light a spending category was painted the very green that "Left over" uses, which
  * is the collision this filter exists to prevent. */
 const LEFTOVER_HEX = "#3ad17a";
-const budgetPalette = () => PALETTE.filter((c) => c.toLowerCase() !== LEFTOVER_HEX);
+/* Green is the documented colour for "what's left", and #ffb000 is the interface's own accent
+   — the Done button, the hero figure, the active tab — so a category painted it read as a
+   control. Both are kept out of the categories' palette. */
+const ACCENT_HEX = "#ffb000";
+const budgetPalette = () => PALETTE.filter((c) => {
+  const h = c.toLowerCase();
+  return h !== LEFTOVER_HEX && h !== ACCENT_HEX;
+});
 
 /* Every category this budget knows of, in a stable order: the stored list first, then any name
    that only an expense or a loan uses. Colour is keyed on a position in here.
@@ -319,6 +340,18 @@ function colorFor(name, order) {
   return i >= 0 ? pal[i % pal.length] : "var(--dim)";
 }
 
+/* A card's own share of the outgoings, beside its total. This is the one column the legend
+   had that the cards did not — the swatch is the card's dot and the same hex, the name is its
+   heading, the figure is its subtotal — so with the percentage here the legend has nothing
+   left to say on a phone, where it was ~450px of restating the block directly beneath it. */
+const subWithPct = (sub, total) =>
+  `<span class="grppct">${pctOf(sub, total)}</span><span class="grpamt">${money(sub)}</span>`;
+/* The same base the ring and its key divide by. In surplus the wedges are the categories plus
+   the leftover and sum to income; overspend and the leftover wedge is dropped, so they sum to
+   the outgoings. Dividing the cards by the outgoings in both cases put two bases on one
+   screen — "Leisure 1%" in the legend beside "Housing 81%" on a card, for one budget. */
+const ringTotal = (s) => Math.max(s.income, s.fixed + s.expenses);
+
 // The outgoings list, grouped by category exactly like the net-worth editor: ungrouped items first,
 // then a section per category with an inline-rename name, its subtotal, and a delete (×).
 function itemsHTML(s, b) {
@@ -329,6 +362,7 @@ function itemsHTML(s, b) {
   const expRow = (e) => expenseRow(e), loanRowH = (l) => loanRow(l, lc);
 
   const palOrder = catOrder(b);
+  const outTot = ringTotal(s);
   let html = "";
   const ungEx = b.expenses.filter((e) => !e.group), ungLo = loans.filter((l) => !lc[l.id]);
   /* These rows used to be dropped into a bare `.grpcards` with no card around them, no colour
@@ -340,17 +374,23 @@ function itemsHTML(s, b) {
     const ungSub = ungEx.reduce((a, e) => a + (+e.amount || 0), 0) + ungLo.reduce((a, l) => a + l.monthly, 0);
     /* The same colour the ring and the legend give these rows. It was grey — so the one card
        the chart names by its own words was the one card whose dot matched no wedge. */
-    html += roGroupSection(t("budget.uncategorized"), UNCAT_HEX, money(ungSub),
-      ungLo.map(loanRowH).join("") + ungEx.map(expRow).join(""), UNCAT_KEY);
+    html += roGroupSection(t("budget.uncategorized"), UNCAT_HEX, subWithPct(ungSub, outTot),
+      ungLo.map(loanRowH).join("") + ungEx.map(expRow).join(""), "", true);
   }
 
   order.forEach((g) => {
     const ex = b.expenses.filter((e) => e.group === g), lo = loans.filter((l) => lc[l.id] === g);
     const sub = ex.reduce((a, e) => a + (+e.amount || 0), 0) + lo.reduce((a, l) => a + l.monthly, 0);
-    const cards = lo.map(loanRowH).join("") + ex.map(expRow).join("");
+    let cards = lo.map(loanRowH).join("") + ex.map(expRow).join("");
     if (reading() && !cards) return;   // a category with nothing in it is editor scaffolding, not data
-    html += reading() ? roGroupSection(g, colorFor(g, palOrder), money(sub), cards, g)
-               : groupSectionHTML(g, colorFor(g, palOrder), money(sub), cards, undefined, "bud");
+    /* Add straight into the card you are looking at. The only way to put an expense in a
+       category was the button after the whole list — about 2,300px below the top card on a
+       phone — which filed the row as untagged, scrolled the page up to it, and left the
+       reader to move it back down. An empty category's only content was a sentence telling
+       them to go and do that. */
+    if (!reading()) cards += `<button type="button" class="btn btn-sm bud-addin" data-addin="${esc(g)}">${t("budget.addToCat")}</button>`;
+    html += reading() ? roGroupSection(g, colorFor(g, palOrder), subWithPct(sub, outTot), cards, g)
+               : groupSectionHTML(g, colorFor(g, palOrder), subWithPct(sub, outTot), cards, undefined, "bud", TRASH_SVG);
   });
   return html;
 }
@@ -368,9 +408,9 @@ export function renderBudget() {
          the page than Net worth's and Salary's heroes, and left its rule hard against the
          first heading instead of the same 24px below it. -->
     <div class="bud-card${s.leftover < 0 ? " neg" : ""}" id="budCard">
-      <span class="k">${t("budget.leftPerMonth")}</span>
-      <span class="v" id="budLeftover">${money(s.leftover)}</span>
-      <span class="sub">${t("budget.savingsRate")} <b id="budSavings">${s.savingsRatePct == null ? "—" : s.savingsRatePct.toFixed(0) + "%"}</b></span>
+      <span class="k" id="budLeftK">${s.leftover < 0 ? t("budget.shortPerMonth") : t("budget.leftPerMonth")}</span>
+      <span class="v" id="budLeftover">${money(s.leftover < 0 ? -s.leftover : s.leftover)}</span>
+      <span class="sub">${t("budget.savingsRate")} <b id="budSavings">${s.savingsRatePct == null ? "—" : pct(s.savingsRatePct)}</b></span>
     </div>
     <section class="over sect-plain">
       <!-- No section title above the card: the screen is already called Budget and already
@@ -424,6 +464,14 @@ export function renderBudget() {
   /* The button that was pressed is inside the markup the re-render replaces, so focus fell
      to <body> and a keyboard reader was returned to the top of the page with nothing said. */
   if (eb) eb.onclick = () => {
+    /* Leaving the editor throws away rows that were never filled in. "+ Add expense" pushes a
+       blank one, and nothing pruned it — so a reader who pressed Add and changed their mind
+       was left with a permanent "Expense €0" in a card the ring and the legend know nothing
+       about, and no way to remove it without going back into the editor. */
+    if (EDITING) {
+      const keep = (b.expenses || []).filter((e) => (e.name || "").trim() || +e.amount > 0);
+      if (keep.length !== (b.expenses || []).length) { b.expenses = keep; scheduleSync(); }
+    }
     EDITING = !EDITING; renderBudget(); budRefocus("#budEdit");
     // The body is replaced wholesale, so a live region inside it can never announce.
     toast(EDITING ? t("budget.editingOn") : t("budget.editingOff"));
@@ -452,7 +500,19 @@ export function renderBudget() {
 
   // Expense edits: name and amount update in place (no rebuild → caret kept); totals refresh live.
   host.querySelectorAll(".bud-exp-name").forEach((el) => {
-    el.oninput = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { e.name = ev.target.value; scheduleSync(); } };
+    el.oninput = (ev) => {
+      const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (!e) return;
+      e.name = ev.target.value; scheduleSync();
+      /* The row's own labels, the delete's and the picker's are all written from the name at
+         render time. A row added with "+ Add expense" therefore stayed "this outgoing" in all
+         three until something else rebuilt the list. */
+      const row = ev.target.closest(".bud-exp"), nm = e.name.trim() || t("budget.thisExpense");
+      if (!row) return;
+      row.setAttribute("aria-label", nm);
+      const d = row.querySelector(".bud-exp-del"); if (d) d.setAttribute("aria-label", t("common.removeName", { name: nm }));
+      const c = row.querySelector(".bud-exp-cat");
+      if (c) { const lb = t("budget.moveAria", { name: nm }); c.setAttribute("aria-label", lb); c.setAttribute("title", lb); }
+    };
   });
   // Amount edits update in place (focus kept); category changes move the card → full re-render.
   host.querySelectorAll(".bud-exp-amt").forEach((el) => {
@@ -463,15 +523,28 @@ export function renderBudget() {
         e.amount = Math.max(0, got || 0);
         if (got != null && got < 0) ev.target.value = fmtPlain(e.amount); scheduleSync(); refreshTotals(); } };
   });
+  /* Commit a picker only when the reader has settled on a choice. On Windows and Linux an
+     arrow key on a closed <select> fires `change` on every press; the row would move, the list
+     rebuild, and the control under their finger cease to exist after one keystroke — and since
+     the face resets to the hidden "Move to…" option, arrowing could only ever reach the first
+     destination in the list. Arrow, Home, End and Page defer; Enter, Tab and a click commit. */
+  const onPick = (el, apply) => {
+    el.onkeydown = (ev) => {
+      if (/^(Arrow|Home|End|Page)/.test(ev.key)) { el.dataset.pending = "1"; return; }
+      if (ev.key === "Enter" && el.dataset.pending) { delete el.dataset.pending; apply(el); }
+    };
+    el.onblur = () => { if (el.dataset.pending) { delete el.dataset.pending; apply(el); } };
+    el.onchange = () => { if (!el.dataset.pending) apply(el); };
+  };
   host.querySelectorAll(".bud-exp-cat").forEach((el) => {
     /* The row moves to another card, so the list is rebuilt and the control that was focused
        no longer exists. Without this, a keyboard reader lands on <body> — and on Windows an
        arrow key inside a closed <select> fires `change` per press, so one keystroke ended the
        interaction — while a touch reader watches the row vanish from under their finger. */
-    el.onchange = (ev) => { const e = b.expenses.find((x) => x.id === ev.target.dataset.id); if (e) { e.group = ev.target.value; scheduleSync(); renderBudget(); budRefocus(`.bud-exp-cat[data-id="${CSS.escape(e.id)}"]`); } };
+    onPick(el, (tgt) => { const e = b.expenses.find((x) => x.id === tgt.dataset.id); if (e) { e.group = tgt.value; scheduleSync(); renderBudget(); budRefocus(`.bud-exp-cat[data-id="${CSS.escape(e.id)}"]`); } });
   });
   host.querySelectorAll(".bud-loan-cat").forEach((el) => {
-    el.onchange = (ev) => { const id = ev.target.dataset.lid; if (ev.target.value) b.loanCats[id] = ev.target.value; else delete b.loanCats[id]; scheduleSync(); renderBudget(); budRefocus(`.bud-loan-cat[data-lid="${CSS.escape(id)}"]`); };
+    onPick(el, (tgt) => { const id = tgt.dataset.lid; if (tgt.value) b.loanCats[id] = tgt.value; else delete b.loanCats[id]; scheduleSync(); renderBudget(); budRefocus(`.bud-loan-cat[data-lid="${CSS.escape(id)}"]`); });
   });
 
   // Inline rename + delete on the category section headers (same as net worth).
@@ -532,6 +605,15 @@ export function renderBudget() {
       b.expenses = b.expenses.filter((x) => x.id !== del.dataset.id); scheduleSync(); renderBudget();
       budRefocus(near, "#budAddExp");
     }
+  });
+
+  // "+ Add" inside a category card: the same row, already filed where the reader is looking.
+  items.addEventListener("click", (ev) => {
+    const ai = ev.target.closest("[data-addin]"); if (!ai) return;
+    const id = nid();
+    b.expenses.push({ id, name: "", group: ai.dataset.addin, amount: 0 });
+    scheduleSync(); renderBudget();
+    focusNew(document.querySelector(`.bud-exp-name[data-id="${id}"]`));
   });
 
   $("budAddExp").onclick = () => {
