@@ -53,7 +53,10 @@ export function drawSalaryChart() {
   const years = [...new Set(all.map((e) => +e.ym.slice(0, 4)))].sort((a, b) => a - b);
   const combY = years.filter((y) => y < nowY).map((y) => ({ y, v: people.reduce((s, p) => s + (salAnnual(p)[y] || 0), 0) }));
   const nmR = axisMax(Math.max(1, ...combY.map((c) => c.v)));
-  const padL = 56, padR = 56, padT = 22, padB = 30, H = 400, plotH = H - padT - padB;
+  const padL = 56, padR = 56, padT = 22, padB = 30;
+  /* Shorter on a phone: at 400px the chart filled the screen on its own and pushed the
+     legend below the fold, so the first thing a reader saw was three unlabelled lines. */
+  const H = (window.innerWidth || 0) < 560 ? 320 : 400, plotH = H - padT - padB;
   // Fill the available width (the .histscroll container), so the graph scales with the screen.
   const cont = svg.closest(".histscroll"); let cw = cont ? cont.clientWidth : 0; if (!cw || cw < 80) cw = 720;
   // Minimum ~6px per month so the x-axis year labels stay legible; the chart overflows

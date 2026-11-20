@@ -1077,7 +1077,9 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
      the narrowest the table ever gets. */
   .saltab td.num .evtag{position:absolute;left:3px;top:calc(50% - 3.5px);
     width:7px;height:7px;max-width:none;padding:0;margin:0;border-radius:50%;
-    background:var(--dim);border:0;color:transparent;overflow:hidden;text-indent:-9999px}
+    /* Amber, like everything else on these screens that answers to a press. Grey, it was
+       the same mark as the sync status dot in Profile, which does nothing. */
+    background:var(--signal);border:0;color:transparent;overflow:hidden;text-indent:-9999px}
   /* Wrapping was only ever there to let a block-level chip sit above the figure. Nothing in
      this cell wraps now — and the figure is one unbreakable word, so wrapping could only ever
      have pushed it onto a second line and knocked the row off its neighbours' baseline. */
