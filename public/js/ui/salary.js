@@ -408,7 +408,14 @@ function renderSalaryEdit() {
     const y = ym.slice(0, 4);
     if (y !== curY) {
       curY = y; let yr = `<tr class="saly"><td>${y}</td>`;
-      shown.forEach((p) => { const tot = (p.entries || []).filter((e) => e.ym.slice(0, 4) === y).reduce((a, e) => a + salBase(p, e), 0); yr += `<td colspan="3" class="num salgsep" data-ytot="${p.id}:${y}">${tot ? money(tot) : "—"}</td>`; });
+      /* Under the Net column, not spanning all three: as one cell across net, currency and
+         note it right-aligned to the note's edge, which on a desktop left the year's total
+         250px from the figures it adds up. */
+      shown.forEach((p) => {
+        const tot = (p.entries || []).filter((e) => e.ym.slice(0, 4) === y).reduce((a, e) => a + salBase(p, e), 0);
+        yr += `<td class="num salgsep" data-ytot="${p.id}:${y}">${tot ? money(tot) : "—"}</td>`
+          + `<td colspan="2" class="salytot-lbl">${tot ? t("salary.yearTotalLbl") : ""}</td>`;
+      });
       body += yr + `<td></td></tr>`;
     }
     let row = `<tr data-ym="${ym}"><td class="salm">${ymLabel(ym)}</td>`;
@@ -440,8 +447,13 @@ function renderSalaryEdit() {
 /* Crossing the breakpoint changes which layout is right, and the editor can be open while it
    happens — a desktop window dragged narrow, or a phone turned on its side. */
 try {
-  matchMedia("(max-width: 899px)").addEventListener("change", () => {
-    if (!$("salaryEditor").classList.contains("hide")) renderSalaryEdit();
+  /* Both breakpoints, not just the first: 899px decides one person or everybody, and 619px
+     decides cards or a table. Watching only 899 meant a window dragged across 620 — or a
+     phone turned on its side — kept whichever layout it happened to open with. */
+  ["(max-width: 899px)", "(max-width: 619px)"].forEach((q) => {
+    matchMedia(q).addEventListener("change", () => {
+      if (!$("salaryEditor").classList.contains("hide")) renderSalaryEdit();
+    });
   });
 } catch (e) {}
 
@@ -459,7 +471,17 @@ $("salaryList").addEventListener("click", (e) => {
   const sw = e.target.closest("[data-salwho]");
   if (sw) { salWho = +sw.dataset.salwho; renderSalaryEdit(); return; }
   const pd = e.target.closest("[data-perdel]"); if (pd) { const p = state.salaries.find((x) => x.id === pd.dataset.perdel); if (confirm(t("salary.removePersonConfirm", { name: p ? p.name : t("salary.thisPerson") }))) { state.salaries = state.salaries.filter((x) => x.id !== pd.dataset.perdel); scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); } return; }
-  const rd = e.target.closest("[data-salrowdel]"); if (rd) { const ym = rd.dataset.salrowdel; state.salaries.forEach((p) => { p.entries = (p.entries || []).filter((en) => en.ym !== ym); }); scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); return; }
+  const rd = e.target.closest("[data-salrowdel]"); if (rd) {
+    const ym = rd.dataset.salrowdel;
+    /* This takes the month from everyone, and on a phone the screen is showing one person,
+       so it says so and asks first. Deleting a person already asked; the control that
+       touches everybody's data was the one that did not. */
+    const many = (state.salaries || []).length > 1;
+    const ask = many ? t("salary.removeMonthAllConfirm", { month: ymLabel(ym) }) : t("salary.removeMonthConfirm", { month: ymLabel(ym) });
+    if (!confirm(ask)) return;
+    state.salaries.forEach((p) => { p.entries = (p.entries || []).filter((en) => en.ym !== ym); });
+    scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); return;
+  }
   // New month: blank amounts for everyone, and land on the new row with the first field focused.
   const nx = e.target.closest("[data-salnext]"); if (nx) { const ym = salNextMonth(); salAddRowAt(ym); scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); salRevealMonth($("salaryList"), ym, true); return; }
   const gn = e.target.closest("[data-salgen]");
