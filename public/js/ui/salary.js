@@ -385,8 +385,8 @@ function salMonthCards(p, yms) {
       out += `<button type="button" class="smy${open ? " is-open" : ""}" data-yedit="${y}" aria-expanded="${open}">`
         + `<svg class="salychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>`
         + `<span class="smy-y">${y}</span>`
-        + `<span class="smy-n">${t("salary.filledOf", { filled, months })}</span>`
-        + `<span class="smy-t" data-ytot="${p.id}:${y}">${tot ? t("salary.yearTotal", { amount: money(tot) }) : t("salary.yearNone")}</span></button>`;
+        + `<span class="smy-n${filled && filled < months ? " is-part" : ""}">${t("salary.filledOf", { filled, months })}</span>`
+        + `<span class="smy-t" data-ytot="${p.id}:${y}">${tot ? t("salary.yearTotal", { amount: money(tot) }) : ""}</span></button>`;
     }
     const e = salEntry(p, ym);
     const amt = e && e.amount ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
@@ -459,7 +459,9 @@ function renderSalaryEdit() {
     row += `<td class="salxc"><button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${t("salary.removeMonthAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button></td>`;
     body += row + `</tr>`;
   });
-  const dFrom = yms.length ? yms[0] : new Date().getFullYear() + "-01", dTo = salThisMonth();
+  /* The range starts after the last month on record, not on it: offering "from May 2026"
+     when May 2026 is already the top row is an invitation to add nothing. */
+  const dFrom = yms.length ? salNextMonth() : new Date().getFullYear() + "-01", dTo = salThisMonth();
   const person = shown[0];
   const cardHead = `<div class="smon-head"><input class="salname" value="${esc(person.name)}" data-sid="${person.id}" data-f="name" placeholder="${t("salary.namePh")}"><button class="delbtn" data-perdel="${person.id}" title="${esc(t("salary.removeName", { name: person.name }))}" aria-label="${t("salary.removePersonAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;
   const nextBtn = `<button class="btn btn-sm btn-primary smon-next" data-salnext>${t("salary.next")}</button>`;
@@ -543,8 +545,16 @@ $("salaryList").addEventListener("input", (e) => {
           : (tot ? money(tot) : "—");
         flash(yt);
       }
-      /* A card stops being an empty one the moment it holds a figure. */
+      /* A card stops being an empty one the moment it holds a figure — and the year line
+         above it counts filled months, so it is wrong the instant one changes. */
       const has = !!parseNum(el.value);
+      const yline = document.querySelector('[data-yedit="' + yr + '"] .smy-n');
+      if (yline) {
+        const inYear = (x) => x.ym.slice(0, 4) === yr;
+        const filled = p.entries.filter((x) => inYear(x) && x.amount).length;
+        const months = salTableYms().filter((x) => x.slice(0, 4) === yr).length;
+        yline.textContent = t("salary.filledOf", { filled, months });
+      }
       const card = el.closest(".smon");
       if (card) {
         card.classList.toggle("is-empty", !has);
