@@ -181,11 +181,15 @@ function salAddNextMonth() {
   /* The month has to be visible to have been added: in a folded year, or behind the
      empty-person panel, the row went into the ledger and nothing on screen moved. */
   openEditYears.add(ym.slice(0, 4));
+  openYears.add(ym.slice(0, 4));   // the read-only tab folds on its own state, and hides the row otherwise
   const who2 = (state.salaries || [])[salWho];
   if (who2) salOpened = who2.id;
   scheduleSync();
-  salKeepScroll($("salaryList"), renderSalaryEdit);
-  salRevealMonth($("salaryList"), ym, true);
+  const inEditor = !$("salaryEditor").classList.contains("hide");
+  const host = inEditor ? $("salaryList") : $("salaryTable");
+  salKeepScroll(host, inEditor ? renderSalaryEdit : renderSalary);
+  salRevealMonth(host, ym, inEditor);
+  if (!inEditor) toast(t("salary.addedMonth", { month: ymLabel(ym) }));
 }
 
 const salNextMonth = () => { const ys = salGlobalYms(); return ys.length ? nextYm(ys[ys.length - 1]) : salThisMonth(); };
@@ -197,12 +201,23 @@ const salNextMonth = () => { const ys = salGlobalYms(); return ys.length ? nextY
    card layout — so both of these were quietly doing nothing in both layouts, and a reader
    who added a month or a range saw no sign of where it went. */
 const salScroller = (host) => {
+  /* The innermost thing that actually scrolls, not the outermost thing that might.
+   *
+   * On a laptop the editor's table sits in its own self-scrolling box inside the editor
+   * overlay, which also scrolls. Returning the overlay meant every fold, rename, delete and
+   * import saved and restored the wrong scrollTop while the rows' own box was reset to zero
+   * by the re-render — so folding 2019 threw the reader back to 2026, a hundred and fifty
+   * rows up, every single time. */
+  const scrolls = (el) => el && el.scrollHeight > el.clientHeight + 4;
+  const inner = host && host.querySelector ? host.querySelector(".saltable-scroll") : null;
+  if (scrolls(inner)) return inner;
+  const own = host && host.closest ? host.closest(".saltable-scroll") : null;
+  if (scrolls(own)) return own;
   const ed = $("salaryEditor");
   if (ed && !ed.classList.contains("hide")) return ed;
   /* The Salary tab's own table scrolls the page, not the editor — which is display:none
      there, so both of these used to read and write the scrollTop of a hidden element. */
-  const box = host && host.closest ? host.closest(".saltable-scroll") : null;
-  return box && box.scrollHeight > box.clientHeight + 4 ? box : document.scrollingElement || document.documentElement;
+  return document.scrollingElement || document.documentElement;
 };
 function salKeepScroll(host, render) {
   const box = salScroller(host);
@@ -230,12 +245,20 @@ function salRevealMonth(host, ym, focus) {
 }
 
 // Parse a pasted month cell into YYYY-MM: "May 2013", "2013-05", "5/2013", "2013/05/01"…
-const SAL_MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+/* English and German stems. März, Mai, Oktober and Dezember all missed an English-only
+   table, fell through to `new Date`, which cannot read them, and were counted as skipped —
+   in the German app, under a panel that invites exactly that paste. */
+const SAL_MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+  "mär": 3, mai: 5, okt: 10, dez: 12 };
 function parseMonthCell(s) {
   s = (s || "").trim(); if (!s) return null; let m;
   if ((m = /^(\d{4})[-/.](\d{1,2})/.exec(s))) return m[1] + "-" + String(+m[2]).padStart(2, "0");
-  if ((m = /^([A-Za-z]{3,})[\s\-/.]+(\d{4})$/.exec(s))) { const mo = SAL_MON[m[1].slice(0, 3).toLowerCase()]; if (mo) return m[2] + "-" + String(mo).padStart(2, "0"); }
+  /* Unicode letters, not A-Z: "März" has an umlaut in the stem, so an ASCII-only class
+     never matched it and the row was counted as skipped. */
+  if ((m = /^([^\d\s][^\d]*?)[\s\-/.]+(\d{4})$/.exec(s))) { const mo = SAL_MON[m[1].slice(0, 3).toLowerCase()]; if (mo) return m[2] + "-" + String(mo).padStart(2, "0"); }
   if ((m = /^(\d{1,2})[/.](\d{4})$/.exec(s))) return m[2] + "-" + String(+m[1]).padStart(2, "0");
+  // dd.mm.yyyy — the ordinary way a German spreadsheet writes a date.
+  if ((m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(s))) return m[3] + "-" + String(+m[2]).padStart(2, "0");
   const d = new Date(s); if (!isNaN(+d)) return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
   return null;
 }
@@ -341,7 +364,7 @@ export function renderSalary() {
   const people = withAmounts.length ? withAmounts : all;
   const yms = salTableYms(), multi = people.length > 1;
   let head = `<tr><th class="salm-h">${t("salary.impMonth")}</th>`;
-  people.forEach((p) => (head += `<th class="r salgsep">${esc(p.name)}</th>`));
+  people.forEach((p) => (head += `<th scope="col" class="r salgsep">${esc(p.name || t("salary.namePh"))}</th>`));
   if (multi) head += `<th class="r salgsep">${t("salary.household")}</th>`;
   head += `</tr>`;
   /* Cents are what pushed the household column off a 320px screen: three money columns of
@@ -595,6 +618,16 @@ function renderSalaryEdit() {
        side-by-side table) does the previous choice stand. */
     const onScreen = narrow && person ? person.id : (prev && people.some((x) => x.id === prev) ? prev : people[0].id);
     who.value = onScreen;
+    /* Below 900px this select is rewritten on every re-render, and "+ Next month" sits one
+       tap above it — so a reader could pick Sam, add a month, scroll down, paste twelve
+       years, and have them land on Alex and overwrite what was there, with a success toast.
+       A choice the layout is going to overrule is not offered: it states whose ledger the
+       paste will go to. */
+    who.classList.toggle("hide", !!narrow);
+    const lbl = $("salImportForLbl");
+    if (lbl) lbl.textContent = narrow
+      ? t("salary.importForName", { name: (people.find((x) => x.id === onScreen) || {}).name || t("salary.namePh") })
+      : t("salary.importFor");
   }
   /* Folding is a view state: it toggles a class on the cards already in the DOM, so the
      field you were typing in is still there, and a browser's find still reaches a month
@@ -751,9 +784,17 @@ $("salaryList").addEventListener("click", (e) => {
     const c = e.target.closest(".controls"); let from = c.querySelector(".salfrom").value, to = c.querySelector(".salto").value;
     if (!/^\d{4}-\d{2}$/.test(from) || !/^\d{4}-\d{2}$/.test(to)) { toast(t("salary.pickBoth")); return; }
     if (from > to) { const t2 = from; from = to; to = t2; }
-    let cur = from, last = from, n = 0; while (cur <= to && n < 600) { salAddRowAt(cur); openEditYears.add(cur.slice(0, 4)); last = cur; cur = nextYm(cur); n++; }
+    /* Count the months actually created. salAddRowAt leaves a month that already exists
+       alone, so counting loop turns reported "Added 11 months" when six were new. */
+    let cur = from, last = from, n = 0, made = 0;
+    while (cur <= to && n < 600) {
+      const had = (state.salaries || []).some((p2) => (p2.entries || []).some((e2) => e2.ym === cur));
+      salAddRowAt(cur); if (!had) made++;
+      openEditYears.add(cur.slice(0, 4)); openYears.add(cur.slice(0, 4));
+      last = cur; cur = nextYm(cur); n++;
+    }
     const wp = (state.salaries || [])[salWho]; if (wp) salOpened = wp.id;
-    scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); salRevealMonth($("salaryList"), last, true); toast(t("salary.addedMonths", { count: n })); return;
+    scheduleSync(); salKeepScroll($("salaryList"), renderSalaryEdit); salRevealMonth($("salaryList"), last, true); toast(t("salary.addedMonths", { count: made })); return;
   }
 });
 /* Both copies of the control, one handler. */
@@ -806,4 +847,9 @@ $("salEdit").onclick = openSalaryEdit;
 $("salaryBack").onclick = () => { scheduleSync(); closeSalaryEdit(); };
 /* The same exit, said as a word: a chevron alone reads as "discard" on a form full of money. */
 $("salaryDone") && ($("salaryDone").onclick = () => { scheduleSync(); closeSalaryEdit(); });
-$("salNext").onclick = () => { const ym = salNextMonth(); salAddRowAt(ym); scheduleSync(); salKeepScroll($("salaryTable"), renderSalary); salRevealMonth($("salaryTable"), ym); };
+/* The same action the editor runs, not a second copy of it that forgot to open the year.
+   This one added the month, left it inside a folded year where the row is display:none,
+   tried to scroll a box the row is not in, and changed nothing else — so pressing the amber
+   button beside the headline figure five times silently added five blank months to
+   everybody. */
+$("salNext").onclick = () => { salAddNextMonth(); };

@@ -468,8 +468,8 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     <details class="salimport">
       <summary data-i18n="salary.importSummary">Import from a spreadsheet</summary>
       <p class="edlede" style="margin:10px 0"><span data-i18n="salary.imp1">In Google Sheets, select the </span><strong data-i18n="salary.impMonth">Month</strong><span data-i18n="salary.imp2"> column and the </span><strong data-i18n="salary.impNet">net amount</strong><span data-i18n="salary.imp3"> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</span></p>
-      <div class="controls" style="margin:0 0 8px"><span class="salrlbl" data-i18n="salary.importFor">Import for</span><select id="salImportWho" class="salccy"></select></div>
-      <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
+      <div class="controls" style="margin:0 0 8px"><span class="salrlbl" id="salImportForLbl" data-i18n="salary.importFor">Import for</span><select id="salImportWho" class="salccy" aria-label="Import for" data-i18n-aria-label="salary.importFor"></select></div>
+      <textarea id="salImportText" data-i18n-placeholder="salary.importPh" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
       <div class="controls"><button class="btn btn-primary btn-sm" id="salImportBtn" data-i18n="salary.importBtn">Import pasted rows</button></div>
     </details>
   </div>

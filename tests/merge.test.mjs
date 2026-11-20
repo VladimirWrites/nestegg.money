@@ -86,3 +86,19 @@ test("merge: the last price refresh is the later of the two", () => {
   assert.equal(mergeStates(a, b).lastPx, 900);
   assert.equal(mergeStates(b, a).lastPx, 900);
 });
+
+test("a removed person does not beat that person's newer months", () => {
+  /* Typing a salary stamps the month, never the person. Compared on the person's own mtime
+     alone, a deletion on one device discarded an hour of entries made on another. */
+  const tomb = doc([], { ...emptyDel(), sper: { p1: 500 } });
+  const newer = doc([], emptyDel(), {
+    salaries: [{ id: "p1", name: "Sam", ccy: "EUR", m: 400, entries: [{ ym: "2026-01", amount: 3000, m: 900 }] }],
+  });
+  const older = doc([], emptyDel(), {
+    salaries: [{ id: "p1", name: "Sam", ccy: "EUR", m: 400, entries: [{ ym: "2026-01", amount: 3000, m: 300 }] }],
+  });
+  const kept = mergeStates(newer, tomb).salaries;
+  assert.equal(kept.length, 1, "a month newer than the tombstone keeps the person");
+  assert.equal(kept[0].entries[0].amount, 3000);
+  assert.equal(mergeStates(older, tomb).salaries.length, 0, "an older person still goes");
+});

@@ -115,9 +115,15 @@ function mergeArr(la, ra, keyOf, tomb) {
   return [...m.values()];
 }
 
-// A snapshot's effective mtime: the newest of the year record and its entries, so a
-// year-deletion tombstone only wins over edits that are actually older.
-const snapM = (s) => (s.entries || []).reduce((m, e) => Math.max(m, +e.m || 0), +s.m || 0);
+/* A parent's effective mtime: the newest of the record itself and its children, so a
+   deletion tombstone only wins over edits that are actually older.
+   
+   Typing a salary stamps the month, never the person — so with the person's own `m` alone, a
+   person removed on one device beat an hour of that person's months filled in on another,
+   and every one of those edits was dropped on the next merge with nothing said. Snapshots
+   have always been compared this way; salaries were not. */
+const parentM = (s) => (s.entries || []).reduce((m, e) => Math.max(m, +e.m || 0), +s.m || 0);
+const snapM = parentM;
 
 // Generic parent+children merge (used for both snapshots and salaries).
 function mergeParented(la, ra, parentKey, childKey, parentTombs, childTombKey, childTombs, parentEffM) {
@@ -150,7 +156,7 @@ function mergeSnaps(la, ra, del) {
 }
 
 function mergeSal(la, ra, del) {
-  return mergeParented(la, ra, (p) => p.id, (e) => e.ym, del.sper, (k, e) => k + "|" + e.ym, del.sent, (p) => +p.m || 0);
+  return mergeParented(la, ra, (p) => p.id, (e) => e.ym, del.sper, (k, e) => k + "|" + e.ym, del.sent, parentM);
 }
 
 /* Prices and year-end rates are nobody's edits, so they carry no m and none of the per-record
