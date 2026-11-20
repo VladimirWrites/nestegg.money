@@ -21,6 +21,10 @@ export function resolveLocale(explicit) {
 export async function initI18n(explicit) {
   locale = resolveLocale(explicit);
   dict = (await import(`../i18n/${locale}.js`)).default;
+  /* The document says which language it is in. Nothing set it, so the German app was served
+     as lang="en" and read aloud by a screen reader in an English voice — and the hyphenation
+     and quotation rules a browser applies are the wrong ones too. */
+  try { if (typeof document !== "undefined") document.documentElement.lang = locale; } catch (e) {}
   return locale;
 }
 
@@ -44,7 +48,9 @@ export function t(key, params) {
 // for attributes. Pre-rendered pages rarely need this; it exists for runtime-built fragments.
 export function translateDom(root = document) {
   root.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.getAttribute("data-i18n")); });
-  for (const attr of ["placeholder", "title", "aria-label"]) {
+  // `data-short` is the one-word form a CSS ::after prints where there is no room for the
+  // sentence; it is translated like any other attribute.
+  for (const attr of ["placeholder", "title", "aria-label", "data-short"]) {
     root.querySelectorAll(`[data-i18n-${attr}]`).forEach((el) => { el.setAttribute(attr, t(el.getAttribute(`data-i18n-${attr}`))); });
   }
 }

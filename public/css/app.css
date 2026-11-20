@@ -306,9 +306,13 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    margin living only on the note, Done sat in the middle of the bar with 160px of empty
    space to its right. */
 .ed-done{flex:none;margin-left:auto}
-.ed-saved+.ed-done{margin-left:12px}
-@media(max-width:420px){.ed-saved{display:none}}
-.ed-title+.ed-saved{margin-left:auto}
+/* `.ed-saved+.ed-done{margin-left:12px}` lived here and out-specified the auto margin above
+   — and a sibling selector still matches a sibling that display:none has hidden, so on both
+   phone widths "Done" sat beside the title with half the bar empty to its right. */
+/* Shortened, not removed: "Saved as you type" is the answer to "is a back chevron going to
+   throw this away", and 390px has room for one word. */
+@media(max-width:420px){.ed-saved{font-size:0}.ed-saved::after{content:attr(data-short);font-size:11.5px}}
+.ed-title{flex:1 1 auto}
 .ed-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
 /* The arrow alone. Its label lives in the title attribute — a word beside it repeated what the
    glyph already said, and on a phone it crowded out the name of the screen. Pulled into the
@@ -318,7 +322,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .ed-back:hover{background:var(--panel-2)}
 .ed-back .btn-icon{width:20px;height:20px}
 
-#edDelYear{color:var(--danger);margin-left:auto}
+#edDelYear{color:var(--danger)}
 .ed-title{font-size:17px;color:var(--text);display:flex;align-items:center;gap:9px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* The year as the bar states it, and the button that offers to move it. */
 .ed-yearnow{font-weight:700;color:var(--signal)}
@@ -1683,4 +1687,113 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    balance is read for its shape, not reconciled), and the remaining padding goes here. */
 @media(max-width:560px){
   .schtab.yrtab td,.yrtab th{font-size:11.5px;padding-left:6px;padding-right:6px}
+}
+
+/* ── round 2 of the asset-edit review ──────────────────────────────────── */
+
+/* The Move-year tile. Written as the year with a word glued to it, inheriting the button's
+   strikethrough and 36% opacity, it read "2025In your ledger" in crossed-out grey — and the
+   highlighted current year was crossed out too, so the selected tile looked cancelled. */
+.yeargrid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
+.yearopt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:56px;padding:6px 4px}
+.yo-y{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;line-height:1.1}
+.yo-n{font-size:10.5px;letter-spacing:.02em;color:var(--dim);white-space:nowrap;line-height:1.2}
+/* A child cannot cancel its parent's text-decoration, so the line-through has to come off
+   the button itself. A disabled year is quiet; it is not deleted. */
+.yearopt.is-taken,.yearopt:disabled{opacity:1;text-decoration:none;cursor:not-allowed;background:transparent;border-style:dashed;color:var(--dim)}
+.yearopt.is-taken .yo-y{color:var(--dim)}
+.yearopt.is-now,.yearopt.is-now:disabled{opacity:1;border-style:solid;background:var(--signal-fill);border-color:var(--signal-fill);color:var(--signal-ink);cursor:default}
+.yearopt.is-now .yo-y{color:var(--signal-ink);font-weight:700}
+.yearopt.is-now .yo-n{color:var(--signal-ink);opacity:.75}
+
+/* An eleven-character symbol in an eleven-character field. `width:15ch` is the border box,
+   and 47px of padding and border inside it left room for nine. */
+.rcard .rtk{width:calc(11ch + 51px)}
+/* 26px is not 44px, whatever the comment said. The box stays small; the target does not. */
+.rcard .rinfo{position:absolute;width:24px;height:24px;right:7px}
+.rcard .rinfo::after{content:"";position:absolute;inset:-10px}
+
+/* A field's edge, at 3:1 against the surface behind it. `--line` is 1.3:1 in both themes:
+   right for a divider between two things, not for the boundary of a control somebody has to
+   find and press. */
+:root{--field-edge:#6b7288}
+:root:not([data-theme="light"]) .fin,:root:not([data-theme="light"]) .fld select,
+:root:not([data-theme="light"]) .rcard .rval,:root:not([data-theme="light"]) .rcard .rsh,
+:root:not([data-theme="light"]) .rcard .rtk,:root:not([data-theme="light"]) .rcard select{border-color:var(--field-edge)}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--field-edge:#8a8d96}}
+:root[data-theme="light"]{--field-edge:#8a8d96}
+.fin,.fld select,.rcard .rval,.rcard .rsh,.rcard .rtk,.rcard select,.grpname{border-color:var(--field-edge)}
+.rcard .rname{border-bottom-color:transparent}
+
+/* A focus ring you can see. `.fin:focus{outline:none}` and its siblings out-specify the
+   global :focus-visible rule, so the only keyboard cue on every field in both editors was a
+   one-pixel change of border colour. */
+.fin:focus-visible,.fld select:focus-visible,.rcard .rval:focus-visible,.rcard .rsh:focus-visible,
+.rcard .rtk:focus-visible,.rcard select:focus-visible,.yearopt:focus-visible,.rcard.auto:focus-visible,
+.rdel:focus-visible,.grpdel:focus-visible,.rinfo:focus-visible,.ed-yearnow:focus-visible{
+  outline:2px solid var(--signal);outline-offset:2px;border-color:var(--signal)}
+/* A bottom border and a rounded outline hooked up at both ends. */
+.rcard .rname:focus-visible,.grpname:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:0}
+
+/* The card is a button now, so it has to stop looking like one of the browser's. */
+.rcard.auto{width:100%;text-align:left;font:inherit;cursor:pointer}
+.rcard.auto .autoedit{color:var(--dim)}
+.rcard.auto:hover .autoedit{color:var(--signal)}
+
+/* Each sub-form under the toggle that reveals it. */
+.tglgroup{display:flex;flex-direction:column;gap:12px}
+.tglgroup .frow,.tglgroup .loanbox{margin-left:33px}
+@media(max-width:560px){.tglgroup .frow,.tglgroup .loanbox{margin-left:0}}
+
+/* A date and the amount it belongs to are one thing; the next payment is another. With one
+   gap for both, four lump sums were eight identical boxes in a column. */
+.exwrap{gap:14px}
+.exrow{gap:8px}
+.exrow .suffix{display:flex;align-items:center;gap:6px}
+.exrow .suffix i{font-style:normal;color:var(--dim);font-size:12px;flex:none}
+.exhint{padding:0}
+
+/* What a holding is worth was the smallest thing on its row, in a fourth colour. One figure,
+   one treatment, aligned with every other figure on the screen. */
+.rcard .rconv{font-size:15px;color:var(--text);font-family:var(--mono);font-variant-numeric:tabular-nums}
+.rcard .rconv.liab{color:var(--danger)}
+.rcard.auto .rconv{color:var(--text);font-weight:600;font-size:15px}
+/* A category that is set is a fact, not a placeholder. */
+.rcard .rcat{color:var(--text)}
+
+/* Six stats in a single column is 320px of scrolling on a phone. */
+@media(max-width:560px){.pstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pstat .v{font-size:16px}
+
+/* Red for a debt that exists. A €0.00 liability wearing an alarm stripe is a false alarm. */
+.rcard.liabcard{border-left-width:1px;border-left-color:var(--line)}
+.rcard.liabcard.is-owing{border-left:2px solid var(--danger)}
+
+/* Nine holdings came to 2,804px, because the two least-read controls in a row each took a
+   full-width 44px line of their own. Kind and category fold away behind the row until they
+   are wanted; name, figure and currency are what a phone shows. */
+@media(max-width:899px){
+  #edEntries .rcard:not(.acard){
+    grid-template-areas:"dot name name del" "val val ccy ccy" "conv conv conv conv" "kind kind cat cat" "hint hint hint hint";
+    gap:7px 10px}
+  #edEntries .rcard .rkind,#edEntries .rcard .rcat{font-size:13px;min-height:38px;padding:6px 8px;color:var(--dim);background:transparent;border-color:transparent}
+  #edEntries .rcard .rkind:focus,#edEntries .rcard .rcat:focus{border-color:var(--signal)}
+  #edEntries .rcard .rconv{text-align:right}
+}
+/* A symbol needs a line of its own on a phone: in the 146px slot beside the share count,
+   NASDAQ:MSFT was cut to NASDAQ:MSF, which cannot be told from a wrong symbol. */
+@media(max-width:899px){
+  #edEntries .rcard.is-priced{grid-template-areas:"dot name name del" "ccy ccy ccy ccy" "val val conv conv" "kind kind cat cat" "hint hint hint hint"}
+  #edEntries .rcard.is-priced .rtkwrap{width:100%}
+}
+/* The name keeps its own line — squeezed beside the figure, "Vanguard FTSE All-World" and
+   "Workplace pension" were both cut off, and an <input> gives no ellipsis to say so. The
+   height comes out of the priced row instead, where the converted value shares a line with
+   the share count. */
+@media(max-width:899px){
+  #edEntries .rcard .rconv{white-space:nowrap}
+  #edEntries .rcard .rname{min-width:0}
+  /* Re-declared after the two rules above, which match .rcard.auto just as well and at the
+     same specificity — so without this the long-term asset card loses its own layout. */
+  #edEntries .rcard.auto{grid-template-areas:"dot name tag chev" "conv conv conv conv"}
 }

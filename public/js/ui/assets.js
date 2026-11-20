@@ -1,10 +1,10 @@
 // Long-term asset editor: one asset with optional toggles (depreciates and/or carries a loan).
 // Net contribution = (depreciated price or market value) − outstanding loan.
-import { $, toast, flash, focusNew } from "./dom.js";
+import { $, toast, flash, focusNew, setInert, rememberFocus, restoreFocus } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
-import { money, moneyIn, moneyIn0, esc, convTo } from "../domain/money.js";
+import { money, moneyIn, moneyIn0, esc, convTo, fmtLocale } from "../domain/money.js";
 import { fmtMY, fmtMonths, parseDate } from "../domain/dates.js";
 import { buildSchedule, loanTerms, outstandingAt } from "../domain/loan.js";
 import { assetGrossAt, assetNetAt } from "../domain/asset-value.js";
@@ -20,6 +20,14 @@ import { pushEditor, popEditor } from "./history.js";
 // The two helpers below carry the interface language into the pure date module.
 const monthUnits = () => ({ yr: t("asset.yrShort"), mo: t("asset.moShort") });
 const my = (d) => fmtMY(d, getLocale());
+// The symbol alone, so a bare number field can say what unit it is in.
+const ccyUnit = (ccy) => {
+  try {
+    const parts = new Intl.NumberFormat(fmtLocale(), { style: "currency", currency: ccy }).formatToParts(0);
+    const c = parts.find((x) => x.type === "currency");
+    return c ? c.value : ccy;
+  } catch (e) { return ccy; }
+};
 const ymdDay = (d) => d.toLocaleDateString(getLocale(), { day: "numeric", month: "short", year: "numeric" }); // day-precision sibling of fmtMY
 
 /* Today where the reader is, not where UTC is.
@@ -57,16 +65,25 @@ let schedOpen = false;
 
 export function openAssetEditor(id, focusName) {
   curAssetId = id;
+  rememberFocus("assetEditor");
   $("assetEditor").classList.remove("hide");
+  /* This editor opens on top of the year editor rather than instead of it, so both the app
+     and that layer have to be switched off: otherwise Tab walks through a whole screen of
+     controls nobody can see, under an opaque one. */
+  setInert($("app"), true);
+  setInert($("yearEditor"), true);
   document.body.classList.add("no-nav");
   pushEditor("assetEditor");
   window.scrollTo(0, 0);
   renderAssets(focusName);
+  if (!focusName) setTimeout(() => { const h = $("assetTitle"); if (h) { try { h.focus({ preventScroll: true }); } catch (e) {} } }, 0);
 }
 function closeAssetEditor() {
   $("assetEditor").classList.add("hide");
+  setInert($("yearEditor"), false);
   // The year editor underneath is an editor too, so the bar only comes back with both shut.
-  if ($("yearEditor").classList.contains("hide")) document.body.classList.remove("no-nav");
+  if ($("yearEditor").classList.contains("hide")) { document.body.classList.remove("no-nav"); setInert($("app"), false); }
+  restoreFocus("assetEditor");
   popEditor();
   if (!$("yearEditor").classList.contains("hide")) renderEntries();
   else renderAll();
@@ -180,10 +197,13 @@ function assetCardHTML(a) {
     const termField = byPayment
       ? `<label class="fld">${t("asset.monthlyPayment")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.payment ? L.payment : ""}" placeholder="0" data-aid="${a.id}" data-lf="payment"></label>`
       : `<label class="fld">${t("asset.term")}<span class="suffix"><input class="fin num" type="number" step="any" inputmode="numeric" value="${L.termYears}" data-aid="${a.id}" data-lf="termYears"><i>${t("asset.yrShort")}</i></span></label>`;
-    const extras = (L.extra || []).map((x) => `<div class="exrow">
-        <input type="date" class="fin" value="${esc(x.date)}" data-aid="${a.id}" data-eid="${x.id}" data-ef="date">
-        <span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${x.amount || ""}" data-aid="${a.id}" data-eid="${x.id}" data-ef="amount" placeholder="${t("asset.amountPh")}"></span>
-        <button class="rdel" data-extradel="${x.id}" data-aid="${a.id}" title="${t("asset.removePayment")}">×</button></div>`).join("");
+    /* A date and an amount belong to each other. Stacked with the same gap as the gap
+       between payments, four of them were eight identical boxes with no way to tell which
+       date owned which figure — and none of them had a name an assistive reader could use. */
+    const extras = (L.extra || []).map((x, xi) => `<div class="exrow" role="group" aria-label="${t("asset.extraNth", { n: xi + 1 })}">
+        <input type="date" class="fin" value="${esc(x.date)}" data-aid="${a.id}" data-eid="${x.id}" data-ef="date" aria-label="${t("asset.extraDateAria", { n: xi + 1 })}">
+        <span class="suffix"><input class="fin num" type="number" step="any" inputmode="decimal" value="${x.amount || ""}" data-aid="${a.id}" data-eid="${x.id}" data-ef="amount" placeholder="${t("asset.amountPh")}" aria-label="${t("asset.extraAmountAria", { n: xi + 1 })}"><i>${ccyUnit(a.ccy)}</i></span>
+        <button type="button" class="rdel" data-extradel="${x.id}" data-aid="${a.id}" title="${t("asset.removePayment")}" aria-label="${t("asset.removeExtraAria", { n: xi + 1 })}">×</button></div>`).join("");
     loanBlock = `<div class="loanbox">
       <div class="frow">
         <label class="fld">${t("asset.loanAmount")}<input class="fin num" type="number" step="any" inputmode="decimal" value="${L.amount ? L.amount : ""}" placeholder="0" data-aid="${a.id}" data-lf="amount"></label>
@@ -202,9 +222,9 @@ function assetCardHTML(a) {
   const ccySel = `<select data-aid="${a.id}" data-f="ccy">${CCYS.map((x) => `<option ${x === a.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>`;
   const catSel = categorySelectHTML("", `data-aid="${a.id}" data-f="group"`, a.group, groupNames());
   if (a.liability) {
-    return `<div class="rcard acard liabcard" id="acard-${a.id}" data-aid="${a.id}">
+    return `<div class="rcard acard liabcard${bal > 0.005 ? " is-owing" : ""}" id="acard-${a.id}" data-aid="${a.id}">
       <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="${t("net.liabilityName")}" aria-label="${t("net.liabilityName")}"></div>
-      <div class="ahero is-liab"><span class="ah-k">${t("asset.owedToday")}</span><span class="ah-v num liab">${bal > 0.005 ? "− " + moneyIn(bal, a.ccy) : moneyIn(0, a.ccy)}${inBase(-bal)}</span></div>
+      <div class="ahero is-liab"><span class="ah-k">${t("asset.owedToday")}</span><span class="ah-v num liab">${bal > 0.005 ? "− " + moneyIn0(bal, a.ccy) : moneyIn0(0, a.ccy)}${inBase(-bal)}</span></div>
       <div class="frow"><label class="fld">${t("asset.currency")}${ccySel}</label><label class="fld">${t("common.category")}${catSel}</label></div>
       ${loanBlock}
       <div class="acard-danger"><button class="btn btn-sm btn-quiet-danger" data-adel="${a.id}">${t("asset.removeLiability")}</button></div>
@@ -213,7 +233,7 @@ function assetCardHTML(a) {
   /* The answer, at the top. "Net value today" used to be the last line of the card, which on
      a 320px phone with a mortgage on it is 2,700px below the fold, set at the same size as
      every label above it. */
-  const hero = `<div class="ahero"><span class="ah-k">${t("asset.netValueToday")}</span><span class="ah-v num">${moneyIn(net, a.ccy)}${inBase(net)}</span>${a.loan && +a.loan.amount > 0 ? `<span class="ah-sub">${t("asset.worthOwes", { worth: moneyIn(gross, a.ccy), owed: moneyIn(bal, a.ccy) })}</span>` : ""}</div>`;
+  const hero = `<div class="ahero"><span class="ah-k">${t("asset.netValueToday")}</span><span class="ah-v num">${moneyIn0(net, a.ccy)}${inBase(net)}</span>${a.loan && +a.loan.amount > 0 ? `<span class="ah-sub">${t("asset.worthOwes", { worth: moneyIn0(gross, a.ccy), owed: moneyIn0(bal, a.ccy) })}</span>` : ""}</div>`;
   return `<div class="rcard acard" id="acard-${a.id}" data-aid="${a.id}">
     <div class="pchead"><input class="rname" value="${esc(a.name)}" data-aid="${a.id}" data-f="name" placeholder="${t("net.assetName")}" aria-label="${t("net.assetName")}"></div>
     ${hero}
@@ -226,11 +246,19 @@ function assetCardHTML(a) {
            correct it was to tick a box that changes the value, fix the date and untick. -->
       <label class="fld">${t("asset.ownedSince")}<input class="fin" type="date" value="${esc(a.date)}" data-aid="${a.id}" data-f="date"></label>
     </div>
+    <!-- Each sub-form sits under the toggle that reveals it. Rendered after both toggles,
+         the depreciation fields appeared beneath the "Has a loan" hint, so ticking one box
+         grew a form under the other one. -->
     <div class="toggles">
-      <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="depreciates" ${a.depreciates ? "checked" : ""}><span>${t("asset.valueChanges")}<i>${t("asset.depHint")}</i></span></label>
-      <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="loan" ${a.loan ? "checked" : ""}><span>${t("asset.ledeLoan")}<i>${t("asset.loanHint")}</i></span></label>
+      <div class="tglgroup">
+        <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="depreciates" ${a.depreciates ? "checked" : ""}><span>${t("asset.valueChanges")}<i>${t("asset.depHint")}</i></span></label>
+        ${depBlock}
+      </div>
+      <div class="tglgroup">
+        <label class="tgl"><input type="checkbox" data-aid="${a.id}" data-toggle="loan" ${a.loan ? "checked" : ""}><span>${t("asset.ledeLoan")}<i>${t("asset.loanHint")}</i></span></label>
+        ${loanBlock}
+      </div>
     </div>
-    ${depBlock}${loanBlock}
     <!-- A labelled word at the foot, not an × in the corner of the only card on screen —
          which is the position and the glyph of "close this editor". -->
     <div class="acard-danger"><button class="btn btn-sm btn-quiet-danger" data-adel="${a.id}">${t("asset.removeAsset")}</button></div>
@@ -285,14 +313,14 @@ $("assetList").addEventListener("input", (e) => {
   const vv = card.querySelector(".ah-v");
   if (vv) {
     const inBase = (v) => (a.ccy !== state.baseCcy ? " · " + money(convTo(v, a.ccy, state.baseCcy)) : "");
-    if (a.liability) { const bal = a.loan ? outstandingAt(a.loan, now) : 0; vv.textContent = (bal > 0.005 ? "− " + moneyIn(bal, a.ccy) : moneyIn(0, a.ccy)) + inBase(-bal); }
-    else { const net = assetNetAt(a, now); vv.textContent = moneyIn(net, a.ccy) + inBase(net); }
+    if (a.liability) { const bal = a.loan ? outstandingAt(a.loan, now) : 0; vv.textContent = (bal > 0.005 ? "− " + moneyIn0(bal, a.ccy) : moneyIn0(0, a.ccy)) + inBase(-bal); }
+    else { const net = assetNetAt(a, now); vv.textContent = moneyIn0(net, a.ccy) + inBase(net); }
     flash(vv);
   }
   const sub = card.querySelector(".ah-sub");
   if (sub && !a.liability) {
     const owed = a.loan ? outstandingAt(a.loan, now) : 0;
-    sub.textContent = a.loan && +a.loan.amount > 0 ? t("asset.worthOwes", { worth: moneyIn(assetGrossAt(a, now), a.ccy), owed: moneyIn(owed, a.ccy) }) : "";
+    sub.textContent = a.loan && +a.loan.amount > 0 ? t("asset.worthOwes", { worth: moneyIn0(assetGrossAt(a, now), a.ccy), owed: moneyIn0(owed, a.ccy) }) : "";
   }
   const lc = card.querySelector(".lcomp");
   if (lc && a.loan) lc.innerHTML = +a.loan.amount > 0 ? loanComputedHTML(a) : `<div class="exhint">${t("asset.loanNeedsAmount")}</div>`;

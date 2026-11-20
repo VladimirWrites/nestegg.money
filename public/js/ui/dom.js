@@ -24,9 +24,37 @@ export const isStandalone = () => {
 
 // Editor overlays: show one full-screen editor over the hidden app shell (scrolled to top),
 // or reverse it.
+/* What is behind an opaque editor stays in the tab order unless it is told not to.
+ *
+ * On a laptop #app is not hidden — the rail stays and the editor takes the column beside it —
+ * so every control on the screen underneath was still tabbable and still in the accessibility
+ * tree, behind a layer covering it. A keyboard reader tabbed through an invisible Net worth
+ * page before reaching the editor, and the asset editor opens over the year editor, which had
+ * the same problem at every width. `inert` is the one line that turns a layer off. */
+export function setInert(el, on) {
+  if (!el) return;
+  try { el.inert = !!on; } catch (e) {}
+  if (on) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden");
+}
+
+// Where focus was when a layer opened, so it can be given back when the layer closes.
+const focusReturn = new Map();
+
+export function rememberFocus(id) {
+  const a = document.activeElement;
+  if (a && a !== document.body) focusReturn.set(id, a);
+}
+export function restoreFocus(id) {
+  const el = focusReturn.get(id);
+  focusReturn.delete(id);
+  if (el && document.contains(el) && !el.closest("[inert]")) { try { el.focus(); } catch (e) {} }
+}
+
 export function showEditor(id) {
   const el = $(id);
+  rememberFocus(id);
   el.classList.remove("hide");
+  setInert($("app"), true);
   /* On a phone the editor is the whole window, so the app behind it is put away. On a desktop
      the navigation rail lives inside #app, and hiding the lot took the rail with it — an editor
      is a place you tapped into, not a dialog you have to answer, so the rail stays and the
@@ -53,6 +81,17 @@ export function showEditor(id) {
       });
     }
   } catch (e) {}
+  /* Focus lands in the editor whatever the pointer is, so the next Tab is inside the screen
+     the reader is looking at rather than at the top of a document they cannot see. The title
+     carries tabindex="-1" for exactly this. */
+  // A timeout rather than requestAnimationFrame: a frame callback does not run while the tab
+  // is in the background, and an editor opened by a restored session would then never take
+  // focus at all.
+  setTimeout(() => {
+    if (el.contains(document.activeElement)) return;
+    const h = el.querySelector(".ed-title");
+    if (h) { try { h.focus({ preventScroll: true }); } catch (e) {} }
+  }, 0);
 }
 
 // Put the caret in a just-added field and scroll it into view. Placeholder text is selected, so
@@ -74,7 +113,9 @@ export function flash(el) {
 export function hideEditor(id) {
   $(id).classList.add("hide");
   $("app").classList.remove("hide");
+  setInert($("app"), false);
   document.body.classList.remove("no-nav");
+  restoreFocus(id);
   // Closed by its own arrow: spend the entry it pushed, so Back doesn't have to be pressed
   // twice for one screen. A no-op when the close came from Back in the first place.
   popEditor();

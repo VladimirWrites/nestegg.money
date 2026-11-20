@@ -2,6 +2,19 @@
 // Conversion/formatting read the live base currency and fx rates from the store.
 import { FALLBACK_FX } from "./constants.js";
 import { state } from "./store.js";
+import { getLocale } from "../i18n.js";
+
+/* The locale every figure on the screen is written in.
+ *
+ * Every formatter here was pinned to en-IE, which is right for English and wrong for the
+ * other half of the product: a German reader was shown "€1,060,000.00" and "3.75%" directly
+ * above an input the browser had rendered as "3,75". Three number conventions on one screen.
+ * English keeps en-IE exactly as before — it is the euro-with-no-space form this app has
+ * always used — and German gets German.
+ *
+ * i18n.js imports nothing from the domain, so this cannot form a cycle. */
+const FMT = { en: "en-IE", de: "de-DE" };
+export const fmtLocale = () => FMT[getLocale()] || "en-IE";
 
 // Live rate per EUR for a currency, falling back to the offline table.
 export function rate(c) {
@@ -31,7 +44,7 @@ export const convToY = (a, from, to, year) => (a * rateAt(to, year)) / rateAt(fr
 // Whole-unit amount in the base currency (e.g. "€1,235").
 export function money(v) {
   try {
-    return new Intl.NumberFormat("en-IE", { style: "currency", currency: state.baseCcy, maximumFractionDigits: 0 }).format(v);
+    return new Intl.NumberFormat(fmtLocale(), { style: "currency", currency: state.baseCcy, maximumFractionDigits: 0 }).format(v);
   } catch (e) {
     return state.baseCcy + " " + Math.round(v).toLocaleString();
   }
@@ -40,7 +53,7 @@ export function money(v) {
 // Two-decimal amount in an explicit currency (for native-currency display).
 export function moneyIn(v, ccy) {
   try {
-    return new Intl.NumberFormat("en-IE", { style: "currency", currency: ccy, maximumFractionDigits: 2 }).format(v);
+    return new Intl.NumberFormat(fmtLocale(), { style: "currency", currency: ccy, maximumFractionDigits: 2 }).format(v);
   } catch (e) {
     return ccy + " " + (+v).toFixed(2);
   }
@@ -53,7 +66,7 @@ export function moneyIn(v, ccy) {
  * fitting and being clipped off the edge with nothing to say it is there. */
 export function moneyIn0(v, ccy) {
   try {
-    return new Intl.NumberFormat("en-IE", { style: "currency", currency: ccy, maximumFractionDigits: 0 }).format(v);
+    return new Intl.NumberFormat(fmtLocale(), { style: "currency", currency: ccy, maximumFractionDigits: 0 }).format(v);
   } catch (e) {
     return ccy + " " + Math.round(+v).toLocaleString();
   }
@@ -62,7 +75,7 @@ export function moneyIn0(v, ccy) {
 // The base currency's symbol alone (e.g. "€").
 export function ccySym() {
   try {
-    const parts = new Intl.NumberFormat("en-IE", { style: "currency", currency: state.baseCcy }).formatToParts(0);
+    const parts = new Intl.NumberFormat(fmtLocale(), { style: "currency", currency: state.baseCcy }).formatToParts(0);
     const s = parts.find((x) => x.type === "currency");
     return s ? s.value : state.baseCcy;
   } catch (e) {
@@ -134,5 +147,5 @@ export function fmtNum(n, maxFrac = 2, minFrac = 0) {
   /* minFrac is for columns of money: without it a formatter drops trailing zeros, so
      "3,687.80" is written "3,687.8" and sits a character short of the figures above and
      below it, which in a right-aligned ledger means the decimal points do not line up. */
-  return new Intl.NumberFormat("en-IE", { maximumFractionDigits: Math.max(maxFrac, minFrac), minimumFractionDigits: minFrac }).format(Number(n));
+  return new Intl.NumberFormat(fmtLocale(), { maximumFractionDigits: Math.max(maxFrac, minFrac), minimumFractionDigits: minFrac }).format(Number(n));
 }

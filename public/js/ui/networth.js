@@ -15,10 +15,18 @@ import { t } from "../i18n.js";
 let edIdx = -1;
 let edYearPrev = null;
 
+/* The button says 2026 and used to be labelled "Move", which replaces the text content — so
+   a screen reader heard "Move, button" and never heard which year. */
+function setYearLabel(y) {
+  $("edYearVal").textContent = String(y);
+  const b = $("edYearBtn");
+  if (b) b.setAttribute("aria-label", t("yeared.changeYearAria", { year: y }));
+}
+
 function openYearEditor(ri) {
   edIdx = ri;
   edYearPrev = state.snapshots[ri].year;
-  $("edYearVal").textContent = String(state.snapshots[ri].year);
+  setYearLabel(state.snapshots[ri].year);
   showEditor("yearEditor");
   renderEntries();
   ensureHist();
@@ -67,22 +75,22 @@ function cardHTML(en, i, names, year) {
     const noHistData = !p && en.ticker && year < new Date().getFullYear();
     if (noHistData) priceNote = `<div class="rhint">${t("net.noYearEndPriceLong", { year })}</div>`;
     const pxtxt = p ? "@ " + moneyIn(p.price, p.currency) + (p.frozen ? " · " + t("net.yearEnd") : "") : noHistData ? t("net.noYearEndPrice") : en.ticker ? t("net.noPrice") : isC ? t("net.setCoin") : t("net.setTicker");
-    valuePart = `<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares ? en.shares : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
-    <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker || "")}" data-i="${i}" data-f="ticker" placeholder="${isC ? "BTC-EUR" : "AMS:VWRL"}" title="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}"><button type="button" class="rinfo" data-info="${isC ? "crypto" : "ticker"}" title="${t("net.symbolHelpTitle")}" aria-label="${t("net.symbolHelpAria")}">i</button></span>
+    valuePart = `<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares ? en.shares : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" aria-label="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
+    <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker || "")}" data-i="${i}" data-f="ticker" placeholder="${isC ? "BTC-EUR" : "AMS:VWRL"}" aria-label="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}" title="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}"><button type="button" class="rinfo" data-info="${isC ? "crypto" : "ticker"}" title="${t("net.symbolHelpTitle")}" aria-label="${t("net.symbolHelpAria")}">i</button></span>
     <span class="rconv">${p ? money(baseV) : pxtxt}</span>`;
   } else {
-    valuePart = `<input class="rval num" type="number" step="any" inputmode="decimal" value="${en.value ? en.value : ""}" data-i="${i}" data-f="value" placeholder="${liab ? t("net.amountOwed") : "0"}">
-    <select data-i="${i}" data-f="ccy">${CCYS.map((x) => `<option ${x === en.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>
+    valuePart = `<input class="rval num" type="number" step="any" inputmode="decimal" value="${en.value ? en.value : ""}" data-i="${i}" data-f="value" aria-label="${liab ? t("net.amountOwed") : t("asset.value")}" placeholder="${liab ? t("net.amountOwed") : "0"}">
+    <select data-i="${i}" data-f="ccy" aria-label="${t("asset.currency")}">${CCYS.map((x) => `<option ${x === en.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>
     <span class="rconv${liab ? " liab" : ""}">${liab ? "− " + money(Math.abs(baseV)) : en.ccy !== state.baseCcy ? "= " + money(baseV) : ""}</span>`;
   }
   const cats = groupNames();
   const catSel = cats.length ? categorySelectHTML("rcat", `data-i="${i}" data-f="group"`, en.group, cats) : "";
-  return `<div class="rcard${liab ? " liabcard" : ""}"><span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>
-    <input class="rname" value="${esc(en.name)}" data-i="${i}" data-f="name" placeholder="${liab ? t("net.liabilityName") : t("net.assetName")}">
-    <select class="rkind" data-i="${i}" data-f="kind"><option value="fixed" ${!priced && !liab ? "selected" : ""}>${t("net.kindValue")}</option><option value="ticker" ${en.kind === "ticker" ? "selected" : ""}>${t("net.kindTicker")}</option><option value="crypto" ${en.kind === "crypto" ? "selected" : ""}>${t("net.kindCrypto")}</option><option value="liability" ${liab ? "selected" : ""}>${t("net.kindLiability")}</option></select>
+  return `<div class="rcard${priced ? " is-priced" : ""}${liab ? " liabcard" + (Math.abs(baseV) > 0.005 ? " is-owing" : "") : ""}"><span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>
+    <input class="rname" value="${esc(en.name)}" data-i="${i}" data-f="name" aria-label="${liab ? t("net.liabilityName") : t("net.assetName")}" placeholder="${liab ? t("net.liabilityName") : t("net.assetName")}">
+    <select class="rkind" data-i="${i}" data-f="kind" aria-label="${t("net.kindAria")}"><option value="fixed" ${!priced && !liab ? "selected" : ""}>${t("net.kindValue")}</option><option value="ticker" ${en.kind === "ticker" ? "selected" : ""}>${t("net.kindTicker")}</option><option value="crypto" ${en.kind === "crypto" ? "selected" : ""}>${t("net.kindCrypto")}</option><option value="liability" ${liab ? "selected" : ""}>${t("net.kindLiability")}</option></select>
     ${valuePart}
     ${catSel}
-    <button class="rdel" data-del="${i}" title="${t("common.remove")}">×</button>${priceNote}</div>`;
+    <button type="button" class="rdel" data-del="${i}" title="${t("common.remove")}" aria-label="${esc(t("net.removeEntryAria", { name: en.name || t("net.thisRow") }))}">×</button>${priceNote}</div>`;
 }
 
 // Read-only card for a long-term asset (tap to edit in the focused asset editor).
@@ -91,11 +99,15 @@ function autoCardHTML(en, names, year) {
   const a = (state.assets || []).find((x) => x.id === en.assetId) || {}, liab = en.kind === "liability";
   const tags = liab ? t("net.tagLiability") : [a.depreciates ? (a.up ? t("net.tagAppreciating") : t("net.tagDepreciating")) : "", a.loan ? t("net.tagLoan") : ""].filter(Boolean).join(" · ") || t("net.tagAsset");
   const v = entryBase(en, year);
-  return `<div class="rcard auto${liab ? " liabcard" : ""}" data-editasset="${en.assetId}" title="${t("common.edit")}"><span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>` +
+  /* A button, not a div with a click handler. This card is the only route from a year into
+     the asset editor, so as a div it was unreachable by keyboard or switch, and a screen
+     reader read it as loose text with no name and no hint that it opened anything. */
+  const amount = liab ? "− " + money(Math.abs(v)) : money(v);
+  return `<button type="button" class="rcard auto${liab ? " liabcard" + (Math.abs(v) > 0.005 ? " is-owing" : "") : ""}" data-editasset="${en.assetId}" aria-label="${esc(t("net.editAssetAria", { name: en.name, tags, amount }))}"><span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>` +
     `<span class="rname ro">${esc(en.name)}</span>` +
     `<span class="autotag">${tags}</span>` +
-    `<span class="rconv${liab ? " liab" : ""}">${liab ? "− " + money(Math.abs(v)) : money(v)}</span>` +
-    `<svg class="autoedit" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2.5l2.5 2.5L6 12.5 3 13l.5-3z"/></svg></div>`;
+    `<span class="rconv${liab ? " liab" : ""}">${amount}</span>` +
+    `<svg class="autoedit" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>`;
 }
 
 export function renderEntries() {
@@ -172,8 +184,13 @@ function renderYearGrid() {
     /* A struck-through year says nothing on a phone, where there is no tooltip to hover, so
        the reason is printed. The current year is disabled too: pressing the big highlighted
        tile ran the whole move and toasted "Moved to 2026" without moving anything. */
-    const note = isTaken ? `<i>${t("yeared.inLedger")}</i>` : isNow ? `<i>${t("yeared.thisYear")}</i>` : "";
-    return `<button type="button" class="${cls}" data-year="${y}"${isTaken || isNow ? " disabled" : ""}${title ? ` title="${title}"` : ""}${isNow ? ' aria-current="true"' : ""}>${y}${note}</button>`;
+    /* Two elements, not a year with a word glued to it. Written as `${y}<i>…</i>` the tile
+       read "2025In your ledger", wrapped mid-word, and inherited the button's strikethrough
+       and 36% opacity — so the only explanation on the screen was itself crossed out, and
+       the highlighted current year looked cancelled. */
+    const note = isTaken ? t("yeared.inLedger") : isNow ? t("yeared.current") : "";
+    const label = isTaken ? t("yeared.yearTaken", { year: y }) : isNow ? t("yeared.yearNow", { year: y }) : t("yeared.moveTo", { year: y });
+    return `<button type="button" class="${cls}" data-year="${y}"${isTaken || isNow ? " disabled" : ""}${title ? ` title="${title}"` : ""}${isNow ? ' aria-current="true"' : ""} aria-label="${esc(label)}"><span class="yo-y">${y}</span>${note ? `<span class="yo-n">${note}</span>` : ""}</button>`;
   }).join("");
 }
 
@@ -205,7 +222,7 @@ $("yearGrid").addEventListener("click", (e) => {
   }
   sn.year = y;
   edYearPrev = y;
-  $("edYearVal").textContent = String(y);
+  setYearLabel(y);
   scheduleSync();
   closeYearModal();
   // The entries are valued at their year — a holding priced at its year-end close, an asset
