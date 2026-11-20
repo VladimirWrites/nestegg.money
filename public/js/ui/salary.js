@@ -391,7 +391,7 @@ function salMonthCards(p, yms) {
     const e = salEntry(p, ym);
     const amt = e && e.amount ? e.amount : "", ev = e ? e.event || "" : "", ec = salEccy(p, e || {});
     const del = `<button class="delbtn" data-salrowdel="${ym}" title="${esc(t("salary.removeName", { name: ymLabel(ym) }))}" aria-label="${t("salary.removeMonthAria")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>`;
-    const tag = amt === "" ? `<span class="smon-tag">${t("salary.notFilled")}</span>` : "";
+    const tag = "";   // the dashed card and the ghost amount already say it
     /* No captions. NET / CURRENCY / NOTE above every field is tutorial text repeated a
        hundred and fifty times; the fields are a figure, a three-letter code and a line of
        prose, and a reader knows which is which. They keep their accessible names. The note
@@ -403,7 +403,8 @@ function salMonthCards(p, yms) {
       + `<input class="salf num" type="text" inputmode="decimal" value="${amt === "" ? "" : fmtNum(amt, 2, 2)}" data-sid="${p.id}" data-ym="${ym}" data-f="amount" placeholder="${t("salary.amountPh")}" aria-label="${t("salary.thNet")}">`
       + `<select class="salmccy" data-sid="${p.id}" data-ym="${ym}" data-f="ccy" aria-label="${t("salary.thCcy")}">${CCYS.map((x) => `<option ${x === ec ? "selected" : ""}>${x}</option>`).join("")}</select>`
       + `</div>`
-      + `<input class="salev${ev ? "" : " is-blank"}" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="${t("salary.eventPh")}" aria-label="${t("salary.thEvent")}" title="${t("salary.eventTitle")}">`
+      + (ev ? `<input class="salev" value="${esc(ev)}" data-sid="${p.id}" data-ym="${ym}" data-f="event" placeholder="${t("salary.eventPh")}" aria-label="${t("salary.thEvent")}" title="${t("salary.eventTitle")}">`
+        : `<button type="button" class="smon-addnote" data-addnote="${ym}">${t("salary.addNote")}</button>`)
       + `</div>`;
   });
   return out;
@@ -429,7 +430,10 @@ function renderSalaryEdit() {
   yms.forEach((ym) => {
     const y = ym.slice(0, 4);
     if (y !== curY) {
-      curY = y; let yr = `<tr class="saly"><td>${y}</td>`;
+      curY = y;
+      if (y === (yms.length ? yms[0].slice(0, 4) : null)) openEditYears.add(y);
+      const yOpen = openEditYears.has(y);
+      let yr = `<tr class="saly${yOpen ? " is-open" : ""}" data-yedit="${y}" role="button" tabindex="0" aria-expanded="${yOpen}"><td><span class="salytog"><svg class="salychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>${y}</span></td>`;
       /* Under the Net column, not spanning all three: as one cell across net, currency and
          note it right-aligned to the note's edge, which on a desktop left the year's total
          250px from the figures it adds up. */
@@ -440,7 +444,7 @@ function renderSalaryEdit() {
       });
       body += yr + `<td></td></tr>`;
     }
-    let row = `<tr data-ym="${ym}"><td class="salm">${ymLabel(ym)}</td>`;
+    let row = `<tr class="salmonth${openEditYears.has(y) ? "" : " is-folded"}" data-ym="${ym}"><td class="salm">${ymLabel(ym)}</td>`;
     shown.forEach((p) => {
       // A zero amount renders blank (the placeholder shows through) so a freshly added month is
       // an empty field to type into, not a "0" to clear first.
@@ -462,7 +466,7 @@ function renderSalaryEdit() {
   /* Beside the people, not at the bottom of their months: on a phone "+ Add person" sat
      below every month of every year, which is the one place you are not when you decide to
      add someone. */
-  const addPersonTop = cards ? `<button class="btn btn-sm smon-addper" id="addPersonTop">${t("salary.addPerson")}</button>` : "";
+  const addPersonTop = `<button class="btn btn-sm smon-addper" id="addPersonTop">${t("salary.addPerson")}</button>`;
   const cardList = `${cardHead}<div class="smon-top">${nextBtn}${addPersonTop}</div><div class="smons">${yms.length ? salMonthCards(person, yms) : `<div class="exhint">${t("salary.noMonths")}</div>`}</div>`;
   /* On a desktop the add button sat below a hundred and fifty rows while the month it adds
      appears at the top of them, so a reader pressed it and nothing visibly happened. It is
@@ -474,12 +478,31 @@ function renderSalaryEdit() {
   /* Folding is a view state: it toggles a class on the cards already in the DOM, so the
      field you were typing in is still there, and a browser's find still reaches a month
      inside a folded year. */
-  host.querySelectorAll("[data-yedit]").forEach((btn) => {
+  /* The note field arrives when it is asked for, and the ledger is untouched until something
+     is typed into it. */
+  host.querySelectorAll("[data-addnote]").forEach((btn) => {
     btn.onclick = () => {
-      const y = btn.getAttribute("data-yedit");
+      const card = btn.closest(".smon"); if (!card) return;
+      const ym = btn.getAttribute("data-addnote");
+      const sid = card.querySelector("[data-sid]").getAttribute("data-sid");
+      const inp = document.createElement("input");
+      inp.className = "salev";
+      inp.dataset.sid = sid; inp.dataset.ym = ym; inp.dataset.f = "event";
+      inp.placeholder = t("salary.eventPh");
+      inp.setAttribute("aria-label", t("salary.thEvent"));
+      btn.replaceWith(inp);
+      inp.focus();
+    };
+  });
+  host.querySelectorAll("[data-yedit]").forEach((el) => {
+    const toggle = () => {
+      const y = el.getAttribute("data-yedit");
       if (openEditYears.has(y)) openEditYears.delete(y); else openEditYears.add(y);
       salKeepScroll(host, renderSalaryEdit);
     };
+    el.onclick = toggle;
+    /* A table row is not a button, so it needs the keys a button would have given it. */
+    if (el.tagName === "TR") el.onkeydown = (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(); } };
   });
 }
 

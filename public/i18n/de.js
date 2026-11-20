@@ -285,6 +285,7 @@ export default {
     yearNone: "noch nichts",
     notFilled: "leer",
     eventPh: "Gehaltserhöhung, neuer Job…",
+    addNote: "+ Notiz",
     amountPh: "Betrag",
     thNet: "Netto",
     thCcy: "Währung",

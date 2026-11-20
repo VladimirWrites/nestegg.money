@@ -707,6 +707,10 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    loudest thing on the screen, over the money it contains; the border arrives on hover and
    on focus, where it means something. */
 .saltab td .salf,.saltab td .salev{background:transparent;border-color:transparent}
+/* The prompt belongs to the field you are in, not to a hundred and fifty you are not: the
+   same sentence repeated down every note column is the loudest text on the table. */
+.saltab td .salev::placeholder{color:transparent}
+.saltab td .salev:focus::placeholder{color:var(--dim)}
 .saltab td .salf:hover,.saltab td .salev:hover{border-color:var(--line)}
 .saltab td .salf:focus,.saltab td .salev:focus{background:var(--panel-2)}
 .saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--text)}
@@ -769,7 +773,12 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .smon-head .salname{flex:1 1 auto;min-width:0;font:inherit;font-size:17px;font-weight:700;letter-spacing:-.01em;
   background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--text);padding:9px 12px}
 .smon-head .salname:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
-.smon-head .delbtn{flex:none;width:44px;height:44px}
+/* Removing a person takes their whole history; removing a month takes one row. They were
+   the same grey bin, six pixels out of line with each other. */
+.smon-head .delbtn{flex:none;width:44px;height:44px;color:var(--danger);
+  border:1px solid color-mix(in srgb, var(--danger) 35%, var(--line));border-radius:var(--r-sm);
+  display:inline-flex;align-items:center;justify-content:center}
+.smon-head .delbtn:hover{background:color-mix(in srgb, var(--danger) 12%, transparent)}
 
 .smons{display:flex;flex-direction:column;gap:10px}
 /* Adding next month belongs beside the months, at the end you add to, not eleven screens
@@ -782,24 +791,28 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .smon-next{flex:1 1 auto;justify-content:center}
 /* Whose ledger this is stays on screen while you scroll through it. */
 .smon-head{position:sticky;top:64px;z-index:5;background:var(--ink);padding:6px 0 10px}
+.smon-head::after{content:"";position:absolute;left:0;right:0;top:100%;height:10px;
+  background:linear-gradient(var(--ink),transparent);pointer-events:none}
 
 /* The year's own line, and the handle that folds it. A person with twelve years of months
    is 150 cards; a new person is 150 empty ones. Folded behind their years, with the newest
    open, the screen is a list of years you can open rather than a scroll nobody finishes. */
-.smy{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
-  padding:16px 4px 10px;margin:14px 0 4px;background:none;border:0;border-bottom:1px solid var(--line);
-  color:var(--text);font:inherit;cursor:pointer}
+.smy{display:flex;align-items:center;gap:10px;width:100%;text-align:left;min-height:52px;
+  padding:12px 14px;margin:14px 0 8px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:var(--r);color:var(--text);font:inherit;cursor:pointer}
 .smy:first-child{margin-top:0}
+.smy:hover{border-color:var(--dimmer)}
+.smy:active{transform:translateY(1px)}
 .smy .salychev{width:13px;height:13px;flex:none;color:var(--dim);transition:transform .15s ease}
 .smy.is-open .salychev{transform:rotate(90deg)}
 .smy:focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-radius:var(--r-sm)}
 .smy-y{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--text)}
 /* How much of the year is actually filled in — the thing you open a year to find out. */
 .smy-n{font-size:11.5px;color:var(--dimmer)}
-.smy-t{margin-left:auto;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;color:var(--dim)}
+.smy-t{margin-left:auto;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;color:var(--text)}
 .smon.is-folded{display:none}
 
-.smon{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
+.smon{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
   box-shadow:var(--shadow-card);padding:10px 12px 12px}
 /* A month nobody has filled in is quieter than one that carries a figure, and costs a third
    of the height: no note row, no captions, just the month and an empty field. */
@@ -823,8 +836,11 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    it is tapped. */
 .smon .salev{width:100%;min-width:0;max-width:none;min-height:40px;margin-top:8px;font:inherit;font-size:14px;
   background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;color:var(--text)}
-.smon .salev.is-blank{min-height:34px;background:transparent;border-style:dashed;color:var(--dim);font-size:13px}
-.smon.is-empty .salev.is-blank{display:none}
+/* Asking for a note costs one small word, not a dashed box under every month of every year. */
+.smon-addnote{margin-top:8px;padding:4px 0;background:none;border:0;color:var(--dim);
+  font:inherit;font-size:12.5px;cursor:pointer;align-self:flex-start}
+.smon-addnote:hover{color:var(--signal)}
+.smon.is-empty .smon-addnote{display:none}
 .smon .salf:focus,.smon .salev:focus,.smon .salmccy:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
 
 /* ───────── motion: entrance + chart draw-on (subtle, gated by .anim / reduced-motion) ───────── */
