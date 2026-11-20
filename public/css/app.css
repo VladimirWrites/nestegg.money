@@ -2128,3 +2128,23 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 /* One rule for this heading, after every earlier attempt at it: pinned to the top of its own
    box, which is the only thing it can pin to. */
 .yrsched .schtab th{position:sticky;top:0;z-index:1;background:var(--panel-2)}
+
+/* The monthly schedule, once somebody opens it.
+ *
+ * `.loanbox > *{min-width:0}` reaches the <details>, but the scrolling box is inside it, and
+ * a flex item's floor is its content — so a six-column schedule 573px wide sized the
+ * disclosure, the disclosure sized the loan box, and the whole card went 163px past the edge
+ * of the screen, taking every field and stat with it. The year table above it fits only
+ * because it happens to be narrower; it had the same fault waiting.
+ *
+ * Every box between the card and a wide table has to be allowed to be narrower than what is
+ * inside it, or the table pushes the card instead of scrolling inside it. */
+/* `min-width:0` is the wrong tool here and I reached for it twice.
+ *
+ * These boxes are stacked in COLUMN flex containers, where width is the cross axis — and
+ * `min-width:auto` only applies to the main axis, so setting it to 0 changes nothing at all.
+ * What actually stops a 573px schedule widening its ancestors is a max-width bound at every
+ * level between the card and the table, so each box can be narrower than its content and
+ * the table scrolls inside the last of them. */
+.acard,.toggles,.tglgroup,.loanbox,.psched,.yrsched,.exwrap,.lcomp,.pstats,
+.psched>.schscroll,.yrsched>.schscroll{min-width:0;max-width:100%}
