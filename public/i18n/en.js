@@ -624,6 +624,8 @@ export default {
     loanTitle: "Loan payment (from your assets)",
     loanTag: "from net worth",
     addToCat: "+ Add an expense here",
+    addToCatAria: "Add an expense to {name}",
+    noOutgoings: "No outgoings yet — press Edit to add what you pay each month.",
     moveTo: "Move to…",
     chooseCat: "Set category…",
     moveAria: "Move {name} to another category",

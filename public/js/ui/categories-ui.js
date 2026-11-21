@@ -58,9 +58,11 @@ export function groupHeadingId(prefix, name) {
    had become impossible to tell apart. */
 export const TRASH_SVG = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>`;
 
-export function groupSectionHTML(name, color, subtotalHTML, cardsHTML, emptyHint = t("common.emptyCategory"), idPrefix = "grp", delGlyph = "×") {
+export function groupSectionHTML(name, color, subtotalHTML, cardsHTML, emptyHint = t("common.emptyCategory"), idPrefix = "grp", delGlyph = "×", isEmpty = null) {
   const hid = groupHeadingId(idPrefix, name);
-  const empty = !cardsHTML ? " is-empty" : "";
+  /* Stated by the caller when it knows, because "has no markup" stopped meaning "has nothing
+     in it" the moment a caller began appending a control of its own to every card. */
+  const empty = (isEmpty == null ? !cardsHTML : isEmpty) ? " is-empty" : "";
   return `<div class="grp${empty}" role="group" aria-labelledby="${hid}"><div class="grphead">`
     + `<span class="dot" style="background:${color}"></span>`
     + `<h3 class="grptitle-h" id="${hid}"><span class="sr-only">${esc(name)}</span>`

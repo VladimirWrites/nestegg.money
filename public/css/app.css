@@ -2202,7 +2202,7 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
   letter-spacing:0;background:var(--panel);border:1px solid var(--field-edge);border-radius:var(--r-sm)}
 /* …and the subtotal keeps the right edge it has in reading mode, so pressing Edit does not
    throw seven figures into the middle of the card. */
-#budItems .grphead .grpsub{margin-left:auto;min-width:8ch;text-align:right}
+#budItems .grphead .grpsub{margin-left:auto;min-width:8ch;text-align:right;flex:none}
 /* The old underline-field rules still out-specified the new box, so focusing it squared the
    corners and drew an amber line under three grey sides. */
 #budItems input.grpname:focus{border-color:var(--signal)}
@@ -2379,15 +2379,21 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
    ring, where there is nothing else to put, and stays. */
 .grppct{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--dim);margin-right:10px}
 .grpamt{font-variant-numeric:tabular-nums}
-@media(max-width:899px){.bud-chart .legend{display:none}}
+/* …except the one wedge with no card of its own. With the whole legend hidden, the green 17%
+   arc was the second-largest thing in the ring and nothing on the screen named it. */
+@media(max-width:899px){
+  .bud-chart .legend .legrow{display:none}
+  .bud-chart .legend .legrow-left{display:flex}
+  .bud-chart .legend:not(:has(.legrow-left)){display:none}
+}
 
 /* The untagged card is drawn by the reading-mode helper in both modes, so in editing it was
    the only card with no rename field and no delete — which meant it missed the header tint,
    missed the 11px inset, and had no 44px delete column, leaving its total 65px right of every
    other card's. It is the first card in the list, so it read as a rendering fault. */
-#budItems:has(input.grpname) .grp-uncat .grphead{background:var(--panel-2)}
-#budItems:has(input.grpname) .grp-uncat .grphead .grpsub{padding-right:65px}
-#budItems:has(input.grpname) .grp-uncat .grptitle{padding-left:11px}
+#budItems .grp-uncat:has(.bud-exp:not(.ro)) .grphead{background:var(--panel-2)}
+#budItems .grp-uncat:has(.bud-exp:not(.ro)) .grphead .grpsub{padding-right:65px}
+#budItems .grp-uncat:has(.bud-exp:not(.ro)) .grptitle{padding-left:11px}
 /* …and its rows are form rows, which have neither the reading row's border nor its gap. */
 #budItems .grp-ro:has(.bud-exp:not(.ro)) .grpcards{gap:6px}
 
@@ -2406,3 +2412,22 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
 
 /* "ordnen Sie Kredite & Ausgaben Kategorien zu" left "zu" alone on a second line. */
 .bud-exp-head .hint{text-wrap:balance}
+
+/* ── Budget, round 6 ─────────────────────────────────────────────────── */
+
+/* The percentage was an inline span inside a right-aligned nowrap subtotal, so its position
+   was a function of the amount's width — a ragged column directly under a legend that gives
+   the same figure a fixed track. */
+.grppct{display:inline-block;min-width:4.5ch;text-align:right}
+/* At 390px the name field, the percentage and a five-figure total do not share one line. */
+@media(max-width:520px){
+  #budItems .grphead .grpsub{display:flex;flex-direction:column;align-items:flex-end;line-height:1.25}
+  .grppct{margin-right:0;min-width:0}
+}
+/* Eight identical buttons in a row; the label names its own card now, and the untagged card
+   has the one at the foot of the list. */
+.bud-addin{font-size:13px}
+
+/* The mode toast sat 18px from the bottom, which on a phone is over the tab bar — it covered
+   two tabs for the 2.3s it was up, in the interface's primary-button fill. */
+@media(max-width:899px){.toast{bottom:calc(84px + var(--edge-b, 0px))}}

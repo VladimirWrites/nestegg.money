@@ -78,6 +78,8 @@ function relabelCategory(grp, was, nw) {
   const sub = grp.querySelector("[data-grpsub]"); if (sub) sub.setAttribute("data-grpsub", nw);
   const del = grp.querySelector("[data-grpdel]");
   if (del) { del.dataset.grpdel = nw; del.setAttribute("aria-label", t("common.deleteCategoryAria", { name: nw })); }
+  const ai = grp.querySelector("[data-addin]");
+  if (ai) { ai.dataset.addin = nw; ai.setAttribute("aria-label", t("budget.addToCatAria", { name: nw })); }
   $("budItems").querySelectorAll("select.bud-exp-cat option, select.bud-loan-cat option").forEach((o) => {
     if (o.value === was) { o.value = nw; o.textContent = nw; }
   });
@@ -117,7 +119,15 @@ function roGroupSection(name, color, subtotalHTML, cardsHTML, subKey, uncat) {
    gluing "%" to a number — so a German reader got "17%" beside "9.058 €", where de-DE writes
    a narrow no-break space before the sign. And `(-0.2).toFixed(0)` is "-0", so a €10 shortfall
    printed "savings rate -0%" with an ASCII hyphen under a hero using a real minus. */
-const pct = (p) => new Intl.NumberFormat(fmtLocale(), { style: "percent", maximumFractionDigits: 0, signDisplay: "negative" }).format(p / 100);
+/* `signDisplay` is a RangeError before Chrome 106, Safari 15.4 and Firefox 93, and `pct` runs
+   inside the render template — an older engine would have failed to draw the tab at all. */
+const PCT_FMT = (() => {
+  for (const o of [{ signDisplay: "negative" }, {}]) {
+    try { return new Intl.NumberFormat(fmtLocale(), { style: "percent", maximumFractionDigits: 0, ...o }); } catch (e) {}
+  }
+  return null;
+})();
+const pct = (p) => (PCT_FMT ? PCT_FMT.format(p / 100) : Math.round(p) + "%");
 const pctOf = (v, total) => {
   if (!(total > 0) || !(v > 0)) return pct(0);
   const p = (v / total) * 100;
@@ -140,7 +150,7 @@ function breakdownSegments(s) {
   const rank = (n) => (n === UNCATEGORIZED ? -1 : (order.indexOf(n) + 1 || 1e6));
   [...(s.categories || [])].sort((a, c) => rank(a.category) - rank(c.category))
     .forEach((c) => { if (c.total > 0) segs.push({ name: dispCat(c.category), v: c.total, color: colorFor(c.category, order), items: c.items }); });
-  if (s.leftover > 0) segs.push({ name: t("budget.leftOver"), v: s.leftover, color: left, items: [] });
+  if (s.leftover > 0) segs.push({ name: t("budget.leftOver"), v: s.leftover, color: left, items: [], left: true });
   return segs;
 }
 
@@ -186,7 +196,7 @@ function drawBudgetDonut(s, animate = false) {
   svg.setAttribute("role", "img");
   svg.setAttribute("aria-label", total > 0 ? t("budget.ariaList", { list: segs.map((x) => x.name + " " + pctOf(x.v, total)).join(", ") }) : t("budget.ariaEmpty"));
   const leg = $("budgetLegend"); if (leg) {
-    leg.innerHTML = segs.map((x) => `<div class="legrow"><span class="swatch" style="background:${x.color}"></span><span>${esc(x.name)}</span><span class="pct">${pctOf(x.v, total)}</span><span class="amt num">${money(x.v)}</span></div>`).join("");
+    leg.innerHTML = segs.map((x) => `<div class="legrow${x.left ? " legrow-left" : ""}"><span class="swatch" style="background:${x.color}"></span><span>${esc(x.name)}</span><span class="pct">${pctOf(x.v, total)}</span><span class="amt num">${money(x.v)}</span></div>`).join("");
   }
 }
 
@@ -310,10 +320,17 @@ const LEFTOVER_HEX = "#3ad17a";
    — the Done button, the hero figure, the active tab — so a category painted it read as a
    control. Both are kept out of the categories' palette. */
 const ACCENT_HEX = "#ffb000";
-const budgetPalette = () => PALETTE.filter((c) => {
-  const h = c.toLowerCase();
-  return h !== LEFTOVER_HEX && h !== ACCENT_HEX;
-});
+/* Re-ordered for this screen only, because a budget's dots are matched to wedges by eye and a
+   fresh ledger ships with seven categories. Straight down `PALETTE`, once the leftover green
+   and the interface accent are removed, the seventh is #7aa0ff — a blue beside the first
+   category's #4aa3ff, so Housing and Savings arrived indistinguishable. The net-worth series
+   keep `PALETTE`'s own order. */
+const BUD_ORDER = ["#4aa3ff", "#ff8c1a", "#2fd0c8", "#ff4d6d", "#9b8cff", "#ffd23a", "#e06be0", "#9ad13a", "#ff7847", "#7aa0ff"];
+const budgetPalette = () => {
+  const ok = PALETTE.filter((c) => { const h = c.toLowerCase(); return h !== LEFTOVER_HEX && h !== ACCENT_HEX; });
+  const seen = new Set(ok.map((c) => c.toLowerCase()));
+  return BUD_ORDER.filter((c) => seen.has(c.toLowerCase())).concat(ok.filter((c) => BUD_ORDER.indexOf(c) < 0));
+};
 
 /* Every category this budget knows of, in a stable order: the stored list first, then any name
    that only an expense or a loan uses. Colour is keyed on a position in here.
@@ -338,6 +355,16 @@ function colorFor(name, order) {
   const i = (order || []).indexOf(name);
   const pal = budgetPalette();
   return i >= 0 ? pal[i % pal.length] : "var(--dim)";
+}
+
+/* Rows that were never filled in are not data. "+ Add an expense" pushes a blank one, and a
+   reader who changed their mind was left with a permanent "Expense €0" in a card the ring and
+   the legend know nothing about. Pruned on leaving the editor and on any render made outside
+   it, so a reload or a tab change clears it too. */
+function pruneBlankRows(b) {
+  const keep = (b.expenses || []).filter((e) => (e.name || "").trim() || +e.amount > 0);
+  if (keep.length === (b.expenses || []).length) return false;
+  b.expenses = keep; scheduleSync(); return true;
 }
 
 /* A card's own share of the outgoings, beside its total. This is the one column the legend
@@ -388,10 +415,15 @@ function itemsHTML(s, b) {
        phone — which filed the row as untagged, scrolled the page up to it, and left the
        reader to move it back down. An empty category's only content was a sentence telling
        them to go and do that. */
-    if (!reading()) cards += `<button type="button" class="btn btn-sm bud-addin" data-addin="${esc(g)}">${t("budget.addToCat")}</button>`;
+    const bare = !lo.length && !ex.length;
+    if (!reading()) cards += `<button type="button" class="btn btn-sm bud-addin" data-addin="${esc(g)}" aria-label="${esc(t("budget.addToCatAria", { name: g }))}">${t("budget.addToCat")}</button>`;
     html += reading() ? roGroupSection(g, colorFor(g, palOrder), subWithPct(sub, outTot), cards, g)
-               : groupSectionHTML(g, colorFor(g, palOrder), subWithPct(sub, outTot), cards, undefined, "bud", TRASH_SVG);
+               : groupSectionHTML(g, colorFor(g, palOrder), subWithPct(sub, outTot), cards, undefined, "bud", TRASH_SVG, bare);
   });
+  /* The first-run state: a salary is in, nothing has been entered here yet. The heading sat
+     directly on "Total outgoings €0" with nothing between them and nothing saying that Edit is
+     where outgoings come from. */
+  if (!html && reading()) html = `<div class="exhint">${t("budget.noOutgoings")}</div>`;
   return html;
 }
 
@@ -399,6 +431,7 @@ export function renderBudget() {
   const host = $("budgetBody");
   if (!host) return;
   const b = bud();
+  if (!EDITING) pruneBlankRows(b);
   const s = budgetSummary();
   const auto = salaryIncome();
 
@@ -468,10 +501,7 @@ export function renderBudget() {
        blank one, and nothing pruned it — so a reader who pressed Add and changed their mind
        was left with a permanent "Expense €0" in a card the ring and the legend know nothing
        about, and no way to remove it without going back into the editor. */
-    if (EDITING) {
-      const keep = (b.expenses || []).filter((e) => (e.name || "").trim() || +e.amount > 0);
-      if (keep.length !== (b.expenses || []).length) { b.expenses = keep; scheduleSync(); }
-    }
+    if (EDITING) pruneBlankRows(b);
     EDITING = !EDITING; renderBudget(); budRefocus("#budEdit");
     // The body is replaced wholesale, so a live region inside it can never announce.
     toast(EDITING ? t("budget.editingOn") : t("budget.editingOff"));
@@ -529,22 +559,35 @@ export function renderBudget() {
      the face resets to the hidden "Move to…" option, arrowing could only ever reach the first
      destination in the list. Arrow, Home, End and Page defer; Enter, Tab and a click commit. */
   const onPick = (el, apply) => {
+    /* Nothing has been chosen while the face is still the disabled "Move to…" option. Its value
+       is "" — the same value "— no category —" carries — so the test is the option, not the
+       value, or arrowing and then tabbing away quietly untagged the row. */
+    const commit = (keepFocus) => {
+      delete el.dataset.pending;
+      const o = el.options[el.selectedIndex];
+      if (!o || o.disabled) return;
+      apply(el, keepFocus);
+    };
     el.onkeydown = (ev) => {
       if (/^(Arrow|Home|End|Page)/.test(ev.key)) { el.dataset.pending = "1"; return; }
-      if (ev.key === "Enter" && el.dataset.pending) { delete el.dataset.pending; apply(el); }
+      if (ev.key === "Escape") { delete el.dataset.pending; return; }
+      if (ev.key === "Enter" && el.dataset.pending) commit(true);
     };
-    el.onblur = () => { if (el.dataset.pending) { delete el.dataset.pending; apply(el); } };
-    el.onchange = () => { if (!el.dataset.pending) apply(el); };
+    /* A commit on the way out must not claim the focus the reader was moving to: the re-render
+       lands before the browser can focus the next control, so asking for the picker back put
+       them straight into the control they had just tabbed out of. */
+    el.onblur = () => { if (el.dataset.pending) commit(false); };
+    el.onchange = () => { if (!el.dataset.pending) commit(true); };
   };
   host.querySelectorAll(".bud-exp-cat").forEach((el) => {
     /* The row moves to another card, so the list is rebuilt and the control that was focused
        no longer exists. Without this, a keyboard reader lands on <body> — and on Windows an
        arrow key inside a closed <select> fires `change` per press, so one keystroke ended the
        interaction — while a touch reader watches the row vanish from under their finger. */
-    onPick(el, (tgt) => { const e = b.expenses.find((x) => x.id === tgt.dataset.id); if (e) { e.group = tgt.value; scheduleSync(); renderBudget(); budRefocus(`.bud-exp-cat[data-id="${CSS.escape(e.id)}"]`); } });
+    onPick(el, (tgt, keepFocus) => { const e = b.expenses.find((x) => x.id === tgt.dataset.id); if (e) { e.group = tgt.value; scheduleSync(); renderBudget(); if (keepFocus) budRefocus(`.bud-exp-cat[data-id="${CSS.escape(e.id)}"]`); } });
   });
   host.querySelectorAll(".bud-loan-cat").forEach((el) => {
-    onPick(el, (tgt) => { const id = tgt.dataset.lid; if (tgt.value) b.loanCats[id] = tgt.value; else delete b.loanCats[id]; scheduleSync(); renderBudget(); budRefocus(`.bud-loan-cat[data-lid="${CSS.escape(id)}"]`); });
+    onPick(el, (tgt, keepFocus) => { const id = tgt.dataset.lid; if (tgt.value) b.loanCats[id] = tgt.value; else delete b.loanCats[id]; scheduleSync(); renderBudget(); if (keepFocus) budRefocus(`.bud-loan-cat[data-lid="${CSS.escape(id)}"]`); });
   });
 
   // Inline rename + delete on the category section headers (same as net worth).
@@ -599,9 +642,17 @@ export function renderBudget() {
       /* From the DOM, not from the array: the screen is grouped by category, so once a row has
          been re-tagged the next entry in `b.expenses` can be in a different card — and
          `budRefocus` scrolls, so the page jumped there. */
-      const r = del.closest(".bud-exp"), nb = r && (r.nextElementSibling || r.previousElementSibling);
-      const near = nb && nb.dataset.id ? `.bud-exp-name[data-id="${CSS.escape(nb.dataset.id)}"]`
-                 : nb && nb.dataset.lid ? `.bud-loan-cat[data-lid="${CSS.escape(nb.dataset.lid)}"]` : null;
+      const r = del.closest(".bud-exp");
+      /* Walk past anything that is not a row: each card now ends with its own "+ Add an expense
+         here", so the plain next sibling of a card's last row is a button with no row id — and
+         focus fell all the way through to the add button past the entire list. */
+      const nextRow = (n, back) => { while (n && !n.classList.contains("bud-exp")) n = back ? n.previousElementSibling : n.nextElementSibling; return n; };
+      const nb = r && (nextRow(r.nextElementSibling, false) || nextRow(r.previousElementSibling, true));
+      const sel = nb && nb.dataset.id ? `.bud-exp-name[data-id="${CSS.escape(nb.dataset.id)}"]`
+                : nb && nb.dataset.lid ? `.bud-loan-cat[data-lid="${CSS.escape(nb.dataset.lid)}"]` : null;
+      // …and if the card is now empty, its own add button, not one two thousand pixels away.
+      const own = r && r.closest(".grp") && r.closest(".grp").querySelector("[data-addin]");
+      const near = sel || (own ? `#budItems [data-addin="${CSS.escape(own.dataset.addin)}"]` : null);
       b.expenses = b.expenses.filter((x) => x.id !== del.dataset.id); scheduleSync(); renderBudget();
       budRefocus(near, "#budAddExp");
     }
