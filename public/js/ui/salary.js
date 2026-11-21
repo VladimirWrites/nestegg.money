@@ -72,7 +72,11 @@ export function drawSalaryChart() {
      January saw it. */
   const hasYearly = combY.length > 0;
   const nmR = hasYearly ? axisMax(Math.max(1, ...combY.map((c) => c.v))) : 0;
-  const padL = 56, padR = 56, padT = 22, padB = 30;
+  /* 22px of head room put the axis captions 3px above the figures they caption: the caption
+     baseline landed at padT-8 and the topmost gridline's own figure at padT+3, so "per month"
+     sat on top of "€16k" and "€16k" sat on the gridline. The captions need a line of their
+     own above the plot, not the gap between two gridlines. */
+  const padL = 56, padR = 56, padT = 34, padB = 30;
   /* Shorter on a phone: at 400px the chart filled the screen on its own and pushed the
      legend below the fold, so the first thing a reader saw was three unlabelled lines. */
   const H = (window.innerWidth || 0) < 560 ? 320 : 400, plotH = H - padT - padB;
@@ -99,8 +103,8 @@ export function drawSalaryChart() {
      everyone's pay in a year. Numbers alone on either side say nothing about which, so each
      axis names its own unit at its head — and the legend repeats it below the chart, because
      the chart scrolls sideways and a caption at a corner can scroll out of sight. */
-  if (!pinned) s += `<text x="${padL - 6}" y="${padT - 8}" text-anchor="end" font-size="10" fill="${C.axis}">${t("salary.axisLeft")}</text>`;
-  s += `<text x="${W - padR + 8}" y="${padT - 8}" text-anchor="start" font-size="10" fill="${C.axis}">${t("salary.axisRight")}</text>`;
+  if (!pinned) s += `<text x="${padL - 6}" y="${padT - 16}" text-anchor="end" font-size="10" fill="${C.axis}">${t("salary.axisLeft")}</text>`;
+  s += `<text x="${W - padR + 8}" y="${padT - 16}" text-anchor="start" font-size="10" fill="${C.axis}">${t("salary.axisRight")}</text>`;
   /* How many years the axis can name is a question about width, not about how many years
      there are. A four-digit label needs about 34px of its own; fitting one per year into a
      phone's 248px of plot printed "2014" through "2026" on top of each other. */
@@ -133,7 +137,7 @@ export function drawSalaryChart() {
       const AW = 48;
       /* The caption is wider than the figures under it, so it is anchored to the left edge
          of the gutter rather than to their right edge, where it was clipped to "er month". */
-      let a = `<text x="0" y="${padT - 8}" text-anchor="start" font-size="9.5" fill="${C.axis}">${t("salary.axisLeft")}</text>`;
+      let a = `<text x="0" y="${padT - 16}" text-anchor="start" font-size="9.5" fill="${C.axis}">${t("salary.axisLeft")}</text>`;
       for (let i = 0; i <= 5; i++) {
         const val = (nmL * i) / 5, yy = padT + plotH - (val / nmL) * plotH;
         a += `<text x="${AW - 6}" y="${yy + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${sym}${shortK(val)}</text>`;
