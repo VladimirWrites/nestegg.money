@@ -2148,3 +2148,21 @@ body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
  * the table scrolls inside the last of them. */
 .acard,.toggles,.tglgroup,.loanbox,.psched,.yrsched,.exwrap,.lcomp,.pstats,
 .psched>.schscroll,.yrsched>.schscroll{min-width:0;max-width:100%}
+
+/* A date or month field draws its own picker button hard against the border, with no padding
+   of its own and no way to give it any — the arrow sits on the field's edge while every other
+   control on the card keeps an 11px inset. `base.css` already solves this for `.field-date`:
+   hide the native indicator, stretch its hit area over the whole field, and paint the app's
+   own chevron in the padding. The asset editor's dates and the salary month pickers use their
+   own classes, so that rule never reached them. */
+.fin[type="date"],.salpick[type="month"]{
+  position:relative;
+  appearance:none;-webkit-appearance:none;
+  padding-right:34px;
+  background-image:var(--chevron);background-repeat:no-repeat;
+  background-position:right 11px center;background-size:15px;
+}
+.fin[type="date"]::-webkit-calendar-picker-indicator,
+.salpick[type="month"]::-webkit-calendar-picker-indicator{
+  position:absolute;inset:0;width:auto;height:auto;margin:0;padding:0;opacity:0;cursor:pointer;
+}
