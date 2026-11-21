@@ -3,7 +3,7 @@
 // background data refreshes to a re-render, boots the app, and registers the service worker.
 import { state, setState } from "./domain/store.js";
 import { emptyState, migrate } from "./domain/schema.js";
-import { $, toast, downloadBlob, isIOSUserAgent, isStandalone } from "./ui/dom.js";
+import { $, toast, downloadBlob, isIOSUserAgent, isStandalone, keepNumberLocale } from "./ui/dom.js";
 import { scheduleSync, flushSync, autoRefresh, setDataListener, deleteVault, LS } from "./io/storage.js";
 import { clearKeys } from "./io/crypto.js";
 import { renderAll } from "./ui/charts.js";
@@ -11,7 +11,7 @@ import { renderEntries } from "./ui/networth.js";
 import { drawSalaryChart } from "./ui/salary.js";
 import { boot, setDisplayCcy, showView } from "./ui/gate.js";
 import { initHistory } from "./ui/history.js";
-import { closeTopEditor } from "./ui/editors.js";
+import { closeTopEditor, closeOverlays, topEditor } from "./ui/editors.js";
 import { initI18n, translateDom, t } from "./i18n.js";
 import "./ui/assets.js"; // side-effect: wire its editor listeners
 import "./ui/share.js"; // side-effect: wire the share dialog
@@ -104,10 +104,16 @@ window.addEventListener("resize", () => {
    Topmost first. An asset opens on top of the year editor that reached it, so both are open at
    once, and closing them in declaration order shut the year editor out from underneath the
    asset editor still covering the screen. */
+/* One handler, one layer.
+ *
+ * Each modal used to register its own Escape listener, and a module's imports evaluate before
+ * the importing module's body — so the symbol help's listener always ran before this one's
+ * guard could see that the help was open. Escape hid the help, the guard then found nothing
+ * open, and the year editor behind it closed too. Escape closes the topmost thing: a dialog
+ * if one is up, otherwise the editor. */
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
-  const im = $("infoModal"); if (im && !im.classList.contains("hide")) return; // the info modal handles its own Esc
-  const dm = $("dayModal"); if (dm && !dm.classList.contains("hide")) return; // so does the day breakdown
+  if (closeOverlays()) return;
   closeTopEditor();
 });
 
@@ -144,6 +150,7 @@ if (installBtn) {
 // Resolve the locale and translate the static page before first paint (module scripts run
 // pre-render), so boot never flashes English at a German user. Failure = English fallback.
 try { await initI18n(); translateDom(); } catch (e) {}
+try { keepNumberLocale(); } catch (e) {}
 
 try { boot(); } catch (e) {}
 
@@ -151,6 +158,8 @@ try { boot(); } catch (e) {}
    Back from there leaves the app — which is what Back does everywhere else on the platform.
    Wired after boot, so the entry it records is the view boot actually landed on. */
 initHistory({
+  onCloseOverlays: closeOverlays,
+  onTopEditor: topEditor,
   onView: (v) => showView(v),
   // Through each editor's own Back button, so closing by the system button runs exactly what
   // closing by the arrow runs: the sync, and the re-render underneath.

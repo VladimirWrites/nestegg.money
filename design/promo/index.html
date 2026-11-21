@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en">
+<!-- Made with the Bang Motion skill by Bang Tutorial (https://youtube.com/bangtutorial) - MIT - https://github.com/bangtutorial/bang-motion -->
+<head>
+<meta charset="utf-8">
+<title>nestegg.money — promo</title>
+<!--
+  nestegg.money promo — 16:9, 1920x1080, 29.6s, silent, autoplay + loop, no player.
+  ?debug=1 scrub panel  ·  ?clean=1 hold at frame 0 (export)  ·  R restart  ·  Space pause
+
+  STYLE BRIEF
+  Product + 3 adjectives : nestegg.money - private, quiet, sturdy
+  Concept                : candidates: 7 object metaphor / 8 living number / 19 tour between
+                           claims -> chosen 8 (living number), egg as the vessel at the close
+  Structural fingerprint : living number · 7 acts · counting figure / year columns / asset row
+                           being used / salary lines / seal into egg / typed account number /
+                           forecast + FIRE line -> wordmark · opens in media res, number already
+                           counting · last line's endpoint becomes the egg, keyline callback
+  Palette                : #ffb000 amber (logo fill, design/icon.source.svg) · #fff2cf cream
+                           (logo stroke + shine) · #0a0a0b plate (logo ground) · #12141b /
+                           #191c26 / #2b3040 (base.css dark tokens) · #3ad17a (--accent) ·
+                           #f4f3ef / #1b1a17 (app light theme) · series colours from PALETTE
+                           in public/js/domain/constants.js
+  Font display / support : Fraunces / Archivo (the product's own font); amounts, tickers and the
+                           account number in JetBrains Mono, because base.css keeps mono for
+                           anything you run your eye down a column of
+  Emphasis               : NONE - word by word dim to full, size, pause, object beside the word.
+                           No punctuation anywhere.
+  Background surface     : dark = amber radial horizon + grain; paper = warm #f4f3ef + cream
+                           radial + grain (multiply); plate = #0a0a0b + amber hairline grid
+  Background motion      : breathing ledger grid, two parallax layers, 1.0<->1.04, phase offset
+  Signature motion       : the amber keyline drawing left to right under whatever is settling
+                           (under the figure, the year baseline, the salary axis, the FIRE goal,
+                           the wordmark)
+  Object render family   : flat solid only - no WebGL, no 3D objects, egg is the real logo path
+  Background changes     : dark -> paper (trigger: the seal sweeps cream out of the egg) ->
+                           plate (trigger: the egg scales past the frame edge). Two, the max.
+  Transitions            : camera pull-back reveal · zoom to the UI being clicked · card lifted
+                           out of the panel in 3D (depth) · spin thin -> figure grows ·
+                           icon becomes field
+  Canonical components   : one only - the typed account number
+  Special moment         : the figure shatters into ciphertext and pours into the egg, cream
+                           stroke drawing closed around it
+
+  Determinism: nothing reads the system clock. Every visual is a pure function of tl.time() —
+  the count-up, the ciphertext churn, the grain, the grid breath, the camera. Scrubbing is
+  frame-exact and a frame-by-frame export renders identically every run.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Archivo:wght@400..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+:root{
+  --amber:#ffb000;        /* logo fill */
+  --signal:#ffb020;       /* base.css --signal (dark) */
+  --cream:#fff2cf;        /* logo stroke + shine */
+  --plate:#0a0a0b;        /* logo ground */
+  --ink:#12141b;
+  --panel:#191c26;
+  --panel2:#202432;
+  --line:#2b3040;
+  --text:#e9ebf2;
+  --dim:#939aae;
+  --dimmer:#666d80;
+  --green:#3ad17a;        /* base.css --accent */
+  --danger:#ff6b6b;
+  --paper:#f4f3ef;
+  --paper-text:#1b1a17;
+  --paper-dim:#5f5c54;
+  --s0:#4aa3ff; --s1:#3ad17a; --s2:#ff8c1a; --s3:#9b8cff;   /* PALETTE 0, 2, 1, 5 */
+  --sans:"Archivo",system-ui,sans-serif;
+  --disp:"Fraunces",Georgia,serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:var(--sans);color:var(--text)}
+#filters{position:fixed;width:0;height:0;opacity:0;pointer-events:none}
+
+#stage{position:fixed;left:50%;top:50%;width:1920px;height:1080px;
+  transform:translate(-50%,-50%) scale(1);overflow:hidden;background:var(--plate)}
+
+/* ---- the world: 2560x1440, larger than the frame so the camera can travel ---- */
+#world{position:absolute;left:0;top:0;width:2560px;height:1440px;
+  transform-origin:0 0;will-change:transform}
+
+.field{position:absolute;inset:0;overflow:hidden}
+#dark{background:
+  radial-gradient(72% 46% at 46% 104%,rgba(255,176,0,.30),rgba(255,176,0,.10) 46%,transparent 72%),
+  linear-gradient(180deg,#07080c 0%,var(--ink) 52%,#0c0f18 100%)}
+#paper{opacity:0;visibility:hidden;background:
+  radial-gradient(60% 52% at 50% 36%,#fffdf6,rgba(255,250,235,0) 70%),
+  linear-gradient(170deg,#faf8f2 0%,var(--paper) 46%,#ece9df 100%)}
+#plate{opacity:0;visibility:hidden;background:
+  radial-gradient(64% 44% at 50% 112%,rgba(255,176,0,.24),rgba(255,176,0,.07) 44%,transparent 70%),
+  linear-gradient(180deg,#07070a 0%,var(--plate) 58%,#0e0c07 100%)}
+
+/* ledger grid — two parallax layers, breath written from t in render() */
+.grid{position:absolute;left:-320px;top:-320px;width:3200px;height:2080px;
+  transform-origin:50% 50%;pointer-events:none}
+.g1{background-image:linear-gradient(to right,rgba(255,242,207,.055) 1px,transparent 1px),
+  linear-gradient(to bottom,rgba(255,242,207,.055) 1px,transparent 1px);background-size:96px 96px}
+.g2{background-image:linear-gradient(to right,rgba(255,176,0,.085) 2px,transparent 2px),
+  linear-gradient(to bottom,rgba(255,176,0,.085) 2px,transparent 2px);background-size:480px 480px}
+#paper .g1{background-image:linear-gradient(to right,rgba(27,26,23,.07) 1px,transparent 1px),
+  linear-gradient(to bottom,rgba(27,26,23,.07) 1px,transparent 1px)}
+#paper .g2{background-image:linear-gradient(to right,rgba(154,91,0,.11) 2px,transparent 2px),
+  linear-gradient(to bottom,rgba(154,91,0,.11) 2px,transparent 2px)}
+
+#objs{position:absolute;inset:0}
+.ob{position:absolute;transform-origin:50% 50%}
+
+/* ---- the figure: amounts are mono, same as the app. Fixed-width slots so the
+       count-up never changes the layout and the chars survive the shatter. ---- */
+#fig{left:874px;top:398px;font-family:var(--mono);font-weight:500;font-size:150px;
+  letter-spacing:-.02em;color:var(--cream);white-space:nowrap;
+  font-variant-numeric:tabular-nums;opacity:0}
+.fch{display:inline-block;width:.64em;text-align:center;will-change:transform,opacity}
+#figline{left:494px;top:508px;width:760px;height:5px;border-radius:3px;
+  background:linear-gradient(90deg,var(--amber),rgba(255,176,0,.35));
+  transform-origin:0 50%;transform:scaleX(0)}
+#figyear{left:874px;top:566px;font-size:40px;font-weight:500;letter-spacing:.24em;
+  color:var(--dimmer);opacity:0}
+
+/* ---- act 2: stacked year columns ---- */
+#chart{left:240px;top:0;width:1268px;height:1440px;opacity:0}
+.col{position:absolute;bottom:320px;width:120px;transform-origin:50% 100%;transform:scaleY(0)}
+.seg{width:100%}
+.ylab{position:absolute;bottom:256px;width:120px;text-align:center;font-size:30px;
+  font-weight:500;color:var(--dimmer);opacity:0}
+#base{left:240px;top:1118px;width:1268px;height:5px;border-radius:3px;
+  background:linear-gradient(90deg,var(--amber),rgba(255,176,0,.35));
+  transform-origin:0 50%;transform:scaleX(0)}
+#legend{left:240px;top:152px;display:flex;gap:36px;opacity:0}
+#legend span{display:flex;align-items:center;gap:12px;font-size:28px;color:var(--dim)}
+#legend i{width:18px;height:18px;border-radius:5px;display:block}
+
+/* ---- act 3: the year editor, rebuilt from the app's own components ---- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  box-shadow:0 2px 4px rgba(0,0,0,.4),0 40px 90px -40px rgba(0,0,0,.92);overflow:hidden}
+#editor{left:1620px;top:250px;width:900px;height:820px;opacity:0}
+.ehead{display:flex;align-items:center;justify-content:space-between;height:100px;
+  padding:0 34px;border-bottom:1px solid var(--line)}
+.ehead b{font-size:40px;font-weight:600;letter-spacing:-.01em}
+.ehead s{font-family:var(--mono);font-size:34px;color:var(--signal);text-decoration:none;
+  font-variant-numeric:tabular-nums}
+.cat{height:60px;line-height:62px;padding:0 34px;font-size:23px;font-weight:600;
+  letter-spacing:.2em;color:var(--dimmer)}
+.row{display:flex;align-items:center;gap:18px;height:76px;margin:0 22px 10px;padding:0 20px;
+  border-radius:12px;background:var(--panel2)}
+.row em{font-family:var(--mono);font-style:normal;font-size:29px;font-weight:500;width:128px}
+.row .nm{flex:1;font-size:29px;color:var(--text)}
+.row .cur{font-size:21px;font-weight:600;letter-spacing:.1em;color:var(--dimmer);
+  border:1px solid var(--line);border-radius:7px;padding:4px 10px}
+.row .val{font-family:var(--mono);font-size:31px;font-weight:500;color:var(--text);
+  font-variant-numeric:tabular-nums;min-width:236px;text-align:right}
+.row .val.neg{color:var(--danger)}
+#vChf{color:var(--dimmer);font-size:27px}
+#addbtn{position:absolute;left:22px;right:22px;bottom:30px;height:74px;line-height:74px;
+  border:1px dashed var(--line);border-radius:12px;text-align:center;font-size:27px;
+  font-weight:600;color:var(--signal)}
+#cursor{left:0;top:0;width:52px;height:52px;opacity:0;z-index:6;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+
+/* ---- act 4: the salary card, lifted out of the panel ---- */
+#salary{left:830px;top:180px;width:900px;height:640px;opacity:0}
+.shead{display:flex;align-items:center;gap:26px;height:92px;padding:0 34px}
+.shead b{font-size:37px;font-weight:600}
+.shead u{text-decoration:none;font-size:26px;color:var(--dim)}
+.dot{width:14px;height:14px;border-radius:50%;display:inline-block;margin-right:10px}
+#sgraph{display:block;margin:0 24px}
+#saxis{position:absolute;left:34px;top:524px;width:832px;height:4px;border-radius:2px;
+  background:linear-gradient(90deg,var(--amber),rgba(255,176,0,.3));
+  transform-origin:0 50%;transform:scaleX(0)}
+.mark{position:absolute;font-size:22px;font-weight:600;color:var(--cream);
+  background:rgba(255,176,0,.16);border:1px solid rgba(255,176,0,.5);
+  border-radius:999px;padding:6px 14px;opacity:0;white-space:nowrap}
+
+/* ---- the egg: the real logo path ---- */
+#egg{left:1080px;top:510px;width:400px;height:500px;opacity:0;z-index:5}
+#egg svg{width:100%;height:100%;display:block;overflow:visible}
+
+/* ---- act 7: forecast + FIRE ---- */
+#fc{left:0;top:0;width:2560px;height:1440px;opacity:0}
+#fire{left:240px;top:740px;width:2080px;height:4px;border-radius:2px;
+  background:linear-gradient(90deg,var(--amber),rgba(255,176,0,.4));
+  transform-origin:0 50%;transform:scaleX(0)}
+#firelab{left:250px;top:672px;font-size:29px;font-weight:600;letter-spacing:.22em;
+  color:var(--signal);opacity:0}
+
+/* ---- close ---- */
+#mark{left:1280px;top:742px;font-size:92px;font-weight:600;letter-spacing:-.025em;
+  color:var(--cream);white-space:nowrap;opacity:0}
+#markline{left:960px;top:838px;width:640px;height:5px;border-radius:3px;
+  background:linear-gradient(90deg,rgba(255,176,0,.3),var(--amber),rgba(255,176,0,.3));
+  transform-origin:50% 50%;transform:scaleX(0)}
+
+/* ---- screen layer: claims and the account number never scale or clip ---- */
+#hud{position:absolute;inset:0;pointer-events:none;z-index:8}
+.line{position:absolute;font-family:var(--disp);font-weight:500;letter-spacing:-.015em;
+  line-height:1.06;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.55);opacity:0}
+.line.sm{font-size:70px}.line.md{font-size:90px}.line.lg{font-size:124px}
+.line b{font-weight:600;display:block}
+.line.ink{color:var(--paper-text);text-shadow:none}
+.wd{display:inline-block;white-space:nowrap}
+.ch{display:inline-block;will-change:transform,opacity,filter;opacity:0}
+#acct{position:absolute;left:0;right:0;top:676px;text-align:center;font-family:var(--mono);
+  font-size:82px;font-weight:500;letter-spacing:.07em;color:var(--paper-text);
+  font-variant-numeric:tabular-nums;opacity:0}
+#acctcap{position:absolute;left:0;right:0;top:806px;text-align:center;font-size:29px;
+  font-weight:600;letter-spacing:.22em;color:var(--paper-dim);opacity:0}
+
+/* ---- grain + vignette: on top of everything ---- */
+.grain{position:absolute;inset:-80px;pointer-events:none;z-index:12;opacity:.2;
+  mix-blend-mode:overlay;background-repeat:repeat;will-change:transform}
+.vignette{position:absolute;inset:0;pointer-events:none;z-index:14;
+  background:linear-gradient(180deg,rgba(0,0,0,.4),transparent 26%),
+    radial-gradient(ellipse 80% 70% at 50% 52%,transparent 42%,rgba(0,0,0,.5) 88%,rgba(0,0,0,.84) 100%)}
+
+#ui{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:none;
+  align-items:center;gap:14px;padding:11px 18px;border-radius:16px;background:rgba(14,16,22,.92);
+  border:1px solid rgba(255,255,255,.1);font-size:13px;color:#a0a6b4;z-index:50}
+#ui.on{display:flex}
+#ui button{background:#262a34;color:#fff;border:none;padding:8px 16px;border-radius:9px;
+  font:inherit;cursor:pointer}
+#scrub{width:360px;accent-color:var(--amber)}
+#clock{font-family:var(--mono);font-variant-numeric:tabular-nums;min-width:6ch;text-align:right}
+</style>
+</head>
+<body>
+
+<svg id="filters"><defs></defs></svg>
+
+<div id="stage">
+  <div id="world">
+    <div class="field" id="dark"><i class="grid g1"></i><i class="grid g2"></i></div>
+    <div class="field" id="paper"><i class="grid g1"></i><i class="grid g2"></i></div>
+    <div class="field" id="plate"><i class="grid g1"></i><i class="grid g2"></i></div>
+
+    <div id="objs">
+      <!-- act 2 -->
+      <div class="ob" id="legend">
+        <span><i style="background:var(--s0)"></i>Stocks</span>
+        <span><i style="background:var(--s1)"></i>Cash</span>
+        <span><i style="background:var(--s2)"></i>Property</span>
+        <span><i style="background:var(--s3)"></i>Pension</span>
+      </div>
+      <div class="ob" id="chart"></div>
+      <div class="ob" id="base"></div>
+
+      <!-- act 1 -->
+      <div class="ob" id="fig"></div>
+      <div class="ob" id="figline"></div>
+      <div class="ob" id="figyear">2026</div>
+
+      <!-- act 3 -->
+      <div class="ob panel" id="editor">
+        <div class="ehead"><b>2026</b><s>€ 248,310</s></div>
+        <div class="cat">STOCKS</div>
+        <div class="row"><em>IWDA</em><span class="nm">iShares World</span>
+          <span class="cur">EUR</span><span class="val">€ 61,940</span></div>
+        <div class="row" id="rowNew"><em>VWCE</em>
+          <span class="nm">142 shares</span><span class="cur">EUR</span>
+          <span class="val" id="vNew">—</span></div>
+        <div class="cat">CASH &amp; PROPERTY</div>
+        <div class="row"><em>CHF</em><span class="nm">Zürich account</span>
+          <span class="cur">CHF</span><span class="val" id="vChf">CHF 42,000</span></div>
+        <div class="row"><em>HOUSE</em><span class="nm">Mortgage</span>
+          <span class="cur">EUR</span><span class="val neg">− € 298,400</span></div>
+        <div id="addbtn">+ Add asset</div>
+        <svg class="ob" id="cursor" viewBox="0 0 24 24" fill="none" stroke="#fff2cf"
+          stroke-width="1.6" stroke-linejoin="round">
+          <path d="M5 2.5 L5 19 L9.3 15 L12 21.5 L14.6 20.4 L11.9 14 L18 13.8 Z" fill="#0a0a0b"/>
+        </svg>
+      </div>
+
+      <!-- act 4 -->
+      <div class="ob panel" id="salary">
+        <div class="shead"><b>Monthly net pay</b>
+          <u><i class="dot" style="background:var(--s1)"></i>Alex</u>
+          <u><i class="dot" style="background:var(--s0)"></i>Sam</u></div>
+        <svg id="sgraph" width="832" height="420" viewBox="0 0 832 420" fill="none">
+          <path id="sA" d="M0 330 L104 318 L208 268 L312 258 L416 196 L520 184 L624 126 L728 112 L832 74"
+            stroke="#3ad17a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"
+            stroke-dasharray="1200" stroke-dashoffset="1200"/>
+          <path id="sB" d="M0 388 L104 376 L208 372 L312 300 L416 290 L520 282 L624 230 L728 222 L832 198"
+            stroke="#4aa3ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"
+            stroke-dasharray="1200" stroke-dashoffset="1200"/>
+        </svg>
+        <div id="saxis"></div>
+        <div class="mark" id="mk1" style="left:398px;top:222px">Raise</div>
+        <div class="mark" id="mk2" style="left:598px;top:152px">New job</div>
+      </div>
+
+      <!-- the egg: paths taken from public/assets/favicon.svg -->
+      <div class="ob" id="egg">
+        <svg viewBox="480 350 1040 1300">
+          <path id="eggBody" fill="#ffb000" d="M1308.99 633.536C1209.88 479.12 1094.37 386.931 1000 386.931 905.121 386.931 789.416 479.126 690.491 633.554 591.727 787.731 532.762 970.231 532.762 1121.74 532.762 1276.12 583.152 1404.44 678.484 1492.81 762.137 1570.36 876.321 1613.07 1000 1613.07 1123.68 1613.07 1237.86 1570.36 1321.51 1492.81 1416.85 1404.43 1467.24 1276.12 1467.24 1121.74 1467.24 970.431 1408.08 787.924 1308.99 633.536Z"/>
+          <path id="eggEdge" fill="none" stroke="#fff2cf" stroke-width="42" stroke-linejoin="round"
+            d="M1308.99 633.536C1209.88 479.12 1094.37 386.931 1000 386.931 905.121 386.931 789.416 479.126 690.491 633.554 591.727 787.731 532.762 970.231 532.762 1121.74 532.762 1276.12 583.152 1404.44 678.484 1492.81 762.137 1570.36 876.321 1613.07 1000 1613.07 1123.68 1613.07 1237.86 1570.36 1321.51 1492.81 1416.85 1404.43 1467.24 1276.12 1467.24 1121.74 1467.24 970.431 1408.08 787.924 1308.99 633.536Z"/>
+          <g id="eggShine" opacity="0">
+            <path fill="#fff2cf" d="M1335.08 1173.85C1323.37 1173.22 1313.43 1182.17 1312.8 1193.84 1311.69 1214.3 1307.7 1234.87 1300.94 1254.98 1297.21 1266.06 1303.17 1278.07 1314.25 1281.8 1316.49 1282.55 1318.77 1282.91 1321.01 1282.91 1329.85 1282.91 1338.09 1277.33 1341.07 1268.48 1349.06 1244.75 1353.77 1220.41 1355.08 1196.13 1355.71 1184.46 1346.76 1174.48 1335.08 1173.85Z"/>
+            <path fill="#fff2cf" d="M1296.11 1317.14C1286.51 1310.48 1273.32 1312.87 1266.65 1322.48 1210.39 1403.67 1113.96 1458.21 1026.69 1458.21 1015 1458.21 1005.52 1467.69 1005.52 1479.38 1005.52 1491.08 1015 1500.55 1026.69 1500.55 1127.22 1500.55 1237.64 1438.69 1301.46 1346.6 1308.12 1336.99 1305.73 1323.8 1296.11 1317.14Z"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- act 7 -->
+      <svg class="ob" id="fc" viewBox="0 0 2560 1440" fill="none">
+        <path id="fcband" fill="rgba(255,176,0,.13)"
+          d="M240 1200 L760 1110 L1280 970 L1800 820 L2320 620 L2320 790 L1800 950 L1280 1080 L760 1200 L240 1270 Z"/>
+        <path id="fcline" d="M240 1230 L760 1150 L1280 1020 L1800 880 L2320 700"
+          stroke="#fff2cf" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"
+          stroke-dasharray="2400" stroke-dashoffset="2400"/>
+      </svg>
+      <div class="ob" id="fire"></div>
+      <div class="ob" id="firelab">FIRE GOAL</div>
+
+      <!-- close -->
+      <div class="ob" id="mark">nestegg.money</div>
+      <div class="ob" id="markline"></div>
+    </div>
+  </div>
+
+  <div id="hud">
+    <h1 class="line md" id="l2" style="right:120px;top:286px;text-align:right">
+      <span class="txt">Net worth</span><b><span class="txt2w">year by year</span></b></h1>
+    <h1 class="line sm" id="l3" style="left:98px;top:248px">
+      <span class="txt">Priced live</span><b><span class="txt2w">converted right</span></b></h1>
+    <h1 class="line md" id="l4" style="left:0;right:0;top:886px;text-align:center">
+      <span class="txt">Salaries side by side</span></h1>
+    <h1 class="line lg ink" id="l5" style="left:0;right:0;top:128px;text-align:center">
+      <span class="txt">Encrypted</span><b><span class="txt2w">before it leaves</span></b></h1>
+    <h1 class="line md ink" id="l6" style="left:0;right:0;top:462px;text-align:center">
+      <span class="txt">No email, no password</span></h1>
+    <div id="acct"></div>
+    <div id="acctcap">YOUR ACCOUNT NUMBER</div>
+    <h1 class="line md" id="l7" style="left:120px;top:150px">
+      <span class="txt">And where it is going</span></h1>
+  </div>
+
+  <div class="grain" id="grain"></div>
+  <div class="vignette"></div>
+</div>
+
+<div id="ui">
+  <button id="btn-play">Pause</button><button id="btn-restart">Restart</button>
+  <input id="scrub" type="range" min="0" max="1000" value="0">
+  <span id="clock">0.00s</span>
+</div>
+
+<script>
+/* ===================== util ===================== */
+var $ = function(s, r){ return (r || document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var Q = new URLSearchParams(location.search);
+var W = 1920, H = 1080, WW = 2560, WH = 1440;
+var DURATION = 29.8;
+
+/* directional motion blur: feGaussianBlur with separate x/y stdDeviation */
+var defs = $('#filters defs'), fcount = 0;
+function makeBlur(){
+  var id = 'mb' + (fcount++), NS = 'http://www.w3.org/2000/svg';
+  var f = document.createElementNS(NS, 'filter'); f.id = id;
+  f.setAttribute('x', '-70%'); f.setAttribute('y', '-70%');
+  f.setAttribute('width', '240%'); f.setAttribute('height', '240%');   /* default box clips the tail */
+  var g = document.createElementNS(NS, 'feGaussianBlur');
+  g.setAttribute('stdDeviation', '0 0'); f.appendChild(g); defs.appendChild(f);
+  return { url: 'url(#' + id + ')', node: g };
+}
+function blurTween(tl, targets, at, from, to, dur, o){
+  o = o || {};
+  var ease = o.ease || 'power3.out', ax = o.ax == null ? 1 : o.ax, ay = o.ay == null ? .08 : o.ay;
+  var b = makeBlur(), v = { v: from };
+  tl.set(targets, { filter: b.url }, at);
+  tl.to(v, { v: to, duration: dur, ease: ease, onUpdate: function(){
+    b.node.setAttribute('stdDeviation', (v.v * ax).toFixed(2) + ' ' + (v.v * ay).toFixed(2)); } }, at);
+  tl.set(targets, { filter: 'none' }, at + dur);   /* a permanent SVG filter re-rasterises every frame */
+}
+var VERT = { ax: .1, ay: 1 };
+
+function splitChars(el){
+  var words = (el.textContent || '').split(' '); el.textContent = ''; var out = [];
+  words.forEach(function(w, i){
+    var wr = document.createElement('span'); wr.className = 'wd';
+    for (var j = 0; j < w.length; j++){
+      var s = document.createElement('span'); s.className = 'ch';
+      s.textContent = w[j]; wr.appendChild(s); out.push(s);
+    }
+    el.appendChild(wr);
+    if (i < words.length - 1){
+      var sp = document.createElement('span'); sp.className = 'ch';
+      sp.innerHTML = '&nbsp;'; el.appendChild(sp); out.push(sp);
+    }
+  });
+  return out;
+}
+/* a claim can carry a second, heavier line (.txt2w); split both, keep them addressable */
+function prep(el){
+  var a = $('.txt', el), b = $('.txt2w', el);
+  var p = { el: el, a: a ? splitChars(a) : [], b: b ? splitChars(b) : [] };
+  p.all = p.a.concat(p.b);
+  return p;
+}
+
+function group(n){
+  var s = String(Math.abs(Math.round(n))), out = '';
+  for (var i = 0; i < s.length; i++){
+    out += s[i];
+    var left = s.length - 1 - i;
+    if (left > 0 && left % 3 === 0) out += ',';
+  }
+  return (n < 0 ? '−' : '') + out;
+}
+var money = function(v){ return '€ ' + group(v); };
+
+/* ===================== deterministic grain tile (built once, not in render) ===================== */
+(function(){
+  var c = document.createElement('canvas'); c.width = c.height = 256;
+  var x = c.getContext('2d'), d = x.createImageData(256, 256), seed = 1337;
+  for (var i = 0; i < 256 * 256; i++){
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;              /* seeded LCG, never Math.random */
+    var v = 108 + (seed >>> 16) % 94;
+    d.data[i * 4] = d.data[i * 4 + 1] = d.data[i * 4 + 2] = v; d.data[i * 4 + 3] = 255;
+  }
+  x.putImageData(d, 0, 0);
+  $('#grain').style.backgroundImage = 'url(' + c.toDataURL() + ')';
+})();
+
+/* ===================== the figure: fixed mono slots ===================== */
+var FSLOTS = 9, figEl = $('#fig'), fslot = [];
+for (var fi = 0; fi < FSLOTS; fi++){
+  var fsp = document.createElement('span'); fsp.className = 'fch';
+  figEl.appendChild(fsp); fslot.push(fsp);
+}
+var FIG = { v: 0 }, CIPH = { a: 0 };
+var GLY = 'A7F2K9QX4ZB8MR3WD6HN1VTJ5PC0YL';
+function renderFig(t){
+  var s = money(FIG.v), pad = FSLOTS - s.length, c;
+  for (var i = 0; i < FSLOTS; i++){
+    if (CIPH.a > 0 && i >= pad) c = GLY[(i * 7 + Math.floor(t * 16)) % GLY.length];
+    else c = i < pad ? '' : s[i - pad];
+    if (fslot[i].textContent !== c) fslot[i].textContent = c;
+  }
+}
+
+/* ===================== act 2: build the year columns ===================== */
+var YEARS = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
+var TOT   = [42, 61, 88, 119, 147, 183, 214, 248];              /* thousands */
+var MIX   = [[.46, .22, .20, .12], [.48, .19, .22, .11], [.50, .17, .22, .11], [.52, .15, .22, .11],
+             [.54, .14, .21, .11], [.55, .13, .21, .11], [.56, .12, .21, .11], [.57, .11, .21, .11]];
+var SEGC = ['var(--s0)', 'var(--s1)', 'var(--s2)', 'var(--s3)'];
+var PXK = 2.5, chartEl = $('#chart'), cols = [], ylabs = [];
+YEARS.forEach(function(y, i){
+  var left = i * 164;
+  var col = document.createElement('div'); col.className = 'col'; col.style.left = left + 'px';
+  MIX[i].slice().reverse().forEach(function(p, k){
+    var seg = document.createElement('div'); seg.className = 'seg';
+    seg.style.height = (TOT[i] * p * PXK) + 'px';
+    seg.style.background = SEGC[MIX[i].length - 1 - k];
+    seg.style.borderRadius = k === 0 ? '8px 8px 0 0' : '0';
+    col.appendChild(seg);
+  });
+  chartEl.appendChild(col); cols.push(col);
+  var lab = document.createElement('div'); lab.className = 'ylab';
+  lab.style.left = left + 'px'; lab.textContent = y;
+  chartEl.appendChild(lab); ylabs.push(lab);
+});
+
+/* ===================== camera (§3b: shot size, not just a breath) ===================== */
+var world = $('#world');
+var CAM = { s: 1.9, fx: 874, fy: 400 };
+var shot = function(at, dur, s, fx, fy, ease){
+  tl.to(CAM, { s: s, fx: fx, fy: fy, duration: dur, ease: ease || 'power2.inOut' }, at); };
+
+var grids = $$('.grid'), grainEl = $('#grain'), chfEl = $('#vChf');
+function render(t){
+  renderFig(t);
+  /* the CHF row converts at the year-end rate — straight from t, so a seek is exact */
+  var conv = (t >= 12.30 && t < 25.0);
+  var chfTxt = conv ? '€ 44,730' : 'CHF 42,000';
+  if (chfEl.textContent !== chfTxt){
+    chfEl.textContent = chfTxt;
+    chfEl.style.color = conv ? '#e9ebf2' : '';
+    chfEl.style.fontSize = conv ? '31px' : '';
+  }
+  /* breathing ledger grid — two parallax layers, phase offset */
+  for (var i = 0; i < grids.length; i++){
+    var slow = grids[i].classList.contains('g2');
+    var k = slow ? .021 : .013, f = slow ? .46 : .68, ph = slow ? 1.9 : 0;
+    grids[i].style.transform = 'scale(' + (1 + k * Math.sin(t * f + ph)).toFixed(5) +
+      ') translate(' + (Math.sin(t * .23 + ph) * (slow ? 22 : 9)).toFixed(2) + 'px,' +
+      (Math.cos(t * .19 + ph) * (slow ? 16 : 7)).toFixed(2) + 'px)';
+  }
+  /* living grain: steps 12x a second, straight from t */
+  var g = Math.floor(t * 12);
+  grainEl.style.transform = 'translate(' + ((g * 37) % 60 - 30) + 'px,' + ((g * 61) % 60 - 30) + 'px)';
+  /* camera: shot size with a slow breath layered on top; clamped so no world edge is revealed */
+  var s = CAM.s * (1 + .012 * Math.sin(t * .55));
+  var tx = W / 2 - CAM.fx * s, ty = H / 2 - CAM.fy * s;
+  tx = Math.min(0, Math.max(W - WW * s, tx));
+  ty = Math.min(0, Math.max(H - WH * s, ty));
+  world.style.transform = 'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px) scale(' + s.toFixed(4) + ')';
+}
+
+/* ===================== timeline — the only place time is written ===================== */
+var tl = gsap.timeline({ paused: true });
+
+/* text doors (§1) — chosen from what the line means; never the same two acts running */
+var inUp = function(ch, el, at, o){ o = o || {};
+  tl.fromTo(ch, { opacity: 0, yPercent: 60, scaleY: 1.4 },
+    { opacity: 1, yPercent: 0, scaleY: 1, duration: o.dur || .8, ease: 'power4.out',
+      stagger: o.st || .024, immediateRender: false }, at);
+  blurTween(tl, el, at, 30, 0, o.dur || .8, VERT); };
+var inDown = function(ch, el, at, o){ o = o || {};
+  tl.fromTo(ch, { opacity: 0, yPercent: -60, scaleY: 1.4 },
+    { opacity: 1, yPercent: 0, scaleY: 1, duration: o.dur || .8, ease: 'power4.out',
+      stagger: o.st || .024, immediateRender: false }, at);
+  blurTween(tl, el, at, 30, 0, o.dur || .8, VERT); };
+var inLeft = function(ch, el, at, o){ o = o || {};
+  tl.fromTo(ch, { opacity: 0, xPercent: -45 },
+    { opacity: 1, xPercent: 0, duration: o.dur || .75, ease: 'power4.out',
+      stagger: o.st || .02, immediateRender: false }, at);
+  blurTween(tl, el, at, 34, 0, o.dur || .75, {}); };
+var inDepth = function(ch, el, at, o){ o = o || {};
+  tl.fromTo(ch, { opacity: 0, scale: 2.3 },
+    { opacity: 1, scale: 1, duration: o.dur || 1, ease: 'expo.out',
+      stagger: { each: o.st || .018, from: 'center' }, immediateRender: false }, at);
+  blurTween(tl, el, at, 22, 0, o.dur || 1, { ease: 'expo.out', ax: 1, ay: 1 }); };
+var inMask = function(ch, el, at, o){ o = o || {};
+  tl.set(ch, { opacity: 1, xPercent: 0, yPercent: 0, scale: 1, scaleY: 1 }, at);
+  tl.fromTo(el, { clipPath: 'inset(0% 0% 100% 0%)' },
+    { clipPath: 'inset(0% 0% 0% 0%)', duration: o.dur || .95, ease: 'power3.inOut',
+      immediateRender: false }, at);
+  tl.set(el, { clipPath: 'none' }, at + (o.dur || .95) + .01); };
+var inWords = function(p, at, o){ o = o || {};
+  var w = $$('.wd', p.el);
+  tl.set(p.all, { opacity: 1, xPercent: 0, yPercent: 0, scale: 1, scaleY: 1 }, at);
+  tl.fromTo(w, { opacity: .16, yPercent: 32 },
+    { opacity: 1, yPercent: 0, duration: .62, ease: 'power3.out',
+      stagger: o.st || .13, immediateRender: false }, at); };
+var outUp = function(ch, el, at, o){ o = o || {};
+  tl.to(ch, { opacity: 0, yPercent: -70, duration: o.dur || .4, ease: 'power2.in',
+    stagger: o.st || .01 }, at);
+  blurTween(tl, el, at, 0, 26, (o.dur || .4) + .1, { ease: 'power2.in', ax: .1, ay: 1 }); };
+var outLeft = function(ch, el, at, o){ o = o || {};
+  tl.to(ch, { opacity: 0, xPercent: -60, duration: o.dur || .4, ease: 'power2.in',
+    stagger: o.st || .01 }, at);
+  blurTween(tl, el, at, 0, 28, (o.dur || .4) + .1, { ease: 'power2.in' }); };
+var outDepth = function(ch, el, at, o){ o = o || {};
+  tl.to(ch, { opacity: 0, scale: 2.4, duration: o.dur || .5, ease: 'power2.in',
+    stagger: { each: o.st || .008, from: 'center' } }, at);
+  blurTween(tl, el, at, 0, 20, (o.dur || .5) + .1, { ease: 'power2.in', ax: 1, ay: 1 }); };
+
+var L2 = prep($('#l2')), L3 = prep($('#l3')), L4 = prep($('#l4')),
+    L5 = prep($('#l5')), L6 = prep($('#l6')), L7 = prep($('#l7'));
+var ALLCH = L2.all.concat(L3.all, L4.all, L5.all, L6.all, L7.all);
+
+/* the account number is the product's only credential — so it is typed, in the world's own mono */
+var ACCT = '4821 7390 5516 2048', acctEl = $('#acct');
+var typeOn = function(el, str, at, cps){
+  var o = { i: 0 };
+  tl.fromTo(o, { i: 0 }, { i: str.length, duration: str.length / (cps || 13), ease: 'none',
+    immediateRender: false, onUpdate: function(){
+      var s = str.slice(0, Math.round(o.i));
+      if (el.textContent !== s) el.textContent = s; } }, at);
+};
+
+/* ---------- t = 0: the world's resting state, so the loop is seamless ---------- */
+tl.set(CAM, { s: 1.9, fx: 874, fy: 400 }, 0);
+tl.set('#dark', { autoAlpha: 1 }, 0);
+tl.set('#paper', { autoAlpha: 0, clipPath: 'circle(0px at 50% 52.78%)' }, 0);
+tl.set('#plate', { autoAlpha: 0 }, 0);
+tl.set('.vignette', { opacity: 1 }, 0);
+tl.set('#grain', { opacity: .2, mixBlendMode: 'overlay' }, 0);
+tl.set(figEl, { opacity: 0, scale: 1, x: 0, y: 0, xPercent: -50, yPercent: -50 }, 0);
+tl.set(fslot, { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }, 0);
+tl.set(FIG, { v: 0 }, 0); tl.set(CIPH, { a: 0 }, 0);
+tl.set('#figyear', { opacity: 0, xPercent: -50 }, 0);
+tl.set(['#chart', '#legend', '#editor', '#salary', '#fc', '#firelab'], { opacity: 0 }, 0);
+tl.set('#chart', { scale: 1 }, 0);
+tl.set('#mark', { opacity: 0, xPercent: -50, yPercent: -50, y: 0 }, 0);
+tl.set(['#base', '#figline', '#saxis', '#fire', '#markline'], { scaleX: 0 }, 0);
+tl.set(cols, { scaleY: 0 }, 0); tl.set(ylabs, { opacity: 0 }, 0);
+tl.set('#egg', { opacity: 0, scale: 0, rotate: 0, x: 0, y: 0 }, 0);
+tl.set('#eggEdge', { strokeDasharray: 3400, strokeDashoffset: 3400 }, 0);
+tl.set('#eggShine', { opacity: 0 }, 0);
+tl.set(['#sA', '#sB'], { strokeDashoffset: 1200 }, 0);
+tl.set('#fcline', { strokeDashoffset: 2400 }, 0);
+tl.set('#fcband', { opacity: 0 }, 0);
+tl.set(['#mk1', '#mk2'], { opacity: 0 }, 0);
+tl.set('#rowNew', { opacity: .18, y: 22 }, 0);
+tl.set('#vNew', { opacity: 0, color: '#e9ebf2' }, 0);
+tl.set('#addbtn', { scale: 1, borderColor: '#2b3040' }, 0);
+tl.set('#cursor', { opacity: 0, x: 980, y: 286 }, 0);
+tl.set(['#acct', '#acctcap'], { opacity: 0 }, 0);
+tl.set([L2.el, L3.el, L4.el, L5.el, L6.el, L7.el], { opacity: 1, clipPath: 'none' }, 0);
+tl.set(ALLCH, { opacity: 0 }, 0);
+
+/* ============ ACT 1 · 0.0–3.4 · in media res — the figure is already counting ============ */
+tl.to(figEl, { opacity: 1, duration: .5, ease: 'power2.out' }, 0);
+tl.fromTo(fslot, { yPercent: 36, opacity: 0 },
+  { yPercent: 0, opacity: 1, duration: .7, ease: 'power3.out', stagger: .035,
+    immediateRender: false }, .04);
+tl.fromTo(FIG, { v: 0 }, { v: 248310, duration: 2.5, ease: 'power2.out', immediateRender: false }, .1);
+tl.to('#figline', { scaleX: 1, duration: 1.2, ease: 'power3.out' }, .8);        /* signature keyline */
+tl.to('#figyear', { opacity: 1, duration: .6, ease: 'power2.out' }, 1.55);
+shot(2.0, 1.5, 1.08, 876, 560);                                                 /* camera eases back */
+
+/* ============ ACT 2 · 3.4–7.6 · the years stack up behind it ============ */
+shot(3.4, 1.1, .78, 1280, 700);
+tl.to('#chart', { opacity: 1, duration: .3 }, 3.5);
+tl.to('#base', { scaleX: 1, duration: 1.4, ease: 'power3.out' }, 3.6);          /* signature keyline */
+tl.to(cols, { scaleY: 1, duration: .62, ease: 'power3.out', stagger: .19 }, 3.75);
+tl.to(ylabs, { opacity: 1, duration: .34, stagger: .19 }, 4.0);
+tl.to('#legend', { opacity: 1, duration: .5 }, 5.1);
+inWords(L2, 4.5);                                                               /* word by word, dim to full */
+tl.to('#figline', { opacity: 0, duration: .4 }, 6.85);
+tl.to('#figyear', { opacity: 0, duration: .4 }, 6.9);
+outUp(L2.all, L2.el, 7.05, { dur: .42 });
+tl.to('#legend', { opacity: 0, duration: .35 }, 7.2);
+
+/* ============ ACT 3 · 7.6–12.5 · the editor, assembled and used ============ */
+shot(7.6, 1.3, 1.14, 2070, 660);                                                /* camera travels right */
+tl.to(figEl, { opacity: 0, duration: .5, ease: 'power2.in' }, 7.7);
+tl.fromTo('#editor', { opacity: 0, y: 72, rotateY: -17, transformPerspective: 1500 },
+  { opacity: 1, y: 0, rotateY: 0, duration: 1.0, ease: 'power3.out', immediateRender: false }, 7.95);
+tl.to('#chart', { opacity: .16, duration: .8 }, 8.0);
+inUp(L3.all, L3.el, 8.85, { st: .018 });
+/* the cursor goes for "+ Add asset"; the camera closes in just before the click (§8) */
+tl.to('#cursor', { opacity: 1, duration: .25 }, 9.4);
+tl.to('#cursor', { x: 439, y: 748, duration: .8, ease: 'power2.inOut' }, 9.5);
+shot(9.65, .85, 1.85, 2070, 1003);
+tl.to('#addbtn', { scale: .94, borderColor: 'rgba(255,176,0,.8)', duration: .13,
+  ease: 'power2.in' }, 10.4);
+tl.to('#addbtn', { scale: 1, duration: .32, ease: 'back.out(3)' }, 10.53);
+tl.to('#rowNew', { opacity: 1, y: 0, duration: .55, ease: 'power3.out' }, 10.62);
+shot(10.85, .95, 1.32, 2010, 620);                                              /* follow the result out */
+/* the ticker row fills: shares × live price, then the value in the display currency */
+var PRC = { v: 0 }, prcEl = $('#vNew');
+tl.to('#vNew', { opacity: 1, color: '#ffb020', duration: .25 }, 11.05);
+tl.fromTo(PRC, { v: 0 }, { v: 128.40, duration: .7, ease: 'power2.out', immediateRender: false,
+  onUpdate: function(){ prcEl.textContent = '€ ' + PRC.v.toFixed(2); } }, 11.05);
+tl.to(PRC, { v: 18232, duration: .5, ease: 'power2.inOut',
+  onUpdate: function(){ prcEl.textContent = money(PRC.v); } }, 11.75);
+tl.to(prcEl, { color: '#e9ebf2', duration: .4 }, 11.95);
+/* the CHF row flips to the converted value at 12.30 — written in render(), so seeks stay exact */
+tl.to(chfEl, { opacity: 0, duration: .2, ease: 'power2.in' }, 12.1);
+tl.to(chfEl, { opacity: 1, duration: .3, ease: 'power2.out' }, 12.32);
+outLeft(L3.all, L3.el, 12.45, { dur: .4 });
+shot(12.5, .9, 1.02, 2000, 640);
+
+/* ============ ACT 4 · 12.5–16.4 · a card lifted out of the panel, in depth ============ */
+tl.to('#editor', { opacity: .12, scale: .95, duration: .8, ease: 'power2.inOut' }, 12.72);
+tl.to('#cursor', { opacity: 0, duration: .25 }, 12.72);
+tl.to(['#chart', '#base'], { opacity: 0, duration: .5 }, 12.72);
+shot(12.7, 1.1, .95, 1280, 620);
+tl.fromTo('#salary', { opacity: 0, rotateY: -34, z: -420, scale: .86, y: 64,
+    transformPerspective: 1500 },
+  { opacity: 1, rotateY: 0, z: 0, scale: 1, y: 0, duration: 1.1, ease: 'power3.out',
+    immediateRender: false }, 12.9);
+tl.to('#saxis', { scaleX: 1, duration: 1.0, ease: 'power3.out' }, 13.55);       /* signature keyline */
+tl.to('#sA', { strokeDashoffset: 0, duration: 1.45, ease: 'power1.inOut' }, 13.65);
+tl.to('#sB', { strokeDashoffset: 0, duration: 1.45, ease: 'power1.inOut' }, 13.8);
+inLeft(L4.all, L4.el, 13.8, { st: .017 });
+tl.fromTo('#mk1', { opacity: 0, scale: .5, y: 14 },
+  { opacity: 1, scale: 1, y: 0, duration: .45, ease: 'back.out(2.2)', immediateRender: false }, 14.6);
+tl.fromTo('#mk2', { opacity: 0, scale: .5, y: 14 },
+  { opacity: 1, scale: 1, y: 0, duration: .45, ease: 'back.out(2.2)', immediateRender: false }, 15.15);
+shot(14.9, 1.25, 1.16, 1300, 560);
+outDepth(L4.all, L4.el, 16.0, { dur: .45 });
+
+/* ============ ACT 5 · 16.4–21.7 · the seal (the one expensive moment) ============ */
+/* the card turns edge-on and goes; the figure grows out of the same spot */
+tl.to('#salary', { rotateY: -92, scaleX: .18, opacity: 0, duration: .62,
+  ease: 'power2.in', transformPerspective: 1500 }, 16.4);
+tl.to('#editor', { opacity: 0, duration: .4 }, 16.4);
+shot(16.45, 1.2, 1.05, 1280, 540);
+tl.set(figEl, { x: 406, y: 142 }, 16.6);                                       /* to world centre */
+tl.set(FIG, { v: 248310 }, 16.6);
+tl.set(fslot, { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1, yPercent: 0 }, 16.6);
+tl.fromTo(figEl, { opacity: 0, scale: .55 },
+  { opacity: 1, scale: 1.3, duration: 1.0, ease: 'power3.out', immediateRender: false }, 16.65);
+/* the egg arrives underneath */
+tl.fromTo('#egg', { opacity: 0, scale: .2, rotate: -8 },
+  { opacity: 1, scale: 1, rotate: 0, duration: .8, ease: 'back.out(1.7)',
+    immediateRender: false }, 17.7);
+/* the figure turns to ciphertext and pours in */
+tl.to(CIPH, { a: 1, duration: .08 }, 18.05);
+tl.to(fslot, { x: function(i){ return (4 - i) * 15; }, y: 152, scale: .32, opacity: 0,
+  rotate: function(i){ return (i % 2 ? 1 : -1) * 26; },
+  duration: .95, ease: 'power2.in', stagger: .035 }, 18.15);
+tl.to(figEl, { scale: 1.0, duration: 1.0, ease: 'power2.in' }, 18.15);
+tl.set(figEl, { opacity: 0 }, 19.4);
+tl.set(CIPH, { a: 0 }, 19.44);
+tl.to('#egg', { scale: 1.1, duration: .22, ease: 'power3.out' }, 19.15);
+tl.to('#egg', { scale: 1, duration: .5, ease: 'power2.out' }, 19.37);
+tl.to('#eggEdge', { strokeDashoffset: 0, duration: .95, ease: 'power2.inOut' }, 19.22);
+tl.to('#eggShine', { opacity: 1, duration: .5, ease: 'power2.out' }, 19.95);
+/* the seal sweeps the paper field out of the egg — the trigger is on screen */
+tl.set('#paper', { autoAlpha: 1 }, 19.85);
+tl.fromTo('#paper', { clipPath: 'circle(62px at 50% 52.78%)' },
+  { clipPath: 'circle(2450px at 50% 52.78%)', duration: 1.2, ease: 'power2.inOut',
+    immediateRender: false }, 19.85);
+tl.to('.vignette', { opacity: .32, duration: .5 }, 19.9);
+tl.to('#grain', { opacity: .11, duration: .5 }, 19.9);
+tl.set('#grain', { mixBlendMode: 'multiply' }, 20.05);
+shot(19.9, 1.4, 1.02, 1280, 620);
+inMask(L5.all, L5.el, 20.2, { dur: .9 });
+outUp(L5.all, L5.el, 22.1, { dur: .42, st: .006 });
+
+/* ============ ACT 6 · 21.7–25.2 · no email, no password ============ */
+tl.to('#egg', { y: -362, scale: .6, duration: 1.0, ease: 'power2.inOut' }, 21.75);
+shot(21.8, 1.4, 1.0, 1280, 620);
+inDown(L6.all, L6.el, 22.5, { st: .02 });
+tl.to('#acct', { opacity: 1, duration: .2 }, 23.2);
+typeOn(acctEl, ACCT, 23.2, 17);
+tl.to('#acctcap', { opacity: 1, duration: .5, ease: 'power2.out' }, 24.35);
+
+/* ============ ACT 7 · 25.2–27.8 · the icon becomes the ground ============ */
+tl.to(['#acct', '#acctcap'], { opacity: 0, duration: .3, ease: 'power2.in' }, 24.8);
+outLeft(L6.all, L6.el, 24.78, { dur: .36, st: .004 });
+tl.to('#egg', { scale: 17, y: 60, duration: .75, ease: 'power2.in' }, 25.2);
+tl.set('#plate', { autoAlpha: 1 }, 25.8);                 /* swapped while the amber fills the frame */
+tl.set('#paper', { autoAlpha: 0 }, 25.82);
+tl.set('#grain', { mixBlendMode: 'overlay' }, 25.83);
+tl.to('#grain', { opacity: .2, duration: .4 }, 25.84);
+tl.to('.vignette', { opacity: 1, duration: .5 }, 25.8);
+tl.to('#egg', { scale: 0, duration: .45, ease: 'power3.out' }, 25.86);
+tl.set('#egg', { opacity: 0 }, 26.34);
+shot(25.85, 1.1, .8, 1280, 800);
+tl.to('#fc', { opacity: 1, duration: .3 }, 26.05);
+inDepth(L7.all, L7.el, 26.15, { st: .015, dur: .95 });
+tl.to('#fcline', { strokeDashoffset: 0, duration: 1.1, ease: 'power1.inOut' }, 26.25);
+tl.to('#fcband', { opacity: 1, duration: .9, ease: 'power2.out' }, 26.6);
+tl.to('#fire', { scaleX: 1, duration: .8, ease: 'power3.out' }, 26.85);        /* signature keyline */
+tl.to('#firelab', { opacity: 1, duration: .45 }, 27.2);
+
+/* ============ CLOSE · 27.8–29.8 · the line's last point becomes the egg ============ */
+outUp(L7.all, L7.el, 27.7, { dur: .4, st: .006 });
+tl.to(['#fire', '#firelab'], { opacity: 0, duration: .4, ease: 'power2.in' }, 27.85);
+tl.to('#fc', { opacity: 0, duration: .5, ease: 'power2.in' }, 27.9);
+tl.set('#egg', { opacity: 1, x: 1040, y: -60, scale: .18 }, 27.8);            /* the line's end point */
+tl.to('#egg', { x: 0, y: -340, scale: .92, duration: 1.0, ease: 'power3.out' }, 27.85);
+shot(27.85, 1.2, 1.1, 1280, 540);
+tl.fromTo('#mark', { opacity: 0, y: 38 },
+  { opacity: 1, y: 0, duration: .7, ease: 'power3.out', immediateRender: false }, 28.55);
+tl.to('#markline', { scaleX: 1, duration: .65, ease: 'power3.out' }, 28.8);   /* keyline callback */
+shot(28.7, 1.1, 1.17, 1280, 548, 'sine.inOut');                              /* slow push on the hold */
+tl.to({}, { duration: .01 }, DURATION);
+
+/* ===================== glue ===================== */
+var stage = $('#stage');
+var fit = function(){
+  var s = Math.min(innerWidth / W, innerHeight / H);
+  stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+};
+addEventListener('resize', fit); fit();
+
+var clock = $('#clock'), scrub = $('#scrub'), btn = $('#btn-play'), scrubbing = false;
+(function frame(){
+  var t = tl.time(); render(t);
+  clock.textContent = t.toFixed(2) + 's';
+  if (!scrubbing) scrub.value = String(t / DURATION * 1000);
+  requestAnimationFrame(frame);
+})();
+
+var toggle = function(){
+  if (tl.paused() || tl.progress() >= 1){
+    if (tl.progress() >= 1) tl.progress(0);
+    tl.play(); btn.textContent = 'Pause';
+  } else { tl.pause(); btn.textContent = 'Play'; }
+};
+btn.onclick = toggle;
+$('#btn-restart').onclick = function(){ tl.pause(0); tl.play(); btn.textContent = 'Pause'; };
+scrub.addEventListener('pointerdown', function(){ scrubbing = true; tl.pause(); btn.textContent = 'Play'; });
+addEventListener('pointerup', function(){ scrubbing = false; });
+scrub.addEventListener('input', function(){ tl.pause(); tl.time(scrub.value / 1000 * DURATION); });
+addEventListener('keydown', function(e){
+  if (e.code === 'Space'){ e.preventDefault(); toggle(); }
+  if (/^[rR]$/.test(e.key)){ tl.pause(0); tl.play(); }
+  if (/^[hH]$/.test(e.key)) $('#ui').classList.toggle('on');
+});
+if (Q.has('debug')) $('#ui').classList.add('on');          /* default: no player on screen */
+tl.eventCallback('onComplete', function(){ tl.play(0); }); /* default: loop */
+
+/* synchronous seek: make GSAP write its styles and draw the frame right now */
+var seek = function(t){
+  tl.pause(); tl.time(t, false);
+  if (gsap.ticker.tick) gsap.ticker.tick();
+  render(t);
+};
+window.OPENER = { tl: tl, DURATION: DURATION, W: W, H: H, seek: seek, ready: false };
+document.fonts.ready.then(function(){
+  window.OPENER.ready = true;
+  if (!Q.has('clean')) tl.play(0);
+});
+</script>
+</body>
+</html>

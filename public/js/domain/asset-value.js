@@ -33,8 +33,12 @@ export function assetNetAt(a, date) {
 // (depreciation) date and its loan start date. Plain value assets use their own date.
 export function assetOwnedFrom(a) {
   const c = [];
-  if (a.depreciates) { const d = parseDate(a.date); if (d) c.push(+d); }
+  /* The asset's own date counts whatever else is true of it.
+   *
+   * It used to be read only when the thing depreciated, with the loan's start standing in
+   * otherwise — so on a mortgaged flat the "Owned since" field was inert, and which years the
+   * flat appeared in was decided by a date three hundred pixels further down the card. */
+  const own = parseDate(a.date); if (own) c.push(+own);
   if (a.loan) { const d = parseDate(a.loan.startDate); if (d) c.push(+d); }
-  if (!c.length) { const d = parseDate(a.date); if (d) c.push(+d); }
   return c.length ? new Date(Math.min(...c)) : null;
 }

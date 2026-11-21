@@ -2,7 +2,7 @@
 // the PNG export of each. Pulls computed values from the domain layer; only touches the DOM.
 import { $, toast, syncVal, reduceMotion } from "./dom.js";
 import { state } from "../domain/store.js";
-import { money, moneyIn, ccySym, esc, shortK } from "../domain/money.js";
+import { money, moneyIn, ccySym, esc, shortK, fmtNum } from "../domain/money.js";
 import {
   colorOf, allNames, effEntries, seriesKey, snapGrossBase, snapTotalBase,
   sortedSnaps, latestSnap, entryBase, isLiability, dayChangeBase, dayChangeRows, allocationRows, pricesStale,
@@ -72,13 +72,13 @@ function setHero(nw) {
 /* ---- forecast ---- */
 export function fcSyncInputs() {
   const fc = fcCfg();
-  syncVal("fcMonthly", fc.monthly);
-  syncVal("fcGrowth", fc.growth ? +(fc.growth * 100).toFixed(2) : "");
+  syncVal("fcMonthly", fmtNum(fc.monthly));
+  syncVal("fcGrowth", fc.growth ? fmtNum(+(fc.growth * 100).toFixed(2)) : "");
   const gm = $("fcGoalMode"); if (gm) gm.value = fc.goalMode;
   const lbl = $("fcGoalLbl"); if (lbl) { lbl.textContent = fc.goalMode === "spend" ? t("net.annualSpend") : t("net.goalAmount"); lbl.title = lbl.textContent; }
-  syncVal("fcGoalVal", (fc.goalMode === "spend" ? fc.annualSpending : fc.goalAmount) || "");
+  syncVal("fcGoalVal", fmtNum((fc.goalMode === "spend" ? fc.annualSpending : fc.goalAmount) || ""));
   const rd = $("fcRedirect"); if (rd) rd.checked = !!fc.redirectLoans;
-  syncVal("fcContribGrowth", fc.contribGrowth ? +(fc.contribGrowth * 100).toFixed(2) : "");
+  syncVal("fcContribGrowth", fc.contribGrowth ? fmtNum(+(fc.contribGrowth * 100).toFixed(2)) : "");
   const bd = $("fcBand"); if (bd) bd.checked = !!fc.band;
   syncVal("fcHorizon", fc.horizonYear);
 }
@@ -107,16 +107,30 @@ export function renderForecast() {
   const band = fc.band, br = fcBandRates(), bandLo = [], bandHi = [];
   if (band) for (let Y = lastA.y; Y <= horizon; Y++) { const dt = new Date(Y, 11, 31); bandLo.push({ y: Y, v: Y <= lastA.y ? lastA.v : fnet(dt, br.lo) }); bandHi.push({ y: Y, v: Y <= lastA.y ? lastA.v : fnet(dt, br.hi) }); }
   const minY = actual[0].y, maxY = horizon, span = Math.max(1, maxY - minY);
-  const allV = actual.map((p) => Math.max(0, p.v)).concat(proj.map((p) => Math.max(0, p.v))); if (target > 0) allV.push(target); if (band) bandHi.forEach((p) => allV.push(Math.max(0, p.v)));
-  const nm = niceCeil(Math.max(1, ...allV));
+  /* The axis is scaled to what the chart is *about* — the ledger's own history, the expected
+     projection and the goal — and not to the optimistic bound of the scenario band. Scaled to
+     that bound, a band whose great case is twice the expected one pushed everything else into
+     the bottom half: the 2019-2026 actuals, the only factual series on the chart, were drawn
+     flat along the zero gridline. The great case is still drawn; it simply runs off the top,
+     which is the honest shape for a number that is one assumption away from any other. */
+  const allV = actual.map((p) => Math.max(0, p.v)).concat(proj.map((p) => Math.max(0, p.v))); if (target > 0) allV.push(target);
+  const nm = niceCeil(Math.max(1, ...allV) * 1.08);
   const dim = chartDims(svg, 720), W = dim.W, H = dim.H;
   const padL = 58, padR = 16, padT = 22, padB = 30, innerW = W - padL - padR, plotH = H - padT - padB;
   const X = (y) => padL + ((y - minY) / span) * innerW, Y = (v) => padT + plotH - (Math.max(0, v) / nm) * plotH;
   svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   const sym = ccySym(); let s = yGrid(W, padL, padR, padT, plotH, nm, sym);
   // x labels — first, last, and a sparse set between
-  const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) { s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.axis}">${y}</text>`; }
-  if ((maxY - minY) % step !== 0) s += `<text x="${X(maxY)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.axis}">${maxY}</text>`;
+  /* The last year is always labelled — it is the end of the forecast, the one date the reader
+     is looking for. The tick before it is dropped when the two would collide: the ladder used
+     to be drawn from minY and the final year then added on top of it, so a horizon one year
+     past the last step printed "2054" and "2055" over each other. */
+  const step = Math.max(1, Math.ceil(span / 8));
+  const ticks = []; for (let y = minY; y < maxY; y += step) ticks.push(y);
+  const MIN_GAP = 34;   // a four-digit label at this size, plus air
+  while (ticks.length && X(maxY) - X(ticks[ticks.length - 1]) < MIN_GAP) ticks.pop();
+  ticks.push(maxY);
+  for (const y of ticks) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${y}</text>`;
   // soft area fill under the actual + projected trajectory
   { const areaPts = actual.concat(proj.slice(1)), by = Y(0);
     s += `<defs><linearGradient id="fcArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.amber}" stop-opacity="0.20"/><stop offset="1" stop-color="${C.amber}" stop-opacity="0"/></linearGradient></defs>`;
@@ -124,16 +138,23 @@ export function renderForecast() {
   // goal line
   if (target > 0 && target <= nm) {
     const gy = Y(target); s += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="${C.green}" stroke-width="1.4" stroke-dasharray="2 4"/>`;
-    const lbl = t("net.goalLine", { amount: sym + shortK(target) }), lw = lbl.length * 5.6 + 10, above = gy > padT + 18, ty = above ? gy - 5 : gy + 12, ry = above ? gy - 15 : gy + 2;
-    s += `<rect x="${padL + 2}" y="${ry}" width="${lw}" height="14" rx="3" fill="${C.bg}" opacity="0.78"/>`;
-    s += `<text x="${padL + 7}" y="${ty}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.green}">${lbl}</text>`;
+    /* At the right-hand end of its own line, where the axis labels are not: at the left it
+       sat on top of whichever gridline the goal happened to fall near. */
+    const lbl = t("net.goalLine", { amount: sym + shortK(target) }), lw = lbl.length * 5.6 + 10, above = gy > padT + 18, ty = above ? gy - 6 : gy + 13, ry = above ? gy - 16 : gy + 3;
+    s += `<rect x="${W - padR - lw}" y="${ry}" width="${lw}" height="14" rx="3" fill="${C.bg}" opacity="0.85"/>`;
+    s += `<text x="${W - padR - 5}" y="${ty}" text-anchor="end" font-family="ui-monospace,monospace" font-size="11" fill="${C.green}">${lbl}</text>`;
   }
   // scenario band fill (poor -> great), drawn under the lines
   if (band) {
+    /* Clipped to the plot: the great case may run above the axis now, and an SVG polygon
+       does not stop at the axis on its own. */
+    s += `<defs><clipPath id="fcPlot"><rect x="${padL}" y="${padT}" width="${innerW}" height="${plotH}"/></clipPath></defs>`;
     const poly = bandHi.map((p) => X(p.y) + "," + Y(p.v)).concat(bandLo.slice().reverse().map((p) => X(p.y) + "," + Y(p.v))).join(" ");
-    s += `<polygon points="${poly}" fill="${C.amber}" opacity="0.1"/>`;
-    s += `<polyline points="${bandHi.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>${t("net.bandGreat", { pct: Math.round(br.hi * 100) })}</title></polyline>`;
-    s += `<polyline points="${bandLo.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"><title>${t("net.bandPoor", { pct: Math.round(br.lo * 100) })}</title></polyline>`;
+    s += `<g clip-path="url(#fcPlot)">`;
+    s += `<polygon points="${poly}" fill="${C.band}" opacity="0.5"/>`;
+    s += `<polyline points="${bandHi.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.6"><title>${t("net.bandGreat", { pct: Math.round(br.hi * 100) })}</title></polyline>`;
+    s += `<polyline points="${bandLo.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.6"><title>${t("net.bandPoor", { pct: Math.round(br.lo * 100) })}</title></polyline>`;
+    s += `</g>`;
   }
   s += `<polyline points="${proj.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`;
   s += `<polyline class="line" pathLength="1" points="${actual.map((p) => X(p.y) + "," + Y(p.v)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2.4"/>`;
@@ -144,8 +165,8 @@ export function renderForecast() {
   svg.classList.toggle("anim", _animOn);
   // stats
   const d = debtSummary();
-  const goalStat = target > 0 ? (fireY ? `<div class="fcstat"><span class="k">${fc.goalMode === "spend" ? t("net.fireGoal", { amount: money(target) }) : t("net.goalOf", { amount: money(target) })}</span><span class="v ok">${fireY <= cy ? t("net.reached") : t("net.goalIn", { year: fireY, count: fireY - cy })}</span></div>` : `<div class="fcstat"><span class="k">${t("net.goalOf", { amount: money(target) })}</span><span class="v">${t("net.goalFar")}</span></div>`) : `<div class="fcstat"><span class="k">${t("net.goal")}</span><span class="v dim">${t("net.setTarget")}</span></div>`;
-  const debtStat = d.has ? `<div class="fcstat"><span class="k">${t("net.debtFreeBy")}</span><span class="v ok">${fmtMY(d.payoff)}</span><span class="sub">${t("net.interestRemaining", { amount: money(d.rem) })}</span></div>` : `<div class="fcstat"><span class="k">${t("net.debt")}</span><span class="v ok">${t("net.debtNone")}</span></div>`;
+  const goalStat = target > 0 ? (fireY ? `<div class="fcstat"><span class="k">${fc.goalMode === "spend" ? t("net.fireGoal", { amount: money(target) }) : t("net.goalOf", { amount: money(target) })}</span><span class="v ok">${fireY <= cy ? t("net.reached") : "~" + fireY}</span>${fireY <= cy ? "" : `<span class="sub">${t("net.goalInSub", { count: fireY - cy })}</span>`}</div>` : `<div class="fcstat"><span class="k">${t("net.goalOf", { amount: money(target) })}</span><span class="v">${t("net.goalFar")}</span></div>`) : `<div class="fcstat"><span class="k">${t("net.goal")}</span><span class="v dim">${t("net.setTarget")}</span></div>`;
+  const debtStat = d.has ? `<div class="fcstat"><span class="k">${t("net.debtFreeBy")}</span><span class="v ok">${fmtMY(d.payoff, getLocale())}</span><span class="sub">${t("net.interestRemaining", { amount: money(d.rem) })}</span></div>` : `<div class="fcstat"><span class="k">${t("net.debt")}</span><span class="v ok">${t("net.debtNone")}</span></div>`;
   const projSub = band ? t("net.range", { lo: money(bandLo[bandLo.length - 1].v), hi: money(bandHi[bandHi.length - 1].v) }) : "";
   const projStat = `<div class="fcstat"><span class="k">${t("net.projectedYear", { year: projEnd.y })}</span><span class="v">${money(projEnd.v)}</span>${projSub ? `<span class="sub">${projSub}</span>` : ""}</div>`;
   if (stEl) stEl.innerHTML = projStat + goalStat + debtStat;
@@ -157,9 +178,9 @@ export function retSyncInputs() {
   const set = (id, val, fmt) => { const el = $(id); if (el && document.activeElement !== el) el.value = (fmt ? fmt(val) : val) || (val === 0 ? "" : val) || ""; };
   const on = $("rtOn"); if (on) on.checked = r.on;
   const body = $("rtBody"); if (body) body.classList.toggle("hide", !r.on);
-  set("rtYear", r.retireYear); set("rtSpend", r.spending); set("rtPension", r.pension);
-  set("rtPts", r.points); set("rtPtsYr", r.ptsPerYear != null ? r.ptsPerYear : ""); set("rtPtVal", r.ptValue != null ? r.ptValue : "");
-  set("rtPensStart", r.pensionStart); set("rtUntil", r.untilYear); set("rtInfl", r.inflation, (v) => (v ? +(v * 100).toFixed(2) : ""));
+  set("rtYear", r.retireYear); set("rtSpend", r.spending, fmtNum); set("rtPension", r.pension, fmtNum);
+  set("rtPts", r.points, fmtNum); set("rtPtsYr", r.ptsPerYear != null ? r.ptsPerYear : "", fmtNum); set("rtPtVal", r.ptValue != null ? r.ptValue : "", fmtNum);
+  set("rtPensStart", r.pensionStart); set("rtUntil", r.untilYear); set("rtInfl", r.inflation, (v) => (v ? fmtNum(+(v * 100).toFixed(2)) : ""));
   const pm = $("rtPmode"); if (pm) pm.value = r.pmode; const de = r.pmode === "de";
   const amt = $("rtAmtFld"); if (amt) amt.classList.toggle("hide", de);
   document.querySelectorAll(".rt-de").forEach((el) => el.classList.toggle("hide", !de));
@@ -180,8 +201,8 @@ export function renderRetire() {
     const X = (y) => padL + ((y - minY) / span) * innerW, Y = (v) => padT + plotH - (Math.max(0, v) / nm) * plotH;
     svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     const sym = ccySym(); let s = yGrid(W, padL, padR, padT, plotH, nm, sym);
-    const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.axis}">${y}</text>`;
-    if (sim.pensY > minY && sim.pensY <= maxY && sim.pensionAnnual > 0) { const px = X(sim.pensY); s += `<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT + plotH}" stroke="${C.green}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`; s += `<text x="${px + 4}" y="${padT + 10}" font-family="ui-monospace,monospace" font-size="9.5" fill="${C.green}">${t("net.pensionStarts", { year: sim.pensY })}</text>`; }
+    const step = Math.max(1, Math.ceil(span / 8)); for (let y = minY; y <= maxY; y += step) s += `<text x="${X(y)}" y="${H - padB + 15}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${y}</text>`;
+    if (sim.pensY > minY && sim.pensY <= maxY && sim.pensionAnnual > 0) { const px = X(sim.pensY); s += `<line x1="${px}" y1="${padT}" x2="${px}" y2="${padT + plotH}" stroke="${C.green}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.95"/>`; s += `<text x="${px + 4}" y="${padT + 10}" font-family="ui-monospace,monospace" font-size="11" fill="${C.green}">${t("net.pensionStarts", { year: sim.pensY })}</text>`; }
     s += `<defs><linearGradient id="rtArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.amber}" stop-opacity="0.22"/><stop offset="1" stop-color="${C.amber}" stop-opacity="0"/></linearGradient></defs>`;
     s += `<polygon points="${X(minY)},${Y(0)} ${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")} ${X(maxY)},${Y(0)}" fill="url(#rtArea)"/>`;
     s += `<polyline class="line" pathLength="1" points="${sim.pts.map((p) => X(p.y) + "," + Y(p.pot)).join(" ")}" fill="none" stroke="${C.amber}" stroke-width="2.4"/>`;
@@ -194,7 +215,7 @@ export function renderRetire() {
   const ptsNote = r.pmode === "de" ? t("net.ptsNote", { pts: pensionPts().toFixed(1) }) + " · " : "";
   const pensStat = sim.pensionAnnual > 0 ? `<div class="fcstat"><span class="k">${t("net.pensionFrom", { year: sim.pensY })}</span><span class="v ok">${t("net.perMo", { amount: money(sim.pensionMonthly) })}</span><span class="sub">${ptsNote}${t("net.coversSpend", { pct: sim.spend > 0 ? Math.min(100, Math.round((sim.pensionAnnual / sim.spend) * 100)) : 0 })}</span></div>` : `<div class="fcstat"><span class="k">${t("net.pension")}</span><span class="v dim">${t("net.setAmount")}</span></div>`;
   const spendStat = `<div class="fcstat"><span class="k">${t("net.spending")}</span><span class="v">${t("net.perYr", { amount: money(sim.spend) })}</span><span class="sub">${t("net.perMoToday", { amount: money(sim.spend / 12) })}</span></div>`;
-  const verdict = sim.depleted ? `<div class="fcstat hero"><span class="k">${t("net.potRunsOut")}</span><span class="v bad">${sim.depleted}</span><span class="sub">${t("net.yrsInto", { count: sim.depleted - sim.retY })}</span></div>` : `<div class="fcstat hero"><span class="k">${t("net.lastsPast", { year: sim.until })}</span><span class="v ok">${t("net.amountLeft", { amount: money(sim.endPot) })}</span><span class="sub">${t("net.lowPoint", { amount: money(sim.minPot) })}</span></div>`;
+  const verdict = sim.depleted ? `<div class="fcstat hero"><span class="k">${t("net.potRunsOut")}</span><span class="v bad">${sim.depleted}</span><span class="sub">${t("net.yrsInto", { count: sim.depleted - sim.retY })}</span></div>` : `<div class="fcstat hero"><span class="k">${t("net.lastsPast", { year: sim.until })}</span><span class="v ok">${money(sim.endPot)}</span><span class="sub">${t("net.leftLowPoint", { amount: money(sim.minPot) })}</span></div>`;
   stEl.innerHTML = eggStat + pensStat + spendStat + verdict;
 }
 
@@ -227,8 +248,8 @@ function drawHist() {
     names.forEach((nm2) => { const tot = ents.filter((e) => seriesKey(e) === nm2).reduce((a, e) => a + entryBase(e, sn.year), 0); if (tot <= 0) return; const h = (tot / nm) * plotH; yTop -= h; s += `<rect x="${x}" y="${yTop}" width="${bw}" height="${h}" fill="${colorOf(nm2, names)}"><title>${sn.year} · ${esc(nm2)}: ${money(tot)}</title></rect>`; });
     const net = snapTotalBase(sn), gross = snapGrossBase(sn);
     if (gross - net > 0.005) { const ny = padT + plotH - (Math.max(0, net) / nm) * plotH; s += `<line x1="${x - 3}" y1="${ny}" x2="${x + bw + 3}" y2="${ny}" stroke="${C.red}" stroke-width="2"><title>${t("net.histNetTitle", { year: sn.year, net: money(net), liab: money(gross - net) })}</title></line>`; }
-    s += `<text x="${cx}" y="${yTop - 6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="${C.axis}">${sym}${shortK(net)}</text>`;
-    s += `<text x="${cx}" y="${H - padB + 16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${C.ink}">${sn.year}</text>`;
+    s += `<text x="${cx}" y="${yTop - 6}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${C.axis}">${sym}${shortK(net)}</text>`;
+    s += `<text x="${cx}" y="${H - padB + 16}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="${C.ink}">${sn.year}</text>`;
     // full-height transparent hit area: hover/tap a year to see its breakdown
     s += `<rect class="histhit" x="${(padL + idx * slot).toFixed(1)}" y="${padT}" width="${slot.toFixed(1)}" height="${plotH}" fill="transparent" style="pointer-events:all" data-year="${sn.year}" data-cx="${cx.toFixed(1)}" data-cy="${yTop.toFixed(1)}"></rect>`;
   });
@@ -422,6 +443,14 @@ export function downloadForecast() {
   exportChart({ src, title: t("net.expForecast"), width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-forecast.png",
     items: [{ color: C.amber, label: t("net.actual") + " / " + t("net.projected") }, { color: C.green, label: t("net.goal") }] });
 }
+/* The retirement chart was the one chart in the product you could not save. Its section
+   header was also the one header with nothing in the tools slot, which is why its "Show"
+   toggle sat 54px right of the identical toggle in the section above it. */
+export function downloadRetire() {
+  const src = $("rtChart"); if (!src || !src.innerHTML) { toast(t("common.nothingToSave")); return; }
+  exportChart({ src, title: t("net.expRetire"), width: +src.getAttribute("width"), height: +src.getAttribute("height"), filename: "nestegg-retirement.png",
+    items: [{ color: C.amber, label: t("net.nestEggChip") }] });
+}
 export function downloadHist() {
   const src = $("histChart"); if (!src.innerHTML) { toast(t("common.nothingToSave")); return; }
   const names = allNames();
@@ -449,7 +478,14 @@ function renderYears() {
     const segs = names.map((k) => (agg[k] > 0 ? `<i style="width:${(agg[k] / (gross || 1)) * 100}%;background:${colorOf(k, names)}"></i>` : "")).join("");
     const liab = gross - tot, liabHtml = liab > 0.005 ? `<span class="yliab num" title="${t("net.liabilities")}">−${money(liab)}</span>` : "";
     const card = document.createElement("div"); card.className = "ycard";
-    card.innerHTML = `<div class="yhead" data-open="${ri}"><span class="yr">${sn.year}</span><span class="ybar" style="max-width:${Math.max(8, (gross / maxV) * 100)}%">${segs}</span>${liabHtml}<span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></div>`;
+    /* The track is always the full width of its column; the fill inside it is what carries the
+       year's size. Before this the bar itself was capped at the proportional width, so the
+       amount and the chevron started wherever the bar happened to stop — 2019's total sat a
+       third of the way across the row and nothing in the column lined up with anything. */
+    /* A button. As a div with a click handler, the single route into the year editor — the
+       layer the whole asset-editing flow lives behind — could not be reached by keyboard or
+       announced by a screen reader as anything but loose text. */
+    card.innerHTML = `<button type="button" class="yhead" data-open="${ri}" aria-label="${esc(t("net.openYearAria", { year: sn.year, total: money(tot) }))}"><span class="yr">${sn.year}</span><span class="ybar"><span class="yfill" style="width:${Math.max(2, (gross / maxV) * 100)}%">${segs}</span></span>${liabHtml}<span class="ytot">${money(tot)}</span><svg class="ychev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>`;
     host.appendChild(card);
   });
 }

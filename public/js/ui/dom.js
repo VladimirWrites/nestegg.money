@@ -24,9 +24,45 @@ export const isStandalone = () => {
 
 // Editor overlays: show one full-screen editor over the hidden app shell (scrolled to top),
 // or reverse it.
+/* What is behind an opaque editor stays in the tab order unless it is told not to.
+ *
+ * On a laptop #app is not hidden — the rail stays and the editor takes the column beside it —
+ * so every control on the screen underneath was still tabbable and still in the accessibility
+ * tree, behind a layer covering it. A keyboard reader tabbed through an invisible Net worth
+ * page before reaching the editor, and the asset editor opens over the year editor, which had
+ * the same problem at every width. `inert` is the one line that turns a layer off. */
+export function setInert(el, on) {
+  if (!el) return;
+  try { el.inert = !!on; } catch (e) {}
+  if (on) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden");
+}
+
+// Where focus was when a layer opened, so it can be given back when the layer closes.
+const focusReturn = new Map();
+
+export function rememberFocus(id) {
+  const a = document.activeElement;
+  if (a && a !== document.body) focusReturn.set(id, a);
+}
+export function restoreFocus(id) {
+  const el = focusReturn.get(id);
+  focusReturn.delete(id);
+  if (el && document.contains(el) && !el.closest("[inert]")) { try { el.focus(); } catch (e) {} }
+}
+
+/* What to switch off behind an editor.
+ *
+ * On a laptop the rail stays visible beside the editor and tapping a tab is meant to close
+ * the editor and go — so making the whole of #app inert left four tabs drawn on screen,
+ * looking pressable, swallowing the click and the Tab key alike. Only the column the editor
+ * covers goes inert. */
+export const behind = () => (matchMedia("(min-width: 900px)").matches ? document.querySelector(".shell-main") : $("app"));
+
 export function showEditor(id) {
   const el = $(id);
+  rememberFocus(id);
   el.classList.remove("hide");
+  setInert(behind(), true);
   /* On a phone the editor is the whole window, so the app behind it is put away. On a desktop
      the navigation rail lives inside #app, and hiding the lot took the rail with it — an editor
      is a place you tapped into, not a dialog you have to answer, so the rail stays and the
@@ -44,11 +80,38 @@ export function showEditor(id) {
   try {
     if (matchMedia("(hover:hover) and (pointer:fine)").matches) {
       requestAnimationFrame(() => {
-        const f = el.querySelector("input:not([type=checkbox]):not([type=radio]),select,textarea");
-        if (f) { f.focus(); if (f.select) try { f.select(); } catch (e) {} }
+        /* The first field is not always the one you came to type in: in the salary editor it
+           is the person's name, selected, so the first keystroke renamed Alex instead of
+           entering a salary. A field can opt in by carrying data-autofocus; nothing else is
+           focused, and nothing is ever pre-selected. */
+        const f = el.querySelector("[data-autofocus]");
+        if (f) f.focus();
       });
     }
   } catch (e) {}
+  /* Focus lands in the editor whatever the pointer is, so the next Tab is inside the screen
+     the reader is looking at rather than at the top of a document they cannot see. The title
+     carries tabindex="-1" for exactly this. */
+  // A timeout rather than requestAnimationFrame: a frame callback does not run while the tab
+  // is in the background, and an editor opened by a restored session would then never take
+  // focus at all.
+  setTimeout(() => {
+    if (el.contains(document.activeElement)) return;
+    const h = el.querySelector(".ed-title");
+    if (h) { try { h.focus({ preventScroll: true }); } catch (e) {} }
+  }, 0);
+}
+
+/* Focus goes back after the re-render, not before it.
+ *
+ * Closing an editor restores focus and then re-renders the list underneath — which replaces
+ * the very element focus was handed back to, and drops it on <body>. So the target is found
+ * again, by attribute, once the list has been rebuilt. */
+export function restoreFocusTo(selector) {
+  setTimeout(() => {
+    const el = selector && document.querySelector(selector);
+    if (el && !el.closest("[inert]")) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+  }, 0);
 }
 
 // Put the caret in a just-added field and scroll it into view. Placeholder text is selected, so
@@ -70,6 +133,8 @@ export function flash(el) {
 export function hideEditor(id) {
   $(id).classList.add("hide");
   $("app").classList.remove("hide");
+  setInert($("app"), false);
+  setInert(document.querySelector(".shell-main"), false);
   document.body.classList.remove("no-nav");
   // Closed by its own arrow: spend the entry it pushed, so Back doesn't have to be pressed
   // twice for one screen. A no-op when the close came from Back in the first place.
@@ -90,6 +155,7 @@ export function syncVal(id, val) {
   const el = $(id);
   if (el && document.activeElement !== el) el.value = val || "";
 }
+
 
 // Transient bottom toast.
 let toastTimer;
@@ -185,4 +251,33 @@ export function pickerInit(rootId, btnId, valId, panelId, options, onPick) {
   });
 
   return { set: (v) => { current = v; val.textContent = v; if (isOpen()) draw(); } };
+}
+
+/* Keep every numeric field speaking the same number language as the figures beside it.
+ *
+ * money() is pinned to en-IE, so an amount always reads "€3,376,466" whatever the interface
+ * language is. A <input type="number"> ignores that and renders its value in the *element's*
+ * language, which inherits from <html lang>. On the German interface that put "39,32" and
+ * "2,5" in the forecast fields a few lines under "€3,376,466" — three number formats on one
+ * screen, from one ledger.
+ *
+ * The inputs are stamped rather than <html> being changed, because the document's language is
+ * what tells a screen reader which language to pronounce the prose in, and the prose really
+ * is German. Only the figures are en-IE.
+ *
+ * An observer rather than a pass per render: these fields are built by half a dozen different
+ * screens, and one of them would eventually be added without remembering to call it. */
+export function keepNumberLocale(root = document) {
+  const stamp = (el) => { if (el.lang !== "en-IE") el.lang = "en-IE"; };
+  const all = (n) => {
+    if (n.nodeType !== 1) return;
+    if (n.matches && n.matches('input[type="number"]')) stamp(n);
+    if (n.querySelectorAll) n.querySelectorAll('input[type="number"]').forEach(stamp);
+  };
+  all(root.documentElement || root);
+  try {
+    new MutationObserver((recs) => {
+      for (const r of recs) r.addedNodes.forEach(all);
+    }).observe(root.body || root, { childList: true, subtree: true });
+  } catch (e) { /* no observer: the one-off pass above still covered what exists */ }
 }

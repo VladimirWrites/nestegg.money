@@ -6,12 +6,13 @@ import { t } from "../i18n.js";
 
 // Chart colours, read from the active theme's CSS variables. Mutated by refreshPalette()
 // before each render so a theme switch recolours the SVG charts.
-export const C = { amber: "#ffb020", green: "#3ad17a", grid: "#2b3040", axis: "#939aae", ink: "#e9ebf2", bg: "#12141b", red: "#ff6b6b" };
+export const C = { amber: "#ffb020", green: "#3ad17a", grid: "#2b3040", axis: "#939aae", ink: "#e9ebf2", bg: "#12141b", red: "#ff6b6b", neutral: "#939aae", band: "#ffb02033" };
 const cssVar = (n, fb) => { try { const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return v || fb; } catch (e) { return fb; } };
 export function refreshPalette() {
-  C.amber = cssVar("--signal", C.amber); C.green = cssVar("--accent", C.green);
+  C.amber = cssVar("--signal-lg", cssVar("--signal", C.amber)); C.green = cssVar("--accent", C.green);
   C.grid = cssVar("--line", C.grid); C.axis = cssVar("--dim", C.axis);
   C.ink = cssVar("--text", C.ink); C.bg = cssVar("--ink", C.bg); C.red = cssVar("--danger", C.red);
+  C.neutral = cssVar("--dim", C.neutral); C.band = cssVar("--band", C.band);
 }
 
 // Round a value up to a "nice" axis maximum. The step sequence is fine-grained on purpose:
@@ -43,7 +44,7 @@ export function yGrid(W, padL, padR, padT, plotH, nm, sym) {
     const val = (nm * i) / 5;
     const y = padT + plotH - (val / nm) * plotH;
     s += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${C.grid}" stroke-width="1"/>`;
-    s += `<text x="${padL - 8}" y="${y + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="${C.axis}">${sym}${shortK(val)}</text>`;
+    s += `<text x="${padL - 8}" y="${y + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="11" fill="${C.axis}">${sym}${shortK(val)}</text>`;
   }
   return s;
 }

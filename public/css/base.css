@@ -41,23 +41,60 @@
   --panel: #191c26;
   --panel-2: #202432;
   --line: #2b3040;
-  --line-soft: #22263250;
+  --line-soft: #2b304080;   /* a divider you can see: at #22263250 it was 1.03:1 on a card */
   --text: #e9ebf2;
   --dim: #939aae;
-  --dimmer: #666d80;
+  --dimmer: #838b9e;
 
   --signal: #ffb020;
+  /* Headline figures and chart lines: they need 3:1, not 4.5:1, so in the light theme they
+     can keep an amber that still reads as amber instead of the brown a body-text token has
+     to be. Same colour as --signal in the dark theme. */
+  --signal-lg: #ffb020;
+  --band: #ffb02033;      /* the forecast's poor-to-great cone, over the page */
   --signal-ink: #1a1200;
   --signal-soft: #ffb0201f;
+  /* --signal is tuned to be READ: in light it is a deep amber that clears AA against the page.
+     Using that same value to FILL a button gave light mode a dark brown slab. --signal-fill is
+     the painted version — saturated, with --signal-ink on top of it — so a primary button,
+     the selected tab and a segmented control look the same brightness in both themes. */
+  --signal-fill: #ffb020;
   --accent: #3ad17a;
   --accent-soft: #3ad17a1f;
   --danger: #ff6b6b;
+  --danger-ink: #12141b;   /* 6.6:1 on that fill; white would be 2.8:1 */
 
-  --r-sm: 6px;
-  --r: 10px;
-  --r-lg: 16px;
+  /* One radius family, used everywhere. Before this the app drew ten different corners —
+     3px on twenty-seven controls, 1px on bars and chips, 4px, 10px, 12px — and a 3px corner on
+     a 44px control is what makes an interface read as a web form rather than as an app. The
+     ladder is: inside a row, a row, a control, a card, a sheet. Nothing picks a number. */
+  --r-xs: 6px;    /* swatches, chips, bar segments — a corner you only half-see */
+  --r-sm: 10px;   /* small controls: .btn-sm, icon buttons, segmented items */
+  --r: 14px;      /* the default: buttons, fields, selects */
+  --r-lg: 20px;   /* cards and grouped lists */
+  --r-xl: 28px;   /* sheets and modals */
+  --r-pill: 999px;
 
+  /* A spacing scale, so panels stop inventing their own gaps. */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+
+  /* Two elevations rather than a blur. Depth here comes from a card sitting on a recessed
+     page, which is why the shadows are soft and nearly free — they separate, they don't
+     decorate. */
   --shadow: 0 1px 2px #0006, 0 8px 24px -12px #0009;
+  --shadow-card: 0 1px 2px #00000040;
+
+  /* Chrome is opaque. The bars used to be a colour-mix at 88–92% with a backdrop-filter behind
+     them, so a heading or a form label scrolling underneath printed straight through the tab
+     bar. This is the transparency the product is meant to have turned down. */
+  --chrome: var(--panel);
+  --chrome-page: var(--ink);
 
   /* Drawn here rather than in three places: any control replacing a platform widget's own
      arrow uses this one. */
@@ -93,48 +130,58 @@
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --ink: #f4f3ef;
+    --ink: #f1f1f5;
     --panel: #ffffff;
-    --panel-2: #faf9f6;
-    --line: #e4e1d9;
-    --line-soft: #e4e1d980;
-    --text: #1b1a17;
-    --dim: #5f5c54;
-    --dimmer: #86827a;
+    --panel-2: #f7f7fa;
+    --line: #dededf;
+    --line-soft: #dededf80;
+    --text: #16171a;
+    --dim: #5c5f68;
+    --dimmer: #686c77;
 
     --signal: #9a5b00;
-    --signal-ink: #fff8ec;
-    --signal-soft: #9a5b0014;
+    --signal-lg: #c87400;
+    --band: #c8740026;
+    --signal-ink: #2a1a00;
+    --signal-soft: #9a5b0021;
+    --signal-fill: #f5a524;
     --accent: #1f7a4a;
     --accent-soft: #1f7a4a14;
     --danger: #c02626;
+    --danger-ink: #ffffff;
 
-    --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a30;
-    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f5c54' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a24;
+    --shadow-card: 0 1px 2px #0f172a14;
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235c5f68' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   }
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --ink: #f4f3ef;
+  --ink: #f1f1f5;
   --panel: #ffffff;
-  --panel-2: #faf9f6;
-  --line: #e4e1d9;
-  --line-soft: #e4e1d980;
-  --text: #1b1a17;
-  --dim: #5f5c54;
-  --dimmer: #86827a;
+  --panel-2: #f7f7fa;
+  --line: #dededf;
+  --line-soft: #dededf80;
+  --text: #16171a;
+  --dim: #5c5f68;
+  --dimmer: #686c77;
 
   --signal: #9a5b00;
-  --signal-ink: #fff8ec;
-  --signal-soft: #9a5b0014;
+  --signal-lg: #c87400;   /* 3.1:1 on the page, 3.5:1 on a card — large text and graphics */
+  --band: #c8740026;
+  --signal-ink: #2a1a00;
+  --signal-soft: #9a5b0021;
+  --signal-fill: #f5a524;
   --accent: #1f7a4a;
   --accent-soft: #1f7a4a14;
   --danger: #c02626;
+  --danger-ink: #ffffff;
 
-  --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a30;
-  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f5c54' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --shadow: 0 1px 2px #0f172a12, 0 10px 28px -16px #0f172a24;
+    --shadow-card: 0 1px 2px #0f172a14;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235c5f68' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 
 :root[data-theme="dark"] { color-scheme: dark }
@@ -241,8 +288,8 @@ img { max-width: 100%; display: block }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 16px;
-  min-height: 42px;
+  padding: 11px 16px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: var(--r);
   background: var(--panel-2);
@@ -258,8 +305,8 @@ img { max-width: 100%; display: block }
 .btn:disabled { opacity: 0.45; cursor: not-allowed }
 
 .btn-primary {
-  background: var(--signal);
-  border-color: var(--signal);
+  background: var(--signal-fill);
+  border-color: var(--signal-fill);
   color: var(--signal-ink);
 }
 .btn-primary:hover { filter: brightness(1.07); border-color: var(--signal) }
@@ -271,7 +318,22 @@ img { max-width: 100%; display: block }
   border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
 }
 
-.btn-sm { padding: 6px 11px; min-height: 34px; font-size: 13px }
+/* Three identically outlined red buttons put signing out — which changes nothing and can be
+   undone with the account number — at the same alarm level as erasing the vault. Only the
+   one that cannot be undone is filled; signing out is an ordinary button. */
+.btn-danger-solid {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--danger-ink);
+  font-weight: 600;
+}
+.btn-danger-solid:hover { filter: brightness(1.08); border-color: var(--danger) }
+
+/* 44px is the smallest target a thumb hits reliably, and this is a phone-first ledger: a
+   secondary button was 34px here while the same button on a mouse-driven desktop was 38px,
+   which is the wrong way round. The desktop keeps the tighter size, set where the desktop
+   rhythm is. */
+.btn-sm { padding: 9px 13px; min-height: 44px; font-size: 13px }
 
 .btn-icon {
   width: 17px;
@@ -386,7 +448,10 @@ select,
   border-radius: var(--r-sm);
 }
 
-::selection { background: var(--signal); color: var(--signal-ink) }
+/* A selection has to be readable: --signal on --signal-ink is 2.6:1 in the light theme, so
+   selected text was the least legible text on the page — most visibly on a name a reader is
+   about to retype. The soft tint keeps the page's own ink. */
+::selection { background: var(--signal-soft); color: var(--text) }
 
 [role="button"] { cursor: pointer }
 

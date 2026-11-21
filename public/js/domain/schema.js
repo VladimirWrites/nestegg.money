@@ -151,7 +151,7 @@ function migrateAssets(s) {
     a.up = !!a.up;
     a.liability = !!a.liability;
     if (!a.date) a.date = today;
-    if (a.rate == null) a.rate = 0.15;
+    if (a.rate == null) a.rate = 0;   // not 0.15: a rate nobody typed is not a claim about a house
     a.loan = a.loan ? normLoan(a.loan, a.date) : null;
   });
 }

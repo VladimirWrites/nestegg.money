@@ -29,6 +29,8 @@ const HOME = "net";
 
 let renderView = () => {};      // paint a view, without touching history
 let closeTopEditor = () => false; // shut the open editor, if there is one; true if it closed
+let closeOverlays = () => false;  // shut any dialog over it; true if there was one
+let topEditor = () => null;       // the editor still on screen under a dialog, if any
 let current = HOME;
 let expectPop = false;          // we asked for this pop ourselves
 let inPop = false;              // closing because a pop arrived, rather than the other way round
@@ -41,9 +43,11 @@ const depth = () => stateOf().depth || 0;
 /* Called once at boot, after the first view is on screen. The entry a cold load starts on
    carries no state of ours, so it is given some — otherwise the first Back looks like a step
    out of a screen we never recorded arriving at. */
-export function initHistory({ onView, onCloseEditor, view = HOME }) {
+export function initHistory({ onView, onCloseEditor, onCloseOverlays, onTopEditor, view = HOME }) {
   renderView = onView || renderView;
   closeTopEditor = onCloseEditor || closeTopEditor;
+  closeOverlays = onCloseOverlays || closeOverlays;
+  topEditor = onTopEditor || topEditor;
   current = view;
   try { history.scrollRestoration = "manual"; } catch (e) {}
   history.replaceState({ view, depth: 0 }, "");
@@ -56,6 +60,14 @@ export function initHistory({ onView, onCloseEditor, view = HOME }) {
     // close routine is the same one the arrow in its bar runs, so it syncs and re-renders the
     // way it always did — and its call to popEditor is ignored while this flag is up, since
     // the entry it would spend is the one that just went.
+    /* A dialog over an editor is the top layer, so Back closes the dialog — but the entry
+       the browser just spent was the editor's, and the editor is still on screen. Put it
+       back, or the next Back walks out of the app instead of returning to Net worth. */
+    if (closeOverlays()) {
+      const top = topEditor();
+      if (top) { expectPop = false; history.pushState({ ...stateOf(), editor: top }, ""); }
+      return;
+    }
     inPop = true;
     try { if (closeTopEditor()) return; } finally { inPop = false; }
     /* An editor's address with nothing open at it.

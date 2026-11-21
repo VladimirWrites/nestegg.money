@@ -5,11 +5,12 @@ import { state, setState } from "../domain/store.js";
 import { emptyState, migrate } from "../domain/schema.js";
 import { mergeStates, setBaseline } from "../domain/merge.js";
 import { CCYS } from "../domain/constants.js";
+import { parseNum } from "../domain/money.js";
 import { fcCfg } from "../domain/forecast.js";
 import { retCfg } from "../domain/retirement.js";
 import { generateToken, validToken, canonToken, normTok, deriveKeys, copyText, decWith, importShareKey } from "../io/crypto.js";
 import { LS, syncedAt, setDemo, loadLocal, saveLocal, scheduleSync, pushServer, loadServer, autoRefresh, ensurePrices, fetchFx, refreshHistFx, refreshPrices } from "../io/storage.js";
-import { renderAll, repaintCharts, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut, armChartAnim } from "./charts.js";
+import { renderAll, repaintCharts, renderForecast, renderRetire, fcSyncInputs, retSyncInputs, downloadForecast, downloadHist, downloadDonut, armChartAnim, downloadRetire } from "./charts.js";
 import { renderSalary, armSalaryAnim } from "./salary.js";
 import { renderBudget, setBudgetReadOnly } from "./budget.js";
 import { setEntriesReadOnly } from "./networth.js";
@@ -22,13 +23,32 @@ import { closeAllEditors } from "./editors.js";
    the type to fit and stopped at 11px, which on a 320px phone still left the last group cut
    off — on the one screen whose whole job is getting this number read and saved correctly.
    Each dash-separated group is kept whole, so a break never falls inside a group. */
+const TOK_COLS = 4;   // groups per line; the CSS grid uses the same number
+
 function showToken(el, tok) {
   const groups = String(tok).split("-");
-  el.innerHTML = groups.map((g, i) => {
-    const chars = [...g].map((c) => (/[0-9]/.test(c) ? `<span class="d">${c}</span>` : `<span class="a">${c}</span>`)).join("");
-    const sep = i < groups.length - 1 ? '<span class="s">-</span>' : "";
+  /* One line per row of groups, each line centred on its own. As one grid the last line
+     began at the first column while the line above it filled four, so a 4+3 number read as
+     left-aligned text inside a centred box. */
+  const lines = [];
+  for (let i = 0; i < groups.length; i += TOK_COLS) lines.push(groups.slice(i, i + TOK_COLS));
+  el.innerHTML = lines.map((line, li) => line.map((g, gi) => {
+    const i = li * TOK_COLS + gi;
+    /* Every character in the text colour. Digits in the "money" green and letters in the
+       "actionable" amber spent both of the product's accents on a string that is neither,
+       and set it shouting beside the amber button that is the actual next step. The mono
+       face is what tells 0 from O. */
+    const chars = [...g].map((c) => `<span class="c">${c}</span>`).join("");
+    /* The dash joins this group to the next one, so it is only drawn when there *is* a next
+       one on the same line. Letting the text wrap on its own left a dash hanging off the end
+       of a line, which on the one screen whose job is getting this number written down
+       correctly reads as part of the number. A fixed number of columns is what makes that
+       knowable: the break positions are chosen here rather than discovered by the browser. */
+    const endsLine = gi === line.length - 1;
+    const isLast = i === groups.length - 1;
+    const sep = (!isLast && !endsLine) ? '<span class="s">-</span>' : "";
     return `<span class="tokgrp">${chars}${sep}</span>`;
-  }).join("");
+  }).join("")).map((row) => `<span class="tokline">${row}</span>`).join("");
 }
 
 /* ---- the password manager ----
@@ -128,6 +148,19 @@ function showSignin() {
   if (stopAcctWatch) { stopAcctWatch(); stopAcctWatch = null; } // no create screen, nothing to confirm
   $("gateCreate").classList.add("hide"); $("gateSignin").classList.remove("hide");
 }
+/* Reveal the account number being typed. The field stays type=password so a password
+   manager will fill it; this flips it only while the eye is pressed on. */
+const reveal = $("signinReveal");
+if (reveal) {
+  reveal.onclick = () => {
+    const f = $("signinInput");
+    const on = f.type === "password";
+    f.type = on ? "text" : "password";
+    reveal.setAttribute("aria-pressed", String(on));
+    f.focus();
+  };
+}
+
 $("toSignin").onclick = showSignin;
 $("toCreate").onclick = showCreate;
 // these are role="button" links — let keyboard users activate them with Enter/Space too
@@ -444,17 +477,26 @@ $("pricesBtn").onclick = doPrices;
 $("profPricesBtn").onclick = doPrices;
 $("profRatesBtn").onclick = doRates;
 
+/* The two assumption panels start folded on a phone and open on a desktop. Done once, at
+   start-up, rather than on every render: after this the panel is the reader's to leave open
+   or shut, and a redraw of the chart must not reach in and change it back. The markup ships
+   `open`, so a browser that never runs this still shows the fields. */
+(() => {
+  if (!window.matchMedia || !window.matchMedia("(max-width:899px)").matches) return;
+  document.querySelectorAll("details.fcset").forEach((d) => { d.open = false; });
+})();
+
 // Forecast inputs
 (() => {
   const fcRender = debounce(() => { renderForecast(); renderRetire(); }, 120);
   const fcU = () => { scheduleSync(); fcRender(); };
   const on = $("fcOn"); if (on) on.onchange = (e) => { fcCfg().enabled = e.target.checked; fcU(); };
-  const m = $("fcMonthly"); if (m) m.oninput = (e) => { fcCfg().monthly = parseFloat(e.target.value) || 0; fcU(); };
-  const g = $("fcGrowth"); if (g) g.oninput = (e) => { fcCfg().growth = Math.min(Math.max((parseFloat(e.target.value) || 0) / 100, -0.5), 1); fcU(); };
+  const m = $("fcMonthly"); if (m) m.oninput = (e) => { fcCfg().monthly = parseNum(e.target.value) || 0; fcU(); };
+  const g = $("fcGrowth"); if (g) g.oninput = (e) => { fcCfg().growth = Math.min(Math.max((parseNum(e.target.value) || 0) / 100, -0.5), 1); fcU(); };
   const gm = $("fcGoalMode"); if (gm) gm.onchange = (e) => { fcCfg().goalMode = e.target.value === "spend" ? "spend" : "amount"; fcSyncInputs(); fcU(); };
-  const gv = $("fcGoalVal"); if (gv) gv.oninput = (e) => { const fc = fcCfg(), v = parseFloat(e.target.value) || 0; if (fc.goalMode === "spend") fc.annualSpending = v; else fc.goalAmount = v; fcU(); };
+  const gv = $("fcGoalVal"); if (gv) gv.oninput = (e) => { const fc = fcCfg(), v = parseNum(e.target.value) || 0; if (fc.goalMode === "spend") fc.annualSpending = v; else fc.goalAmount = v; fcU(); };
   const rd = $("fcRedirect"); if (rd) rd.onchange = (e) => { fcCfg().redirectLoans = e.target.checked; fcU(); };
-  const cg = $("fcContribGrowth"); if (cg) cg.oninput = (e) => { fcCfg().contribGrowth = Math.min(Math.max((parseFloat(e.target.value) || 0) / 100, 0), 0.5); fcU(); };
+  const cg = $("fcContribGrowth"); if (cg) cg.oninput = (e) => { fcCfg().contribGrowth = Math.min(Math.max((parseNum(e.target.value) || 0) / 100, 0), 0.5); fcU(); };
   const bd = $("fcBand"); if (bd) bd.onchange = (e) => { fcCfg().band = e.target.checked; fcU(); };
   const hz = $("fcHorizon"); if (hz) hz.oninput = (e) => { fcCfg().horizonYear = parseInt(e.target.value, 10) || 0; fcU(); };
 })();
@@ -465,17 +507,18 @@ $("profRatesBtn").onclick = doRates;
   const r = () => retCfg(), cy = new Date().getFullYear();
   const on = $("rtOn"); if (on) on.onchange = (e) => { r().on = e.target.checked; rU(); };
   const yr = $("rtYear"); if (yr) yr.oninput = (e) => { r().retireYear = parseInt(e.target.value, 10) || cy; rU(); };
-  const sp = $("rtSpend"); if (sp) sp.oninput = (e) => { r().spending = parseFloat(e.target.value) || 0; rU(); };
+  const sp = $("rtSpend"); if (sp) sp.oninput = (e) => { r().spending = parseNum(e.target.value) || 0; rU(); };
   const ps = $("rtPensStart"); if (ps) ps.oninput = (e) => { r().pensionStart = parseInt(e.target.value, 10) || cy; rU(); };
   const un = $("rtUntil"); if (un) un.oninput = (e) => { r().untilYear = parseInt(e.target.value, 10) || cy + 45; rU(); };
-  const inf = $("rtInfl"); if (inf) inf.oninput = (e) => { r().inflation = Math.min(Math.max((parseFloat(e.target.value) || 0) / 100, 0), 0.3); rU(); };
+  const inf = $("rtInfl"); if (inf) inf.oninput = (e) => { r().inflation = Math.min(Math.max((parseNum(e.target.value) || 0) / 100, 0), 0.3); rU(); };
   const pm = $("rtPmode"); if (pm) pm.onchange = (e) => { r().pmode = e.target.value === "de" ? "de" : "amount"; retSyncInputs(); rU(); };
-  const pen = $("rtPension"); if (pen) pen.oninput = (e) => { r().pension = parseFloat(e.target.value) || 0; rU(); };
-  const pts = $("rtPts"); if (pts) pts.oninput = (e) => { r().points = parseFloat(e.target.value) || 0; rU(); };
-  const pyr = $("rtPtsYr"); if (pyr) pyr.oninput = (e) => { r().ptsPerYear = parseFloat(e.target.value) || 0; rU(); };
-  const pval = $("rtPtVal"); if (pval) pval.oninput = (e) => { r().ptValue = parseFloat(e.target.value) || 0; rU(); };
+  const pen = $("rtPension"); if (pen) pen.oninput = (e) => { r().pension = parseNum(e.target.value) || 0; rU(); };
+  const pts = $("rtPts"); if (pts) pts.oninput = (e) => { r().points = parseNum(e.target.value) || 0; rU(); };
+  const pyr = $("rtPtsYr"); if (pyr) pyr.oninput = (e) => { r().ptsPerYear = parseNum(e.target.value) || 0; rU(); };
+  const pval = $("rtPtVal"); if (pval) pval.oninput = (e) => { r().ptValue = parseNum(e.target.value) || 0; rU(); };
 })();
 $("dlFc") && ($("dlFc").onclick = () => downloadForecast());
+$("dlRt") && ($("dlRt").onclick = () => downloadRetire());
 $("dlHist").onclick = () => downloadHist();
 $("dlDonut").onclick = () => downloadDonut();
 $("ratesBtn").onclick = doRates;

@@ -4,32 +4,102 @@
    showSignin, which are also what a failed boot falls back to, so the gate is never unreachable
    because of an attribute. */
 :root[data-boot="app"] #gate{display:none}
-#gate{position:fixed;inset:0;background:var(--ink);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
-.gatebox{max-width:520px;width:100%}
-.gatebox .kick{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber)}
-.gatebox h1{font-size:clamp(34px,8vw,52px);line-height:.98;letter-spacing:-.01em;font-weight:700;margin:8px 0 4px;color:var(--amber)}
-.gatebox .sub{color:var(--muted);margin-bottom:26px;font-size:13px}
-.gatebox .panel{border-top:1px solid var(--line2);padding-top:20px}
-.gatebox p{font-size:13px;color:var(--muted);margin:10px 0}
+/* Centred by auto margins rather than by align-items: a flex item centred by alignment is
+   clipped at the top once it is taller than the viewport, and the scrollbar cannot reach
+   what is above it — which on a phone is the wordmark and the headline. Auto margins centre
+   the same way and collapse to zero when there is nothing to spare. */
+#gate{position:fixed;inset:0;background:var(--ink);z-index:50;display:flex;justify-content:center;padding:24px;overflow:auto}
+.gatebox{max-width:520px;width:100%;margin:auto}
+.gatebox .kick{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
+/* The wordmark, set exactly as the app's own brand lockup in the rail. */
+.gatebrand{display:flex;align-items:center;gap:9px;font-variation-settings:"wdth" 118;font-weight:800;letter-spacing:-.03em;font-size:19px;color:var(--text);margin-bottom:18px}
+/* The headline is the page's voice, not a control. Amber is kept for the two things on this
+   screen you can act on — the account number and the primary button — so they lead. */
+.gatebox h1{font-size:clamp(34px,8vw,52px);line-height:.98;letter-spacing:-.018em;font-weight:800;margin:8px 0 4px;color:var(--text)}
+.gatebox .sub{color:var(--dim);margin-bottom:26px;font-size:15px}
+.gatebox .panel{border-top:1px solid var(--line);padding-top:20px}
+.gatebox p{font-size:15px;color:var(--dim);margin:12px 0;max-width:68ch}
+/* What the product is, in one sentence, before anything asks to be filled in. */
+.gatelede{font-size:16px;line-height:1.5;color:var(--dim);margin:0 0 18px;max-width:46ch}
+.gatefacts{list-style:none;margin:0 0 26px;padding:0;display:flex;flex-direction:column;gap:10px}
+.gatefacts li{position:relative;padding-left:20px;font-size:14px;line-height:1.45;color:var(--dim)}
+/* A small amber tick rather than a bullet glyph, so the three facts read as the product's
+   own claims and not as a list of options. */
+.gatefacts li::before{content:"";position:absolute;left:2px;top:6px;width:7px;height:7px;
+  border-radius:var(--r-pill);background:var(--signal)}
+/* On a phone the create panel runs past the fold, so the demo — the one way in that costs
+   a stranger nothing — was a sliver at the bottom edge of the screen. It is a sibling of
+   both forms now (so it shows from the sign-in side too) and it comes first in the column
+   at this width. On a wide screen the whole card is on screen at once and it keeps its
+   place under the forms. */
+@media(max-width:999px){
+  .gatepanels{display:flex;flex-direction:column}
+  .gatepanels>.demoswitch{order:-1;margin:0 0 18px}
+}
+/* The lede already says what the product is. The three supporting facts cost about 110px,
+   which on a phone is the difference between the no-recovery warning and the sign-in link
+   being on the first screen or below it — and those two matter more to a stranger than the
+   supporting copy does. */
+@media(max-width:559px){
+  .gatefacts{display:none}
+  .gatelede{margin-bottom:22px}
+}
+
+/* Wide screens: the product on the left, the door on the right. Below this the two stack in
+   source order, which is already what a phone wants — name, claim, then the form. */
+@media(min-width:1000px){
+  .gatebox{max-width:1000px;display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:72px;align-items:center}
+  .gateintro{align-self:center}
+  .gatebox h1{font-size:56px}
+  .gatelede{font-size:17px;max-width:38ch}
+  /* The form is a card here rather than a rule under the headline: on a wide screen the
+     border-top of a 460px column next to a tall intro reads as an unfinished line. */
+  .gatepanels{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-xl);
+    padding:26px 28px;box-shadow:var(--shadow-card)}
+  .gatepanels .panel{border-top:0;padding-top:0}
+  .gatepanels>.switch:last-child{margin-bottom:0}
+}
 /* The gate's copy of the number, in the same wrapping box the profile uses. It breaks at its
    own dashes rather than shrinking: the old box shrank the type to an 11px floor and, at
    320px, still cut off the last group — on the one screen whose whole job is getting this
    number read and written down correctly. */
-.acctnum{padding:16px 14px;border:1px dashed var(--signal);border-radius:var(--r);background:var(--signal-soft);font-family:var(--mono);
-  font-size:clamp(14px,4.4vw,19px);letter-spacing:.06em;text-align:center;font-weight:700;margin:14px 0;line-height:1.9;overflow-wrap:break-word}
+/* A grid of groups rather than a wrapping line. The number breaks where showToken() decided
+   it breaks, four groups to a line, so no line ever ends on a dash. */
+.acctnum{display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:16px 14px;border:1px solid var(--signal);border-radius:var(--r);background:var(--signal-soft);font-family:var(--mono);
+  font-size:clamp(14px,4.4vw,19px);letter-spacing:.06em;text-align:center;font-weight:700;margin:14px 0;line-height:1.9}
 /* A dash-separated group never breaks across lines. */
 .tokgrp{display:inline-block;white-space:nowrap}
-.acctnum .d{color:var(--accent)}   /* digits */
-.acctnum .a{color:var(--signal)}   /* letters */
-.acctnum .s{color:var(--dimmer)}   /* separators */
-.gatebtn{font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--amber);color:var(--on-amber);border:none;padding:14px 20px;cursor:pointer;border-radius:3px;min-height:46px;font-weight:600;font-family:var(--mono)}
-.gatebtn.ghost{background:transparent;color:var(--amber);border:1px solid var(--line2)}
-.gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--text);letter-spacing:.05em;font-family:var(--mono)}
-.gatein:focus{outline:none;border-color:var(--amber)}
-.gaterow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.gatesaved{font-size:12px;color:var(--green);margin:-6px 0 0}
-.warn{font-size:12px;color:var(--amber2);font-style:normal;margin-top:14px;border-left:2px solid var(--amber2);padding-left:12px}
-.switch{margin-top:24px;font-size:12px;color:var(--muted)}.switch a{color:var(--amber);cursor:pointer;text-decoration:underline}
+.tokline{display:flex;justify-content:center}
+.acctnum .c{color:var(--text)}
+.acctnum .s{color:var(--dimmer)}   /* the separators, not part of what you write down */
+/* The same button the rest of the app uses. These were 12px mono small-caps at .1em, a
+   different control from every button behind the door. */
+.gatebtn{font-size:15px;letter-spacing:0;text-transform:none;background:var(--signal-fill);color:var(--signal-ink);border:1px solid var(--signal-fill);padding:13px 20px;cursor:pointer;border-radius:var(--r);min-height:48px;font-weight:600;font-family:var(--sans)}
+.gatebtn.ghost{background:var(--panel-2);color:var(--text);border:1px solid var(--line)}
+.gatebtn.ghost:hover{border-color:var(--dimmer)}
+.gatein{font-size:16px;width:100%;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--text);letter-spacing:.05em;font-family:var(--mono)}
+.gatein:focus{outline:none;border-color:var(--signal)}
+/* One right edge. The three buttons used to size to their own labels and wrap where they
+   fell, so the row ended at three different places down the same 520px column: the two
+   secondary actions share a line and split it evenly, and the primary takes its own. */
+.gaterow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.gaterow .gatebtn.ghost{flex:1 1 140px}
+.gaterow .gatebtn:not(.ghost){flex:1 1 100%}
+/* The demo is how most people will want to look around first, so it is a control, not a
+   sentence with an underlined phrase buried in it. */
+/* Written as .switch.demoswitch so it outranks the generic `.switch a` link styling declared
+   further down, which would otherwise paint this underlined amber again. */
+.switch.demoswitch{margin-top:14px}
+.switch.demoswitch a{display:flex;align-items:center;justify-content:center;min-height:48px;padding:13px 20px;
+  border:1px solid var(--line);border-radius:var(--r);background:var(--panel-2);color:var(--text);
+  font-size:15px;font-weight:600;text-decoration:none;cursor:pointer}
+.switch.demoswitch a:hover{border-color:var(--dimmer)}
+.gatesaved{font-size:12px;color:var(--accent);margin:-6px 0 0}
+/* The one irreversible fact on this screen, so not set smaller than the paragraph that
+   explains the happy path above it. */
+.warn{font-size:15px;line-height:1.45;color:var(--signal);font-style:normal;margin-top:14px;border-left:2px solid var(--signal);padding-left:12px}
+.switch{margin-top:24px;font-size:12px;color:var(--dim)}.switch a{color:var(--signal);cursor:pointer;text-decoration:underline}
 
 /* ---------- shell ----------
    One column on a phone with the navigation welded to the bottom edge; a fixed rail beside the
@@ -50,7 +120,7 @@
 
 .nav{position:fixed;bottom:0;left:0;right:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;
   padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + var(--edge-b)) max(6px,env(safe-area-inset-left,0px));
-  background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+  background:var(--chrome);border-top:1px solid var(--line)}
 .nav-brand{display:none}
 .nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:0;background:none;border-radius:var(--r);
   color:var(--dim);cursor:pointer;font-size:10.5px;font-variation-settings:"wdth" 92;font-weight:600;letter-spacing:.03em;
@@ -78,7 +148,7 @@
 /* ---------- the top edge ---------- */
 
 .topbar{position:sticky;top:0;z-index:20;padding:calc(10px + var(--edge-t)) 0 10px;
-  background:color-mix(in srgb,var(--ink) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  background:var(--chrome-page);border-bottom:1px solid var(--line)}
 .topbar-inner{display:flex;align-items:center;gap:12px;min-height:44px;max-width:var(--maxw);margin:0 auto;padding:0 var(--edge-r) 0 var(--edge-l)}
 .topbar-title{font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
@@ -106,25 +176,29 @@ header.masthead{display:none}
      bar only appears when a screen has actually put controls in it. */
   .topbar{display:none}
   .topbar:has(.topbar-actions:not(:empty)){display:block}
-  header.masthead{display:block;max-width:var(--maxw);margin:0 auto;padding:8px 32px 18px;border-bottom:1px solid var(--line)}
+  /* The rule is drawn inside the padding, not on the element: as a border it ran the full
+     width of the padding box and overshot every card and rule below it by 32px on each side.
+     The extra top padding gives the eyebrow room to clear the demo banner above it. */
+  header.masthead{display:block;max-width:var(--maxw);margin:0 auto;padding:20px 32px 18px;position:relative}
+  header.masthead::after{content:"";position:absolute;left:32px;right:32px;bottom:0;height:1px;background:var(--line)}
 }
 
 .acctrow{display:flex;align-items:stretch;gap:8px}
 .acctrow .acctnum{flex:1;margin:14px 0;min-width:0}
-.eyebtn{flex:none;align-self:center;width:42px;height:46px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer}
-.eyebtn:hover{color:var(--amber);border-color:var(--amber)}
-.eyebtn.on{color:var(--amber)}
+.eyebtn{flex:none;align-self:center;width:42px;height:46px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--dim);cursor:pointer}
+.eyebtn:hover{color:var(--signal);border-color:var(--signal)}
+.eyebtn.on{color:var(--signal)}
 .eyebtn svg{width:18px;height:18px}
-.kicker{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--signal);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.kicker{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
 .titlerow{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:10px 0 6px}
 h1.title{font-size:clamp(28px,3.4vw,40px);color:var(--text)}
-.ccypick{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.ccypick select{font:inherit;font-size:13px;letter-spacing:0;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:6px 8px;color:var(--text)}
+.ccypick{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.ccypick select{font:inherit;font-size:13px;letter-spacing:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 8px;color:var(--text)}
 .subt{color:var(--dim);font-size:14px}
 
 .hero{padding:22px 0 24px;border-bottom:1px solid var(--line)}
 .hero .label{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
-.hero .big{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(38px,9vw,68px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:8px;color:var(--signal)}
+.hero .big{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(38px,9vw,68px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:8px;color:var(--signal-lg)}
 .hero .day{margin-top:8px;font-size:14px;font-weight:600}
 .hero .day.up{color:var(--accent)} .hero .day.down{color:var(--danger)} .hero .day.flat{color:var(--dim)}
 .hero .delta{margin-top:6px;font-size:14px;color:var(--dim)}
@@ -132,7 +206,16 @@ h1.title{font-size:clamp(28px,3.4vw,40px);color:var(--text)}
 .stalepx{color:var(--dimmer)}
 
 section{padding:24px 0;border-bottom:1px solid var(--line)}
-.sectitle{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-bottom:14px;display:flex;align-items:center;gap:10px;min-height:32px}
+/* A section that carries no rule of its own, but keeps the same distance from whatever is
+   above it. Written as inline `padding:8px 0` on two screens, it put the first heading 24px
+   below the hero rule on Net worth, 8px below it on Salary and 1px below it on Budget, where
+   the export button touched the rule. */
+.sect-plain{border-bottom:0;padding:24px 0 8px}
+/* A panel's name is a heading, not signage. It used to be an 11px uppercase micro-label in
+   --dim, which put it *below* the field labels inside the panel it was naming — the hierarchy
+   ran backwards. Now it is the largest thing in its section after the figures. */
+.sectitle{font-weight:600;font-size:18px;letter-spacing:-.01em;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:10px;min-height:32px}
+@media(min-width:900px){.sectitle{font-size:21px}}
 /* The aside carries the sentence that explains the panel, so it reads as prose beside a label
    rather than as more signage. */
 .sectitle .tin{font-variation-settings:"wdth" 100;font-weight:400;letter-spacing:0;text-transform:none;font-size:13px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -146,37 +229,56 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
    an explanation of the panel that the panel itself then demonstrates. */
 @media(max-width:619px){.sectitle .tin{display:none}}
 
+/* Chart plus its pinned scale: the scale is a sibling of the scroller, not a passenger
+   inside it, so it stays on screen while the months scroll past. */
+.salchart{display:flex;align-items:flex-start;gap:0}
+.salchart .histscroll{flex:1 1 auto;min-width:0}
+.salaxis{flex:none;display:block}
+.salaxis.hide{display:none}
 .histscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 #fcChart,#rtChart{display:block;width:100%;height:auto}
 #histChart{display:block;height:auto}
-.chiplegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;margin-bottom:22px;font-size:11.5px;color:var(--muted)}
+.chiplegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;margin-bottom:22px;font-size:11.5px;color:var(--dim)}
 .chiplegend span{display:flex;align-items:center;gap:6px}.chip{width:10px;height:10px;border-radius:1px}
+/* Not a series — a note about which side of the chart means what. No chip, quieter ink. */
+.chiplegend .axishint{color:var(--dimmer)}
 
 .charts{display:grid;grid-template-columns:240px 1fr;gap:32px;align-items:center}
 @media(max-width:680px){.charts{grid-template-columns:1fr;gap:22px}}
-.legend{display:flex;flex-direction:column;gap:1px}
+.legend{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-card)}
 /* Proportions rather than content widths, so every row in a panel divides at the same two
    places: the amounts form a column and the percentages form a column. A long name truncates
    instead of shoving them around. */
-.legrow{display:grid;grid-template-columns:14px minmax(0,1fr) 44px 108px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+.legrow{display:grid;grid-template-columns:14px minmax(0,1fr) 44px 108px;gap:10px;align-items:center;padding:12px 16px;min-height:52px;border-bottom:1px solid var(--line-soft);font-size:14px}
 .legrow:last-child{border-bottom:none}
 .legrow>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .swatch{width:11px;height:11px;border-radius:2px}
-.legrow .pct{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--dimmer);font-size:12px;text-align:right}
+.legrow .pct{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--dim);font-size:12.5px;text-align:right}
 .legrow .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
 
-.years{display:flex;flex-direction:column;gap:6px}
-.ycard{border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
-.yhead{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;user-select:none;min-height:52px}
-.yhead:hover{background:var(--panel-2);border-color:var(--dimmer)}
-.yhead .yr{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;min-width:46px;color:var(--signal)}
-.ybar{flex:1;height:11px;border-radius:1px;background:var(--field);display:flex;overflow:hidden;min-width:60px}
+/* One grouped list with inset dividers, not eight floating cards. Eight separately-bordered
+   boxes six pixels apart read as eight objects; the years are one list of one kind of thing. */
+.years{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-card)}
+.ycard{border:0;border-radius:0;background:transparent}
+.ycard+.ycard{border-top:1px solid var(--line-soft)}
+.yhead{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;min-height:56px}
+.yhead:hover{background:var(--panel-2)}
+.yhead .yr{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;min-width:46px;color:var(--text)}
+/* The track holds the column open at a constant width; .yfill inside it is the year's size.
+   A recessed track rather than a bar floating on the card, so a short year still reads as a
+   proportion of something rather than as a stub. */
+.ybar{flex:1;height:10px;border-radius:var(--r-pill);background:var(--panel-2);display:flex;overflow:hidden;min-width:48px}
+.yfill{display:flex;height:100%;border-radius:var(--r-pill);overflow:hidden;min-width:3px}
 .ybar i{display:block;height:100%}
-.ytot{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;white-space:nowrap}
-.ychev{color:var(--muted);width:14px;height:14px;flex:none}
+/* Right-aligned and tabular, so every year's total lands in one column. */
+/* A fixed column for the amount, so the bar track beside it is the same length on every
+   row: sized by its content, a year with a shorter total let its bar run 33px further than
+   its neighbours and the bars stopped being comparable. */
+.ytot{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;white-space:nowrap;text-align:right;flex:none;min-width:11ch}
+.ychev{color:var(--dim);width:14px;height:14px;flex:none}
 
 .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
-.updnote{margin-left:auto;font-size:10px;color:var(--muted)}
+.updnote{margin-left:auto;font-size:10px;color:var(--dim)}
 
 /* download icon in the top-right corner of each chart */
 .over,.alloc{position:relative}
@@ -194,9 +296,23 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* An editor's top edge is the app's topbar wearing a back arrow: same height, same blur,
    same inset, so moving into one doesn't move the top of the app. */
 .ed-bar{position:sticky;top:0;z-index:20;padding:calc(10px + var(--edge-t)) 0 10px;
-  background:color-mix(in srgb,var(--ink) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  background:var(--chrome-page);
   border-bottom:1px solid var(--line)}
 .ed-bar-inner{display:flex;align-items:center;gap:12px;min-height:44px;max-width:var(--maxw);margin:0 auto;padding:0 var(--edge-r) 0 var(--edge-l)}
+/* The editor's bar carries the exit and the reassurance. The note goes when there is no room
+   for it; the button never does. */
+.ed-saved{margin-left:auto;font-size:11.5px;color:var(--dim);white-space:nowrap}
+/* The button carries the margin too: on a phone the note beside it is hidden, and with the
+   margin living only on the note, Done sat in the middle of the bar with 160px of empty
+   space to its right. */
+.ed-done{flex:none;margin-left:auto}
+/* `.ed-saved+.ed-done{margin-left:12px}` lived here and out-specified the auto margin above
+   — and a sibling selector still matches a sibling that display:none has hidden, so on both
+   phone widths "Done" sat beside the title with half the bar empty to its right. */
+/* Shortened, not removed: "Saved as you type" is the answer to "is a back chevron going to
+   throw this away", and 390px has room for one word. */
+@media(max-width:420px){.ed-saved{font-size:0}.ed-saved::after{content:attr(data-short);font-size:11.5px}}
+.ed-title{flex:1 1 auto}
 .ed-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
 /* The arrow alone. Its label lives in the title attribute — a word beside it repeated what the
    glyph already said, and on a phone it crowded out the name of the screen. Pulled into the
@@ -206,7 +322,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .ed-back:hover{background:var(--panel-2)}
 .ed-back .btn-icon{width:20px;height:20px}
 
-#edDelYear{color:var(--red);margin-left:auto}
+#edDelYear{color:var(--danger)}
 .ed-title{font-size:17px;color:var(--text);display:flex;align-items:center;gap:9px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* The year as the bar states it, and the button that offers to move it. */
 .ed-yearnow{font-weight:700;color:var(--signal)}
@@ -219,7 +335,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .yearopt{min-height:44px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel-2);color:var(--text);
   font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;cursor:pointer}
 .yearopt:hover:not(:disabled){border-color:var(--signal);color:var(--signal)}
-.yearopt.is-now{background:var(--signal);border-color:var(--signal);color:var(--signal-ink);font-weight:700}
+.yearopt.is-now{background:var(--signal-fill);border-color:var(--signal-fill);color:var(--signal-ink);font-weight:700}
 /* Shown rather than left out: a gap where a year should be is a puzzle, a greyed one is an
    answer — that year is already in the ledger. */
 .yearopt.is-taken,.yearopt:disabled{opacity:.36;cursor:not-allowed;text-decoration:line-through}
@@ -227,68 +343,85 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 /* The year is edited in place in the bar, so the field is sized to four digits. */
 .ed-year{width:5.5ch;min-height:34px;padding:4px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--text);font-size:16px;text-align:center}
 .ed-year:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
-#edYear{width:88px;font:inherit;font-size:17px;border:1px solid var(--line2);border-radius:3px;padding:7px 8px;background:var(--field);color:var(--amber)}
+#edYear{width:88px;font:inherit;font-size:17px;border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 8px;background:var(--panel);color:var(--signal)}
 .ed-wrap{max-width:var(--maxw);margin:0 auto;padding:18px var(--edge-r) calc(40px + var(--edge-b)) var(--edge-l)}
 .ed-total{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px}
-.ed-total .et-k{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
-.ed-total .et-v{font-variant-numeric:tabular-nums;font-size:28px;font-weight:600;color:var(--amber)}
+.ed-total .et-k{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.ed-total .et-v{font-variant-numeric:tabular-nums;font-size:28px;font-weight:600;color:var(--signal)}
 
 .cards{display:flex;flex-direction:column;gap:6px}
-.rcard{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:11px 13px;position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.rcard:hover{border-color:var(--line2)}
+.rcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rcard:hover{border-color:var(--line)}
 .rcard .dot{width:10px;height:10px;border-radius:1px;flex:none}
 .rcard .rname{flex:1;min-width:120px;font:inherit;font-size:15px;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);padding:3px 0}
-.rcard .rname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.rcard .rval{width:130px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text);min-height:40px}
-.rcard .rval:focus{outline:none;border-color:var(--amber)}
-.rcard select{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px;color:var(--text);min-height:40px}
-.rcard .rkind{font:inherit;font-size:12px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 6px;color:var(--amber);min-height:40px}
-.rcard .rsh{width:84px;font:inherit;font-size:15px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text);min-height:40px}
-.rcard .rtk{width:120px;font:inherit;font-size:14px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--green);min-height:40px;text-transform:uppercase}
-.rcard .rsh:focus,.rcard .rtk:focus{outline:none;border-color:var(--amber)}
-.rcard .rconv{font-size:11px;color:var(--green);min-width:80px;text-align:right}
-.rcard .rconv.liab{color:var(--red)}
+.rcard .rname:focus{outline:none;border-bottom:1px solid var(--signal)}
+.rcard .rval{width:130px;font:inherit;font-size:15px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--text);min-height:40px}
+.rcard .rval:focus{outline:none;border-color:var(--signal)}
+.rcard select{font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px;color:var(--text);min-height:40px}
+.rcard .rkind{font:inherit;font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 6px;color:var(--signal);min-height:40px}
+.rcard .rsh{width:84px;font:inherit;font-size:15px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--text);min-height:40px}
+.rcard .rtk{width:120px;font:inherit;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--accent);min-height:40px;text-transform:uppercase}
+.rcard .rsh:focus,.rcard .rtk:focus{outline:none;border-color:var(--signal)}
+.rcard .rconv{font-size:11px;color:var(--accent);min-width:80px;text-align:right}
+.rcard .rconv.liab{color:var(--danger)}
 .forecast{position:relative}
 /* One column on a phone, then as many as fit. Each field owns a full row rather than being
    squeezed three-across, which is what made these two panels the worst part of a small screen. */
 .fcrow{display:grid;grid-template-columns:1fr;gap:12px;margin:6px 0 16px}
 @media(min-width:620px){.fcrow{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}}
+
 .fcrow .fld{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--dim);min-width:0}
 .fcrow .fld>.cap{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fcrow .fld input,.fcrow .fld select{width:100%;min-height:44px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:var(--r);padding:11px 14px;font-size:16px}
 .fcrow .fld input{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
 .fcrow .fld input:focus,.fcrow .fld select:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
 .fcrow .fld select{appearance:none;-webkit-appearance:none;background-image:var(--chevron);background-repeat:no-repeat;background-position:right 11px center;background-size:15px;padding-right:34px;cursor:pointer}
-.fcrow .pct{position:relative;display:flex;align-items:center}
-.fcrow .pct input{flex:1;width:100%;padding-right:24px;-moz-appearance:textfield}
+.fcrow .pct{display:flex;align-items:center;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding-right:11px;min-height:44px;overflow:hidden}
+.fcrow .pct:focus-within{border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
+.fcrow .pct input{flex:1 1 auto;min-width:0;width:auto;border:0;background:transparent;
+  box-shadow:none;-moz-appearance:textfield}
+.fcrow .pct input:focus{outline:none;border:0;box-shadow:none}
 .fcrow .pct input::-webkit-outer-spin-button,.fcrow .pct input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.fcrow .pct i{position:absolute;right:10px;color:var(--muted);font-style:normal;font-size:12px;pointer-events:none}
+.fcrow .pct i{position:static;flex:none;margin-left:3px;color:var(--dim);font-style:normal;font-size:12px;pointer-events:none}
 .fcstats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
-.fcstat{flex:1 1 150px;min-width:140px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
-.fcstat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.fcstat .v{font-size:18px;font-variant-numeric:tabular-nums}
-.fcstat .v.ok{color:var(--green)}
-.fcstat .v.bad{color:var(--red)}
-.fcstat .v.dim{color:var(--muted);font-size:13px}
-.fcstat .sub{font-size:10.5px;color:var(--muted)}
-.fcstat.hero{border-color:var(--amber);background:linear-gradient(180deg,rgba(255,176,0,.08),transparent)}
-.fcstat.hero .v{font-size:20px}
-.fchint{color:var(--muted);font-size:13px;padding:8px 0}
+/* The same surface and elevation as every other card. On light, panel-2 left the tiles a
+   shade off the page while the cards beside them were white with a shadow. */
+.fcstat{flex:1 1 150px;min-width:140px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-card);padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.fcstat .k{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+/* A figure is mono and tabular wherever it appears. These tiles were the one place money was
+   set in the prose face, so a column of them did not line up with anything else on the page. */
+.fcstat .v{font-size:18px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+/* Green is money that grew. These cards also carry dates and statuses — "Apr 2041",
+   "~2043 · in 17 yrs" — which are facts, not gains, and in green they shouted over the
+   figure they belonged to. */
+.fcstat .v.ok{color:var(--text)}
+.fcstat .v.bad{color:var(--danger)}
+.fcstat .v.dim{color:var(--dim);font-size:13px}
+.fcstat .sub{font-size:10.5px;color:var(--dim)}
+/* The hero tile carries the same border and the same ground as its three siblings, so the
+   only thing marking it out was two extra points of type — which reads as a mistake rather
+   than as emphasis. It is one of four equal tiles. */
+.fcstat.hero{border-color:var(--line);background:var(--panel)}
+.fchint{color:var(--dim);font-size:13px;padding:8px 0}
+/* A paragraph that introduces the tiles below it, rather than one squeezed between them:
+   four pixels of air read as a collision at any size. */
+.fchint-lead{padding:0 0 16px}
 .rcard .rtkwrap{position:relative;display:inline-flex;align-items:center}
 .rcard .rtkwrap .rtk{padding-right:28px}
-.rcard .rinfo{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:17px;height:17px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--muted);font:italic 600 11px/1 Georgia,'Times New Roman',serif;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
-.rcard .rinfo:hover{color:var(--amber);border-color:var(--amber)}
+.rcard .rinfo{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:17px;height:17px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--dim);font:italic 600 11px/1 Georgia,'Times New Roman',serif;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.rcard .rinfo:hover{color:var(--signal);border-color:var(--signal)}
 .infomodal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:20px}
 .infomodal.hide{display:none}
-.infobox{position:relative;background:var(--panel);border:1px solid var(--line2);border-radius:12px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:22px 24px}
-.infoclose{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer;padding:2px 6px}
+.infobox{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-xl);max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:22px 24px}
+.infoclose{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--dim);font-size:24px;line-height:1;cursor:pointer;padding:2px 6px}
 /* ── what moved today ──
    The day's change, holding by holding. The headline figure it opens from is a button in all
    but appearance: it keeps its colour and weight, and says it can be pressed by underlining on
    hover rather than by growing a border it would wear all day. */
 .hero .day.is-tap{cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;transition:text-decoration-color .12s ease}
 .hero .day.is-tap:hover{text-decoration-color:currentColor}
-.hero .day.is-tap:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:3px}
+.hero .day.is-tap:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:var(--r-sm)}
 .daybox{max-width:480px}
 .daytotal{font-size:26px;font-weight:700;letter-spacing:-.01em;margin:2px 0 14px}
 .daylist{display:flex;flex-direction:column}
@@ -305,59 +438,120 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .daymoney.flat,.daypct.flat{color:var(--dim)}
 .dayfoot{margin-top:14px;font-size:11.5px;line-height:1.5;color:var(--dimmer)}
 .infoclose:hover{color:var(--text)}
-.infobox h3{color:var(--amber);font-size:15px;margin:0 0 12px}
-.infobox p{color:var(--muted);font-size:13px;line-height:1.6;margin:10px 0}
+.infobox h3{color:var(--signal);font-size:15px;margin:0 0 12px}
+.infobox p{color:var(--dim);font-size:13px;line-height:1.6;margin:10px 0}
 .infobox ul{list-style:none;padding:0;margin:10px 0;display:flex;flex-direction:column;gap:8px}
-.infobox li{color:var(--muted);font-size:12.5px;line-height:1.6}
+.infobox li{color:var(--dim);font-size:12.5px;line-height:1.6}
 .infobox b{color:var(--text);font-weight:600}
-.infobox code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11.5px;color:var(--green);text-transform:none}
-.infobox a{color:var(--amber);text-decoration:none}
+.infobox code{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-xs);padding:1px 5px;font-size:11.5px;color:var(--accent);text-transform:none}
+.infobox a{color:var(--signal);text-decoration:none}
 .infobox a:hover{text-decoration:underline}
-.fccheck{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:var(--text);cursor:pointer}
-.fccheck input{width:16px;height:16px;accent-color:var(--amber);cursor:pointer}
-.chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--amber) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
-.fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--muted)}
+/* One gap above and between them, and a label at the size of the labels around it. */
+.fccheck{display:flex;align-items:center;gap:11px;margin:0 0 6px;font-size:13.5px;color:var(--text);cursor:pointer;min-height:44px}
+/* A checked box and a thrown switch are painted surfaces, so they take the fill token
+   the buttons take. `--signal` is the text colour tuned for contrast on a page, and in the
+   light theme it is brown where every button is amber — two different 'actionable' colours
+   on one screen. */
+/* The forecast's and the retirement's inputs, folded away from the answer they produce.
+   Open on a desktop and the summary hidden there — the space exists, and a disclosure a
+   reader never has to use is just another line to read. Closed on a phone at boot, where
+   the two forms came to roughly 900px above and between the charts. */
+.fcset{border:0;margin:0 0 4px}
+.fcset>summary{list-style:none;cursor:pointer;display:none;align-items:center;gap:8px;
+  min-height:44px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.fcset>summary::-webkit-details-marker{display:none}
+.fcset>summary::after{content:"";width:7px;height:7px;border-right:1.5px solid currentColor;
+  border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-bottom:3px;transition:transform .15s}
+.fcset[open]>summary::after{transform:rotate(-135deg);margin-bottom:-2px}
+.fcset>summary:hover{color:var(--signal)}
+@media(max-width:899px){.fcset>summary{display:flex}}
+
+/* Drawn, not native: beside the product's own switch one section above, two 13px system
+   checkboxes with 12px labels read as a different application. */
+.fccheck input{appearance:none;-webkit-appearance:none;width:20px;height:20px;flex:none;cursor:pointer;
+  border:1.5px solid var(--line);border-radius:var(--r-xs);background:var(--panel);
+  display:inline-grid;place-content:center;transition:background .12s ease,border-color .12s ease}
+.fccheck input::before{content:"";width:10px;height:10px;transform:scale(0);transition:transform .12s ease;
+  box-shadow:inset 1em 1em var(--signal-ink);
+  clip-path:polygon(14% 44%,0 60%,40% 100%,100% 18%,84% 0,40% 68%)}
+.fccheck input:checked{background:var(--signal-fill);border-color:var(--signal-fill)}
+.fccheck input:checked::before{transform:scale(1)}
+.fccheck input:focus-visible{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
+/* A key has to be the colour of the line it keys: the chart series moved to --signal-lg
+   and the chips stayed on the body-text amber, so in the light theme the swatch was brown
+   beside an amber line. */
+.chip.fcdash{background-image:repeating-linear-gradient(90deg,var(--signal-lg) 0 4px,transparent 4px 7px);background-size:100% 2px;background-repeat:no-repeat;background-position:center;border-radius:0}
+.fcswitch{margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--dim)}
 .fcswitch input{position:absolute;opacity:0;pointer-events:none}
-.fcswitch .track{width:34px;height:18px;border-radius:10px;background:var(--line2);position:relative;transition:background .15s}
+.fcswitch em{font-style:normal}
+.fcswitch .track{width:34px;height:18px;border-radius:var(--r-lg);background:var(--line);position:relative;transition:background .15s}
 .fcswitch .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:left .15s}
-.fcswitch input:checked+.track{background:var(--amber)}
+.fcswitch input:checked+.track{background:var(--signal-fill)}
 .fcswitch input:checked+.track::after{left:18px;background:var(--ink)}
 .rcard.liabcard{border-left:2px solid rgba(255,77,109,.5)}
-.yliab{color:var(--red);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.rcard .rcat{font-size:12px;max-width:150px;color:var(--muted)}
-.rcard .rdel{background:none;border:none;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 4px}
-.rcard .rdel:hover{color:var(--red)}
+.yliab{color:var(--danger);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rcard .rcat{font-size:12px;max-width:150px;color:var(--dim)}
+.rcard .rdel{background:none;border:none;color:var(--dim);font-size:19px;line-height:1;cursor:pointer;padding:2px 4px}
+.rcard .rdel:hover{color:var(--danger)}
 
 /* asset groups in the year editor */
-.grp{border:1px solid var(--line2);border-radius:4px;margin-top:6px;background:var(--panel2)}
-.grphead{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--line)}
+/* The header's divider runs the full width of the card, so without clipping it is drawn
+   straight across the rounded bottom corners of a category that has nothing in it — a
+   hairline poking out from under the card. */
+/* The same surface the year list and the allocation legend are on. On the light theme a
+   panel-2 card is barely a shade off the page, so the category cards read as flat bands
+   beside the white cards above them. */
+.grp{border:1px solid var(--line);border-radius:var(--r-lg);margin-top:6px;background:var(--panel);box-shadow:var(--shadow-card);overflow:hidden}
+/* 16px, the inset every other list on this screen uses, so the category totals, the item
+   amounts, the income and total rows and the legend all end on one right edge. */
+.grphead{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}
+/* Nothing below it to divide from. */
+.grp.is-empty .grphead{border-bottom:0}
 .grphead .dot{width:10px;height:10px;border-radius:1px;flex:none}
-.grpname{flex:1;min-width:80px;font:inherit;font-size:14px;font-weight:600;letter-spacing:.04em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0}
-.grpname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.grpsub{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:var(--text);white-space:nowrap}
-.grpdel{background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
-.grpdel:hover{color:var(--red)}
-.grpcards{display:flex;flex-direction:column;gap:6px;padding:11px 13px}
+.grpname{flex:1;min-width:80px;font:inherit;font-size:14px;font-weight:600;letter-spacing:.04em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);padding:3px 0}
+.grpname:focus{outline:none;border-bottom:1px solid var(--signal)}
+/* A category's total is the parent of the rows beneath it and is set accordingly: the
+   children were the louder number, which read as though each expense outranked its group. */
+.grpsub{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:var(--text);white-space:nowrap}
+.grpdel{background:none;border:none;color:var(--dim);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
+.grpdel:hover{color:var(--danger)}
+.grpcards{display:flex;flex-direction:column;gap:6px;padding:11px 16px}
 .grpcards .rcard{background:var(--panel)}
 
 /* Last thing in the column, so it carries the room the fixed tab bar needs. */
 .foot{max-width:var(--maxw);margin:22px auto 0;padding:0 var(--edge-r) calc(88px + var(--edge-b)) var(--edge-l);
   color:var(--dim);font-size:12.5px;line-height:1.6}
+/* The paragraph used to start 16px left of every card and heading above it, and run the full
+   width of a 1440px window. It belongs on the same grid as the content, at a readable measure.
+   Written as `.foot>p` first, which matched nothing: the blurb is a <span>. */
+.foot>p,.foot>span{display:block;max-width:68ch}
+@media(min-width:900px){.foot{padding-left:32px;padding-right:32px;font-size:13px}}
 .foot a{color:var(--signal);text-decoration:underline}
-.footlinks{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px 10px}
+/* No separators at all. Typed between the links they were break opportunities and left a
+   dot at the end of a wrapped line; drawn as `a+a::before` they moved inside the next
+   anchor, so the dot wrapped with its link and took the underline and the link colour with
+   it — the same dangling dot, now underlined. Space is the separator. */
+.footlinks{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;margin-top:14px}
 /* standalone legal pages (privacy.html, terms.html) */
 .legal{max-width:760px;margin:0 auto;padding:48px 22px 90px}
-.legal .back{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);text-decoration:none;margin-bottom:26px}
+.legal .back{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal);text-decoration:none;margin-bottom:26px}
 .legal h1{font-size:clamp(28px,6vw,40px);font-weight:700;color:var(--text);letter-spacing:-.01em;margin-bottom:6px}
-.legal .updated{color:var(--muted);font-size:12px;margin-bottom:30px}
-.legal h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin:30px 0 10px}
-.legal p,.legal li{color:var(--text);font-size:14px;line-height:1.65;margin-bottom:10px}
+.legal .updated{color:var(--dim);font-size:12px;margin-bottom:30px}
+/* A heading is not smaller than the paragraph it heads, and amber is not three things at
+   once: these pages used it for headings, for inline emphasis and for links alike, with no
+   underline, so there was no way to tell which of four amber runs in a sentence could be
+   pressed. 14px across 760px is also about 110 characters a line, on the longest documents
+   on the site. */
+.legal{max-width:660px}
+.legal h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:34px 0 10px}
+.legal p,.legal li{color:var(--text);font-size:16px;line-height:1.7;margin-bottom:12px}
 .legal ul{padding-left:20px;margin-bottom:10px}
-.legal strong{color:var(--amber2)}
-.legal .note{border-left:2px solid var(--line2);padding-left:14px;color:var(--muted);font-size:12.5px;margin-top:30px}
-.legal a{color:var(--amber)}
+.legal strong{color:var(--text);font-weight:600}
+.legal a{text-decoration:underline;text-underline-offset:2px}
+.legal .note{border-left:2px solid var(--line);padding-left:14px;color:var(--dim);font-size:12.5px;margin-top:30px}
+.legal a{color:var(--signal)}
 
-.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--amber);color:var(--on-amber);font-size:12px;font-weight:600;padding:10px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:all .3s;z-index:60;max-width:90vw;text-align:center}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--signal-fill);color:var(--signal-ink);font-size:12px;font-weight:600;padding:10px 18px;border-radius:var(--r);opacity:0;pointer-events:none;transition:all .3s;z-index:60;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* On wide screens, sit Allocation beside Over time instead of stacking,
@@ -387,80 +581,83 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 /* SVG back button (replaces the text "←") */
 #edBack,#assetBack,#salaryBack,#profileBack{display:inline-flex;align-items:center;gap:7px}
-.prof-sync{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.04em;color:var(--muted);margin-bottom:20px}
+.prof-sync{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.04em;color:var(--dim);margin-bottom:20px}
 #profAcct{max-width:520px}
 
 
 /* read-only computed (long-term asset) rows inside the year editor — tap to edit */
-.rcard.auto{background:var(--panel2);border-style:dashed;cursor:pointer}
-.rcard.auto:hover{border-color:var(--amber)}
+.rcard.auto{background:var(--panel-2);border-style:dashed;cursor:pointer}
+.rcard.auto:hover{border-color:var(--signal)}
 .rcard.auto .rname.ro{flex:1;min-width:120px;font-size:15px;color:var(--text)}
-.autotag{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line2);border-radius:99px;padding:3px 9px;white-space:nowrap}
-.rcard.auto .rconv{color:var(--amber);font-weight:600;font-size:13px}
-.autoedit{width:14px;height:14px;color:var(--muted);flex:none}
-.rcard.auto:hover .autoedit{color:var(--amber)}
+.autotag{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 9px;white-space:nowrap}
+.rcard.auto .rconv{color:var(--signal);font-weight:600;font-size:13px}
+.autoedit{width:14px;height:14px;color:var(--dim);flex:none}
+.rcard.auto:hover .autoedit{color:var(--signal)}
 
 /* long-term assets editor */
-.edlede{color:var(--muted);font-size:12.5px;line-height:1.6;margin-bottom:18px;max-width:680px}
-.edlede strong{color:var(--amber2);font-weight:600}
-.emptyhint,.exhint{color:var(--muted);font-size:12.5px;line-height:1.6;border:1px dashed var(--line2);border-radius:4px;padding:16px;background:var(--panel)}
+.edlede{color:var(--dim);font-size:12.5px;line-height:1.6;margin-bottom:18px;max-width:680px}
+.edlede strong{color:var(--signal);font-weight:600}
+.emptyhint,.exhint{color:var(--dim);font-size:12.5px;line-height:1.6;border:1px dashed var(--line);border-radius:var(--r-lg);padding:16px;background:var(--panel)}
 .exhint{padding:10px 12px;border:none;background:none}
 /* nowrap undoes the wrap .rcard sets for its row form: in a column container, wrapping sizes the
    card to its widest child instead of to the screen, which pushed the whole editor off a phone. */
 .acard{flex-direction:column;align-items:stretch;gap:12px;flex-wrap:nowrap}
 .toggles{display:flex;flex-wrap:wrap;gap:10px 22px}
 .tgl{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text);cursor:pointer}
-.tgl input{width:17px;height:17px;accent-color:var(--amber);cursor:pointer}
+.tgl input{width:17px;height:17px;accent-color:var(--signal-fill);cursor:pointer}
 /* min-width:0 so a wide schedule scrolls inside its own box instead of stretching the column —
    a flex item's floor is its content, and a five-column money table is wider than a phone. */
-.loanbox{border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:13px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.loanbox{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel-2);padding:13px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .loanbox > *{min-width:0}
-.loanwarn{font-size:12px;line-height:1.5;color:var(--red);border-left:2px solid var(--red);padding-left:11px}
+.loanwarn{font-size:12px;line-height:1.5;color:var(--danger);border-left:2px solid var(--danger);padding-left:11px}
 .frow{display:flex;flex-wrap:wrap;gap:12px}
-.fld{display:flex;flex-direction:column;gap:5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex:1;min-width:130px}
-.fin{font:inherit;font-size:15px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--text);min-height:42px;width:100%}
-.fin:focus{outline:none;border-color:var(--amber)}
-.fld select{font:inherit;font-size:14px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:9px 10px;color:var(--text);min-height:42px;width:100%}
-.suffix{display:flex;align-items:center;gap:7px}.suffix i{font-style:normal;color:var(--muted);font-size:12px}
+/* A field label names the box under it. It is read once, at reading speed, so it is set as
+   prose — not as the 9.5px uppercase .14em signage it used to be, which both cost legibility
+   and outranked the section heading above it. */
+.fld{display:flex;flex-direction:column;gap:6px;font-size:13px;letter-spacing:0;text-transform:none;color:var(--dim);flex:1;min-width:130px}
+.fin{font:inherit;font-size:15px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 10px;color:var(--text);min-height:42px;width:100%}
+.fin:focus{outline:none;border-color:var(--signal)}
+.fld select{font:inherit;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 10px;color:var(--text);min-height:42px;width:100%}
+.suffix{display:flex;align-items:center;gap:7px}.suffix i{font-style:normal;color:var(--dim);font-size:12px}
 .vsum,.pstat{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .vsum{border-top:1px solid var(--line);padding-top:11px}
-.vsum .k,.pstat .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-.vval,.pstat .v{font-weight:600;font-size:15px;color:var(--amber)}
+.vsum .k,.pstat .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.vval,.pstat .v{font-weight:600;font-size:15px;color:var(--signal)}
 .pchead{display:flex;align-items:center;gap:10px}
-.psub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-top:4px;display:flex;align-items:center;gap:10px}
+.psub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--signal);margin-top:4px;display:flex;align-items:center;gap:10px}
 .exwrap{display:flex;flex-direction:column;gap:8px}
 .exrow{display:flex;gap:10px;align-items:center}
 .exrow .fin{flex:1}
 .pstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 22px;border-top:1px solid var(--line);padding-top:13px}
 .pstat{flex-direction:column;align-items:flex-start;gap:3px}
 .psched{border-top:1px solid var(--line);padding-top:6px}
-.psched summary{cursor:pointer;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 0}
-.psched summary:hover{color:var(--amber)}
-.schscroll{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:3px}
+.psched summary{cursor:pointer;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:6px 0}
+.psched summary:hover{color:var(--signal)}
+.schscroll{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:var(--r-lg)}
 .schtab{width:100%;border-collapse:collapse;font-size:11.5px}
-.schtab th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:600;text-align:right;padding:8px 10px;letter-spacing:.04em;white-space:nowrap}
+.schtab th{position:sticky;top:0;background:var(--panel-2);color:var(--dim);font-weight:600;text-align:right;padding:8px 10px;letter-spacing:.04em;white-space:nowrap}
 .schtab th:first-child{text-align:left}
 .schtab td{padding:7px 10px;text-align:right;border-top:1px solid var(--line);color:var(--text);white-space:nowrap}
-.schtab td:first-child{text-align:left;color:var(--muted)}
-.schtab tbody tr:hover{background:var(--panel2)}
-.schtab tr.exline td{background:rgba(255,176,0,.08);color:var(--amber);border-top:1px solid var(--line2)}
-.schtab tr.exline td:nth-child(2){color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-size:10px}
+.schtab td:first-child{text-align:left;color:var(--dim)}
+.schtab tbody tr:hover{background:var(--panel-2)}
+.schtab tr.exline td{background:rgba(255,176,0,.08);color:var(--signal);border-top:1px solid var(--line)}
+.schtab tr.exline td:nth-child(2){color:var(--dim);letter-spacing:.04em;text-transform:uppercase;font-size:10px}
 .schtab tr.exline:hover td{background:rgba(255,176,0,.12)}
-.schtab tr.est td{color:var(--muted);font-style:italic}
-.schtab tr.fxdiv td{background:var(--panel);color:var(--amber2);font-size:10px;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:9px;border-top:1px solid var(--line2)}
+.schtab tr.est td{color:var(--dim);font-style:italic}
+.schtab tr.fxdiv td{background:var(--panel);color:var(--signal);font-size:10px;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:9px;border-top:1px solid var(--line)}
 /* A year's totals, leading the months that make them up. Heavier than a month on purpose: this is
    the row somebody scrolls to find, and the one figure it exists for — what came off the loan —
    is the only coloured number in the table. */
-.schtab tr.yrow td{background:var(--panel2);border-top:1px solid var(--line2);font-weight:600;color:var(--text)}
+.schtab tr.yrow td{background:var(--panel-2);border-top:1px solid var(--line);font-weight:600;color:var(--text)}
 .schtab tr.yrow td:first-child{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--signal);letter-spacing:.02em}
 .schtab tr.yrow td.off{color:var(--accent)}
 .schtab tr.yrow td.sub{font-weight:400;color:var(--dimmer);font-size:10.5px}
 .schtab tr.yrow.est td{font-style:italic;opacity:.85}
-.schtab tr.yrow:hover td{background:var(--panel2)}
+.schtab tr.yrow:hover td{background:var(--panel-2)}
 /* The whole loan, one row per year. Taller rows than the monthly table and no scroll cap: this
    one is meant to be read down, not searched. */
 .yrsched{border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
-.yrsched-h{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:2px 0 6px}
+.yrsched-h{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:2px 0 6px}
 .yrsched .schscroll{max-height:none}
 .schtab.yrtab td{padding:9px 10px;font-size:12px}
 .schtab.yrtab td:first-child{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--text)}
@@ -468,60 +665,127 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 .schtab.yrtab td.dim{color:var(--dim)}
 .schtab.yrtab tr.now td{background:rgba(255,176,0,.07)}
 .schtab.yrtab tr.now td:first-child{color:var(--signal)}
-.pstat .v.hilite{color:var(--amber2)}
+.pstat .v.hilite{color:var(--signal)}
 .pstat .v.off{color:var(--accent)}
 
 /* salary history page — one side-by-side table (months as rows, people as column groups) */
 #salaryChart{display:block}
 .chartwrap{position:relative;display:inline-block}
 .saldot{cursor:pointer}
-.salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--amber);border-radius:4px;padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
-.saltable-scroll{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:4px;margin-bottom:10px}
+.salflag{position:absolute;z-index:5;pointer-events:none;max-width:230px;background:var(--panel);border:1px solid var(--signal);border-radius:var(--r-sm);padding:6px 9px;font-size:11.5px;line-height:1.35;color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
+/* `clip` is right under 899px, where the table is fixed-layout and fits by construction.
+   Above it the table sizes itself from its content — four people need about 1,236px in a
+   1,036px column — and clipped, the last person's columns were unreachable. */
+.saltable-scroll{overflow:clip;border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:10px;background:var(--panel);box-shadow:var(--shadow-card)}
+/* After the rule it overrides, not before it. `clip` is right under 900px, where the table
+   is fixed-layout and fits by construction; above it the table sizes itself from content —
+   four people need about 1,236px in a 1,036px column — and clipped, the last person's
+   money could not be reached at all. */
+@media(min-width:900px){.saltable-scroll{overflow-x:auto;overflow-y:clip}}
 .saltab{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
 .saltab th,.saltab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
-.saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel2);z-index:2}
+.saltab .salh1 th,.saltab .salh2 th{position:sticky;background:var(--panel-2);z-index:2}
+/* The editor has its own sticky bar at the top of it, so a header that sticks at 0 sticks
+   behind that bar and is never seen again after the first screen — which on a table of nine
+   numeric columns means nine columns nobody can name. */
 .saltab .salh1 th{top:0}
-.saltab .salh2 th{top:41px;color:var(--muted);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;text-align:right;border-bottom:1px solid var(--line2)}
-.saltab .salh2 th:first-child{text-align:left}
-.salp-h{text-align:left;border-left:2px solid var(--line2)!important;border-bottom:1px solid var(--line2)!important;background:var(--panel2);padding:9px 12px}
+#salaryEditor .saltab .salh1 th{top:calc(64px + var(--edge-t))}
+#salaryEditor .saltab .salh2 th{top:calc(113px + var(--edge-t))}
+/* Below 900px there is no person-name row above them, so the headings are the top row. */
+@media(max-width:899px){#salaryEditor .saltab .salh2 th{top:calc(64px + var(--edge-t))}}
+/* A heading sits over the control it names. Right-aligned against full-width inputs, each
+   one hugged the right edge of its cell while its control filled the cell — so "EVENT" was
+   130px to the right of where the event field's text starts, and at 320px "CCY" floated over
+   the gap between two columns. 10.5px rather than 9.5px: these are the only words telling a
+   reader what the fields are. */
+.saltab .salh2 th{top:41px;color:var(--dim);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;text-align:left;border-bottom:1px solid var(--line)}
+/* The amounts are right-aligned, so their heading is too: left-aligned it sat 170px from
+   the nearest figure it names. */
+.saltab .salh2 th.salnet-h{text-align:right}
+.saltab .salh2 th.salm-h{text-align:left}
+.salp-h{text-align:left;border-left:2px solid var(--line)!important;border-bottom:1px solid var(--line)!important;background:var(--panel-2);padding:9px 12px}
 .salp-hin{display:flex;align-items:center;gap:8px}
-.salname{flex:1;min-width:90px;font:inherit;font-size:15px;font-weight:700;letter-spacing:.01em;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--amber);padding:3px 0;font-family:var(--mono)}
-.salname::placeholder{color:var(--muted);font-weight:400}
-.salname:focus{outline:none;border-bottom:1px solid var(--amber)}
-.salccy{font:inherit;font-size:11px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:4px 6px;color:var(--text)}
-.saltab th.salm-h,.saltab td.salm{position:sticky;left:0;background:var(--panel);z-index:1;border-right:1px solid var(--line2)}
-.saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel2)}
-.saltab td.salm{color:var(--muted);font-size:12px}
-.saltab tr.saly td{background:var(--row-alt);color:var(--amber);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;text-align:right;font-variant-numeric:tabular-nums}
-.saltab tr.saly td:first-child{text-align:left;position:sticky;left:0;z-index:1;border-right:1px solid var(--line2)}
-.saltab .salgsep{border-left:2px solid var(--line2)}
-.saltab td.salm{min-width:90px}
-.saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--text)}
-.saltab td .salev{width:100%;min-width:90px;font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 9px;color:var(--muted)}
-.saltab td .salf:focus,.saltab td .salev:focus{outline:none;border-color:var(--amber)}
+/* A field that looks like a field: the name carried no border at all, so nothing said it
+   could be typed in, and it was the one monospace string in a sans header. */
+.salname{flex:1;min-width:90px;font:inherit;font-size:15px;font-weight:700;letter-spacing:.01em;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--text);padding:7px 10px}
+.salname::placeholder{color:var(--dim);font-weight:400}
+.salname:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
+.salccy{font:inherit;font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 6px;color:var(--text)}
+.saltab th.salm-h,.saltab .salm{background:transparent}
+.saltab .salh1 th.salm-h,.saltab .salh2 th.salm-h{z-index:3;background:var(--panel-2)}
+.saltab .salm{color:var(--dim);font-size:12px;font-weight:400;text-align:left}
+/* Mono like the figures beneath it, and right-aligned to the same inset, so the column has
+   one right edge and one typeface rather than two of each. */
+.saltab tr.saly td{background:var(--panel-2);color:var(--text);font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:none;text-align:right;font-variant-numeric:tabular-nums}
+.saltab tr.saly td.num{padding-right:19px}
+/* The words beside the year's figure, quiet enough not to compete with it. */
+/* Said once, beside the year it belongs to, rather than once per person per year. */
+.saltab tr.saly .salytot-lbl{display:inline;margin-left:10px;font-style:normal;font-weight:400;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+/* No rule after the label: it was drawn on the year rows only, so a vertical hairline
+   appeared and disappeared down the table depending on which kind of row you were on. The
+   column separators are the table's own. */
+.saltab tr.saly td:first-child{text-align:left;position:sticky;left:0;z-index:1}
+/* The chevron sat on the text baseline, which made the year row's line box two pixels
+   taller than the figures' and lifted the label off their baseline. */
+.salychev{vertical-align:middle}
+/* Between people, not between fields: at --line-soft this was invisible on dark, so three
+   people's columns ran together with nothing marking where one ended. */
+.saltab .salgsep{border-left:1px solid var(--line)}
+.saltab tr>.salgsep:nth-child(2){border-left:0}
+.saltab .salm{min-width:90px}
+/* A month with nothing in it reads as a month with nothing in it, not as a stored zero. */
+.saltab td .salf.is-empty{border-style:dashed;border-color:var(--dimmer);background:transparent}
+/* The prompt belongs to the field you are in, not to a hundred and fifty you are not: the
+   same sentence repeated down every note column is the loudest text on the table. */
+.saltab td .salev::placeholder{color:transparent}
+.saltab td .salev:focus::placeholder{color:var(--dim)}
+.saltab td .salf{width:100%;min-width:80px;font:inherit;font-size:14px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--text)}
+.saltab td .salev{width:100%;min-width:90px;font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 9px;color:var(--dim)}
+.saltab td .salf:focus,.saltab td .salev:focus{outline:none;border-color:var(--signal)}
+/* Quiet until you touch it — declared after the rules that paint the boxes, because written
+   before them it did nothing and the table stayed a grid of 900 outlined rectangles with the
+   money inside them as the quietest thing on the screen. */
+.saltab td .salf,.saltab td .salev{background:transparent;border-color:transparent}
+.saltab td .salf:hover,.saltab td .salev:hover{border-color:var(--line)}
+.saltab td .salf:focus,.saltab td .salev:focus{background:var(--panel-2);border-color:var(--signal)}
+.saltab td .salf.is-empty{border-style:dashed;border-color:var(--dimmer);background:transparent}
 .salx-h{width:34px}
 .saltab td.salxc{text-align:center}
-.salpick{font:inherit;font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:7px 9px;color:var(--text);min-height:38px}
-.salpick:focus{outline:none;border-color:var(--amber)}
+.salpick{font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px;color:var(--text);min-height:44px}
+.salpick:focus{outline:none;border-color:var(--signal)}
 .salctrls{align-items:center}
-.salrlbl{font-size:11px;letter-spacing:.04em;color:var(--muted)}
-.salmccy{width:100%;min-width:72px;font:inherit;font-size:12px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 24px 8px 8px;color:var(--muted);min-height:38px}
-.salmccy:focus{outline:none;border-color:var(--amber)}
+@media(max-width:619px){
+  /* "Add months from [date] to [date] [Add range]" wrapped after the word "to", leaving it
+     hanging at the end of a line. Below this width it is a labelled block: two full-width
+     pickers and a full-width button. */
+  .salctrls{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;align-items:end;margin-top:22px}
+  .salctrls .salrlbl{grid-column:1 / -1;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+  .salctrls .salpick{grid-column:1 / -1;width:100%;min-width:0}
+  .salctrls .btn{grid-column:1 / -1;justify-content:center}
+  /* The second label ("to") sits between the two pickers rather than above them. */
+  .salctrls .salrlbl:nth-of-type(2){grid-column:1 / -1;margin-top:2px}
+}
+.salrlbl{font-size:11px;letter-spacing:.04em;color:var(--dim)}
+.salmccy{width:100%;min-width:72px;font:inherit;font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 24px 8px 8px;color:var(--dim);min-height:44px}
+.salmccy:focus{outline:none;border-color:var(--signal)}
 /* trash-style delete button (replaces the bare ×) */
-.delbtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:5px}
-.delbtn:hover{color:var(--red);background:rgba(255,77,109,.12)}
+.delbtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;background:none;border:none;color:var(--dim);cursor:pointer;border-radius:var(--r-sm)}
+.delbtn:hover{color:var(--danger);background:rgba(255,77,109,.12)}
 .delbtn svg{width:15px;height:15px}
 /* read-only salary table (Salary tab) */
 .saltab.rotab th,.saltab.rotab td{text-align:right;padding:8px 14px;white-space:nowrap}
-.saltab.rotab th.salm-h,.saltab.rotab td.salm{text-align:left}
-.saltab.rotab thead th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.04em}
+.saltab.rotab th.salm-h,.saltab.rotab .salm{text-align:left}
+.saltab.rotab thead th{position:sticky;top:0;z-index:3;background:var(--panel);box-shadow:inset 0 -1px 0 var(--line);color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.04em;
+  box-shadow:0 1px 0 var(--line)}
+/* Below the topbar on a phone, which is the thing it would otherwise hide behind. */
+@media(max-width:899px){.saltab.rotab thead th{top:calc(60px + var(--edge-t))}}
 .saltab.rotab tbody td{font-size:13.5px;font-variant-numeric:tabular-nums}
-.evtag{display:inline-block;margin-right:8px;font-size:9.5px;letter-spacing:.03em;color:var(--amber2);border:1px solid var(--line2);border-radius:99px;padding:2px 8px;vertical-align:middle}
-.salimport{margin-top:16px;border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:0 13px}
-.salimport summary{cursor:pointer;padding:12px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
+.evtag{appearance:none;-webkit-appearance:none;background:transparent;font:inherit;display:inline-block;margin-right:8px;font-size:9.5px;letter-spacing:.03em;color:var(--dim);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px 8px;vertical-align:middle}
+.salimport{margin-top:16px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel-2);padding:0 13px}
+.salimport summary{cursor:pointer;padding:12px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal)}
 .salimport[open]{padding-bottom:13px}
-#salImportText{width:100%;min-height:120px;font-family:var(--mono);font-size:13px;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:10px;color:var(--text);white-space:pre;overflow:auto}
-#salImportText:focus{outline:none;border-color:var(--amber)}
+#salImportText{width:100%;min-height:120px;font-family:var(--mono);font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px;color:var(--text);white-space:pre;overflow:auto}
+#salImportText:focus{outline:none;border-color:var(--signal)}
 
 /* Custom dropdown chevron — replaces the native arrow and its cramped padding */
 .ccypick select,#ccySel,.rcard select,.rcard .rkind,.fld select,.salccy,.salmccy,.bud-exp select{
@@ -530,6 +794,111 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
   background-repeat:no-repeat;background-position:right 9px center;background-size:11px;
   padding-right:28px;
 }
+
+
+/* ───────── the salary editor on a phone: a list of months, not a table ─────────
+ * Five columns at 320px gave the amount, the currency and the note 43px each, which is not
+ * enough to read a salary, let alone type one. Each month is a card instead: who and when at
+ * the top, the figure and its currency on one line, the note under them. */
+.smon-head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+.smon-head .delbtn{opacity:.75}
+.smon-head .salname{flex:1 1 auto;min-width:0;font:inherit;font-size:17px;font-weight:700;letter-spacing:-.01em;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--text);padding:9px 12px}
+.smon-head .salname:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
+/* Removing a person takes their whole history; removing a month takes one row. They were
+   the same grey bin, six pixels out of line with each other. */
+.smon-head .delbtn{flex:none;width:44px;height:44px;color:var(--danger);
+  border:1px solid color-mix(in srgb, var(--danger) 35%, var(--line));border-radius:var(--r-sm);
+  display:inline-flex;align-items:center;justify-content:center}
+.smon-head .delbtn:hover{background:color-mix(in srgb, var(--danger) 12%, transparent)}
+
+.smons{display:flex;flex-direction:column;gap:10px}
+/* What a person with nothing in the ledger sees instead of thirteen empty years. */
+.smon-blank{background:var(--panel);border:1px dashed var(--line);border-radius:var(--r-lg);padding:20px 16px;text-align:center}
+.smon-blank p{margin:0 0 14px;font-size:14px;line-height:1.5;color:var(--dim)}
+/* Adding next month belongs beside the months, at the end you add to, not eleven screens
+   below twelve years of rows. */
+.smon-top{display:flex;gap:8px;margin:0 0 14px}
+.smon-addper{flex:none}
+/* On a desktop the button is a button, not a banner: full width it was a 1,037px amber bar
+   over a table of figures. */
+@media(min-width:620px){.smon-top{margin:0 0 12px}.smon-top .smon-next{flex:0 0 auto}}
+.smon-next{flex:1 1 auto;justify-content:center}
+/* Whose ledger this is stays on screen while you scroll through it. */
+/* The name field is a control you touch once; pinning it spent 60px of every screen on the
+   two rarest actions in the editor, one of them destructive and under the thumb. What stays
+   is the switch, which is the thing that answers "whose money is this". */
+.smon-head{padding:6px 0 10px}
+/* Two quiet words where a repeated name and a delete bin used to be: with a switch above
+   it, the name field printed the same word ninety pixels below the tab that already said
+   it, and parked a destructive control under the thumb. */
+.smon-head.is-compact{display:flex;gap:18px;justify-content:flex-end;padding:0 2px 12px}
+.smon-act{background:none;border:0;padding:6px 2px;min-height:44px;font:inherit;font-size:13px;color:var(--dim);cursor:pointer}
+.smon-act:hover{color:var(--text)}
+.smon-act.is-danger{color:var(--danger);opacity:.85}
+.smon-act.is-danger:hover{opacity:1}
+.salwho{position:sticky;top:calc(64px + var(--edge-t));z-index:5;background:var(--ink);padding:10px 0 8px;margin-bottom:12px}
+.salwho::after{content:"";position:absolute;left:0;right:0;top:100%;height:10px;
+  background:linear-gradient(var(--ink),transparent);pointer-events:none}
+/* A phone on its side is 420px tall: the bar plus a pinned switch were taking 28% of it and
+   slicing the column headings in half. At that height the switch scrolls away with the rest. */
+@media(max-height:560px){.salwho{position:static}.salwho::after{display:none}}
+
+/* The year's own line, and the handle that folds it. A person with twelve years of months
+   is 150 cards; a new person is 150 empty ones. Folded behind their years, with the newest
+   open, the screen is a list of years you can open rather than a scroll nobody finishes. */
+.smy{display:flex;align-items:center;gap:10px;width:100%;text-align:left;min-height:52px;
+  padding:12px 14px;margin:14px 0 8px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:var(--r);color:var(--text);font:inherit;cursor:pointer}
+.smy:first-child{margin-top:0}
+.smy:hover{border-color:var(--dimmer)}
+.smy:active{transform:translateY(1px)}
+.smy .salychev{width:13px;height:13px;flex:none;color:var(--dim);transition:transform .15s ease}
+.smy.is-open .salychev{transform:rotate(90deg)}
+.smy:focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-radius:var(--r-sm)}
+.smy-y{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--text);flex:none}
+/* "12 of 12 filled" and "Total €60,644" wrapped at 320px, so each row was a different
+   height; in German they are longer again. The count gives way first, the total never. */
+.smy-n{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.smy-t{flex:none;white-space:nowrap}
+/* How much of the year is actually filled in — the thing you open a year to find out. */
+.smy-n{font-size:11.5px;color:var(--dimmer)}
+/* The one fact in this line worth an accent: a year still missing months. */
+.smy-n.is-part{color:var(--signal)}
+.smy-n.is-part{color:var(--signal)}
+.smy-t{margin-left:auto;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;color:var(--text)}
+.smon.is-folded{display:none}
+
+.smon{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-card);padding:10px 12px 12px}
+/* A month nobody has filled in is quieter than one that carries a figure, and costs a third
+   of the height: no note row, no captions, just the month and an empty field. */
+.smon.is-empty{background:transparent;box-shadow:none;border-style:dashed;border-color:var(--dimmer)}
+.smon-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.smon-m{flex:1 1 auto;min-width:0;font-size:13px;font-weight:600;color:var(--dim);letter-spacing:.01em}
+.smon-tag{flex:none;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dimmer);
+  border:1px solid var(--line);border-radius:var(--r-pill);padding:2px 8px}
+.smon-h .delbtn{flex:none;width:44px;height:44px;margin:-6px -10px -6px 0;display:inline-flex;align-items:center;justify-content:center}
+
+.smon-row{display:flex;gap:8px}
+/* The figure is the thing a reader scans for, so it is the largest thing in the card. */
+.smon .salf{flex:1 1 auto;min-width:0;width:auto;max-width:none;min-height:48px;
+  font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:19px;font-weight:600;text-align:right;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;color:var(--text)}
+.smon .salmccy{flex:0 0 88px;min-width:0;max-width:none;min-height:48px;font:inherit;font-size:14px;
+  background-color:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);padding:10px 26px 10px 10px;color:var(--dim);
+  appearance:none;-webkit-appearance:none;background-image:var(--chevron);background-repeat:no-repeat;
+  background-position:right 7px center;background-size:14px}
+/* The note is a line of prose under the figure, and an empty one keeps out of the way until
+   it is tapped. */
+.smon .salev{width:100%;min-width:0;max-width:none;min-height:40px;margin-top:8px;font:inherit;font-size:14px;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;color:var(--text)}
+/* Asking for a note costs one small word, not a dashed box under every month of every year. */
+.smon-addnote{margin-top:8px;padding:4px 0;background:none;border:0;color:var(--dim);
+  font:inherit;font-size:12.5px;cursor:pointer;align-self:flex-start}
+.smon-addnote:hover{color:var(--signal)}
+.smon.is-empty .smon-addnote{display:none}
+.smon .salf:focus,.smon .salev:focus,.smon .salmccy:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
 
 /* ───────── motion: entrance + chart draw-on (subtle, gated by .anim / reduced-motion) ───────── */
 @keyframes edIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -555,7 +924,7 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 /* ───────── design polish: recompute flash, hover-brighten, edge-fade ───────── */
 @keyframes flashUpd{from{background:rgba(255,176,0,.30)}to{background:transparent}}
-.flashed{animation:flashUpd .6s ease;border-radius:3px}
+.flashed{animation:flashUpd .6s ease;border-radius:var(--r-sm)}
 
 /* lift the hovered bar / donut slice slightly */
 #histChart rect,#donut path{transition:filter .12s ease}
@@ -571,11 +940,11 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 
 /* sync dot: pulse while saving to the server */
 @keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.35}}
-.syncdot.sync{background:var(--amber);animation:syncPulse 1s ease-in-out infinite}
+.syncdot.sync{background:var(--signal);animation:syncPulse 1s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){.syncdot.sync{animation:none!important}}
 
 /* full-width note inside an entry card (e.g. no historical price for a past year) */
-.rcard .rhint{flex-basis:100%;width:100%;font-size:10.5px;color:var(--amber2);border-top:1px dashed var(--line2);padding-top:7px;margin-top:1px}
+.rcard .rhint{flex-basis:100%;width:100%;font-size:10.5px;color:var(--signal);border-top:1px dashed var(--line);padding-top:7px;margin-top:1px}
 
 /* PWA auto-update overlay (shown briefly while a new version takes over and reloads) */
 .updating{position:fixed;inset:0;background:var(--ink);display:grid;place-items:center;align-content:center;gap:18px;z-index:9999}
@@ -639,7 +1008,6 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 }
 
 
-}
 /* Reduced motion: the chart is drawn in full and holds still. It still says the app is busy;
    it just stops filling. */
 /* Reduced motion: the chart is drawn in full and holds still. It still says the app is busy;
@@ -647,67 +1015,101 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 @media(prefers-reduced-motion:reduce){.upd-bar{animation:none;transform:none}}
 
 /* active state for the theme toggle buttons */
-.btn.on{background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
+.btn.on{background:var(--signal-fill);color:var(--signal-ink);border-color:var(--signal-fill)}
 
 /* net-worth year tooltip (reuses .salflag box) */
-.salflag .tiph{font-weight:600;color:var(--amber);margin-bottom:4px}
+.salflag .tiph{font-weight:600;color:var(--signal);margin-bottom:4px}
 .salflag .tipr{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .salflag .tipr .chip{width:8px;height:8px;border-radius:2px;flex:none}
 .salflag .tipr .tipn{flex:1;overflow:hidden;text-overflow:ellipsis}
 .salflag .tipr .tipv{margin-left:10px;font-variant-numeric:tabular-nums}
-.salflag .tipnet{margin-top:5px;padding-top:5px;border-top:1px solid var(--line2)}
+.salflag .tipnet{margin-top:5px;padding-top:5px;border-top:1px solid var(--line)}
 
 /* "last synced" line in profile */
-.synced{font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:.02em}
+.synced{font-size:11px;color:var(--dim);margin-top:8px;letter-spacing:.02em}
 
 /* year-over-year change line in the net-worth tooltip */
 .salflag .tipyoy{margin-top:3px;font-size:11px;letter-spacing:.02em}
-.salflag .tipyoy.up{color:var(--green)}
-.salflag .tipyoy.down{color:var(--red)}
+.salflag .tipyoy.up{color:var(--accent)}
+.salflag .tipyoy.down{color:var(--danger)}
 
 /* demo/tour banner (shown only in the no-account demo) */
-.demobar{position:relative;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--panel2);border-bottom:1px solid var(--amber);color:var(--text);padding:8px 16px;font-size:12.5px;letter-spacing:.02em}
+/* One row, never two. It used to wrap, which on a phone cost 160px — a fifth of the screen —
+   before the reader reached the number they came for. The sentence truncates; the buttons
+   never do. */
+/* The bar is as tall as the button plus air. At 44px for both, a 44px button filled the
+   bar edge to edge and read as a tab hanging off the top of the screen. */
+.demobar{position:relative;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap;min-height:56px;background:var(--panel-2);border-bottom:1px solid var(--line);color:var(--dim);padding:6px var(--edge-r) 6px var(--edge-l);font-size:12.5px;letter-spacing:.02em}
+.demobar>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.demobar .demobtns{flex:none}
 .demobar .demobtns{display:flex;gap:8px;align-items:center}
-.demobar .btn{min-height:32px;padding:6px 12px;font-size:12.5px}
-.demolink{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
+/* The first and only button a stranger meets, so it is not the one control in the product
+   that falls short of a thumb. */
+.demobar .btn{min-height:44px;padding:9px 14px;font-size:12.5px}
+.demolink{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;background:none;border:none;color:var(--dim);cursor:pointer;font:inherit;font-size:13px;text-decoration:underline}
 .demoswitch{margin-top:4px}
 
 /* ---- Budget tab ---- */
-.bud-card{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:22px 16px;margin:8px 0 18px}
-.bud-card .k{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
-.bud-card .v{font-size:clamp(30px,8vw,44px);font-weight:700;color:var(--green);font-family:var(--mono);line-height:1}
-.bud-card.neg .v{color:var(--red)}
-.bud-card .sub{font-size:12px;color:var(--muted)}
+/* Budget's headline is the same block Net worth and Salary use: a micro-label, the figure,
+   one line under it, all ranged left. It used to be a third shape — centred inside its own
+   card, in green at about two-thirds the size — so the three tabs opened three different ways.
+   Green is money that grew, and what is left over at the end of a month is exactly that, so
+   the figure keeps it; overspending turns it red. */
+.bud-card{padding:22px 0 24px;border-bottom:1px solid var(--line)}
+.bud-card .k{font-variation-settings:"wdth" 88;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);display:block}
+/* Amber, like the other two heroes. The rule is that amber marks the headline figure you
+   came to the screen for, and on this screen that is what is left at the end of the month —
+   green belongs to the savings rate underneath it, which is the thing that grew. Overspending
+   still turns the figure red. */
+.bud-card .v{display:block;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(38px,9vw,68px);font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:8px;color:var(--signal-lg)}
+.bud-card.neg .v{color:var(--danger)}
+.bud-card .sub b{color:var(--accent)}
+.bud-card .sub{display:block;margin-top:8px;font-size:14px;color:var(--dim)}
 .bud-card .sub b{color:var(--text);font-weight:600}
 .bud-rows{margin:0 auto}
-.bud-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
+.bud-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
 .bud-row.indent{padding-left:14px}
-.bud-row.total{border-bottom:none;border-top:1px solid var(--line2);font-weight:600}
+.bud-row.total{border-bottom:none;border-top:1px solid var(--line);font-weight:600;margin-top:16px}
 .bud-lbl{color:var(--text);font-size:14px}
-.bud-lbl .hint{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px}
+.bud-lbl .hint{display:block;color:var(--dim);font-size:11px;font-weight:400;margin-top:2px}
 .bud-val{font-family:var(--mono);font-size:15px;color:var(--text);white-space:nowrap}
-.bud-input{width:140px;text-align:right;background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px}
-.bud-input:focus{outline:none;border-color:var(--amber)}
-.bud-exp-head{margin:18px 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.bud-input{min-width:16ch;width:140px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px}
+.bud-input:focus{outline:none;border-color:var(--signal)}
+.bud-exp-head{margin:24px 0 10px;font-size:18px;font-weight:600;letter-spacing:-.01em;text-transform:none;color:var(--text)}
+@media(min-width:900px){.bud-exp-head{font-size:21px}}
+/* The explanation is prose under the title, not more of the title. */
+.bud-exp-head .hint{display:block;margin-top:4px;font-size:13px;font-weight:400;letter-spacing:0;color:var(--dim);max-width:68ch}
 .bud-exp{display:grid;grid-template-columns:1fr 150px 130px 36px;gap:10px;align-items:center;padding:5px 0}
-.bud-exp input{background:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0}
+.bud-exp input{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-family:var(--sans);font-size:14px;min-width:0}
+.bud-exp input.bud-exp-amt{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
 .bud-exp .bud-exp-amt{text-align:right;font-family:var(--mono)}
-.bud-exp .bud-exp-cat{color:var(--muted)}
-#budgetTip .tippct{color:var(--muted);font-weight:400}
+.bud-exp .bud-exp-cat{color:var(--dim)}
+#budgetTip .tippct{color:var(--dim);font-weight:400}
 @media(max-width:520px){.bud-exp{grid-template-columns:1fr 96px 34px}.bud-exp .bud-exp-cat{grid-column:1 / -1;order:5}}
-.bud-exp input:focus{outline:none;border-color:var(--amber)}
-.bud-exp-del{background:none;border:1px solid var(--line2);border-radius:3px;color:var(--muted);cursor:pointer;height:36px}
-.bud-exp-del:hover{color:var(--red);border-color:var(--red)}
+.bud-exp input:focus{outline:none;border-color:var(--signal)}
+.bud-exp-del{background:none;border:1px solid var(--line);border-radius:var(--r-sm);color:var(--dim);cursor:pointer;height:36px}
+.bud-exp-del:hover{color:var(--danger);border-color:var(--danger)}
 .bud-chart{margin:10px 0 16px}
 .bud-chart-main{display:flex;flex-direction:column;align-items:center;gap:14px}
-.bud-chart .legend{width:100%;max-width:340px}
+.bud-chart .legend{width:100%}
+@media(min-width:620px){.bud-chart .legend{max-width:340px}}
 @media(min-width:640px){
   .bud-chart-main{flex-direction:row;justify-content:center;align-items:center;gap:30px}
   .bud-chart .legend{width:auto;min-width:230px;max-width:none}
 }
+/* On a wide screen the pair is a column of the page, not a centred island: the donut on the
+   left, the legend taking the rest of the width, both landing on the same two edges as every
+   card above and below them. Centred, they floated with ~250px of nothing on either side and
+   aligned with nothing. (Written after the rules above, because it has to outrank them —
+   earlier in the file at equal strength it never applied.) */
+@media(min-width:900px){
+  .bud-chart-main{display:grid;grid-template-columns:300px minmax(0,1fr);gap:48px;align-items:center;justify-content:start}
+  .bud-chart .legend{width:auto;min-width:0;max-width:none}
+  .bud-chart-main .bud-chartwrap{width:300px}
+}
 .bud-ovr{display:flex;align-items:center;gap:8px}
-.bud-reset{background:var(--field);border:1px solid var(--line2);border-radius:999px;color:var(--muted);cursor:pointer;font:inherit;font-size:11px;padding:5px 10px;white-space:nowrap;line-height:1}
-.bud-reset:hover{color:var(--amber);border-color:var(--amber)}
+.bud-reset{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-pill);color:var(--dim);cursor:pointer;font:inherit;font-size:11px;padding:5px 10px;white-space:nowrap;line-height:1}
+.bud-reset:hover{color:var(--signal);border-color:var(--signal)}
 .bud-reset.hide{display:none}
 /* budget donut: download button, hover tip, entrance animation (mirrors the allocation donut) */
 .bud-chartwrap{position:relative;width:240px;flex:none}
@@ -718,22 +1120,22 @@ section{padding:24px 0;border-bottom:1px solid var(--line)}
 #budgetDonut.anim .dwedge{stroke-dasharray:1;stroke-dashoffset:1;animation:dwedge-draw .6s ease forwards}
 @keyframes dwedge-draw{to{stroke-dashoffset:0}}
 /* budget category selects + loan rows */
-.bud-exp select{background-color:var(--field);border:1px solid var(--line2);border-radius:3px;padding:8px 28px 8px 8px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0;min-height:40px}
-.bud-exp select:focus{outline:none;border-color:var(--amber)}
+.bud-exp select{background-color:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 28px 8px 8px;color:var(--text);font-family:var(--mono);font-size:14px;min-width:0;min-height:40px}
+.bud-exp select:focus{outline:none;border-color:var(--signal)}
 /* loan row reuses the .bud-exp grid so its category and amount line up with
    the expense rows; the 4th (delete) column is left empty. Spans match the inputs' font + height. */
-.bud-loan-name{color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bud-loan-name{color:var(--text);font-family:var(--sans);font-size:14px;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bud-loan-amt{text-align:right;font-family:var(--mono);font-size:14px;color:var(--text);padding:8px 0}
 @media(max-width:520px){.bud-loan{grid-template-columns:1fr 110px}.bud-loan-amt{grid-column:1 / -1;text-align:right;padding-top:0}}
 
 /* ---- share dialog (profile → Share) ---- */
 .share-secs{display:flex;flex-wrap:wrap;gap:10px 18px;margin:14px 0}
 .share-sec{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
-.share-lbl{display:block;font-size:14px;color:var(--muted);margin:8px 0 14px}
-.share-lbl input{display:block;width:100%;margin-top:6px;background:var(--field);color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:14px}
-.share-hint{color:var(--muted)}
+.share-lbl{display:block;font-size:14px;color:var(--dim);margin:8px 0 14px}
+.share-lbl input{display:block;width:100%;margin-top:6px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;font-family:var(--mono);font-size:14px}
+.share-hint{color:var(--dim)}
 .share-result{margin-top:18px}
-.share-result .acctnum{flex:1;background:var(--field);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.share-result .acctnum{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;overflow:hidden;text-overflow:ellipsis}
 .share-list{margin-top:8px}
 .share-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .share-row:last-child{border-bottom:0}
@@ -797,16 +1199,16 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .rcard.ro { cursor: default; }
 .rcard.ro .ro-name { flex: 1; min-width: 120px; font-size: 15px; color: var(--text); }
 .rcard.ro .ro-mid { display: flex; gap: 14px; align-items: baseline; }
-.rcard.ro .ro-sh { color: var(--muted); font-size: 14px; }
-.rcard.ro .ro-tk { color: var(--green); font-size: 14px; text-transform: uppercase; }
+.rcard.ro .ro-sh { color: var(--dim); font-size: 14px; }
+.rcard.ro .ro-tk { color: var(--accent); font-size: 14px; text-transform: uppercase; }
 .rcard.ro .ro-val { min-width: 96px; text-align: right; font-size: 15px; color: var(--text); font-variant-numeric: tabular-nums; }
-.rcard.ro .ro-val.liab { color: var(--red); }
+.rcard.ro .ro-val.liab { color: var(--danger); }
 
 .sharemsg { max-width: 520px; margin: 80px auto; padding: 0 20px; text-align: center; }
 .sharemsg h1 { font-size: 20px; margin-bottom: 10px; }
-.sharemsg p { color: var(--muted); }
+.sharemsg p { color: var(--dim); }
 .sharemsg-foot { margin-top: 18px; }
-.sharemsg-foot a { color: var(--amber); }
+.sharemsg-foot a { color: var(--signal); }
 
 
 /* ---------- profile ----------
@@ -814,7 +1216,7 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    sentence saying what it does and its own control beside it — rather than headings with loose
    rows of buttons under them, where nothing says what pressing one will do. */
 
-.set-group{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.set-group{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);overflow:hidden;box-shadow:var(--shadow-card)}
 /* The clip keeps the rows inside the rounded corners, but it would also cut off a picker panel
    opening out of the last row. While one is open, the group lets it through. */
 .set-group:has(.picker[data-open]){overflow:visible}
@@ -822,12 +1224,22 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .set-row{padding:15px;border-top:1px solid var(--line-soft);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .set-row:first-child{border-top:0}
 .set-text{flex:1;min-width:190px}
-.set-name{font-size:14.5px;font-weight:600}
-.set-hint{font-size:12.5px;color:var(--dim);margin-top:3px}
+.set-name{font-size:15px;font-weight:600}
+.set-hint{font-size:13px;color:var(--dim);margin-top:3px}
+@media(min-width:900px){.set-name{font-size:17px}.set-hint{font-size:14px}.set-hint,.set-text>p{max-width:68ch}}
 /* A row whose sentence is long enough that a control centred against it looks adrift. */
 .set-row.top{align-items:flex-start}
 .set-ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .set-ctl .select{min-width:120px}
+/* On a phone the control goes under the sentence rather than beside it. Side by side, a
+   120px button left the explanation about 200px to live in, so every row squeezed its two
+   lines of prose into four or five. It also settles an inconsistency inside one card, where
+   Appearance's segmented control sat inline-right while Language's sat full-width below. */
+@media(max-width:559px){
+  .set-row{flex-direction:column;align-items:stretch;gap:10px}
+  .set-row .set-text{min-width:0}
+  .set-ctl{justify-content:flex-start}
+}
 /* The sync dot sits inside a sentence here rather than standing on its own. */
 .set-when{color:var(--dimmer)}  /* when it was last fetched — a fact about the row, not part of what it does */
 .set-hint .syncdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dimmer);vertical-align:baseline}
@@ -846,16 +1258,14 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
   font-family:var(--mono);font-size:clamp(13px,4.1vw,16px);letter-spacing:.07em;text-align:center;font-weight:700;
   width:100%;overflow-wrap:break-word;line-height:1.9}
 .token-out .s{color:var(--dimmer)}
-.token-out .d{color:var(--accent)}
-.token-out .a{color:var(--signal)}
+.token-out .c{color:var(--text)}
 
 /* The revealed account number, inside its settings row rather than as a banner over the page.
    Breaks at its own dashes so it never runs past a narrow screen. */
 .acctcode{display:block;margin-top:9px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel-2);
   font-size:13px;letter-spacing:.06em;line-height:1.9;overflow-wrap:break-word}
 .acctcode .s{color:var(--dimmer)}
-.acctcode .d{color:var(--accent)}
-.acctcode .a{color:var(--signal)}
+.acctcode .c{color:var(--text)}
 
 
 /* A picker with two answers is a pair of buttons, not a dropdown. A native select's popup is
@@ -864,30 +1274,125 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    at once and take one tap instead of three. */
 /* The person switch above the salary table on a phone. Full width, because it is the thing
    that says whose column you are filling in. */
-.salwho{display:flex;width:100%;margin-bottom:12px}
-.salwho .seg-btn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* One person means the columns can be told to share the width rather than each asking for the
-   space its widest content wants — which is what still pushed a single column past a 358px box
-   and left it scrolling sideways after all. */
+/* A switch, not a tab strip. Filled amber it read as the same kind of object as the button
+   that adds a month; as an underline inside a bordered box it read as a desktop tab strip
+   from fifteen years ago. A soft well with one raised pill in it. */
+/* `.seg` is declared after this and would otherwise put its own border back round the
+   track, which is the ring that made it look like a tab strip. */
+.seg.salwho{display:flex;width:100%;margin-bottom:12px;border:0;border-radius:var(--r-pill);overflow:visible}
+.salwho .seg-inner{display:flex;gap:2px;width:100%;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:var(--r-pill);padding:3px}
+.salwho .seg-btn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  border:0;border-radius:var(--r-pill);background:transparent;color:var(--dim);min-height:40px;
+  font-size:14px;font-weight:600;transition:background .14s ease,color .14s ease}
+.salwho .seg-btn+.seg-btn{border-left:0}
+.salwho .seg-btn:hover{color:var(--text)}
+.salwho .seg-btn.is-on{background:var(--panel);color:var(--text);box-shadow:var(--shadow-card)}
+/* The columns are told to share the width rather than each asking for the space its widest
+   content wants — which is what pushed the table past its 358px box and left it scrolling
+   sideways. These rules used to be written as `.salwho ~ .saltable-scroll`, so they only
+   applied when the person-switch happened to be on screen; with one person the switch is not
+   rendered, the rules never matched, and that is the version of the screen people actually
+   saw — a table scrolling in both directions with its notes column cut off at the edge. */
 @media(max-width:899px){
-  .salwho ~ .saltable-scroll .saltab{width:100%;table-layout:fixed;border-collapse:collapse}
-  .salwho ~ .saltable-scroll .salm,.salwho ~ .saltable-scroll .salm-h{width:74px}
-  .salwho ~ .saltable-scroll .salmccy{width:100%;min-width:0;padding-right:26px;background-position:right 7px center}
-  .salwho ~ .saltable-scroll .salf,.salwho ~ .saltable-scroll .salev{width:100%;min-width:0}
-  .salwho ~ .saltable-scroll .salxc,.salwho ~ .saltable-scroll .salx-h{width:34px}
+  /* No scroll inside a scroll. The box was capped at 60vh, so the page scrolled, and then the
+     table scrolled again inside it, slicing whichever row the cap landed on through the middle
+     of its glyphs. The page is the only thing that scrolls now. */
+  /* `clip` rather than `visible`: it clips the square table to the wrapper's rounded corners
+     without creating a scroll container, so the sticky header still resolves against the
+     page. With `visible` the header's and the last row's backgrounds printed straight across
+     the rounded border, which read as a broken card. */
+  .saltable-scroll{max-height:none;overflow:clip}
+  .saltable-scroll .saltab{width:100%;table-layout:fixed;border-collapse:collapse}
+  .saltable-scroll .salm,.saltable-scroll .salm-h{width:74px}
+  .saltable-scroll .salmccy{width:100%;min-width:0;padding-right:26px;background-position:right 7px center}
+  /* `.saltab td .salf` carries a min-width of its own and outranks a rule written as
+     `.saltable-scroll .salf`, so in edit mode the amount field ran under the currency
+     select and the event field ran under the delete button. Matched at full strength. */
+  .saltable-scroll .saltab td .salf,.saltable-scroll .saltab td .salev,
+  .saltable-scroll .saltab td .salmccy{width:100%;min-width:0;max-width:100%}
+  .saltable-scroll .salxc,.saltable-scroll .salx-h{width:34px}
+  /* A month's note and its amount share one cell. Side by side in a 90px column they printed
+     over each other — "€5,41€3,6039.84" — so the note goes on its own line above the figure,
+     right-aligned with it, and truncates instead of running past the column. A figure has no
+     spaces to break at, so letting the cell wrap costs the amount nothing. */
+  /* white-space:normal is what lets the block-level note sit above the figure. On its own it
+     also hands the figure to the body's overflow-wrap:break-word, which broke amounts between
+     their own digits — "€24,74 / 0". A figure is one word; it may overflow, it may not break. */
+  .saltab td.num{white-space:normal;overflow-wrap:normal;word-break:normal}
+  .saltab td.num,.saltab tr.saly td{font-size:12.5px}
+  .saltable-scroll .salm,.saltable-scroll .salm-h{width:62px}
+  /* The note sits on the amount's own line, so a month that has one is exactly as tall as a
+     month that doesn't. Stacked above the figure it made that row a quarter taller and left
+     the three people's amounts at three different heights across one row — in a ledger, the
+     one thing a row has to do is line up. */
+  .saltab td.num .evtag{display:inline-block;vertical-align:middle;margin:0 6px 0 0;
+    max-width:7.5em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:1px 6px;line-height:1.5}
+}
+/* The read-only table is `.saltab.rotab`, and its own rule — 13.5px figures, 8px/14px
+   padding — outranks anything written as `.saltab td.num`. Every phone rule above was
+   therefore losing: the month figures stayed larger than the year totals they roll up into,
+   and at 13.5px a figure with cents was wider than its column's content box and printed 9px
+   into the column beside it, so month amounts and year amounts never shared a right edge.
+   Matched here at the same strength, with the summary set above the detail. */
+@media(max-width:899px){
+  .saltab.rotab tbody td.num{font-size:12.5px;padding-left:10px;padding-right:10px;font-weight:400}
+  /* A column heading belongs over its column: the head kept the table's default 14px right
+     padding while the figures below took 10px, so every heading sat four pixels left of the
+     numbers it names. */
+  .saltab.rotab thead th:not(.salm-h){padding-left:10px;padding-right:10px}
+  .saltab.rotab tbody tr.saly td{font-size:13px;font-weight:700}
+  .saltab.rotab tbody tr.saly td.num{padding-left:10px;padding-right:10px}
+  /* Nothing scrolls sideways at this width, so the frozen first column has nothing to be
+     frozen against — and its right-hand rule appeared on the year rows alone. */
+  .saltab.rotab tbody tr.saly td:first-child{border-right:0}
+}
+
+/* Narrower than this there is no width for both a word and a figure, and the word is the one
+   that would be cut to "Xmas bon…". It becomes a dot that carries the note in its tooltip and
+   its accessible name, so nothing is truncated and German fits as well as English. */
+@media(max-width:559px){
+  /* The dot is taken out of the inline flow and given the cell's left edge. The figure is
+     right-aligned, so the two never meet, and the figure keeps the whole width — which it
+     needs, because a German amount ("5.418,61 €") is longer than an English one and this is
+     the narrowest the table ever gets. */
+  .saltab td.num .evtag{position:absolute;left:3px;top:calc(50% - 3.5px);
+    width:7px;height:7px;max-width:none;padding:0;margin:0;border-radius:50%;
+    /* Amber, like everything else on these screens that answers to a press. Grey, it was
+       the same mark as the sync status dot in Profile, which does nothing. */
+    background:var(--signal);border:0;color:transparent;overflow:hidden;text-indent:-9999px}
+  /* Wrapping was only ever there to let a block-level chip sit above the figure. Nothing in
+     this cell wraps now — and the figure is one unbreakable word, so wrapping could only ever
+     have pushed it onto a second line and knocked the row off its neighbours' baseline. */
+  .saltab td.num{position:relative;white-space:nowrap}
+  /* Room for the dot on the left and for a figure with cents on the right, in one column
+     90px wide: the dot ends 10px in, the longest amount starts 17px in. */
+  .saltab.rotab tbody td.num,.saltab.rotab tbody tr.saly td.num{font-size:12px;padding-left:16px;padding-right:8px}
+  .saltab.rotab thead th:not(.salm-h){padding-left:16px;padding-right:8px}
+  .saltab.rotab tbody tr.saly td.num{font-size:13px}
+  .saltable-scroll .salm,.saltable-scroll .salm-h{width:68px}
+}
+@media(max-width:899px){
+  /* The month ran straight into the figure beside it. The cell is nowrap and the table is
+     fixed-layout, so a column too narrow for "Sept 2024" does not wrap or ellipse it — it
+     just prints it over the next column. 86px is what the longest label needs at this size,
+     plus a gutter the figures can be read against. */
+  .saltable-scroll .salm,.saltable-scroll .salm-h{width:86px;padding-right:12px;font-size:12px;white-space:nowrap}
+  .saltab td.num,.saltab .salh2 th,.saltab.rotab thead th:not(.salm-h){padding-left:12px}
   /* The 2px rule that tells one person from the next has nobody to separate here. Matched at
      the same strength as the rule that sets it, or it does not win. */
-  .salwho ~ .saltable-scroll .saltab .salgsep{border-left:0}
+  .saltable-scroll .saltab .salgsep{border-left:0}
   /* The delete button plus the cell padding around it came to 42px in a 34px column, so every
      row pushed the table two pixels past its box and the whole thing scrolled sideways. */
-  .salwho ~ .saltable-scroll .saltab td.salxc{padding-left:2px;padding-right:2px}
-  .salwho ~ .saltable-scroll .salxc .delbtn{width:28px;height:28px}
+  .saltable-scroll .saltab td.salxc{padding-left:2px;padding-right:2px}
+  /* It removes a month from everyone in the ledger; it is not the smallest target here. */
+  .saltable-scroll .salxc .delbtn{width:40px;height:40px}
 }
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.seg-btn{padding:8px 14px;min-height:38px;border:0;background:var(--panel-2);color:var(--dim);cursor:pointer;font-size:13px;font-weight:600}
+.seg-btn{padding:8px 14px;min-height:44px;border:0;background:var(--panel-2);color:var(--dim);cursor:pointer;font-size:13px;font-weight:600}
 .seg-btn+.seg-btn{border-left:1px solid var(--line)}
 .seg-btn:hover{color:var(--text)}
-.seg-btn.is-on{background:var(--signal);color:var(--signal-ink)}
+.seg-btn.is-on{background:var(--signal-fill);color:var(--signal-ink)}
 
 
 /* ---------- a picker we draw all of ----------
@@ -896,7 +1401,7 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
    than two become this — a button and a panel, both ours, with the keyboard behaviour a
    listbox is supposed to have. */
 .picker{position:relative}
-.picker-btn{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 34px 6px 12px;border:1px solid var(--line);
+.picker-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:6px 34px 6px 12px;border:1px solid var(--line);
   border-radius:var(--r);background:var(--panel) var(--chevron) no-repeat right 11px center;background-size:15px;
   color:var(--text);font-family:var(--mono);font-size:16px;cursor:pointer}
 .picker-btn:hover{border-color:var(--dimmer)}
@@ -909,3 +1414,737 @@ body.share #edYear::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .picker-opt[aria-selected="true"]{color:var(--signal);font-weight:700}
 /* The tick marks the current one without moving the label, so the column of codes stays a column. */
 .picker-opt[aria-selected="true"]::after{content:"✓"}
+
+/* ---------- desktop reading scale ----------
+ * The app was laid out phone-first and then simply given a wider frame: 1440px of window
+ * showing 10–13px body text, 20px figures and paragraphs running 175 characters to the line.
+ * A bigger screen is not a reason to set smaller type. These are the same components, read at
+ * the distance a laptop is actually read from.
+ */
+@media(min-width:900px){
+  /* A laptop is not a big phone. The step-up above raised the figures; this raises the things
+     around them, so a 1440px window is not the phone's rhythm with more air around it:
+     roomier rows, a larger small-button, and section labels that are legible rather than
+     merely present. */
+  .set-row{padding:18px 20px}
+  .set-group+.set-group{margin-top:18px}
+  /* A mouse does not need the thumb-sized target the phone gets. */
+  .btn-sm{min-height:38px;font-size:14px;padding:8px 14px}
+  .seg-btn,.picker-btn{min-height:38px}
+  .sect h2,.t-label{font-size:12px}
+  .bud-row{padding:14px 16px}
+  .bud-exp.ro{min-height:56px}
+  /* 16px, the inset every list on these screens uses, so a figure in the year list, the
+     legend and the budget rows all end on the same x down the page. */
+  .yhead{padding:16px;min-height:60px}
+  .legrow{font-size:15px;padding:14px 16px;min-height:56px}
+  /* A 17-character category was being cut to "Workplace pens…" on a 1440px page. The name
+     takes a second line instead; the amount and the percentage keep their columns. */
+  /* The amount column reserved 108px for figures that need about 95, and the percentage 44
+     for three characters. Both give their slack to the name, which then fits on one line. */
+  .legrow{grid-template-columns:14px minmax(0,1fr) 38px 98px}
+  .legrow>span:nth-child(2){white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
+  .legrow .pct{font-size:13px}
+  .ytot,.yhead .yr{font-size:15px}
+  .fcstat{padding:14px 16px}
+  .fcstat .k{font-size:11px;letter-spacing:.06em}
+  .fcstat .v{font-size:28px}
+  .fcstat.hero .v{font-size:28px}
+  .fcstat .sub,.fcstat .v.dim{font-size:12.5px}
+  .fcrow .fld{font-size:13.5px}
+  .chiplegend{font-size:12.5px}
+  .updnote{font-size:11.5px}
+  /* Prose stops at a comfortable measure instead of running the full width of the column. */
+  .fchint,.subt,.bud-note,.emptyhint,.exhint{max-width:68ch}
+}
+
+/* The Edit / Done switch in the Outgoings header. It sits at the end of the title line, where
+   a panel's controls live on every other screen, and the explanation below it stays prose. */
+.bud-exp-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:nowrap}
+.bud-exp-headtext{min-width:0}
+.bud-exp-head .bud-editbtn{flex:none;align-self:center}
+.bud-exp-head .hint{display:block;margin:0;font-size:13px;font-weight:400;letter-spacing:0;color:var(--dim);max-width:68ch}
+/* The title carries the heading size; the wrapper must not, or the hint inherits 18/21px. */
+.bud-exp-title{display:block;font-size:inherit;font-weight:inherit;letter-spacing:inherit;color:var(--text)}
+.bud-exp-headtext{font-size:18px;font-weight:600;letter-spacing:-.01em}
+@media(min-width:900px){.bud-exp-headtext{font-size:21px}}
+/* The income rows sit outside the category cards, so give them the cards' inner padding or
+   their amounts end 12px right of every amount underneath them. */
+.bud-rows>.bud-row{padding-left:16px;padding-right:16px}
+/* A read row is a line in a list, not a form row: name on the left, amount right-aligned in
+   the same mono column every other amount in the app uses. */
+/* No inset of its own: the 2px put every item's amount two pixels right of the category
+   total it belongs to, which is visible as a ragged right edge in a column of figures. */
+.bud-exp.ro{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:0}
+.bud-exp.ro{min-height:52px}
+.bud-exp.ro .bud-loan-name,.bud-exp.ro .bud-loan-amt{padding:0;line-height:1.45}
+.bud-exp.ro .bud-loan-amt{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:400;color:var(--dim)}
+
+/* ── salary: a year folds behind its own total ──
+ * Phones only. On a desktop there is room for the whole history and it stays open, which is
+ * also why the fold is done with a class rather than by leaving rows out: every row is in the
+ * DOM at every width, and Ctrl+F still finds a month inside a folded year on a desktop.
+ */
+.saly[data-ytoggle]{cursor:pointer}
+/* The year label starts where the month labels start, with the chevron after it. Leading,
+   the chevron pushed "2026" 19px right of the "May 2026" rows beneath it, so every child
+   hung to the left of the year it rolls up into — upside down for a list that folds.
+   There is no room to indent the months instead: the column is 86px and a month label plus
+   that indent does not fit. */
+.salytog{display:inline-flex;align-items:center;gap:6px;flex-direction:row-reverse;justify-content:flex-end}
+.salychev{width:13px;height:13px;flex:none;color:var(--dim);transition:transform .15s ease}
+.saly.is-open .salychev{transform:rotate(90deg)}
+.saly[data-ytoggle]:hover{background:var(--panel)}
+.saly[data-ytoggle]:focus-visible{outline:2px solid var(--signal);outline-offset:-2px}
+.saltab tr.salmonth.is-folded{display:none}
+
+/* On a phone these were fifteen full-width boxes stacked down the page, each label a line
+   above its own value and the whole forecast four thousand pixels tall. The same fields become
+   one grouped inset list — label left, value right, a divider between — which is the pattern
+   the year list and Profile already use.
+   The label takes the room that is left rather than a fixed share of it, so a long German
+   caption wraps inside its own row instead of squeezing the figure. */
+@media(max-width:619px){
+  .fcrow{display:block;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
+    overflow:hidden;box-shadow:var(--shadow-card);margin:10px 0 16px}
+  /* One control column, not one per row: a year input asked for 11.5ch, a percentage for
+     12.5ch and a select for whatever it liked, so the controls started at three different
+     places down a single list and the labels wrapped against three different widths. The
+     row is a grid — label, then a control column of fixed proportion — so every field in
+     the list begins and ends on the same two edges. */
+  .fcrow .fld{display:grid;grid-template-columns:minmax(0,1fr) 42%;align-items:center;
+    gap:12px;padding:8px 14px;min-height:56px;font-size:14px;color:var(--text)}
+  .fcrow .fld+.fld{border-top:1px solid var(--line-soft)}
+  .fcrow .fld>.cap{min-width:0;white-space:normal;overflow:visible;text-overflow:clip;color:var(--text)}
+  .fcrow .fld input,.fcrow .fld select{width:100%;min-width:0;min-height:40px;padding:8px 10px}
+  /* The chevron is painted inside the box at its right edge, so a select that shortens its
+     text at the box edge shortens it underneath the chevron: "Germany (Rentenpunkte)" lost
+     its last letters behind the arrow rather than to an ellipsis. The room the chevron needs
+     is reserved here, because this row's own padding overrides the shared rule that reserved
+     it. */
+  /* 13px, so "Target amount" and "Annual spending ×25" fit the control column whole rather
+     than ending in an ellipsis. */
+  .fcrow .fld select{max-width:none;padding-right:30px;font-size:13px}
+  /* The suffix shell is a field like the others, so it is the same height as the others. */
+  .fcrow .pct{min-height:40px}
+  .fcrow .pct input{flex:1 1 auto;width:100%;padding-right:4px}
+  /* A long option ("Germany (Rentenpunkte)") shortens with an ellipsis instead of being cut
+     mid-word by the chevron. German runs longer again. */
+  .fcrow .fld select{text-overflow:ellipsis}
+  /* The suffix shell is a control like the others and takes the control column. */
+  .fcrow .pct{width:100%}
+}
+
+/* The note a month carries, where the chip has shrunk to a dot.
+ * A dot's tooltip is a mouse affordance; on a touch screen it is nothing at all, so the dot
+ * is a button and pressing it writes the word under the amount. The row grows only while a
+ * reader has asked it to, which is the one time a ledger row may change height. */
+.saltab td.num .evnote{display:none}
+@media(max-width:559px){
+  .saltab td.num .evtag{cursor:pointer;appearance:none;-webkit-appearance:none}
+  /* A 7px dot is not a touch target. The hit area is grown around it without moving it. */
+  .saltab td.num .evtag::after{content:"";position:absolute;left:-9px;top:-13px;width:26px;height:34px}
+  .saltab td.num.is-note-open .evnote{display:block;font-size:10px;line-height:1.3;color:var(--dim);
+    margin-top:2px;white-space:normal;overflow-wrap:break-word}
+  .saltab td.num.is-note-open .evtag{background:var(--signal)}
+}
+@media(min-width:560px){
+  /* The word itself is on screen here, so the dot's button is just the chip. */
+  .saltab td.num .evtag{cursor:default;pointer-events:none}
+}
+
+/* ───────────────────────── the asset edit screens ─────────────────────────
+   Appended after everything it overrides, not before it. Three fixes on this screen have
+   already been written above the rules they were meant to beat and quietly done nothing. */
+
+/* The bar. A button inside a clipping, nowrap title had its right third cut away at 320px,
+   while a red "Delete year" beside it took two lines and grew the bar on every screen. The
+   year states itself and offers to move; delete went to the foot of the page. */
+.ed-title>*{flex:none}
+.ed-yearnow{display:inline-flex;align-items:center;gap:5px;min-height:38px;padding:4px 8px 4px 11px;
+  border:1px solid var(--line);border-radius:var(--r-pill);background:var(--panel-2);
+  color:var(--signal);font:inherit;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer;white-space:nowrap}
+.ed-yearnow:hover{border-color:var(--signal)}
+.ed-yearchev{width:14px;height:14px;color:var(--dim);flex:none}
+.ed-yearnow:hover .ed-yearchev{color:var(--signal)}
+/* The rarest and most destructive thing on the screen, said as a word at the end of it
+   rather than worn as a red pill in the bar at every scroll position. */
+.ed-danger,.acard-danger{margin-top:26px;display:flex}
+.acard-danger{margin-top:4px}
+.btn-quiet-danger{background:transparent;border-color:transparent;color:var(--danger);padding-left:0}
+.btn-quiet-danger:hover{border-color:var(--danger)}
+
+/* The answer, first. "Net value today" was the last line of the card — on a 320px phone with
+   a mortgage on it, 2,700px below the fold, at the same size as every label above it. */
+.ahero{display:flex;flex-direction:column;gap:3px;padding:2px 0 4px}
+.ahero .ah-k{font-size:12px;letter-spacing:.02em;color:var(--dim)}
+.ahero .ah-v{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:26px;font-weight:600;
+  letter-spacing:-.01em;color:var(--signal-lg);line-height:1.1}
+/* Money owed is not money held. The old markup asked for `.vval.liab` and no such rule was
+   ever written, so a debt was painted in the same amber as a positive net value. */
+.ahero .ah-v.liab{color:var(--danger)}
+.ahero .ah-sub{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+@media(min-width:620px){.ahero .ah-v{font-size:30px}}
+
+/* One stat shouting is emphasis; six is wallpaper. The computed figures are ink; the one
+   number the card exists for keeps the colour. */
+.pstat .v{color:var(--text)}
+.pstat .v.off{color:var(--accent)}
+.pstat .v.hilite{color:var(--signal)}
+.vsum .k,.pstat .k{font-size:11.5px;letter-spacing:.02em;text-transform:none}
+.psub{font-size:11.5px;letter-spacing:.02em;text-transform:none;color:var(--dim);flex-wrap:wrap}
+/* German's "+ hinzufügen" broke onto two lines inside a 44px pill and pushed past the box. */
+.psub .btn{white-space:nowrap;margin-left:auto}
+.yrsched-h,.psched summary{font-size:11.5px;letter-spacing:.02em;text-transform:none}
+.edlede{font-size:13px;max-width:62ch}
+
+/* A date and an amount, not a date and a sliver. `.exrow .fin{flex:1}` targeted the input;
+   the amount's input is inside a <span class="suffix"> that was never flexed, so the bare
+   date field absorbed the row and 40,000 showed as "40" in a 36px box. */
+.exrow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) 44px;gap:8px;align-items:center}
+.exrow>*{min-width:0}
+.exrow .fin{flex:1 1 auto;width:100%}
+.exrow .suffix{min-width:0}
+@media(max-width:420px){
+  .exrow{grid-template-columns:minmax(0,1fr) 44px;grid-template-areas:"date date" "amount del"}
+  .exrow>input[type="date"]{grid-area:date}
+  .exrow>.suffix{grid-area:amount}
+  .exrow>.rdel{grid-area:del}
+}
+
+/* Targets. 19x23px for a control that deletes a balance, against the 44px this same
+   stylesheet gives a year tile. */
+.rcard .rdel,.grpdel,.exrow .rdel{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0;flex:none}
+.rcard .rinfo{width:26px;height:26px;right:5px;font-size:13px}
+.rcard .rtkwrap .rtk{padding-right:38px}
+
+/* A symbol that stops mid-word cannot be told from a wrong one, and an <input> gives no
+   ellipsis to say so. "NASDAQ:MSFT" is eleven characters. */
+.rcard .rtk{width:15ch;font-family:var(--mono);letter-spacing:.01em}
+
+/* A long-term asset is a real holding, and a dashed border is this stylesheet's own mark for
+   an empty one. It is also the only route into the asset editor, so it is a button. */
+.rcard.auto{border-style:solid;background:var(--panel)}
+.autotag{font-size:11px;letter-spacing:.04em}
+
+/* The whole row form on a phone. Flex-wrap put the colour square on a line of its own, the
+   currency under a full-width value, and the × floating beside the category select aligned
+   to nothing — about 290px of height per holding, 2,800px for a year of them. */
+@media(max-width:899px){
+  #edEntries .rcard:not(.acard){
+    display:grid;grid-template-columns:10px minmax(0,1fr) 92px 44px;
+    grid-template-areas:"dot name name del" "kind kind kind kind" "val val ccy ccy" "cat cat cat cat" "conv conv conv conv" "hint hint hint hint";
+    align-items:center;gap:8px 10px;flex-wrap:nowrap}
+  #edEntries .rcard .dot{grid-area:dot}
+  #edEntries .rcard .rname{grid-area:name;flex:none;min-width:0;width:100%}
+  #edEntries .rcard .rname.ro{grid-area:name}
+  #edEntries .rcard .rdel{grid-area:del}
+  #edEntries .rcard .rkind{grid-area:kind;width:100%}
+  #edEntries .rcard .rval,#edEntries .rcard .rsh{grid-area:val;width:100%}
+  #edEntries .rcard .rtkwrap,#edEntries .rcard select[data-f="ccy"]{grid-area:ccy;width:100%}
+  #edEntries .rcard .rtkwrap .rtk{width:100%}
+  #edEntries .rcard .rcat{grid-area:cat;width:100%;max-width:none}
+  #edEntries .rcard .rconv{grid-area:conv;text-align:right;min-width:0;flex:none}
+  #edEntries .rcard .rhint{grid-area:hint}
+  #edEntries .rcard.auto{grid-template-areas:"dot name tag chev" "conv conv conv conv"}
+  #edEntries .rcard.auto .autotag{grid-area:tag;justify-self:end}
+  #edEntries .rcard.auto .autoedit{grid-area:chev;justify-self:end}
+  /* 16px is the threshold at which iOS stops zooming the page on focus, which base.css
+     states as a rule and both of these editors broke in nine different places. */
+  #edEntries .rcard input,#edEntries .rcard select,#edEntries .grpname,
+  #assetList .fin,#assetList .fld select,#assetList .rname{font-size:16px}
+  #edEntries .rcard input,#edEntries .rcard select{min-height:44px}
+}
+
+/* The year-by-year table is the loan's whole story, and on a phone it told a third of it:
+   Year, Paid off and Interest, with "Extra" and "At year end" clipped off the right with no
+   scrollbar, no fade and nothing to say they were there. The balance walking down to zero is
+   the point of the table, and 2024's "paid off €62,430" is a misleading figure without the
+   €40,000 of it that was a lump sum. So on a narrow screen the table keeps the year, what
+   came off and where it ended, and the lump sum is said under the year. */
+@media(max-width:560px){
+  .yrtab th:nth-child(3),.yrtab td:nth-child(3),
+  .yrtab th:nth-child(4),.yrtab td:nth-child(4){display:none}
+  .yrtab td,.yrtab th{padding-left:8px;padding-right:8px}
+  .yrsched .schscroll{border:0;border-radius:0}
+}
+/* Why eight of eighteen rows are in italics. It was explained only inside the monthly
+   schedule, behind a closed disclosure, around row 116 of 204. */
+.yrsched-note{font-size:11.5px;color:var(--dim);padding:8px 0 0;line-height:1.5}
+.yrsched-note i{font-style:italic}
+/* `white-space:normal`: the cell inherits nowrap from .schtab td, and one year carrying a
+   lump sum stretched the whole Year column to 115px of a 232px table — which is why the
+   balance column was clipped off the right edge of a phone. */
+.yr-extra{display:none;white-space:normal;font-style:normal;font-weight:400;font-size:10.5px;color:var(--accent);letter-spacing:.01em}
+@media(max-width:560px){.yr-extra{display:block}}
+
+/* The kind of holding is the least-read control in the row, and amber made it the loudest
+   thing in it — louder than the figure and louder than the name. */
+.rcard .rkind{color:var(--text)}
+/* A chevron, not a pencil: this card opens another screen, it does not edit in place. */
+.autoedit{width:16px;height:16px}
+/* A toggle that says what it does, where the reader is deciding — rather than in a paragraph
+   at the top naming it by a word that is not on the control. */
+.toggles{flex-direction:column;gap:12px}
+.tgl{align-items:flex-start;gap:11px}
+.tgl input{width:22px;height:22px;flex:none;margin-top:1px}
+.tgl>span{display:flex;flex-direction:column;gap:2px;font-size:14.5px}
+.tgl>span>i{font-style:normal;font-size:12px;color:var(--dim);line-height:1.45}
+/* Three columns in 232px of phone. Cents are gone from this table at every width (a thirty-row
+   balance is read for its shape, not reconciled), and the remaining padding goes here. */
+@media(max-width:560px){
+  .schtab.yrtab td,.yrtab th{font-size:11.5px;padding-left:6px;padding-right:6px}
+}
+
+/* ── round 2 of the asset-edit review ──────────────────────────────────── */
+
+/* The Move-year tile. Written as the year with a word glued to it, inheriting the button's
+   strikethrough and 36% opacity, it read "2025In your ledger" in crossed-out grey — and the
+   highlighted current year was crossed out too, so the selected tile looked cancelled. */
+.yeargrid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
+.yearopt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:56px;padding:6px 4px}
+.yo-y{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;line-height:1.1}
+.yo-n{font-size:10.5px;letter-spacing:.02em;color:var(--dim);white-space:nowrap;line-height:1.2}
+/* A child cannot cancel its parent's text-decoration, so the line-through has to come off
+   the button itself. A disabled year is quiet; it is not deleted. */
+.yearopt.is-taken,.yearopt:disabled{opacity:1;text-decoration:none;cursor:not-allowed;background:transparent;border-style:dashed;color:var(--dim)}
+.yearopt.is-taken .yo-y{color:var(--dim)}
+.yearopt.is-now,.yearopt.is-now:disabled{opacity:1;border-style:solid;background:var(--signal-fill);border-color:var(--signal-fill);color:var(--signal-ink);cursor:default}
+.yearopt.is-now .yo-y{color:var(--signal-ink);font-weight:700}
+.yearopt.is-now .yo-n{color:var(--signal-ink);opacity:.75}
+
+/* An eleven-character symbol in an eleven-character field. `width:15ch` is the border box,
+   and 47px of padding and border inside it left room for nine. */
+.rcard .rtk{width:calc(11ch + 51px)}
+/* 26px is not 44px, whatever the comment said. The box stays small; the target does not. */
+.rcard .rinfo{position:absolute;width:24px;height:24px;right:7px}
+.rcard .rinfo::after{content:"";position:absolute;inset:-10px}
+
+/* A field's edge, at 3:1 against the surface behind it. `--line` is 1.3:1 in both themes:
+   right for a divider between two things, not for the boundary of a control somebody has to
+   find and press. */
+:root{--field-edge:#6b7288}
+:root:not([data-theme="light"]) .fin,:root:not([data-theme="light"]) .fld select,
+:root:not([data-theme="light"]) .rcard .rval,:root:not([data-theme="light"]) .rcard .rsh,
+:root:not([data-theme="light"]) .rcard .rtk,:root:not([data-theme="light"]) .rcard select{border-color:var(--field-edge)}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--field-edge:#8a8d96}}
+:root[data-theme="light"]{--field-edge:#8a8d96}
+.fin,.fld select,.rcard .rval,.rcard .rsh,.rcard .rtk,.rcard select,.grpname{border-color:var(--field-edge)}
+.rcard .rname{border-bottom-color:transparent}
+
+/* A focus ring you can see. `.fin:focus{outline:none}` and its siblings out-specify the
+   global :focus-visible rule, so the only keyboard cue on every field in both editors was a
+   one-pixel change of border colour. */
+.fin:focus-visible,.fld select:focus-visible,.rcard .rval:focus-visible,.rcard .rsh:focus-visible,
+.rcard .rtk:focus-visible,.rcard select:focus-visible,.yearopt:focus-visible,.rcard.auto:focus-visible,
+.rdel:focus-visible,.grpdel:focus-visible,.rinfo:focus-visible,.ed-yearnow:focus-visible{
+  outline:2px solid var(--signal);outline-offset:2px;border-color:var(--signal)}
+/* A bottom border and a rounded outline hooked up at both ends. */
+.rcard .rname:focus-visible,.grpname:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:0}
+
+/* The card is a button now, so it has to stop looking like one of the browser's. */
+.rcard.auto{width:100%;text-align:left;font:inherit;cursor:pointer}
+.rcard.auto .autoedit{color:var(--dim)}
+.rcard.auto:hover .autoedit{color:var(--signal)}
+
+/* Each sub-form under the toggle that reveals it. */
+.tglgroup{display:flex;flex-direction:column;gap:12px}
+.tglgroup .frow,.tglgroup .loanbox{margin-left:33px}
+@media(max-width:560px){.tglgroup .frow,.tglgroup .loanbox{margin-left:0}}
+
+/* A date and the amount it belongs to are one thing; the next payment is another. With one
+   gap for both, four lump sums were eight identical boxes in a column. */
+.exwrap{gap:14px}
+.exrow{gap:8px}
+.exrow .suffix{display:flex;align-items:center;gap:6px}
+.exrow .suffix i{font-style:normal;color:var(--dim);font-size:12px;flex:none}
+.exhint{padding:0}
+
+/* What a holding is worth was the smallest thing on its row, in a fourth colour. One figure,
+   one treatment, aligned with every other figure on the screen. */
+.rcard .rconv{font-size:15px;color:var(--text);font-family:var(--mono);font-variant-numeric:tabular-nums}
+.rcard .rconv.liab{color:var(--danger)}
+.rcard.auto .rconv{color:var(--text);font-weight:600;font-size:15px}
+/* A category that is set is a fact, not a placeholder. */
+.rcard .rcat{color:var(--text)}
+
+/* Six stats in a single column is 320px of scrolling on a phone. */
+@media(max-width:560px){.pstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pstat .v{font-size:16px}
+
+/* Red for a debt that exists. A €0.00 liability wearing an alarm stripe is a false alarm. */
+.rcard.liabcard{border-left-width:1px;border-left-color:var(--line)}
+.rcard.liabcard.is-owing{border-left:2px solid var(--danger)}
+
+/* Nine holdings came to 2,804px, because the two least-read controls in a row each took a
+   full-width 44px line of their own. Kind and category fold away behind the row until they
+   are wanted; name, figure and currency are what a phone shows. */
+@media(max-width:899px){
+  #edEntries .rcard:not(.acard){
+    grid-template-areas:"dot name name del" "val val ccy ccy" "conv conv conv conv" "kind kind cat cat" "hint hint hint hint";
+    gap:7px 10px}
+  #edEntries .rcard .rkind,#edEntries .rcard .rcat{font-size:13px;min-height:38px;padding:6px 8px;color:var(--dim);background:transparent;border-color:transparent}
+  #edEntries .rcard .rkind:focus,#edEntries .rcard .rcat:focus{border-color:var(--signal)}
+  #edEntries .rcard .rconv{text-align:right}
+}
+/* A symbol needs a line of its own on a phone: in the 146px slot beside the share count,
+   NASDAQ:MSFT was cut to NASDAQ:MSF, which cannot be told from a wrong symbol. */
+@media(max-width:899px){
+  #edEntries .rcard.is-priced{grid-template-areas:"dot name name del" "ccy ccy ccy ccy" "val val conv conv" "kind kind cat cat" "hint hint hint hint"}
+  #edEntries .rcard.is-priced .rtkwrap{width:100%}
+}
+/* The name keeps its own line — squeezed beside the figure, "Vanguard FTSE All-World" and
+   "Workplace pension" were both cut off, and an <input> gives no ellipsis to say so. The
+   height comes out of the priced row instead, where the converted value shares a line with
+   the share count. */
+@media(max-width:899px){
+  #edEntries .rcard .rconv{white-space:nowrap}
+  #edEntries .rcard .rname{min-width:0}
+  /* Re-declared after the two rules above, which match .rcard.auto just as well and at the
+     same specificity — so without this the long-term asset card loses its own layout. */
+  #edEntries .rcard.auto{grid-template-areas:"dot name tag chev" "conv conv conv conv"}
+}
+
+/* ── round 3 of the asset-edit review ──────────────────────────────────── */
+
+/* The year table's headings slid under the editor's own sticky bar and were gone for the
+   rest of the table — eleven rows of money in three unnamed columns. The inner scroll box
+   was removed on purpose here, so `top:0` resolves against the page, and the page has a bar
+   on it. They stick below it instead. */
+
+/* An estimate dims every figure in its row. `.schtab.yrtab td.off` out-specified
+   `.schtab tr.est td`, so the middle column of a guessed year stayed full-strength green
+   while the two beside it faded. */
+.schtab.yrtab tr.est td.off{color:var(--accent);opacity:.7}
+
+/* The most-used control in either editor was 38px while a row's bin was 44. */
+#edBack,#assetBack,#salaryBack{min-width:44px;min-height:44px;justify-content:center}
+
+/* The figure is why the row exists; it was given 89px while the three-letter currency code
+   beside it took 146. */
+@media(max-width:899px){
+  #edEntries .rcard:not(.acard){grid-template-columns:10px minmax(0,1fr) 74px 44px}
+  #edEntries .rcard .rval,#edEntries .rcard .rsh{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+}
+/* A 760px landscape phone is not a 320px one: the single-column form stretched a two-option
+   select to 665px and a share count to 510px. The row stays a row once there is room. */
+@media(min-width:620px) and (max-width:899px){
+  #edEntries .rcard:not(.acard),#edEntries .rcard.is-priced{
+    grid-template-columns:10px minmax(140px,1fr) 130px 92px 44px;
+    grid-template-areas:"dot name val ccy del" ". kind cat conv conv" ". hint hint hint hint"}
+  #edEntries .rcard .rkind,#edEntries .rcard .rcat{min-height:40px}
+  #edEntries .rcard.auto{grid-template-areas:"dot name tag conv chev"}
+}
+
+/* ── round 3 follow-ups ────────────────────────────────────────────────── */
+
+/* The year table's heading is sticky inside a box that never scrolls vertically, so `top`
+   pushed it down over the first rows of the table instead of out of the bar's way — on a
+   laptop it covered 2025, the year carrying a lump sum. The box only needs to scroll
+   sideways, and the page's own bar is what the heading should clear. */
+/* Scrolls sideways, and only sideways.
+ *
+ * It was given `overflow:visible` to stop its sticky heading pinning inside a box that never
+ * scrolls vertically and covering the first rows. That worked, and took the horizontal
+ * scroller with it — so five no-wrap money columns set the loan box's content width, the
+ * card grew wider than the screen, and every field to the right of it was clipped: "Rate
+ * fixed until" cut in half, the lump-sum amounts cut off, the fourth field of a row gone.
+ * `overflow-y:clip` keeps the heading pinned to the top of the box, where it belongs, while
+ * `overflow-x:auto` lets the table be wider than the card without dragging the card with
+ * it. `min-width:0` is what actually lets the flex child shrink. */
+.yrsched{min-width:0}
+.yrsched .schscroll{max-height:none;overflow-x:auto;overflow-y:clip;min-width:0}
+.yrsched .schtab th{top:0}
+
+/* The editor's title is a programmatic focus target, not somewhere to type. The global ring
+   drew an 850px amber capsule around the asset's name and told a keyboard reader it was a
+   text field. */
+.ed-title:focus,.ed-title:focus-visible{outline:none}
+
+/* Redundant with the :focus-visible rule below it and higher in specificity, so a focused
+   field kept a grey border inside an amber ring in dark and turned amber in light. */
+.fin:focus-visible,.fld select:focus-visible,.rcard .rval:focus-visible,.rcard .rsh:focus-visible,
+.rcard .rtk:focus-visible,.rcard select:focus-visible{border-color:var(--signal)}
+
+/* The year row is a button now, so it stops inheriting a button's own look. */
+.yhead{width:100%;text-align:left;font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.yhead:focus-visible{outline:2px solid var(--signal);outline-offset:-2px;border-radius:var(--r)}
+
+/* A control with no edge is not a control. These two were quietened to buy back the height
+   of a row and ended up reading as grey captions. */
+@media(max-width:899px){
+  #edEntries .rcard .rkind,#edEntries .rcard .rcat{border-color:var(--line);background:var(--panel)}
+}
+/* German's "Monatliche Rate" was cut mid-word in the Set-by select with nothing to say so. */
+.fld select{text-overflow:ellipsis}
+.yo-n{font-size:12px}
+/* The close × on a dialog was about 26x30. */
+.infoclose{width:44px;height:44px;display:flex;align-items:center;justify-content:center;top:4px;right:6px;padding:0}
+.ed-yearnow{min-height:44px}
+/* A descendant selector put 33px on the .frow inside the .loanbox as well as on the box, so
+   the loan's own fields started 33px right of the lump sums directly beneath them. */
+.tglgroup .frow,.tglgroup .loanbox{margin-left:0}
+.tglgroup>.frow,.tglgroup>.loanbox{margin-left:33px}
+@media(max-width:560px){.tglgroup>.frow,.tglgroup>.loanbox{margin-left:0}}
+/* An empty converted-value cell still claimed a grid row and 7px of gap on every plain
+   holding — about 50px a card, 450px in a year of them. */
+#edEntries .rcard .rconv:empty{display:none}
+/* A name that is too long for its box says so. An <input> gives no ellipsis while it is
+   focused, but it does at rest, which is when it is being read. */
+.rcard .rname{text-overflow:ellipsis}
+/* The tab bar is gone while an editor is open (body.no-nav), so its clearance is 150px of
+   nothing under the last control on every editor screen. */
+body.no-nav .editor{padding-bottom:calc(24px + var(--edge-b))}
+
+/* ── the surfaces no round had looked at ───────────────────────────────── */
+
+/* A scrim that does not dim is not a scrim. Over a #12141b page, 62% black left the tab bar,
+   the headings and an amber banner button behind the share dialog all reading as live, so the
+   dialog looked like a card dropped on the screen rather than a layer over it. */
+.infomodal{background:rgba(0,0,0,.72)}
+.infobox{background:var(--panel-2);box-shadow:0 24px 60px rgba(0,0,0,.45)}
+/* The close button scrolls away inside a box that scrolls. */
+.infobox{padding-top:8px}
+.infoclose{position:sticky;float:right;top:0;z-index:2;background:var(--panel-2);border-radius:var(--r)}
+
+/* The reveal, for a 32-character key copied off paper into a field of dots. */
+.gateinwrap{position:relative;display:flex;align-items:center}
+.gateinwrap .gatein{flex:1;padding-right:52px}
+.gatereveal{position:absolute;right:4px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  background:none;border:0;color:var(--dim);cursor:pointer;padding:0}
+.gatereveal:hover{color:var(--text)}
+.gatereveal svg{width:20px;height:20px}
+.gatereveal[aria-pressed="true"]{color:var(--signal)}
+
+/* The symbol help is a lookup table, and it was set as flowing prose with 28 bordered chips
+   in it, so a line could break between a prefix and the market it belongs to. Green is this
+   stylesheet's colour for money that grew; a symbol is not money. */
+.infobox code{color:var(--text);background:var(--ink);border-color:var(--line)}
+.infobox dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:10px 0 2px;align-items:baseline}
+.infobox dt{font-family:var(--mono);font-size:13px;color:var(--text)}
+.infobox dd{font-size:13.5px;color:var(--dim);margin:0}
+.infobox a{color:var(--signal);text-decoration:underline;text-underline-offset:2px}
+
+/* The day line is a button and said so only on hover, which a phone never does. */
+.hero .day.is-tap{text-decoration-color:color-mix(in srgb, currentColor 40%, transparent);
+  min-height:44px;display:inline-flex;align-items:center;gap:6px}
+.hero .day.is-tap::after{content:"›";font-size:16px;opacity:.7}
+/* A symbol needs its own line in the landscape band too: the 620–899px row rule put it back
+   in the 92px currency track, where AMS:VWRL arrives as "AMS:V" with the help button sitting
+   on the letters. */
+@media(min-width:620px) and (max-width:899px){
+  #edEntries .rcard.is-priced{
+    grid-template-columns:10px minmax(120px,1fr) 150px 44px;
+    grid-template-areas:"dot name ccy del" ". val conv conv" ". kind cat cat" ". hint hint hint"}
+  #edEntries .rcard.is-priced .rtkwrap{width:100%}
+}
+/* The one field on the asset card with no edge was the one the card is named after, while
+   the bar title above it wore the focus ring. */
+.rcard .rname{border-bottom-color:var(--field-edge)}
+.rcard.acard .rname{font-size:17px;font-weight:600}
+
+/* ── round 4 ───────────────────────────────────────────────────────────── */
+
+/* `background:` is a shorthand, so these two wiped the chevron the select is drawn with, and
+   `--line` at 1.3:1 is the divider colour, not the edge of a control. A box reading "Value"
+   with no chevron and no visible edge, sitting under a field that already holds a figure,
+   reads as an empty placeholder for the amount. */
+@media(max-width:899px){
+  #edEntries .rcard .rkind,#edEntries .rcard .rcat{
+    background-color:var(--panel);border-color:var(--field-edge);min-height:44px}
+}
+/* The rule that gave the asset card's name field an edge also matched the read-only name on
+   a long-term asset row, which is a span: an underline under a word you cannot type in. */
+.rcard .rname.ro{border-bottom-color:transparent}
+/* A figure and its unit do not break apart. German's "19 J. 6 Mon." wrapped after the year. */
+.pstat .v,.vsum .vval{white-space:nowrap}
+/* Tab must not park a field behind the editor's own sticky bar (WCAG 2.2 focus not obscured). */
+.editor,html{scroll-padding-top:calc(76px + var(--edge-t))}
+/* The year pill lost about 7px of its right edge to the title's clipping at 320px. */
+.ed-title{overflow:visible;min-width:0}
+.ed-title>span:first-child{overflow:hidden;text-overflow:ellipsis}
+/* What a holding is priced at, and whether that price is a year's close. Both were built
+   into a string that only rendered when there was no price to show. */
+.rcard .rpx{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(max-width:899px){
+  #edEntries .rcard.is-priced{grid-template-areas:"dot name name del" "ccy ccy ccy ccy" "val val conv conv" "px px px px" "kind kind cat cat" "hint hint hint hint"}
+  #edEntries .rcard .rpx{grid-area:px;text-align:right;margin-top:-4px}
+}
+@media(min-width:620px) and (max-width:899px){
+  #edEntries .rcard.is-priced{
+    grid-template-areas:"dot name ccy del" ". val conv conv" ". px px px" ". kind cat cat" ". hint hint hint"}
+}
+/* Italics and a note under the table already say a row is an estimate; 70% opacity on top of
+   them puts the figure at about 2.9:1 in the light theme. */
+.schtab.yrtab tr.est td.off{opacity:1}
+/* The kind select kept the 1.3:1 divider colour on a laptop while every field beside it had
+   the 3:1 edge. */
+.rcard .rkind,.rcard .rcat{border-color:var(--field-edge)}
+
+/* ── the salary editor, reported from the running app ──────────────────── */
+
+/* The table box is a scroll container at 900px and up (it has to be — a household of four
+   is wider than the column), and the two header rows are `position:sticky` with tops of
+   64px and 113px, which are the heights of the editor's own bar on the PAGE. Inside a
+   scroll container those resolve against the box: 65px of dead band above the headings,
+   and the heading strip painted over the first month row — the top row of the ledger,
+   unreachable. The box scrolls for itself and the headings pin to the top of it. */
+@media(min-width:900px){
+  #salaryEditor .saltable-scroll{max-height:calc(100dvh - 150px)}
+  #salaryEditor .saltab .salh1 th{top:0}
+  #salaryEditor .saltab .salh2 th{top:48px}
+}
+
+/* "+ Next month" and "+ Add person" live in the bar, so they are on screen at the moment
+   anybody wants them rather than above a ledger they have already scrolled past. */
+
+/* On a phone the bar cannot hold a title, a reassurance, two actions and an exit: putting
+   the actions in squeezed "Edit salaries" to "E" and pushed "Done" off the right edge. The
+   two actions and the way out win — the lede directly beneath the bar says what the screen
+   is, and the title stays for a screen reader. */
+@media(max-width:560px){
+}
+
+/* One row of actions, under the switch, naming the person it acts on. */
+.smon-head.is-compact{display:flex;justify-content:flex-end;gap:16px;padding:2px 0 10px;flex-wrap:wrap}
+
+/* A note is a word, not a dot.
+ *
+ * Below 560px the note collapsed to a 7px amber circle you had to press, and in the band
+ * above it the same note rendered as a chip with the word in it — so a reader scrolling one
+ * ledger met rows marked with a word, rows marked with a dot that said nothing, and no
+ * legend anywhere for either. "Raise" and "Xmas bonus" are two short words; they fit under
+ * the figure they belong to, at every width, and then there is nothing to decode.
+ *
+ * Written after the dot rules it replaces, because three fixes on these screens have been
+ * put above the rules they were meant to beat and did nothing at all. */
+.saltab td.num .evtag,
+.saltab td.num.is-note-open .evtag{
+  display:block;position:static;width:auto;height:auto;max-width:100%;
+  margin:1px 0 0;padding:0;border:0;border-radius:0;background:none;
+  font-size:10.5px;line-height:1.25;letter-spacing:.01em;color:var(--dim);
+  text-align:right;text-indent:0;white-space:normal;overflow-wrap:break-word;
+  pointer-events:none;cursor:default}
+.saltab td.num .evnote{display:none}
+.saltab td.num{white-space:nowrap}
+
+/* Three people.
+ *
+ * Below 900px the table is fixed-layout inside `overflow:clip`, on the reasoning that it
+ * "fits by construction". That holds for two people. With three, each money column is
+ * squeezed to 50px, "€5,418.61" is cut off mid-figure, and clipping means there is no way
+ * to reach the rest of it — the ledger is simply unreadable. Each column keeps a legible
+ * width and the table scrolls sideways instead, the way it already does on a laptop. */
+@media(max-width:899px){
+  .saltable-scroll{overflow-x:auto;overflow-y:clip}
+  /* 70px, not 96px. At 96px the default two-person ledger — month, two people, household —
+     needed 362px inside a 286px box, so the household total was off the right edge of a
+     320px phone with no scrollbar and no fade to say so. Fixing three people had broken
+     the case nearly everybody is in. Three people still scroll; two do not. */
+  .saltable-scroll .saltab{min-width:calc(66px + var(--salcols, 2) * 66px)}
+}
+/* …and when it does scroll, it says so. */
+.saltable-scroll{position:relative}
+.saltable-scroll.is-cut::after{content:"";position:absolute;top:0;right:0;bottom:0;width:34px;
+  pointer-events:none;background:linear-gradient(to right, transparent, var(--panel));
+  border-radius:0 var(--r-lg) var(--r-lg) 0}
+/* …which makes the box a scroll container at every width, so the editor's sticky headings
+   resolve against it everywhere and both rows pin to its top. Tops measured against the
+   page put 65px of dead band above the headings and hid the first month behind them. */
+/* One vertical scroller, at every width.
+ *
+ * A self-scrolling table box inside a scrolling editor gave the reader two wheels and the
+ * code two scrollTops to confuse: it kept the outer one while the re-render reset the inner
+ * one, so folding a year threw them a hundred and fifty rows back to the top. The box
+ * scrolls sideways, because four people are wider than the column; the editor scrolls down,
+ * because it is the page. */
+#salaryEditor .saltable-scroll{max-height:none;overflow-x:auto;overflow-y:clip}
+#salaryEditor .saltab .salh1 th{top:0}
+#salaryEditor .saltab .salh2 th{top:48px}
+@media(max-width:899px){
+  /* No person-name row below 900px, so the headings are the top row. */
+  #salaryEditor .saltab .salh2 th{top:0}
+}
+
+
+/* The two things this screen is for, in the table's own header row — which was 65px of
+   nothing above the names. The month button sits over the month column, where a new month
+   appears; the person button sits past the last person, where a new column appears. Icons:
+   this strip already holds a name per person, and the German labels are twice as long. */
+.salhbtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
+  padding:0;border:1px solid var(--field-edge);border-radius:var(--r);background:var(--panel);
+  color:var(--dim);cursor:pointer}
+.salhbtn svg{width:17px;height:17px}
+.salhbtn:hover{color:var(--signal);border-color:var(--signal)}
+.salhbtn:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+/* A 34px box with a 44px reach, so the thumb target is right without a 44px hole in a
+   header row that is 48px tall in total. */
+.salhbtn::after{content:"";position:absolute;inset:-6px}
+.saltab .salh1 th.salm-h,.saltab .salh1 th.salx-h{position:relative;text-align:center;padding:6px}
+
+/* Below 620px there is no table header to put them in, so the two actions sit under the
+   person switch, where the months begin. Above it they live in the header row itself. */
+@media(min-width:620px){#salaryList .smon-top{display:none}}
+
+/* A row where one person has a note and another does not was setting their two figures on
+   different baselines, because the note grows its own cell. */
+.saltab.rotab td.num{vertical-align:top}
+
+/* "+ Next month" lands focus on a new, empty field — which the .is-empty rule then drew as
+   an unfocused one, because it is declared after :focus at the same weight. */
+.saltab td .salf.is-empty:focus,.saltab td .salf.is-empty:focus-visible,
+.smon .salf.is-empty:focus,.smon .salf.is-empty:focus-visible{
+  border-style:solid;border-color:var(--signal);background:var(--panel);
+  box-shadow:0 0 0 3px var(--signal-soft)}
+/* Every field on this screen suppressed the global ring for a 1px border change. */
+.saltab td .salf:focus-visible,.saltab td .salev:focus-visible,.salmccy:focus-visible,
+.salname:focus-visible,.salpick:focus-visible,.smon .salf:focus-visible,
+.smon .salev:focus-visible,.seg-btn:focus-visible,.saltable-scroll:focus-visible{
+  outline:2px solid var(--signal);outline-offset:2px}
+/* The sticky person switch is a rounded pill on a transparent corner, so rows scrolling
+   beneath it showed through around its edges. */
+.salwho::before{content:"";position:absolute;inset:-10px -16px 0;background:var(--ink);z-index:-1}
+.seg.salwho{position:sticky;isolation:isolate}
+
+/* Both header rows pin to the top of the box they are in, which is the same box at every
+   width now. Offsets measured against the page put a dead band above them and hid the first
+   row behind them. */
+.saltab .salh1 th{top:0}
+.saltab .salh2 th{top:48px}
+@media(max-width:899px){#salaryEditor .saltab .salh2 th{top:0}}
+.saltab.rotab thead th{top:0}
+/* Said once, under the table, and only when a ledger actually mixes currencies. */
+.salconvnote{font-size:12px;color:var(--dim);line-height:1.5;margin:8px 2px 0;max-width:62ch}
+/* A selected segment must be lighter than the track it sits in, or it reads as a hole
+   rather than as a raised pill. In the dark theme --panel is darker than --panel-2. */
+:root:not([data-theme="light"]) .salwho .seg-btn.is-on{background:var(--line)}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]) .salwho .seg-btn.is-on{background:var(--panel)}}
+:root[data-theme="dark"] .salwho .seg-btn.is-on{background:var(--line)}
+/* Targets. "+ note" is the only way to add one on a phone, and it was 25px tall. */
+.salwho .seg-btn{min-height:44px}
+.smon-addnote{min-height:44px;display:inline-flex;align-items:center}
+.saltab .delbtn{min-width:40px;min-height:40px}
+
+/* One rule for this heading, after every earlier attempt at it: pinned to the top of its own
+   box, which is the only thing it can pin to. */
+.yrsched .schtab th{position:sticky;top:0;z-index:1;background:var(--panel-2)}
+
+/* The monthly schedule, once somebody opens it.
+ *
+ * `.loanbox > *{min-width:0}` reaches the <details>, but the scrolling box is inside it, and
+ * a flex item's floor is its content — so a six-column schedule 573px wide sized the
+ * disclosure, the disclosure sized the loan box, and the whole card went 163px past the edge
+ * of the screen, taking every field and stat with it. The year table above it fits only
+ * because it happens to be narrower; it had the same fault waiting.
+ *
+ * Every box between the card and a wide table has to be allowed to be narrower than what is
+ * inside it, or the table pushes the card instead of scrolling inside it. */
+/* `min-width:0` is the wrong tool here and I reached for it twice.
+ *
+ * These boxes are stacked in COLUMN flex containers, where width is the cross axis — and
+ * `min-width:auto` only applies to the main axis, so setting it to 0 changes nothing at all.
+ * What actually stops a 573px schedule widening its ancestors is a max-width bound at every
+ * level between the card and the table, so each box can be narrower than its content and
+ * the table scrolls inside the last of them. */
+.acard,.toggles,.tglgroup,.loanbox,.psched,.yrsched,.exwrap,.lcomp,.pstats,
+.psched>.schscroll,.yrsched>.schscroll{min-width:0;max-width:100%}

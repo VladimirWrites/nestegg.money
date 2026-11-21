@@ -18,9 +18,30 @@ export function resolveLocale(explicit) {
   return LOCALES.includes(nav) ? nav : DEFAULT_LOCALE;
 }
 
+/* English under everything.
+ *
+ * `t()` returns the key when a string is missing, and after a deploy that adds one, a service
+ * worker can still be serving the previous dictionary — so a German reader's first load
+ * printed "asset.byPayment" where a word should be. English is loaded as the base and the
+ * chosen language laid over it, so a missing string falls back to a real word. */
+function layer(base, over) {
+  const out = { ...base };
+  for (const k in over) {
+    const v = over[k];
+    out[k] = v && typeof v === "object" && !Array.isArray(v) && base[k] && typeof base[k] === "object"
+      ? layer(base[k], v) : v;
+  }
+  return out;
+}
+
 export async function initI18n(explicit) {
   locale = resolveLocale(explicit);
-  dict = (await import(`../i18n/${locale}.js`)).default;
+  const base = (await import("../i18n/en.js")).default;
+  dict = locale === "en" ? base : layer(base, (await import(`../i18n/${locale}.js`)).default);
+  /* The document says which language it is in. Nothing set it, so the German app was served
+     as lang="en" and read aloud by a screen reader in an English voice — and the hyphenation
+     and quotation rules a browser applies are the wrong ones too. */
+  try { if (typeof document !== "undefined") document.documentElement.lang = locale; } catch (e) {}
   return locale;
 }
 
@@ -43,8 +64,20 @@ export function t(key, params) {
 // Translate static DOM: <span data-i18n="key"> for text, data-i18n-placeholder / data-i18n-title
 // for attributes. Pre-rendered pages rarely need this; it exists for runtime-built fragments.
 export function translateDom(root = document) {
-  root.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.getAttribute("data-i18n")); });
-  for (const attr of ["placeholder", "title", "aria-label"]) {
-    root.querySelectorAll(`[data-i18n-${attr}]`).forEach((el) => { el.setAttribute(attr, t(el.getAttribute(`data-i18n-${attr}`))); });
+  /* A key that resolves to itself is a key that is missing — most often from a dictionary an
+     old service worker is still serving, right after a deploy that added it. Printing
+     "salary.savedShort" where a word should be is worse than leaving the English the page
+     was authored with, which is what this now does. */
+  root.querySelectorAll("[data-i18n]").forEach((el) => {
+    const k = el.getAttribute("data-i18n"), v = t(k);
+    if (v !== k) el.textContent = v;
+  });
+  // `data-short` is the one-word form a CSS ::after prints where there is no room for the
+  // sentence; it is translated like any other attribute.
+  for (const attr of ["placeholder", "title", "aria-label", "data-short"]) {
+    root.querySelectorAll(`[data-i18n-${attr}]`).forEach((el) => {
+      const k = el.getAttribute(`data-i18n-${attr}`), v = t(k);
+      if (v !== k) el.setAttribute(attr, v);
+    });
   }
 }

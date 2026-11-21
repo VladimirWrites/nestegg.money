@@ -1,9 +1,9 @@
 // Year editor: the list of snapshots and the per-year entry editing overlay.
-import { $, showEditor, hideEditor, toast, flash, focusNew } from "./dom.js";
+import { $, showEditor, hideEditor, toast, flash, focusNew, setInert, rememberFocus, restoreFocus } from "./dom.js";
 import { state } from "../domain/store.js";
 import { nid } from "../domain/ids.js";
 import { CCYS } from "../domain/constants.js";
-import { money, moneyIn, esc } from "../domain/money.js";
+import { money, moneyIn, esc, parseNum, parseDec, parseLocaleNum, fmtNum } from "../domain/money.js";
 import { allNames, autoEntriesFor, colorOf, seriesKey, entryBase, tickerPx, snapTotalBase, effEntries } from "../domain/model.js";
 import { scheduleSync, ensureHist, fetchPrice, fetchPriceYear } from "../io/storage.js";
 import { renderAll } from "./charts.js";
@@ -11,14 +11,23 @@ import { openAssetEditor, newAsset, newLiability } from "./assets.js";
 import { groupNames, addCategory, renameCategory, categoryUsage, removeCategory } from "../domain/categories.js";
 import { categorySelectHTML, groupSectionHTML } from "./categories-ui.js";
 import { t } from "../i18n.js";
+import { registerOverlay } from "./editors.js";
 
 let edIdx = -1;
 let edYearPrev = null;
 
+/* The button says 2026 and used to be labelled "Move", which replaces the text content — so
+   a screen reader heard "Move, button" and never heard which year. */
+function setYearLabel(y) {
+  $("edYearVal").textContent = String(y);
+  const b = $("edYearBtn");
+  if (b) b.setAttribute("aria-label", t("yeared.changeYearAria", { year: y }));
+}
+
 function openYearEditor(ri) {
   edIdx = ri;
   edYearPrev = state.snapshots[ri].year;
-  $("edYearVal").textContent = String(state.snapshots[ri].year);
+  setYearLabel(state.snapshots[ri].year);
   showEditor("yearEditor");
   renderEntries();
   ensureHist();
@@ -67,22 +76,22 @@ function cardHTML(en, i, names, year) {
     const noHistData = !p && en.ticker && year < new Date().getFullYear();
     if (noHistData) priceNote = `<div class="rhint">${t("net.noYearEndPriceLong", { year })}</div>`;
     const pxtxt = p ? "@ " + moneyIn(p.price, p.currency) + (p.frozen ? " · " + t("net.yearEnd") : "") : noHistData ? t("net.noYearEndPrice") : en.ticker ? t("net.noPrice") : isC ? t("net.setCoin") : t("net.setTicker");
-    valuePart = `<input class="rsh num" type="number" step="any" inputmode="decimal" value="${en.shares ? en.shares : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
-    <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker || "")}" data-i="${i}" data-f="ticker" placeholder="${isC ? "BTC-EUR" : "AMS:VWRL"}" title="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}"><button type="button" class="rinfo" data-info="${isC ? "crypto" : "ticker"}" title="${t("net.symbolHelpTitle")}" aria-label="${t("net.symbolHelpAria")}">i</button></span>
-    <span class="rconv">${p ? money(baseV) : pxtxt}</span>`;
+    valuePart = `<input class="rsh num" type="text" inputmode="decimal" value="${en.shares ? fmtNum(en.shares, 8) : ""}" data-i="${i}" data-f="shares" placeholder="${isC ? t("net.coins") : t("net.shares")}" aria-label="${isC ? t("net.coins") : t("net.shares")}" title="${isC ? t("net.coins") : t("net.shares")}">
+    <span class="rtkwrap"><input class="rtk" value="${esc(en.ticker || "")}" data-i="${i}" data-f="ticker" placeholder="${isC ? "BTC-EUR" : "AMS:VWRL"}" aria-label="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}" title="${isC ? t("net.coinPairTitle") : t("net.tickerTitle")}"><button type="button" class="rinfo" data-info="${isC ? "crypto" : "ticker"}" title="${t("net.symbolHelpTitle")}" aria-label="${t("net.symbolHelpAria")}">i</button></span>
+    <span class="rconv">${p ? money(baseV) : pxtxt}</span>${p ? `<span class="rpx">${esc(pxtxt)}</span>` : ""}`;
   } else {
-    valuePart = `<input class="rval num" type="number" step="any" inputmode="decimal" value="${en.value ? en.value : ""}" data-i="${i}" data-f="value" placeholder="${liab ? t("net.amountOwed") : "0"}">
-    <select data-i="${i}" data-f="ccy">${CCYS.map((x) => `<option ${x === en.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>
+    valuePart = `<input class="rval num" type="text" inputmode="decimal" value="${en.value ? fmtNum(en.value) : ""}" data-i="${i}" data-f="value" aria-label="${liab ? t("net.amountOwed") : t("asset.value")}" placeholder="${liab ? t("net.amountOwed") : "0"}">
+    <select data-i="${i}" data-f="ccy" aria-label="${t("asset.currency")}">${CCYS.map((x) => `<option ${x === en.ccy ? "selected" : ""}>${x}</option>`).join("")}</select>
     <span class="rconv${liab ? " liab" : ""}">${liab ? "− " + money(Math.abs(baseV)) : en.ccy !== state.baseCcy ? "= " + money(baseV) : ""}</span>`;
   }
   const cats = groupNames();
   const catSel = cats.length ? categorySelectHTML("rcat", `data-i="${i}" data-f="group"`, en.group, cats) : "";
-  return `<div class="rcard${liab ? " liabcard" : ""}"><span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>
-    <input class="rname" value="${esc(en.name)}" data-i="${i}" data-f="name" placeholder="${liab ? t("net.liabilityName") : t("net.assetName")}">
-    <select class="rkind" data-i="${i}" data-f="kind"><option value="fixed" ${!priced && !liab ? "selected" : ""}>${t("net.kindValue")}</option><option value="ticker" ${en.kind === "ticker" ? "selected" : ""}>${t("net.kindTicker")}</option><option value="crypto" ${en.kind === "crypto" ? "selected" : ""}>${t("net.kindCrypto")}</option><option value="liability" ${liab ? "selected" : ""}>${t("net.kindLiability")}</option></select>
+  return `<div class="rcard${priced ? " is-priced" : ""}${liab ? " liabcard" + (Math.abs(baseV) > 0.005 ? " is-owing" : "") : ""}"><span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>
+    <input class="rname" value="${esc(en.name)}" data-i="${i}" data-f="name" aria-label="${liab ? t("net.liabilityName") : t("net.assetName")}" placeholder="${liab ? t("net.liabilityName") : t("net.assetName")}">
+    <select class="rkind" data-i="${i}" data-f="kind" aria-label="${t("net.kindAria")}"><option value="fixed" ${!priced && !liab ? "selected" : ""}>${t("net.kindValue")}</option><option value="ticker" ${en.kind === "ticker" ? "selected" : ""}>${t("net.kindTicker")}</option><option value="crypto" ${en.kind === "crypto" ? "selected" : ""}>${t("net.kindCrypto")}</option><option value="liability" ${liab ? "selected" : ""}>${t("net.kindLiability")}</option></select>
     ${valuePart}
     ${catSel}
-    <button class="rdel" data-del="${i}" title="${t("common.remove")}">×</button>${priceNote}</div>`;
+    <button type="button" class="rdel" data-del="${i}" title="${t("common.remove")}" aria-label="${esc(t("net.removeEntryAria", { name: en.name || t("net.thisRow") }))}">×</button>${priceNote}</div>`;
 }
 
 // Read-only card for a long-term asset (tap to edit in the focused asset editor).
@@ -91,11 +100,15 @@ function autoCardHTML(en, names, year) {
   const a = (state.assets || []).find((x) => x.id === en.assetId) || {}, liab = en.kind === "liability";
   const tags = liab ? t("net.tagLiability") : [a.depreciates ? (a.up ? t("net.tagAppreciating") : t("net.tagDepreciating")) : "", a.loan ? t("net.tagLoan") : ""].filter(Boolean).join(" · ") || t("net.tagAsset");
   const v = entryBase(en, year);
-  return `<div class="rcard auto${liab ? " liabcard" : ""}" data-editasset="${en.assetId}" title="${t("common.edit")}"><span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>` +
+  /* A button, not a div with a click handler. This card is the only route from a year into
+     the asset editor, so as a div it was unreachable by keyboard or switch, and a screen
+     reader read it as loose text with no name and no hint that it opened anything. */
+  const amount = liab ? "− " + money(Math.abs(v)) : money(v);
+  return `<button type="button" class="rcard auto${liab ? " liabcard" + (Math.abs(v) > 0.005 ? " is-owing" : "") : ""}" data-editasset="${en.assetId}" aria-label="${esc(t("net.editAssetAria", { name: en.name, tags, amount }))}"><span class="dot" style="background:${liab ? "var(--danger)" : colorOf(seriesKey(en), names)}"></span>` +
     `<span class="rname ro">${esc(en.name)}</span>` +
     `<span class="autotag">${tags}</span>` +
-    `<span class="rconv${liab ? " liab" : ""}">${liab ? "− " + money(Math.abs(v)) : money(v)}</span>` +
-    `<svg class="autoedit" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2.5l2.5 2.5L6 12.5 3 13l.5-3z"/></svg></div>`;
+    `<span class="rconv${liab ? " liab" : ""}">${amount}</span>` +
+    `<svg class="autoedit" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>`;
 }
 
 export function renderEntries() {
@@ -122,6 +135,7 @@ export function renderEntries() {
 
 $("years").addEventListener("click", (e) => { const h = e.target.closest("[data-open]"); if (h) openYearEditor(+h.dataset.open); });
 $("edBack").onclick = () => { scheduleSync(); closeYearEditor(); };
+$("edDone").onclick = () => $("edBack").click();
 /* Moving a snapshot to another year.
 
    The year is not a label on the record — it is the key the sync merge files it under, so two
@@ -168,19 +182,45 @@ function renderYearGrid() {
     const isNow = y === sn.year, isTaken = taken.has(y);
     const cls = "yearopt" + (isNow ? " is-now" : "") + (isTaken ? " is-taken" : "");
     const title = isTaken ? t("yeared.yearTaken", { year: y }) : isNow ? t("yeared.yearNow", { year: y }) : "";
-    return `<button type="button" class="${cls}" data-year="${y}"${isTaken ? " disabled" : ""}${title ? ` title="${title}"` : ""}${isNow ? ' aria-current="true"' : ""}>${y}</button>`;
+    /* A struck-through year says nothing on a phone, where there is no tooltip to hover, so
+       the reason is printed. The current year is disabled too: pressing the big highlighted
+       tile ran the whole move and toasted "Moved to 2026" without moving anything. */
+    /* Two elements, not a year with a word glued to it. Written as `${y}<i>…</i>` the tile
+       read "2025In your ledger", wrapped mid-word, and inherited the button's strikethrough
+       and 36% opacity — so the only explanation on the screen was itself crossed out, and
+       the highlighted current year looked cancelled. */
+    const note = isTaken ? t("yeared.inLedger") : isNow ? t("yeared.current") : "";
+    const label = isTaken ? t("yeared.yearTaken", { year: y }) : isNow ? t("yeared.yearNow", { year: y }) : t("yeared.moveTo", { year: y });
+    return `<button type="button" class="${cls}" data-year="${y}"${isTaken || isNow ? " disabled" : ""}${title ? ` title="${title}"` : ""}${isNow ? ' aria-current="true"' : ""} aria-label="${esc(label)}"><span class="yo-y">${y}</span>${note ? `<span class="yo-n">${note}</span>` : ""}</button>`;
   }).join("");
 }
 
 function openYearModal() {
   if (edIdx < 0) return;
   renderYearGrid();
+  rememberFocus("yearModal");
   $("yearModal").classList.remove("hide");
+  /* The markup claimed aria-modal and the dialog behaved like a card: focus stayed on the
+     year button behind the scrim, Tab walked the whole editor before reaching a tile, and
+     picking one dropped focus on <body>. */
+  setInert($("yearEditor"), true);
   const now = $("yearGrid").querySelector(".is-now");
   if (now) now.scrollIntoView({ block: "center" });
+  const first = $("yearGrid").querySelector("button:not([disabled])");
+  if (first) setTimeout(() => { try { first.focus({ preventScroll: true }); } catch (e) {} }, 0);
 }
-const closeYearModal = () => $("yearModal").classList.add("hide");
+const closeYearModal = () => {
+  $("yearModal").classList.add("hide");
+  setInert($("yearEditor"), false);
+  restoreFocus("yearModal");
+};
+/* Escape and the system Back button both reach for "the editor" — which, with this dialog
+   open, shut the year editor underneath and left the year grid floating over the Net worth
+   screen with every tile in it dead, because the handler reads state.snapshots[edIdx] and
+   edIdx is now -1. The dialog is what Escape means while the dialog is up. */
+export const yearModalOpen = () => !$("yearModal").classList.contains("hide");
 
+registerOverlay("yearModal", closeYearModal);
 $("edYearBtn").onclick = openYearModal;
 $("yearClose").onclick = closeYearModal;
 $("yearModal").addEventListener("click", (e) => { if (e.target.id === "yearModal") closeYearModal(); });
@@ -194,7 +234,7 @@ $("yearGrid").addEventListener("click", (e) => {
   }
   sn.year = y;
   edYearPrev = y;
-  $("edYearVal").textContent = String(y);
+  setYearLabel(y);
   scheduleSync();
   closeYearModal();
   // The entries are valued at their year — a holding priced at its year-end close, an asset
@@ -213,8 +253,13 @@ $("edAdd").onclick = () => {
   scheduleSync(); renderEntries();
   focusNew($("edEntries").querySelector(`.rname[data-i="${sn.entries.length - 1}"]`));
 };
-$("edAddLongterm").onclick = () => { const a = newAsset(); openAssetEditor(a.id, true); };
-$("edAddLiability").onclick = () => { const a = newLiability(); openAssetEditor(a.id, true); };
+/* The open year goes with the press. Adding a property while looking at 2023 and finding it
+   in 2026 is not a subtlety: a new asset is dated today, and autoEntriesFor drops anything
+   owned from after a year's reference date, so it was absent from the year that added it and
+   that year's total never moved. */
+const openYear = () => (state.snapshots[edIdx] ? state.snapshots[edIdx].year : new Date().getFullYear());
+$("edAddLongterm").onclick = () => { const a = newAsset(openYear()); openAssetEditor(a.id, true); };
+$("edAddLiability").onclick = () => { const a = newLiability(openYear()); openAssetEditor(a.id, true); };
 $("edAddGroup").onclick = () => {
   const name = addCategory(t("common.newCategory"));
   scheduleSync(); renderEntries();
@@ -224,14 +269,12 @@ $("edCopyPrev").onclick = () => { const cur = state.snapshots[edIdx]; const prev
 
 $("edEntries").addEventListener("input", (e) => {
   const el = e.target, sn = state.snapshots[edIdx];
-  if (el.dataset.grp != null) {
-    const nw = el.value;
-    renameCategory(el.dataset.grp, nw); // global tag: rename in the list and across every year and asset
-    el.dataset.grp = nw; scheduleSync(); return;
-  }
+  // A category name is committed on change, not on input — see the change handler below.
+  if (el.dataset.grp != null) return;
   const i = +el.dataset.i, f = el.dataset.f; if (el.dataset.i == null || !f) return;
   const en = sn.entries[i];
-  if (f === "value" || f === "shares") en[f] = parseFloat(el.value || 0);
+  if (f === "value") en.value = parseNum(el.value) || 0;
+  else if (f === "shares") en.shares = parseLocaleNum(el.value) || 0;   // read the way the field writes it, or 12,985 shares becomes 12.985
   else if (f === "group") en.group = el.value || undefined;
   else en[f] = el.value;
   scheduleSync();
@@ -248,10 +291,41 @@ $("edEntries").addEventListener("input", (e) => {
   $("edTotal").textContent = money(snapTotalBase(sn));
 });
 
+$("edEntries").addEventListener("focusout", (e) => {
+  const el = e.target;
+  if (!el.classList || !el.classList.contains("num") || el.type !== "text") return;
+  const share = el.dataset.f === "shares";
+  const n = share ? parseLocaleNum(el.value) : parseNum(el.value);
+  el.value = n == null ? "" : fmtNum(n, share ? 8 : 2);
+});
+
 $("edEntries").addEventListener("change", async (e) => {
   const el = e.target, f = el.dataset.f;
-  if (el.dataset.grp != null) { renderEntries(); return; }
-  if (f === "name") { renderEntries(); return; }
+  /* Renaming a category used to run on every keystroke, through a rename that retags by name
+     equality across every year and every asset, with no uniqueness check. Backspacing
+     "Groceries" into "Gro" and on into "" committed each of those as the global name; passing
+     through a name that already existed merged the two categories for good, and an empty one
+     left every tagged row both ungrouped and inside a nameless section. It is committed once,
+     when the reader has finished, and refused if it is blank or already taken. */
+  if (el.dataset.grp != null) {
+    const was = el.dataset.grp, now = el.value.trim();
+    if (now === was) { el.value = was; return; }
+    if (!now) { toast(t("net.categoryNeedsName")); el.value = was; return; }
+    if (groupNames().some((g) => g !== was && g === now)) { toast(t("net.categoryExists", { name: now })); el.value = was; return; }
+    renameCategory(was, now);   // the global tag, in the list and across every year and asset
+    scheduleSync(); renderEntries(); return;
+  }
+  /* A name does not change the shape of the list, and rebuilding it here destroyed whatever
+     the reader was already reaching for: `change` fires on blur, during the press that is on
+     its way to the value field or the ×, so the first tap after typing a name landed on an
+     element that no longer existed and did nothing. Only the colour can move, and that is
+     patched in place. */
+  if (f === "name") {
+    const sn2 = state.snapshots[edIdx], en2 = sn2 && sn2.entries[+el.dataset.i];
+    const dot = el.closest(".rcard") && el.closest(".rcard").querySelector(".dot");
+    if (dot && en2 && en2.kind !== "liability") dot.style.background = colorOf(seriesKey(en2), allNames());
+    return;
+  }
   if (f === "ticker" && el.value.trim()) {
     const sn = state.snapshots[edIdx], en = sn && sn.entries[+el.dataset.i], cy = new Date().getFullYear();
     if (!en) return;
@@ -265,17 +339,44 @@ $("edEntries").addEventListener("change", async (e) => {
 
 // Symbol-format help, shown in an overlay from the (i) button next to the ticker field.
 // The HTML lives in the i18n dictionaries (net.infoTicker / net.infoCrypto), resolved at open time.
-function openInfo(kind) { const b = $("infoBody"); if (b) b.innerHTML = kind === "ticker" ? t("net.infoTicker") : kind === "crypto" ? t("net.infoCrypto") : ""; $("infoModal").classList.remove("hide"); }
-function closeInfo() { $("infoModal").classList.add("hide"); }
+function openInfo(kind) {
+  const b = $("infoBody");
+  if (b) b.innerHTML = kind === "ticker" ? t("net.infoTicker") : kind === "crypto" ? t("net.infoCrypto") : "";
+  rememberFocus("infoModal");
+  $("infoModal").classList.remove("hide");
+  /* The same treatment as the dialog next to it: Tab used to walk the whole editor behind an
+     aria-modal="true" overlay, with focus still on the "i" button that opened it. */
+  setInert($("yearEditor"), true);
+  const c = $("infoClose");
+  if (c) setTimeout(() => { try { c.focus({ preventScroll: true }); } catch (e) {} }, 0);
+}
+function closeInfo() {
+  $("infoModal").classList.add("hide");
+  setInert($("yearEditor"), false);
+  restoreFocus("infoModal");
+}
+registerOverlay("infoModal", closeInfo);
 $("infoClose").onclick = closeInfo;
 $("infoModal").addEventListener("click", (e) => { if (e.target.id === "infoModal") closeInfo(); });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeInfo(); });
+/* No Escape listener of its own.
+ *
+ * It had one, and because a module's imports evaluate before the importing module's body,
+ * it was registered before the app's. So Escape hid this modal first, and by the time the
+ * app's handler checked whether a modal was open the class was already gone: one press shut
+ * the help and the whole year editor behind it. Escape is handled in one place, in main.js,
+ * which closes the topmost layer and nothing else. */
 
 $("edEntries").addEventListener("click", (e) => {
   const sn = state.snapshots[edIdx];
   const inf = e.target.closest("[data-info]"); if (inf) { openInfo(inf.dataset.info); return; }
   const ae = e.target.closest("[data-editasset]"); if (ae) { openAssetEditor(ae.dataset.editasset); return; }
-  if (e.target.dataset.del != null) { sn.entries.splice(+e.target.dataset.del, 1); scheduleSync(); renderEntries(); return; }
+  const del = e.target.closest("[data-del]");
+  if (del) {
+    const en = sn.entries[+del.dataset.del];
+    // One tap on a glyph in the corner of a row used to remove a balance outright.
+    if (en && !confirm(t("net.removeEntryConfirm", { name: en.name || t("net.thisRow") }))) return;
+    sn.entries.splice(+del.dataset.del, 1); scheduleSync(); renderEntries(); return;
+  }
   const gd = e.target.closest("[data-grpdel]");
   if (gd) {
     const g = gd.dataset.grpdel;

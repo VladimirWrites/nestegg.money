@@ -49,8 +49,23 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
 
 <div id="gate">
   <div class="gatebox">
-    <div class="kick" data-i18n="gate.kick">Personal Ledger</div><h1 data-i18n="gate.title">Net Worth</h1>
-    <div class="sub" data-i18n="gate.sub">No email. No password. Just an account number.</div>
+    <!-- The door says which product it is. It used to open on the words "Net Worth", which are
+         also the name of the first tab, so nothing on the first screen a stranger sees ever
+         named nestegg. -->
+    <!-- Two columns on a wide screen: what the product is on the left, the door itself on the
+         right. One 520px column centred in a 1440px window told a stranger what to type before
+         it told them what they were signing up to. -->
+    <div class="gateintro">
+      <div class="gatebrand"><i class="brand-lamp"></i><span>nestegg</span></div><h1 data-i18n="gate.title">Net Worth</h1>
+      <div class="sub" data-i18n="gate.sub">No email. No password. Just an account number.</div>
+      <p class="gatelede" data-i18n="gate.lede">Log what you own each year and watch your wealth over time and by allocation — alongside your salary, your budget and a forecast of where it all lands.</p>
+      <ul class="gatefacts">
+        <li data-i18n="gate.fact1">Encrypted in your browser before it ever syncs.</li>
+        <li data-i18n="gate.fact2">Live prices for every ticker and coin you hold.</li>
+        <li data-i18n="gate.fact3">Export everything as JSON whenever you like.</li>
+      </ul>
+    </div>
+    <div class="gatepanels">
     <form class="panel" id="gateCreate" autocomplete="on">
       <p data-i18n="gate.createLede">Your account number is your only key. It identifies you and unlocks your data, which is encrypted in your browser before it ever leaves. Write it down somewhere safe.</p>
       <!-- The account number is the credential. A username field alongside a password field
@@ -61,21 +76,32 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
       <div class="acctnum num" id="newAcct">…</div>
       <input type="password" id="newAcctField" class="sr-only" name="password" autocomplete="new-password" readonly tabindex="-1" aria-hidden="true" spellcheck="false">
       <p class="gatesaved hide" id="acctSaved" data-i18n="gate.savedToManager">Saved to your password manager.</p>
-      <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct" data-i18n="gate.copy">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct" data-i18n="gate.regen">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct" data-i18n="gate.confirm">I've saved it — continue</button></div>
+      <!-- Above the button, not below it. The sentence that justifies this whole screen was
+           printed after the control it is supposed to gate, so the reading order was: here is
+           a number, here is Continue, and by the way there is no recovery. -->
       <div class="warn" data-i18n="gate.warn">There is no recovery. Lose this number and the synced data is gone. Export JSON is your real backup.</div>
+      <div class="gaterow"><button type="button" class="gatebtn ghost" id="copyAcct" data-i18n="gate.copy">Copy</button><button type="button" class="gatebtn ghost" id="regenAcct" data-i18n="gate.regen">Generate another</button><button type="submit" class="gatebtn" id="confirmAcct" data-i18n="gate.confirm">I've saved it — continue</button></div>
       <div class="switch"><span data-i18n="gate.haveOne">Already have one?</span> <a id="toSignin" role="button" tabindex="0" data-i18n="gate.toSignin">Sign in with an account number</a></div>
-      <div class="switch demoswitch"><a id="toDemo" role="button" tabindex="0" data-i18n="gate.demo">Explore a live demo — no account needed</a></div>
     </form>
     <form class="panel hide" id="gateSignin" autocomplete="on">
       <p data-i18n="gate.signinLede">Enter your account number to load and decrypt your ledger on this device.</p>
       <!-- Empty and writable here, so the manager fills it: a username it didn't write is a
            reason for it to decline to fill the number either. -->
       <input type="text" id="signinUser" class="sr-only" name="username" autocomplete="username" tabindex="-1" aria-hidden="true">
-      <input class="gatein" id="signinInput" type="password" name="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false" aria-label="Account number" data-i18n-aria-label="gate.acctAria">
+      <div class="gateinwrap">
+        <input class="gatein" id="signinInput" type="password" name="password" placeholder="XXXX-XXXX-XXXX-…" autocomplete="current-password" spellcheck="false" aria-label="Account number" data-i18n-aria-label="gate.acctAria">
+        <!-- The field has to stay type=password for a password manager to fill it, so the
+             way to check what you typed is a reveal, not a different type. -->
+        <button type="button" class="gatereveal" id="signinReveal" aria-pressed="false" aria-label="Show the number" data-i18n-aria-label="gate.reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/></svg>
+        </button>
+      </div>
       <div class="gaterow"><button type="submit" class="gatebtn" id="signinBtn" data-i18n="gate.signin">Sign in</button></div>
       <div class="switch"><span data-i18n="gate.needNew">Need a new account?</span> <a id="toCreate" role="button" tabindex="0" data-i18n="gate.create">Create one</a></div>
     </form>
+    <div class="switch demoswitch"><a id="toDemo" role="button" tabindex="0" data-i18n="gate.demo">Explore a live demo — no account needed</a></div>
     <div class="switch"><span data-i18n="gate.agreePre">By continuing you agree to the</span> <a href="privacy.html" data-i18n="gate.privacy">Privacy Policy</a> <span data-i18n="gate.and">and</span> <a href="terms.html" data-i18n="gate.terms">Terms &amp; Conditions</a>.</div>
+    </div>
   </div>
 </div>
 
@@ -160,45 +186,54 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     <section class="forecast">
       <div class="sectitle"><span data-i18n="net.forecast">Forecast</span> <span class="tin" data-i18n="net.forecastTin">— where you're headed</span><label class="fcswitch"><input type="checkbox" id="fcOn"><span class="track"></span><em data-i18n="net.show">Show</em></label><span class="sectools"><button class="chartdl" id="dlFc" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
       <div id="fcBody">
+        <!-- The assumptions sit in a disclosure. On a phone the six fields and two checkboxes
+             came to roughly 450px above the chart they feed, so the screen opened on a form
+             rather than on the answer; the summary is hidden on a desktop, where the space
+             exists and the panel stays open. -->
+        <details class="fcset" open><summary data-i18n="net.assumptions">Assumptions</summary>
         <div class="fcrow">
-          <label class="fld"><span class="cap" title="Monthly contribution" data-i18n="net.monthly" data-i18n-title="net.monthly">Monthly contribution</span><input id="fcMonthly" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
-          <label class="fld"><span class="cap" title="Expected return / yr" data-i18n="net.retYr" data-i18n-title="net.retYr">Expected return / yr</span><span class="pct"><input id="fcGrowth" class="fin num" type="number" step="any" inputmode="decimal" placeholder="5"><i>%</i></span></label>
-          <label class="fld"><span class="cap" title="Contributions grow / yr" data-i18n="net.contribGrow" data-i18n-title="net.contribGrow">Contributions grow / yr</span><span class="pct"><input id="fcContribGrowth" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"><i>%</i></span></label>
+          <label class="fld"><span class="cap" title="Monthly contribution" data-i18n="net.monthly" data-i18n-title="net.monthly">Monthly contribution</span><input id="fcMonthly" class="fin num" type="text" step="any" inputmode="decimal" placeholder="0"></label>
+          <label class="fld"><span class="cap" title="Expected return / yr" data-i18n="net.retYr" data-i18n-title="net.retYr">Expected return / yr</span><span class="pct"><input id="fcGrowth" class="fin num" type="text" step="any" inputmode="decimal" placeholder="5"><i>%</i></span></label>
+          <label class="fld"><span class="cap" title="Contributions grow / yr" data-i18n="net.contribGrow" data-i18n-title="net.contribGrow">Contributions grow / yr</span><span class="pct"><input id="fcContribGrowth" class="fin num" type="text" step="any" inputmode="decimal" placeholder="0"><i>%</i></span></label>
           <label class="fld"><span class="cap" title="Goal" data-i18n="net.goal" data-i18n-title="net.goal">Goal</span><select id="fcGoalMode"><option value="amount" data-i18n="net.goalAmount">Target amount</option><option value="spend" data-i18n="net.goalSpend">Annual spending ×25</option></select></label>
-          <label class="fld"><span class="cap" id="fcGoalLbl" title="Target amount">Target amount</span><input id="fcGoalVal" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
+          <label class="fld"><span class="cap" id="fcGoalLbl" title="Target amount">Target amount</span><input id="fcGoalVal" class="fin num" type="text" step="any" inputmode="decimal" placeholder="0"></label>
           <label class="fld"><span class="cap" title="Show until (year)" data-i18n="net.showUntil" data-i18n-title="net.showUntil">Show until (year)</span><input id="fcHorizon" class="fin num" type="number" step="1" inputmode="numeric" placeholder="auto" data-i18n-placeholder="net.auto"></label>
         </div>
         <label class="fccheck"><input type="checkbox" id="fcRedirect"><span data-i18n="net.redirect">Reinvest freed-up loan payments after each loan is paid off</span></label>
         <label class="fccheck"><input type="checkbox" id="fcBand"><span data-i18n="net.band">Show return range (poor / expected / great)</span></label>
+        </details>
         <div class="fcstats" id="fcStats"></div>
         <div class="histscroll"><svg id="fcChart"></svg></div>
-        <div class="chiplegend"><span><span class="chip" style="background:var(--signal)"></span><span data-i18n="net.actual">Actual</span></span><span><span class="chip fcdash"></span><span data-i18n="net.projected">Projected</span></span><span><span class="chip" style="background:var(--accent)"></span><span data-i18n="net.goal">Goal</span></span></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--signal-lg)"></span><span data-i18n="net.actual">Actual</span></span><span><span class="chip fcdash"></span><span data-i18n="net.projected">Projected</span></span><span><span class="chip" style="background:var(--accent)"></span><span data-i18n="net.goal">Goal</span></span></div>
       </div>
     </section>
 
     <section class="forecast retire">
-      <div class="sectitle"><span data-i18n="net.retire">Retirement</span> <span class="tin" data-i18n="net.retireTin">— spend down the nest egg, then the pension kicks in</span><label class="fcswitch"><input type="checkbox" id="rtOn"><span class="track"></span><em data-i18n="net.show">Show</em></label></div>
+      <div class="sectitle"><span data-i18n="net.retire">Retirement</span> <span class="tin" data-i18n="net.retireTin">— spend down the nest egg, then the pension kicks in</span><label class="fcswitch"><input type="checkbox" id="rtOn"><span class="track"></span><em data-i18n="net.show">Show</em></label><span class="sectools"><button class="chartdl" id="dlRt" title="Download chart" aria-label="Download chart" data-i18n-title="net.dlChart" data-i18n-aria-label="net.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
       <div id="rtBody">
+        <details class="fcset" open><summary data-i18n="net.assumptions">Assumptions</summary>
         <div class="fcrow">
           <label class="fld"><span class="cap" title="Retire in (year)" data-i18n="net.retireIn" data-i18n-title="net.retireIn">Retire in (year)</span><input id="rtYear" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2026"></label>
-          <label class="fld"><span class="cap" title="Annual spending" data-i18n="net.annualSpend" data-i18n-title="net.annualSpend">Annual spending</span><input id="rtSpend" class="fin num" type="number" step="any" inputmode="decimal" placeholder="30000"></label>
+          <label class="fld"><span class="cap" title="Annual spending" data-i18n="net.annualSpend" data-i18n-title="net.annualSpend">Annual spending</span><input id="rtSpend" class="fin num" type="text" step="any" inputmode="decimal" placeholder="30000"></label>
           <label class="fld"><span class="cap" title="Pension type" data-i18n="net.pension" data-i18n-title="net.pensionType">Pension</span><select id="rtPmode"><option value="amount" data-i18n="net.pensAmount">Enter amount</option><option value="de" data-i18n="net.pensDe">Germany (Rentenpunkte)</option></select></label>
-          <label class="fld" id="rtAmtFld"><span class="cap" title="Monthly pension (in today's money)" data-i18n="net.monthlyPension" data-i18n-title="net.monthlyPension">Monthly pension (in today's money)</span><input id="rtPension" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
-          <label class="fld rt-de"><span class="cap" title="Points so far (Entgeltpunkte)" data-i18n="net.points" data-i18n-title="net.pointsTitle">Points so far</span><input id="rtPts" class="fin num" type="number" step="any" inputmode="decimal" placeholder="0"></label>
-          <label class="fld rt-de"><span class="cap" title="Points / year" data-i18n="net.ptsYr" data-i18n-title="net.ptsYr">Points / year</span><input id="rtPtsYr" class="fin num" type="number" step="any" inputmode="decimal" placeholder="1"></label>
-          <label class="fld rt-de"><span class="cap" title="Value / point (€/mo)" data-i18n="net.ptVal" data-i18n-title="net.ptValTitle">Value / point</span><input id="rtPtVal" class="fin num" type="number" step="any" inputmode="decimal" placeholder="39.32"></label>
+          <label class="fld" id="rtAmtFld"><span class="cap" title="Monthly pension (in today's money)" data-i18n="net.monthlyPension" data-i18n-title="net.monthlyPension">Monthly pension (in today's money)</span><input id="rtPension" class="fin num" type="text" step="any" inputmode="decimal" placeholder="0"></label>
+          <label class="fld rt-de"><span class="cap" title="Points so far (Entgeltpunkte)" data-i18n="net.points" data-i18n-title="net.pointsTitle">Points so far</span><input id="rtPts" class="fin num" type="text" step="any" inputmode="decimal" placeholder="0"></label>
+          <label class="fld rt-de"><span class="cap" title="Points / year" data-i18n="net.ptsYr" data-i18n-title="net.ptsYr">Points / year</span><input id="rtPtsYr" class="fin num" type="text" step="any" inputmode="decimal" placeholder="1"></label>
+          <label class="fld rt-de"><span class="cap" title="Value / point (€/mo)" data-i18n="net.ptVal" data-i18n-title="net.ptValTitle">Value / point</span><input id="rtPtVal" class="fin num" type="text" step="any" inputmode="decimal" placeholder="39.32"></label>
           <label class="fld"><span class="cap" title="Pension starts (year)" data-i18n="net.pensStart" data-i18n-title="net.pensStart">Pension starts (year)</span><input id="rtPensStart" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2050"></label>
           <label class="fld"><span class="cap" title="Plan until (year)" data-i18n="net.planUntil" data-i18n-title="net.planUntil">Plan until (year)</span><input id="rtUntil" class="fin num" type="number" step="1" inputmode="numeric" placeholder="2071"></label>
-          <label class="fld"><span class="cap" title="Inflation / yr" data-i18n="net.inflation" data-i18n-title="net.inflation">Inflation / yr</span><span class="pct"><input id="rtInfl" class="fin num" type="number" step="any" inputmode="decimal" placeholder="2"><i>%</i></span></label>
+          <label class="fld"><span class="cap" title="Inflation / yr" data-i18n="net.inflation" data-i18n-title="net.inflation">Inflation / yr</span><span class="pct"><input id="rtInfl" class="fin num" type="text" step="any" inputmode="decimal" placeholder="2"><i>%</i></span></label>
         </div>
-        <div class="fchint" style="padding:0 0 4px" data-i18n="net.retireHint">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the pension you expect (in today's value) and when it starts. Germany: pension = points × value (~1 point/yr at the average salary; points accrue while working).</div>
+        <div class="fchint fchint-lead" data-i18n="net.retireHint">All in today's money. Contributions stop at the retirement year; spending is drawn from your investable nest egg (property/loans excluded). Enter the pension you expect (in today's value) and when it starts. Germany: pension = points × value (~1 point/yr at the average salary; points accrue while working).</div>
+        </details>
         <div class="fcstats" id="rtStats"></div>
         <div class="histscroll"><svg id="rtChart"></svg></div>
-        <div class="chiplegend"><span><span class="chip" style="background:var(--signal)"></span><span data-i18n="net.nestEggChip">Nest egg (today's money)</span></span></div>
+        <div class="chiplegend"><span><span class="chip" style="background:var(--signal-lg)"></span><span data-i18n="net.nestEggChip">Nest egg (today's money)</span></span></div>
       </div>
     </section>
 
-    <section style="border-bottom:none;padding-top:8px">
+    <!-- Eight pixels under the rule above it, where every other block gets twenty-four. -->
+    <section class="sect-plain">
       <div class="controls" style="margin-top:0">
         <button class="btn btn-sm" id="pricesBtn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.prices">Prices</span></button>
         <button class="btn btn-sm" id="ratesBtn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 3.5v6h-6"/></svg><span data-i18n="net.rates">Rates</span></button>
@@ -208,13 +243,25 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     </div><!-- /viewNet -->
 
     <div id="viewSalary" class="hide">
-      <section class="over" style="border:none;padding:8px 0">
+      <!-- Every other screen opens with the number its reader came for. This one opened with a
+           three-series chart and made you find the figure in a table below it. -->
+      <div class="hero" id="salHero">
+        <div class="label" data-i18n="salary.heroLbl">Latest month</div>
+        <div class="big num" id="salHeroAmt">—</div>
+        <div class="delta" id="salHeroNote"></div>
+        <!-- The two things you came here to do, next to the figure you came to see. They used
+             to sit under the table, which on a phone is several thousand pixels down. -->
+        <div class="controls"><button class="btn btn-primary btn-sm" id="salNext" data-i18n="salary.next">+ Next month</button><button class="btn btn-sm" id="salEdit" data-i18n="salary.edit">Edit salaries</button></div>
+      </div>
+      <section class="over sect-plain">
         <div class="sectitle" data-i18n="salary.history">Our salary history<span class="sectools"><button class="chartdl" id="dlSalary" title="Download chart" aria-label="Download chart" data-i18n-title="salary.dlChart" data-i18n-aria-label="salary.dlChart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></button></span></div>
-        <div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div>
+        <!-- The left scale lives outside the scroller. The chart is wider than a phone and
+             opens on the newest month, so an axis drawn inside it starts off-screen and the
+             per-person monthly lines have no scale a reader can see. -->
+        <div class="salchart"><svg id="salaryAxis" class="salaxis" aria-hidden="true"></svg><div class="histscroll"><div class="chartwrap"><svg id="salaryChart"></svg><div id="salTip" class="salflag hide"></div></div></div></div>
         <div class="chiplegend" id="salaryLegend"></div>
       </section>
       <div id="salaryTable"></div>
-      <div class="controls"><button class="btn btn-sm" id="salNext" data-i18n="salary.next">+ Next month</button><button class="btn btn-primary btn-sm" id="salEdit" data-i18n="salary.edit">Edit salaries</button></div>
     </div>
 
     <div id="viewBudget" class="hide">
@@ -305,7 +352,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     <div class="set-group">
       <div class="set-row top">
         <div class="set-text"><div class="set-name" data-i18n="prof.logout">Log out on this device</div><div class="set-hint" data-i18n="prof.logoutHint">Forgets the account number here. Your data stays on the server and comes back when you sign in with the number again.</div></div>
-        <div class="set-ctl"><button class="btn btn-sm btn-danger" id="profLogout" data-i18n="prof.logoutCta">Log out</button></div>
+        <div class="set-ctl"><button class="btn btn-sm" id="profLogout" data-i18n="prof.logoutCta">Log out</button></div>
       </div>
       <div class="set-row top">
         <div class="set-text"><div class="set-name" data-i18n="prof.reset">Reset</div><div class="set-hint" data-i18n="prof.resetHint">Empties this ledger and starts again on the same account number.</div></div>
@@ -316,7 +363,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
            should reach for. -->
       <div class="set-row top">
         <div class="set-text"><div class="set-name" data-i18n="prof.delete">Delete everything</div><div class="set-hint" data-i18n="prof.deleteHint">Removes the encrypted data from the server for good, and clears this device with it. There is no undo, and no copy anybody here could give you back.</div></div>
-        <div class="set-ctl"><button class="btn btn-sm btn-danger" id="deleteAllBtn" data-i18n="prof.deleteCta">Delete</button></div>
+        <div class="set-ctl"><button class="btn btn-sm btn-danger-solid" id="deleteAllBtn" data-i18n="prof.deleteCta">Delete</button></div>
       </div>
     </div>
 
@@ -364,7 +411,9 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     it never sees your figures. It can still see the size of your encrypted data, when you sync, and your IP address.
     Each year holds its own asset rows, each in its own currency, shown in your chosen display currency — past years at that year's year-end ECB rates, the current year live.
     There is no recovery if you lose your account number — Export JSON is your backup.</span>
-    <div class="footlinks"><a href="privacy.html" data-i18n="foot.privacy">Privacy Policy</a> · <a href="terms.html" data-i18n="foot.terms">Terms &amp; Conditions</a> · <a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener" data-i18n="foot.source">Source</a> · <a href="https://buymeacoffee.com/vladimirj.dev" target="_blank" rel="noopener" data-i18n="foot.coffee">Buy me a coffee ☕</a></div>
+    <!-- The separators are drawn by CSS between the links, not typed between them: as text they
+         were line-breaking opportunities, and the row wrapped leaving a "·" hanging at the end. -->
+    <div class="footlinks"><a href="privacy.html" data-i18n="foot.privacy">Privacy Policy</a><a href="terms.html" data-i18n="foot.terms">Terms &amp; Conditions</a><a href="https://github.com/VladimirWrites/nestegg.money" target="_blank" rel="noopener" data-i18n="foot.source">Source</a><a href="https://buymeacoffee.com/vladimirj.dev" target="_blank" rel="noopener" data-i18n="foot.coffee">Buy me a coffee ☕</a></div>
   </div>
   </div><!-- /shell-main -->
  </div><!-- /shell -->
@@ -377,16 +426,25 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
       <!-- The year is the snapshot's identity — the sync merge keys records by it — so moving one
            is rare, consequential, and asked for deliberately rather than offered as a dropdown
            under the title. The bar states the year; the dialog moves it. -->
-      <div class="ed-title t-title"><span data-i18n="yeared.year">Year</span> <span class="ed-yearnow num" id="edYearVal">—</span>
-        <button type="button" class="btn btn-sm ed-yearmove" id="edYearBtn" data-i18n="yeared.move">Move</button>
+      <div class="ed-title t-title" tabindex="-1"><span data-i18n="yeared.year">Year</span>
+        <!-- The year states itself and offers to move: a separate "Move" button sat inside a
+             clipping title box and had its right third cut off on a 320px phone, while the
+             red "Delete year" beside it took two lines and grew the bar. -->
+        <!-- The label is written by the editor, with the year in it: a static "Move" replaces the
+             button's text content, so a screen reader never heard which year it was on. -->
+        <button type="button" class="ed-yearnow num" id="edYearBtn" aria-haspopup="dialog"><span id="edYearVal">—</span><svg class="ed-yearchev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg></button>
       </div>
-      <div class="ed-actions"><button class="btn btn-sm btn-danger" id="edDelYear" data-i18n="yeared.delYear">Delete year</button></div>
+      <span class="ed-saved" data-short="Saved" data-i18n-data-short="salary.savedShort" data-i18n="salary.savedNote">Saved as you type</span>
+      <button class="btn btn-sm ed-done" id="edDone" data-i18n="salary.done">Done</button>
     </div>
   </div>
   <div class="ed-wrap">
     <div class="ed-total"><span class="et-k" data-i18n="yeared.total">Year total</span><span class="et-v" id="edTotal">—</span></div>
     <div class="cards" id="edEntries"></div>
     <div class="controls"><button class="btn btn-primary btn-sm" id="edAdd" data-i18n="yeared.add">+ Add asset</button><button class="btn btn-sm" id="edAddLongterm" data-i18n="yeared.addLongterm">+ Property / vehicle</button><button class="btn btn-sm" id="edAddLiability" data-i18n="yeared.addLiability">+ Loan / debt</button><button class="btn btn-sm" id="edAddGroup" data-i18n="yeared.addGroup">+ Add group</button><button class="btn btn-sm" id="edCopyPrev" data-i18n="yeared.copyPrev">Copy previous year</button></div>
+    <!-- Last thing on the screen, as a quiet word rather than a red pill in the bar. It
+         removes a year of holdings and it is reached about once a lifetime. -->
+    <div class="ed-danger"><button class="btn btn-sm btn-quiet-danger" id="edDelYear" data-i18n="yeared.delYear">Delete year</button></div>
   </div>
 </div>
 
@@ -394,18 +452,24 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
   <div class="ed-bar">
     <div class="ed-bar-inner">
       <button class="ed-back" id="salaryBack" title="Back" aria-label="Back" data-i18n-title="salary.back" data-i18n-aria-label="salary.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <div class="ed-title t-title" data-i18n="salary.edit">Edit salaries</div>
+      <div class="ed-title t-title" tabindex="-1" data-i18n="salary.edit">Edit salaries</div>
+      <!-- Typing saves as you go, but a back chevron is the shape of "discard" on a form
+           full of money. The bar says so, and offers the same exit as a word. -->
+      <span class="ed-saved" id="salSaved" data-short="Saved" data-i18n-data-short="salary.savedShort" data-i18n="salary.savedNote">Saved as you type</span>
+      <button class="btn btn-sm ed-done" id="salaryDone" data-i18n="salary.done">Done</button>
     </div>
   </div>
   <div class="ed-wrap">
-    <p class="edlede"><span data-i18n="salary.lede1">Type each person's monthly </span><strong data-i18n="salary.net">net</strong><span data-i18n="salary.lede2"> pay side by side; the event field notes a raise or job change. Add a range of months, or import from a spreadsheet below.</span></p>
+    <p class="edlede"><span data-i18n="salary.lede1">Type each person's monthly </span><strong data-i18n="salary.net">net</strong><span data-i18n="salary.lede2"> pay, month by month. The note field marks a raise or a job change. Add one month, a range of months, or paste a spreadsheet. Everything saves as you type.</span></p>
     <div id="salaryList"></div>
-    <div class="controls"><button class="btn btn-primary btn-sm" id="addPerson" data-i18n="salary.addPerson">+ Add person</button></div>
+    <!-- The control lives beside the people, at the top of the editor. This copy is kept as
+         the handler every other route calls, and is not shown. -->
+    <div class="controls hide"><button class="btn btn-sm" id="addPerson" data-i18n="salary.addPerson">+ Add person</button></div>
     <details class="salimport">
       <summary data-i18n="salary.importSummary">Import from a spreadsheet</summary>
       <p class="edlede" style="margin:10px 0"><span data-i18n="salary.imp1">In Google Sheets, select the </span><strong data-i18n="salary.impMonth">Month</strong><span data-i18n="salary.imp2"> column and the </span><strong data-i18n="salary.impNet">net amount</strong><span data-i18n="salary.imp3"> column (⌘/Ctrl-click to grab just those two), copy, choose who it's for, and paste below. An optional 3rd column becomes the event note. Re-importing a month overwrites it.</span></p>
-      <div class="controls" style="margin:0 0 8px"><span class="salrlbl" data-i18n="salary.importFor">Import for</span><select id="salImportWho" class="salccy"></select></div>
-      <textarea id="salImportText" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
+      <div class="controls" style="margin:0 0 8px"><span class="salrlbl" id="salImportForLbl" data-i18n="salary.importFor">Import for</span><select id="salImportWho" class="salccy" aria-label="Import for" data-i18n-aria-label="salary.importFor"></select></div>
+      <textarea id="salImportText" data-i18n-placeholder="salary.importPh" placeholder="May 2013	550&#10;June 2013	550&#10;July 2013	600	Raise"></textarea>
       <div class="controls"><button class="btn btn-primary btn-sm" id="salImportBtn" data-i18n="salary.importBtn">Import pasted rows</button></div>
     </details>
   </div>
@@ -415,19 +479,27 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
   <div class="ed-bar">
     <div class="ed-bar-inner">
       <button class="ed-back" id="assetBack" title="Back" aria-label="Back" data-i18n-title="asset.back" data-i18n-aria-label="asset.back"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <div class="ed-title t-title" data-i18n="asset.title">Asset</div>
+      <!-- The thing's own name, written here by the editor. A bar that says "Asset" over a
+           car, a flat and a standalone debt alike is the only thing distinguishing this
+           layer from the year editor underneath it, and it distinguishes nothing. -->
+      <div class="ed-title t-title" id="assetTitle" tabindex="-1" data-i18n="asset.title">Asset</div>
+      <span class="ed-saved" data-short="Saved" data-i18n-data-short="salary.savedShort" data-i18n="salary.savedNote">Saved as you type</span>
+      <button class="btn btn-sm ed-done" id="assetDone" data-i18n="salary.done">Done</button>
     </div>
   </div>
   <div class="ed-wrap">
-    <p class="edlede"><span data-i18n="asset.lede1">A car, a house, anything that depreciates or carries a loan. Toggle </span><strong data-i18n="asset.ledeDep">Depreciates</strong><span data-i18n="asset.lede2"> to have its value fall a little every day (current year live, past years locked to year-end); toggle </span><strong data-i18n="asset.ledeLoan">Has a loan</strong><span data-i18n="asset.lede3"> to auto-build an amortization schedule and subtract the outstanding balance. The net value flows into your net worth for every year you own it. Assign a </span><strong data-i18n="asset.ledeCat">Category</strong><span data-i18n="asset.lede4"> to group it on the home screen.</span></p>
+    <!-- Two lines. It was eight on a phone, above the only thing on the screen, and it
+         explained two toggles by names neither of them used. The toggles carry their own
+         one-line hints now. -->
+    <p class="edlede" id="assetLede" data-i18n="asset.lede">Anything whose value moves or carries a loan. Its net value counts every year you own it.</p>
     <div class="cards" id="assetList"></div>
   </div>
 </div>
 
-<div id="shareModal" class="infomodal hide"><div class="infobox">
+<div id="shareModal" class="infomodal hide"><div class="infobox" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
   <button class="infoclose" id="shareClose" aria-label="Close" data-i18n-aria-label="share.close">×</button>
   <div id="shareBody">
-    <h3 data-i18n="share.title">Share a read-only link</h3>
+    <h3 id="shareTitle" data-i18n="share.title">Share a read-only link</h3>
     <p data-i18n="share.lede">Pick what to include. The person you share with sees a frozen, read-only snapshot — they can't edit your data, and the link expires in 30 days.</p>
     <div id="shareSecs" class="share-secs"></div>
     <label class="share-lbl"><span data-i18n="share.whoFor">Who's it for?</span> <span class="share-hint" data-i18n="share.whoHint">(optional, for your list)</span>
@@ -443,7 +515,7 @@ document.documentElement.setAttribute("data-boot","app");}catch(e){}</script>
     <div id="shareList" class="share-list"></div>
   </div>
 </div></div>
-<div id="infoModal" class="infomodal hide"><div class="infobox"><button class="infoclose" id="infoClose" aria-label="Close" data-i18n-aria-label="share.close">×</button><div id="infoBody"></div></div></div>
+<div id="infoModal" class="infomodal hide"><div class="infobox" role="dialog" aria-modal="true" aria-labelledby="infoBody"><button class="infoclose" id="infoClose" aria-label="Close" data-i18n-aria-label="share.close">×</button><div id="infoBody"></div></div></div>
 <!-- What moved today. The headline says the ledger is up or down by a figure; this says which
      holdings did it, which is the question that follows. Read-only, so it is an overlay rather
      than a screen of its own: nothing here is edited and there is nowhere further to go. -->
